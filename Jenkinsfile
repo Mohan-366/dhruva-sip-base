@@ -1,6 +1,7 @@
 #!groovy
-@Library(['kubedPipeline', 'sparkPipeline'])
+@Library(['kubedPipeline', 'sparkPipeline']) _
 node() {
+
     try{
         // ***** CREDENTIALS USED IN IT-JENKINS *****
         // Bot to talk to Teams rooms
@@ -10,6 +11,7 @@ node() {
 
         // 'Dhruva Build & Deploy Notifications - IT Jenkins' room
         notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vZjVmMDg3OTAtMDJjYi0xMWViLWJjNzktMTEwN2VhODIxNWY3'
+
         stage('Checkout') {
                     cleanWs notFailBuild: true
                      checkout scm
@@ -31,15 +33,18 @@ node() {
             }
             if (env.CHANGE_ID == null) { // CHANGE_ID will be null if there is no Pull Request
                 // Announce in build notifications room
-                notifyPipelineRoom("wbx3-dhruva: Build started.", roomId: notifySparkRoomId)
+                notifyPipelineRoom("DSB: Build started.", roomId: notifySparkRoomId)
             } else {
                 // 1:1 notification to PR owner
-                notifyPipelineRoom("wbx3-dhruva: Build started.", toPersonEmail: env.CHANGE_AUTHOR_EMAIL)
+                notifyPipelineRoom("DSB: Build started.", toPersonEmail: env.CHANGE_AUTHOR_EMAIL)
             }
         }
         stage('build') {
             sh "ls -lrt"
             currentBuild.result = 'SUCCESS'
+            sh 'mvn clean compile verify'
+            sh 'ls'
+            sh 'java -jar stub-app/target/stub-app-1.0-SNAPSHOT.jar'
         }
     }
     catch (Exception ex) {
