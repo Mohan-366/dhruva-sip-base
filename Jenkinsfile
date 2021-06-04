@@ -10,7 +10,7 @@ node() {
         // ***** END CREDENTIALS *****
 
         // 'Dhruva Build & Deploy Notifications - IT Jenkins' room
-        notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vZjVmMDg3OTAtMDJjYi0xMWViLWJjNzktMTEwN2VhODIxNWY3'
+        notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMDc1NDVhZDAtMWYyMi0xMWViLWIxZjgtMzdmOGEzNjNhOGQ5'
 
         stage('Checkout') {
                     cleanWs notFailBuild: true
@@ -40,11 +40,26 @@ node() {
             }
         }
         stage('build') {
-            sh "ls -lrt"
             currentBuild.result = 'SUCCESS'
-            sh 'mvn clean compile verify'
+            sh '''
+            env
+            ls -lrt
+            docker run --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11  containers.cisco.com/ayogalin/maven-builder:one sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify"
+            '''
             sh 'ls'
             sh 'java -jar stub-app/target/stub-app-1.0-SNAPSHOT.jar'
+        }
+        stage('post-build') {
+            // Report SpotBugs static analysis warnings (also sets build result on failure)
+            findbugs pattern: '**/spotbugsXml.xml', failedTotalAll: '0'
+            failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
+        }
+        stage('uploadArtifacts') {
+
+            withCredentials([usernamePassword(credentialsId: 'artifactory-cred', passwordVariable: 'ArtifactoryPassword', usernameVariable: 'ArtifactoryUser')]) {
+                //Todo - Currently just pushing to the same path over and over. Change path based on directory structure decided later
+                sh "curl -u $ArtifactoryUser:$ArtifactoryPassword -X PUT \"https://engci-maven.cisco.com/artifactory/dhruva-sip-base-snapshot/1/stub-app-1.0-SNAPSHOT.jar\" -T stub-app/target/stub-app-1.0-SNAPSHOT.jar"
+            }
         }
     }
     catch (Exception ex) {
@@ -70,4 +85,15 @@ node() {
             notifyPipelineRoom("$message $details", toPersonEmail: env.CHANGE_AUTHOR_EMAIL)
         }
     } // end finally
+}
+def failBuildIfUnsuccessfulBuildResult(message) {
+    // Check for UNSTABLE/FAILURE build result or any result other than "SUCCESS" (or null)
+    if (currentBuild.result != null && currentBuild.result != 'SUCCESS') {
+        failBuild(message)
+    }
+}
+
+def failBuild(message) {
+    echo message
+    throw new SparkException(message)
 }
