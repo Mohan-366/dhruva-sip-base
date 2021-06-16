@@ -9,7 +9,7 @@ node() {
 
         // ***** END CREDENTIALS *****
 
-        // 'Dhruva Build & Deploy Notifications - IT Jenkins' room
+        // 'DSB Build & Deploy Notifications - spark room
         notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMDc1NDVhZDAtMWYyMi0xMWViLWIxZjgtMzdmOGEzNjNhOGQ5'
 
         stage('Checkout') {
@@ -39,27 +39,27 @@ node() {
                 notifyPipelineRoom("DSB: Build started.", toPersonEmail: env.CHANGE_AUTHOR_EMAIL)
             }
         }
-        stage('build') {
-            currentBuild.result = 'SUCCESS'
-            sh '''
-            env
-            ls -lrt
-            docker run --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11  containers.cisco.com/ayogalin/maven-builder:one sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify"
-            '''
-            sh 'ls'
-            sh 'java -jar stub-app/target/stub-app-1.0-SNAPSHOT.jar'
+        stage('buildAndDeploy') {
+            withCredentials([file(credentialsId: 'SETTINGS_FILE', variable: 'settingsFile')]) {
+                currentBuild.result = 'SUCCESS'
+                sh '''
+                env
+                ls -lrt
+                cp $settingsFile \$(pwd)/settings.xml
+                docker run \\
+                --mount type=bind,src="\$(pwd)"/settings.xml,dst=/src/settings.xml \\
+                --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11 \\
+                containers.cisco.com/ayogalin/maven-builder:one \\
+                sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
+                '''
+                sh 'java -jar stub-app/target/stub-app-1.0-SNAPSHOT.jar'
+                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'stub-app/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+            }
         }
-        stage('post-build') {
+        stage('postBuild') {
             // Report SpotBugs static analysis warnings (also sets build result on failure)
             findbugs pattern: '**/spotbugsXml.xml', failedTotalAll: '0'
             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
-        }
-        stage('uploadArtifacts') {
-
-            withCredentials([usernamePassword(credentialsId: 'artifactory-cred', passwordVariable: 'ArtifactoryPassword', usernameVariable: 'ArtifactoryUser')]) {
-                //Todo - Currently just pushing to the same path over and over. Change path based on directory structure decided later
-                sh "curl -u $ArtifactoryUser:$ArtifactoryPassword -X PUT \"https://engci-maven.cisco.com/artifactory/dhruva-sip-base-snapshot/1/stub-app-1.0-SNAPSHOT.jar\" -T stub-app/target/stub-app-1.0-SNAPSHOT.jar"
-            }
         }
     }
     catch (Exception ex) {
