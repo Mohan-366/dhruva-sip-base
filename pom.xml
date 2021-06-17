@@ -64,6 +64,9 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <spotbugs.skip>false</spotbugs.skip>
+        <spotbugs.failOnError>true</spotbugs.failOnError>
+        <jacoco.version>0.8.2</jacoco.version>
     </properties>
         <build>
             <plugins>
