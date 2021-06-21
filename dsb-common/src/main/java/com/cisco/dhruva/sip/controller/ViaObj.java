@@ -1,6 +1,6 @@
-package com.cisco.dsb.config.sip.controller;
+package com.cisco.dhruva.sip.controller;
 
-import com.cisco.dsb.sip.proxy.ViaListenInterface;
+import com.cisco.dhruva.sip.proxy.ViaListenInterface;
 import com.cisco.dsb.transport.Transport;
 import java.net.InetAddress;
 

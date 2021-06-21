@@ -12,7 +12,7 @@
 // ==================== all rights reserved =======================
 ///////////////////////////////////////////////////////////////////
 
-package com.cisco.dsb.sip.proxy;
+package com.cisco.dhruva.sip.proxy;
 
 /**
  * This interface is used to control a proxy. The proxy will invoke the various public methods of

@@ -1,4 +1,4 @@
-package com.cisco.dsb.sip.controller;
+package com.cisco.dhruva.sip.controller;
 
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import java.util.function.BiFunction;
@@ -13,6 +13,8 @@ public class ProxyControllerFactory {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
+  @Autowired ProxyAppAdaptor proxyAppAdaptor;
+
   @Bean
   public BiFunction<ServerTransaction, SipProvider, ProxyController> proxyController() {
     return this::getProxyController;
@@ -20,6 +22,7 @@ public class ProxyControllerFactory {
 
   private ProxyController getProxyController(
       ServerTransaction serverTransaction, SipProvider sipProvider) {
-    return new ProxyController(serverTransaction, sipProvider, dhruvaSIPConfigProperties);
+    return new ProxyController(
+        serverTransaction, sipProvider, dhruvaSIPConfigProperties, proxyAppAdaptor);
   }
 }

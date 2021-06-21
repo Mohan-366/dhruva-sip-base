@@ -1,4 +1,4 @@
-package com.cisco.dsb.sip.proxy;
+package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.transport.Transport;
 

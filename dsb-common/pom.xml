@@ -12,14 +12,7 @@
     <artifactId>dsb-common</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-
     <dependencies>
-        <dependency>
-            <groupId>dnsjava</groupId>
-            <artifactId>dnsjava</artifactId>
-            <version>3.2.2</version>
-            <scope>compile</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
@@ -56,6 +49,10 @@
         <dependency>
             <groupId>com.cisco.wx2</groupId>
             <artifactId>core-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cisco.wx2</groupId>
+            <artifactId>core-server</artifactId>
         </dependency>
         <dependency>
             <groupId>com.cisco.wx2</groupId>

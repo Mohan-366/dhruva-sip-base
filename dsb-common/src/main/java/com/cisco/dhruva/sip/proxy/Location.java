@@ -1,6 +1,5 @@
-package com.cisco.dsb.sip.proxy;
+package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dsb.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.Trace;
 import gov.nist.javax.sip.header.SIPHeaderList;
@@ -41,8 +40,6 @@ public final class Location implements Cloneable, Comparable {
   protected int hashCode = -1;
 
   protected LBInterface lb;
-
-  protected BindingInfo bindingInfo = null;
 
   public static float DEFAULT_QVALUE = (float) 1.0;
 
@@ -92,7 +89,6 @@ public final class Location implements Cloneable, Comparable {
     location.setNetwork(network);
     location.setDefaultNetwork(defaultNetwork);
     location.setConnectionID(connectionID);
-    location.setBindingInfo(bindingInfo);
     location.setRemoveExistingRoutes(removeExistingRoutes);
     location.setRemoveExistingRoutesOnRedirect(removeExistingRoutesOnRedirect);
     location.setCopiedURIHeadersToRequest(copiedURIHeadersToRequest);
@@ -292,14 +288,6 @@ public final class Location implements Cloneable, Comparable {
 
   public void setConnectionID(String connectionID) {
     this.connectionID = connectionID;
-  }
-
-  public BindingInfo getBindingInfo() {
-    return bindingInfo;
-  }
-
-  public void setBindingInfo(BindingInfo bindingInfo) {
-    this.bindingInfo = bindingInfo;
   }
 
   public void setRemoveExistingRoutes(boolean flag) {

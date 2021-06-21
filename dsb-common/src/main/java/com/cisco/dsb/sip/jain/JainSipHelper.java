@@ -68,6 +68,10 @@ public class JainSipHelper {
     return messageFactory;
   }
 
+  public static SipFactory getSipFactory() {
+    return sipFactory;
+  }
+
   public static String getCallId(Message message) {
     return ((CallIdHeader) message.getHeader(CallIdHeader.NAME)).getCallId();
   }

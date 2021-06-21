@@ -8,13 +8,21 @@ import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DhruvaNetwork implements Cloneable {
 
   private static DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
-  /** No network set. */
-  public static final byte NONE = -1;
+  public static final String NONE = "none";
+
+  SIPListenPoint sipListenPoint;
+
+  public DhruvaNetwork(SIPListenPoint sipListenPoint) {
+    this.sipListenPoint = sipListenPoint;
+  }
+
+  private static ConcurrentHashMap<String, DhruvaNetwork> networkMap = new ConcurrentHashMap<>();
 
   public static void setDhruvaConfigProperties(
       DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
@@ -54,17 +62,33 @@ public class DhruvaNetwork implements Cloneable {
   }
 
   public static Optional<Transport> getTransport(String networkName) {
-    if (dhruvaSIPConfigProperties == null) return Optional.empty();
-    return dhruvaSIPConfigProperties.getListeningPoints().stream()
-        .filter((listenPoint) -> listenPoint.getName().equalsIgnoreCase(networkName))
-        .map(SIPListenPoint::getTransport)
-        .findFirst();
+    Optional<DhruvaNetwork> network = DhruvaNetwork.getNetwork(networkName);
+    return network.map(dhruvaNetwork -> dhruvaNetwork.getListenPoint().getTransport());
+  }
+
+  public Transport getTransport() {
+    return this.sipListenPoint.getTransport();
   }
 
   public static Optional<TLSAuthenticationType> getTlsTrustType(String networkName) {
-    return dhruvaSIPConfigProperties.getListeningPoints().stream()
-        .filter((listenPoint) -> listenPoint.getName().equalsIgnoreCase(networkName))
-        .map(SIPListenPoint::getTlsAuthType)
-        .findFirst();
+    Optional<DhruvaNetwork> network = DhruvaNetwork.getNetwork(networkName);
+    return network.map(dhruvaNetwork -> dhruvaNetwork.getListenPoint().getTlsAuthType());
+  }
+
+  public SIPListenPoint getListenPoint() {
+    return this.sipListenPoint;
+  }
+
+  public static Optional<DhruvaNetwork> getNetwork(String name) {
+    if (networkMap.containsKey(name)) return Optional.of(networkMap.get(name));
+    else return Optional.empty();
+  }
+
+  public static DhruvaNetwork createNetwork(String name, SIPListenPoint sipListenPoint) {
+    return networkMap.computeIfAbsent(name, (network) -> new DhruvaNetwork(sipListenPoint));
+  }
+
+  public String getName() {
+    return this.sipListenPoint.getName();
   }
 }
