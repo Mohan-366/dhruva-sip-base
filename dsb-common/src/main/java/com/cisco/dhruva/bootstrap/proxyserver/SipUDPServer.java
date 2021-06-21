@@ -39,7 +39,7 @@ public class SipUDPServer implements Server {
       InetAddress address,
       int port,
       SipListener handler,
-      CompletableFuture serverStartFuture) {
+      CompletableFuture<SipStack> serverStartFuture) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
     try {

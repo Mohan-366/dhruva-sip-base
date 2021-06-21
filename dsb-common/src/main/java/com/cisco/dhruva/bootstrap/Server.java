@@ -5,6 +5,7 @@ import com.cisco.dsb.transport.Transport;
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.SipListener;
+import javax.sip.SipStack;
 
 public interface Server {
   public void startListening(
@@ -13,5 +14,5 @@ public interface Server {
       InetAddress address,
       int port,
       SipListener handler,
-      CompletableFuture serverStartFuture);
+      CompletableFuture<SipStack> serverStartFuture);
 }

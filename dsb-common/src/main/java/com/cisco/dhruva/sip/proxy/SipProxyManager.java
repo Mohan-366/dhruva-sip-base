@@ -6,12 +6,19 @@ import com.cisco.dsb.common.messaging.DSIPRequestMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.sip.ServerTransaction;
+import javax.sip.TransactionAlreadyExistsException;
+import javax.sip.TransactionUnavailableException;
+
 @Service
 public class SipProxyManager {
 
   @Autowired ProxyControllerFactory proxyControllerFactory;
 
-  public void request(DSIPRequestMessage request) {
+  public void request(DSIPRequestMessage request) throws TransactionAlreadyExistsException, TransactionUnavailableException {
+    ServerTransaction serverTransaction = (ServerTransaction)request.getTransaction();
+    if(serverTransaction == null)
+      serverTransaction = request.getProvider().getNewServerTransaction(request.getMessage());
     ProxyController controller =
         proxyControllerFactory
             .proxyController()
