@@ -1,5 +1,6 @@
 package com.cisco.dsb.sip.jain;
 
+import com.cisco.dsb.util.log.DhruvaStackLogger;
 import com.google.common.base.Preconditions;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -180,11 +181,11 @@ public class JainStackInitializer {
    * @param
    * @return
    */
-  public static Properties createProxyStackProperties() {
+  public static Properties createProxyStackProperties(String stackName) {
 
     Properties properties = new Properties();
     properties.setProperty("gov.nist.javax.sip.LOG_MESSAGE_CONTENT", "true");
-    properties.setProperty("gov.nist.javax.sip.STACK_LOGGER", JainStackLogger.class.getName());
+    properties.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
 
     // For Externally listening points, we need to log the entire SIP message content.
     // L2SipServerLogger will log the entire content by default.
@@ -207,6 +208,7 @@ public class JainStackInitializer {
 
     // Disable dialog support for proxy
     properties.setProperty("javax.sip.AUTOMATIC_DIALOG_SUPPORT", "off");
+    properties.setProperty("javax.sip.STACK_NAME", stackName);
 
     return properties;
   }

@@ -12,18 +12,10 @@ import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import com.cisco.wx2.client.AuthorizationProvider;
-import com.cisco.wx2.client.commonidentity.BearerAuthorizationProvider;
-import com.cisco.wx2.client.commonidentity.CommonIdentityClientFactory;
-import com.cisco.wx2.client.commonidentity.CommonIdentityScimClientFactory;
-import com.cisco.wx2.diagnostics.client.DiagnosticsClient;
 import com.cisco.wx2.dto.IdentityMachineAccount;
-import com.cisco.wx2.meetingregistry.client.MeetingRegistryClient;
-import com.cisco.wx2.meetingregistry.client.MeetingRegistryClientFactory;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
-import com.cisco.wx2.util.OrgId;
-import com.cisco.wx2.util.Utilities;
+import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.ciscospark.server.Wx2ConfigAdapter;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
@@ -75,6 +67,15 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     } catch (RuntimeException e) {
       log.warn("Unable to clean up machine account", e);
     }
+  }
+
+  @Bean
+  public StripedExecutorService executor() {
+    // TODO: Can we switch to monitoredTrackingPreservedExecutorProvider and remove some MDC
+    // copying?
+    // Do not manage lifecycle here, ProxyEventSink does it
+    return (StripedExecutorService)
+        monitoredExecutorProvider().newStripedExecutorService("call-event-executor");
   }
 
   @Bean
@@ -174,31 +175,31 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   //    return new AsyncDiagnosticsClient();
   //  }
 
-  @Bean
-  public CommonIdentityClientFactory commonIdentityClientFactory() {
-    return CommonIdentityClientFactory.builder(props())
-        .baseUrl(props().getOAuthEndpointUrl())
-        .maxConnections(props().getHttpMaxConnections())
-        .maxConnectionsPerRoute(props().getHttpMaxConnectionsPerRoute())
-        .federationIgnored(true)
-        .build();
-  }
+  //  @Bean
+  //  public CommonIdentityClientFactory commonIdentityClientFactory() {
+  //    return CommonIdentityClientFactory.builder(props())
+  //        .baseUrl(props().getOAuthEndpointUrl())
+  //        .maxConnections(props().getHttpMaxConnections())
+  //        .maxConnectionsPerRoute(props().getHttpMaxConnectionsPerRoute())
+  //        .federationIgnored(true)
+  //        .build();
+  //  }
 
-  @Bean
-  public AuthorizationProvider diagnosticsServiceAuthorizationProvider() {
-
-    BearerAuthorizationProvider.Builder builder =
-        BearerAuthorizationProvider.builder(props().getAuthorizationConfig("dhruva"));
-    return builder
-        .commonIdentityClientFactory(commonIdentityClientFactory())
-        .orgId(OrgId.fromString(props().getDhruvaOrgId()))
-        .userId(props().getDhruvaMachineAccountUser())
-        .password(props().getDhruvaMachineAccountPassword())
-        .scope(DiagnosticsClient.CI_SCIM_CALL_DIAGNOSTICS_SCOPE)
-        .clientId(props().getDhruvaClientId())
-        .clientSecret(props().getDhruvaClientSecret())
-        .build();
-  }
+  //  @Bean
+  //  public AuthorizationProvider diagnosticsServiceAuthorizationProvider() {
+  //
+  //    BearerAuthorizationProvider.Builder builder =
+  //        BearerAuthorizationProvider.builder(props().getAuthorizationConfig("dhruva"));
+  //    return builder
+  //        .commonIdentityClientFactory(commonIdentityClientFactory())
+  //        .orgId(OrgId.fromString(props().getDhruvaOrgId()))
+  //        .userId(props().getDhruvaMachineAccountUser())
+  //        .password(props().getDhruvaMachineAccountPassword())
+  //        .scope(DiagnosticsClient.CI_SCIM_CALL_DIAGNOSTICS_SCOPE)
+  //        .clientId(props().getDhruvaClientId())
+  //        .clientSecret(props().getDhruvaClientSecret())
+  //        .build();
+  //  }
 
   //  @Bean
   //  public DiagnosticsClientFactory diagnosticsClientFactory() {
@@ -209,70 +210,71 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   //        .build();
   //  }
 
-  @Bean
-  public BearerAuthorizationProvider scimBearerAuthorizationProvider() {
+  //  @Bean
+  //  public BearerAuthorizationProvider scimBearerAuthorizationProvider() {
+  //
+  //    BearerAuthorizationProvider.Builder builder =
+  //        BearerAuthorizationProvider.builder(props().getCommonIdentityAuthorizationConfig());
+  //    CommonIdentityClientFactory clientFactory =
+  //        CommonIdentityClientFactory.builder(props())
+  //            .baseUrl(props().getOAuthEndpointUrl())
+  //            .maxConnections(20)
+  //            .maxConnectionsPerRoute(20)
+  //            .disableSSLChecks(true)
+  //            .federationIgnored(true)
+  //            .build();
+  //    return builder.commonIdentityClientFactory(clientFactory).build();
+  //  }
 
-    BearerAuthorizationProvider.Builder builder =
-        BearerAuthorizationProvider.builder(props().getCommonIdentityAuthorizationConfig());
-    CommonIdentityClientFactory clientFactory =
-        CommonIdentityClientFactory.builder(props())
-            .baseUrl(props().getOAuthEndpointUrl())
-            .maxConnections(20)
-            .maxConnectionsPerRoute(20)
-            .disableSSLChecks(true)
-            .federationIgnored(true)
-            .build();
-    return builder.commonIdentityClientFactory(clientFactory).build();
-  }
+  //  @Bean
+  //  public CommonIdentityScimClientFactory scimClientFactory() {
+  //    return CommonIdentityScimClientFactory.builder(props())
+  //        .baseUrl(props().getScimEndpointUrl())
+  //        .authorizationProvider(scimBearerAuthorizationProvider())
+  //        .maxConnections(20)
+  //        .maxConnectionsPerRoute(20)
+  //        .disableSSLChecks(true)
+  //        .federationIgnored(true)
+  //        .build();
+  //  }
 
-  @Bean
-  public CommonIdentityScimClientFactory scimClientFactory() {
-    return CommonIdentityScimClientFactory.builder(props())
-        .baseUrl(props().getScimEndpointUrl())
-        .authorizationProvider(scimBearerAuthorizationProvider())
-        .maxConnections(20)
-        .maxConnectionsPerRoute(20)
-        .disableSSLChecks(true)
-        .federationIgnored(true)
-        .build();
-  }
+  //  public MeetingRegistryClientFactory meetingRegistryClientFactory() {
+  //    return MeetingRegistryClientFactory.builder(configProperties())
+  //        .authorizationProvider(meetingRegistryAuthorizationProvider())
+  //        .baseUrl(configProperties().getMeetingRegistryServicePublicUrl())
+  //        .timeoutPolicy(timeoutPolicy())
+  //        .build();
+  //  }
 
-  public MeetingRegistryClientFactory meetingRegistryClientFactory() {
-    return MeetingRegistryClientFactory.builder(configProperties())
-        .authorizationProvider(meetingRegistryAuthorizationProvider())
-        .baseUrl(configProperties().getMeetingRegistryServicePublicUrl())
-        .timeoutPolicy(timeoutPolicy())
-        .build();
-  }
-
-  public AuthorizationProvider meetingRegistryAuthorizationProvider() {
-    return createDhruvaClientAuthorizationProvider(MeetingRegistryClient.OAUTH_SCOPE_READ);
-  }
-
-  private AuthorizationProvider createDhruvaClientAuthorizationProvider(String... scopes) {
-    AuthorizationProvider authProvider =
-        BearerAuthorizationProvider.builder()
-            .commonIdentityClientFactory(commonIdentityClientFactory())
-            .orgId(OrgId.fromString(props().getDhruvaOrgId()))
-            .userId(props().getDhruvaMachineAccountUser())
-            .password(props().getDhruvaMachineAccountPassword())
-            .scope(Utilities.setAsString(scopes))
-            .clientId(props().getDhruvaClientId())
-            .clientSecret(props().getDhruvaClientSecret())
-            .build();
-
-    try {
-      String auth = authProvider.getAuthorization();
-      if (auth != null && auth.length() < 512) {
-        log.warn(
-            "Check that machine account is using a self-contained token, length = {}, scopes = {}",
-            auth.length(),
-            scopes);
-      }
-    } catch (Exception ignore) {
-      log.info("Unable to get machine account authorization, scopes = {}", (Object[]) scopes);
-    }
-
-    return authProvider;
-  }
+  //  public AuthorizationProvider meetingRegistryAuthorizationProvider() {
+  //    return createDhruvaClientAuthorizationProvider(MeetingRegistryClient.OAUTH_SCOPE_READ);
+  //  }
+  //
+  //  private AuthorizationProvider createDhruvaClientAuthorizationProvider(String... scopes) {
+  //    AuthorizationProvider authProvider =
+  //        BearerAuthorizationProvider.builder()
+  //            .commonIdentityClientFactory(commonIdentityClientFactory())
+  //            .orgId(OrgId.fromString(props().getDhruvaOrgId()))
+  //            .userId(props().getDhruvaMachineAccountUser())
+  //            .password(props().getDhruvaMachineAccountPassword())
+  //            .scope(Utilities.setAsString(scopes))
+  //            .clientId(props().getDhruvaClientId())
+  //            .clientSecret(props().getDhruvaClientSecret())
+  //            .build();
+  //
+  //    try {
+  //      String auth = authProvider.getAuthorization();
+  //      if (auth != null && auth.length() < 512) {
+  //        log.warn(
+  //            "Check that machine account is using a self-contained token, length = {}, scopes =
+  // {}",
+  //            auth.length(),
+  //            scopes);
+  //      }
+  //    } catch (Exception ignore) {
+  //      log.info("Unable to get machine account authorization, scopes = {}", (Object[]) scopes);
+  //    }
+  //
+  //    return authProvider;
+  //  }
 }

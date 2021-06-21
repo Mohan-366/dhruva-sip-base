@@ -52,19 +52,11 @@
         </dependency>
         <dependency>
             <groupId>com.cisco.wx2</groupId>
-            <artifactId>core-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.cisco.wx2</groupId>
             <artifactId>core-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>com.cisco.wx2</groupId>
             <artifactId>cloud-apps-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.cisco.wx2</groupId>
-            <artifactId>diagnostics-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.ciscospark</groupId>

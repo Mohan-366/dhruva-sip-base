@@ -27,7 +27,6 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
       SIPMessage message,
       ServerTransaction transaction) {
     _provider = provider;
-    assert (transaction != null);
     _transaction = transaction;
     this.sipMessage = message;
     this.context = executionContext;
@@ -39,7 +38,6 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
       SIPMessage message,
       ClientTransaction transaction) {
     _provider = provider;
-    assert (transaction != null);
     _transaction = transaction;
     this.sipMessage = message;
     this.context = executionContext;

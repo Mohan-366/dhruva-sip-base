@@ -7,10 +7,13 @@ import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.jain.JainStackInitializer;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
+import org.apache.commons.lang3.RandomStringUtils;
+
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
+import javax.sip.SipStack;
 
 public class SipUDPServer implements Server {
   private SipListener sipListener;
@@ -40,15 +43,15 @@ public class SipUDPServer implements Server {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
     try {
-      JainStackInitializer.getSimpleStack(
+      SipStack sipStack = JainStackInitializer.getSimpleStack(
           sipFactory,
-          "gov.nist",
-          JainStackInitializer.createProxyStackProperties(),
-          address.toString(),
+          sipFactory.getPathName(),
+          JainStackInitializer.createProxyStackProperties(RandomStringUtils.randomAlphanumeric(5)),
+          address.getHostAddress(),
           port,
           transportType.toString(),
           handler);
-      serverStartFuture.complete(null);
+      serverStartFuture.complete(sipStack);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e.getCause());
     }

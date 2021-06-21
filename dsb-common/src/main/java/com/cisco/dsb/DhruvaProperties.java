@@ -2,7 +2,6 @@ package com.cisco.dsb;
 
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import com.cisco.wx2.diagnostics.client.DiagnosticsClientFactory;
 import com.cisco.wx2.dto.BuildInfo;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.google.common.base.Strings;
@@ -17,8 +16,8 @@ import org.springframework.core.env.Environment;
  * http://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
  */
 // @ConfigurationProperties(prefix = "dhruva")
-public class DhruvaProperties extends ConfigProperties
-    implements DiagnosticsClientFactory.DiagnosticsClientFactoryProperties {
+public class DhruvaProperties extends ConfigProperties {
+  // implements DiagnosticsClientFactory.DiagnosticsClientFactoryProperties {
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaProperties.class);
 

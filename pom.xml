@@ -57,6 +57,26 @@
     </distributionManagement>
     <dependencies>
         <dependency>
+            <groupId>com.ciscospark</groupId>
+            <artifactId>cisco-spark-starter-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.ciscospark</groupId>
+                    <artifactId>cisco-spark-data-cassandra-migration</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.ciscospark</groupId>
+            <artifactId>cisco-spark-starter-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.ciscospark</groupId>
+                    <artifactId>cisco-spark-starter-cassandra</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>javax.sip</groupId>
             <artifactId>jain-sip-ri</artifactId>
             <version>1.3.0-91</version>

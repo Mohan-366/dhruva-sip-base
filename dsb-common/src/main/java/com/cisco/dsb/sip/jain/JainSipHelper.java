@@ -43,6 +43,7 @@ public class JainSipHelper {
 
   static {
     sipFactory = SipFactory.getInstance();
+    sipFactory.setPathName("gov.nist");
     // apps should set this based on the stack impl they want -> sipFactory.setPathName("gov.nist");
     // RemotePartyIDParser.init();
     try {
