@@ -33,7 +33,7 @@ public class DhruvaServerImpl implements DhruvaServer {
     if (transportType == null || address == null || handler == null) {
       serverStartFuture.completeExceptionally(
           new NullPointerException(
-              "TransportType or address or messageForwarder passed to NettyTransportLayer.startListening is null"));
+              "TransportType or address or messageForwarder passed to Dhruva server startListening is null"));
       return serverStartFuture;
     }
     try {

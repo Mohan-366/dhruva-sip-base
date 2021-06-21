@@ -39,13 +39,13 @@ public class ProxyService {
 
   @Autowired ControllerConfig controllerConfig;
 
-  private ProxyPacketProcessor proxyPacketProcessor;
+  @Autowired private ProxyPacketProcessor proxyPacketProcessor;
 
   @PostConstruct
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = dhruvaSIPConfigProperties.getListeningPoints();
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
-    proxyPacketProcessor = new ProxyPacketProcessor();
+    // proxyPacketProcessor = new ProxyPacketProcessor();
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
 
       logger.info("Trying to start proxy server on {} ", sipListenPoint);

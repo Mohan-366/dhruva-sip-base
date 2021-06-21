@@ -17,7 +17,7 @@ import com.cisco.wx2.client.commonidentity.BearerAuthorizationProvider;
 import com.cisco.wx2.client.commonidentity.CommonIdentityClientFactory;
 import com.cisco.wx2.client.commonidentity.CommonIdentityScimClientFactory;
 import com.cisco.wx2.diagnostics.client.DiagnosticsClient;
-import com.cisco.wx2.diagnostics.client.DiagnosticsClientFactory;
+import com.cisco.wx2.dto.IdentityMachineAccount;
 import com.cisco.wx2.meetingregistry.client.MeetingRegistryClient;
 import com.cisco.wx2.meetingregistry.client.MeetingRegistryClientFactory;
 import com.cisco.wx2.server.config.ConfigProperties;
@@ -26,13 +26,17 @@ import com.cisco.wx2.util.OrgId;
 import com.cisco.wx2.util.Utilities;
 import com.ciscospark.server.Wx2ConfigAdapter;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @Configuration
 @ConditionalOnWebApplication
+@EnableAsync
+@DependsOn("dhruvaSIPConfigProperties")
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaConfig.class);
@@ -56,6 +60,21 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   @Bean
   public MetricClient getMetricClient() {
     return new InfluxClient();
+  }
+
+  private IdentityMachineAccount machineAccount = null;
+
+  @PreDestroy
+  public void destroy() {
+    try {
+      if (machineAccount != null) {
+        commonIdentityScimClientFactory()
+            .newClient()
+            .deleteMachineAccount(machineAccount.getOrgId(), machineAccount.getId());
+      }
+    } catch (RuntimeException e) {
+      log.warn("Unable to clean up machine account", e);
+    }
   }
 
   @Bean
@@ -115,6 +134,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .build();
   }
 
+  // TODO DSB
   @Bean
   @Profile("disabled")
   @Override
@@ -180,14 +200,14 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .build();
   }
 
-  @Bean
-  public DiagnosticsClientFactory diagnosticsClientFactory() {
-    return DiagnosticsClientFactory.builder(props())
-        .baseUrl(props().getDiagnosticsUrl())
-        .userAgent(props().getUserAgent())
-        .authorizationProvider(diagnosticsServiceAuthorizationProvider())
-        .build();
-  }
+  //  @Bean
+  //  public DiagnosticsClientFactory diagnosticsClientFactory() {
+  //    return DiagnosticsClientFactory.builder(props())
+  //        .baseUrl(props().getDiagnosticsUrl())
+  //        .userAgent(props().getUserAgent())
+  //        .authorizationProvider(diagnosticsServiceAuthorizationProvider())
+  //        .build();
+  //  }
 
   @Bean
   public BearerAuthorizationProvider scimBearerAuthorizationProvider() {

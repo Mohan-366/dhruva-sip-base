@@ -44,10 +44,6 @@ public class DhruvaProperties extends ConfigProperties
     this.env = env;
   }
 
-  public String getL2SIPClusterAddress() {
-    return env.getProperty("l2sipClusterAddress", String.class, "l2sip.l2sip");
-  }
-
   public static String createUserAgentString(String uaType, Environment env) {
     String userAgent = uaType;
 
