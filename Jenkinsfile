@@ -52,8 +52,8 @@ node() {
                 containers.cisco.com/ayogalin/maven-builder:one \\
                 sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
-                sh 'java -jar stub-app/target/stub-app-1.0-SNAPSHOT.jar'
-                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'stub-app/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+                sh 'java -jar stub-app/target/dsb-common-1.0-SNAPSHOT.jar'
+                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'dsb-common/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
             }
         }
         stage('postBuild') {

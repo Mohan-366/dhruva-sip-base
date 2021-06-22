@@ -28,8 +28,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ControllerConfig {
 
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
+
+  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
 
