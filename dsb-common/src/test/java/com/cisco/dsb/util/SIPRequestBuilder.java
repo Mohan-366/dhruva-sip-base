@@ -1,12 +1,8 @@
 package com.cisco.dsb.util;
 
-import com.cisco.dsb.sip.stack.dto.BindingInfo;
-import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.header.SIPHeaderList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -544,22 +540,6 @@ public class SIPRequestBuilder {
         + sdp;
   }
 
-  public void setBindingInfo(SIPRequest request, Transport transport) throws UnknownHostException {
-    BindingInfo bindingInfo;
-    InetAddress localAddr;
-    InetAddress remoteAddr;
-    byte[] localIpAddr = new byte[] {127, 0, 0, 1};
-    byte[] remoteIpAddr = new byte[] {127, 0, 0, 1};
-    localAddr = InetAddress.getByAddress(localIpAddr);
-    remoteAddr = InetAddress.getByAddress(remoteIpAddr);
-    bindingInfo = new BindingInfo();
-    bindingInfo.setRemoteAddress(remoteAddr);
-    bindingInfo.setRemotePort(5060);
-    bindingInfo.setLocalAddress(localAddr);
-    bindingInfo.setLocalPort(5060);
-    bindingInfo.setTransport(transport);
-  }
-
   public static String randomAlphaNumeric(int count) {
     StringBuilder builder = new StringBuilder();
     final String ALPHA_NUMERIC_STRING =
@@ -569,27 +549,6 @@ public class SIPRequestBuilder {
       builder.append(character);
     }
     return builder.toString();
-  }
-
-  public SIPRequest getHybridCascadeRequest() throws Exception {
-    String sipMessage =
-        "INVITE sip:73sVgblHnSQtmLz08VXs8dag@192.168.65.141:5060;call-type=hybrid-cascade;x-cisco-svc-type=spark-mm SIP/2.0\n"
-            + "Via: SIP/2.0/TCP 192.168.65.141:7002;branch=z9hG4bK-4955-1-0\n"
-            + "Max-Forwards: 69\n"
-            + "To: sut <sip:73sVgblHnSQtmLz08VXs8dag@192.168.65.141:5060>\n"
-            + "From: 123 <sip:123@192.168.65.141:7002>;tag=4955SIPpTag001\n"
-            + "Contact: sip:123@192.168.65.141:7002;ifocus\n"
-            + "Call-ID: "
-            + callId
-            + "\n"
-            + "CSeq: 1 INVITE\n"
-            + "Content-Length: 0\n"
-            + "Subject: Performance Test\n"
-            + "Allow: UPDATE\n"
-            + "Supported: timer,resource-priority,replaces\n"
-            + "Content-Type: application/sdp\n"
-            + "Session-ID: 6d4da3adee523660ab1654a7ba94cf83;remote=00000000000000000000000000000000\n";
-    return (SIPRequest) messageFactory.createRequest(sipMessage);
   }
 
   public SIPRequest getReInviteRequest(String optionalRequestURIValue) throws Exception {

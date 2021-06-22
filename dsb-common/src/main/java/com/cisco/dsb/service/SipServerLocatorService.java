@@ -158,7 +158,14 @@ public class SipServerLocatorService {
     try {
       List<Hop> networkHops = sipServersResponse.getHops();
       return networkHops.stream()
-          .map(h -> new BindingInfo(lAddr, lPort, host, port, transport))
+          .map(
+              h ->
+                  new BindingInfo.BindingInfoBuilder()
+                      .setLocalAddress(lAddr)
+                      .setLocalPort(5060)
+                      .setRemoteAddressStr(host)
+                      .setTransport(transport)
+                      .build())
           .collect(Collectors.toList());
     } catch (Exception e) {
       logger.error("response ", e);

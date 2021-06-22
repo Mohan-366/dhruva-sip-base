@@ -9,7 +9,6 @@ import com.cisco.dsb.sip.dto.*;
 import com.cisco.dsb.sip.enums.DNSRecordSource;
 import com.cisco.dsb.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.sip.stack.SipTransportType;
-import com.cisco.dsb.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.sip.stack.util.IPValidator;
 import com.cisco.dsb.transport.Transport;
@@ -657,9 +656,7 @@ public class SipServerLocator implements SipResolver {
    *     tried otherwise returns <code>false</code>
    */
   public boolean shouldSearch(String hostName, int port, Transport transport) {
-    return !(IPValidator.hostIsIPAddr(hostName)
-        && (port != BindingInfo.REMOTE_PORT_UNSPECIFIED)
-        && (transport != BindingInfo.BINDING_TRANSPORT_UNSPECIFIED));
+    return !(IPValidator.hostIsIPAddr(hostName) && (port != 0) && (transport != Transport.NONE));
   }
 
   @Override

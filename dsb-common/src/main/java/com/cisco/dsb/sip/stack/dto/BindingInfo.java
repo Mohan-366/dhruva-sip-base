@@ -32,9 +32,6 @@ public class BindingInfo implements Cloneable, Serializable {
   /** Indicates that there is both a local address and port. */
   public static final byte LOCAL_ADDR_PORT = 3;
 
-  /** Constant representing an empty binding info object. */
-  public static final BindingInfo EMPTY_INFO = new BindingInfo();
-
   /////////////   instance data
 
   private byte m_localBinding = NO_LOCAL_ADDR_PORT;
@@ -51,242 +48,23 @@ public class BindingInfo implements Cloneable, Serializable {
   private boolean m_PendingClosure;
   private boolean m_Compress;
 
-  private byte m_Network;
+  private String m_Network;
   private String m_strConnectionId;
   private Logger logger = DhruvaLoggerFactory.getLogger(BindingInfo.class);
 
-  /**
-   * Constructs the binding info with the specified remote address, port and transport.
-   *
-   * @param remote_addr remote InetAddress
-   * @param remote_port remote port
-   * @param transport transport
-   * @param pending_closure if set to <code>true</code> the connection is closing
-   */
-  public BindingInfo(
-      InetAddress remote_addr, int remote_port, Transport transport, boolean pending_closure) {
-    m_IsTrying = false;
-    m_LocalAddress = null;
-    m_LocalPort = LOCAL_PORT_UNSPECIFIED;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = pending_closure;
-    m_Compress = false;
-    m_RemoteAddress = remote_addr;
-    m_RemoteAddressStr = null;
-    m_RemotePort = remote_port;
-    m_Transport = transport;
-    m_Network = DhruvaNetwork.NONE;
+  private BindingInfo(BindingInfoBuilder bindingInfoBuilder) {
+    this.m_IsTrying = bindingInfoBuilder.m_IsTrying;
+    this.m_LocalAddress = bindingInfoBuilder.m_LocalAddress;
+    this.m_LocalPort = bindingInfoBuilder.m_LocalPort;
+    this.m_LocalEphemeralPort = bindingInfoBuilder.m_LocalEphemeralPort;
+    this.m_PendingClosure = bindingInfoBuilder.m_PendingClosure;
+    this.m_Compress = bindingInfoBuilder.m_Compress;
+    this.m_RemoteAddress = bindingInfoBuilder.m_RemoteAddress;
+    this.m_RemotePort = bindingInfoBuilder.m_RemotePort;
+    this.m_Transport = bindingInfoBuilder.m_Transport;
+    this.m_Network = bindingInfoBuilder.m_Network;
+    this.m_RemoteAddressStr = bindingInfoBuilder.m_RemoteAddressStr;
   }
-
-  /**
-   * Constructs the binding info and it needs the binding info to be set by using the relevant
-   * setter methods.
-   */
-  public BindingInfo() {
-    m_IsTrying = false;
-    m_LocalAddress = null;
-    m_LocalPort = LOCAL_PORT_UNSPECIFIED;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = false;
-    m_Compress = false;
-    m_RemoteAddress = null;
-    m_RemotePort = REMOTE_PORT_UNSPECIFIED;
-
-    // m_Transport      = DsSipTransportType.UDP;
-    m_Transport = Transport.NONE;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * Constructs the binding info with the specified local and remote address information.
-   *
-   * @param local_addr the local address
-   * @param local_port the local port number
-   * @param remote_addr the remote address
-   * @param remote_port the remote port number
-   * @param transport the transport protocol
-   */
-  public BindingInfo(
-      InetAddress local_addr,
-      int local_port,
-      InetAddress remote_addr,
-      int remote_port,
-      Transport transport) {
-    this(local_addr, local_port, remote_addr, remote_port, transport, false, false);
-  }
-
-  /**
-   * Constructs the binding info with the specified local and remote address information.
-   *
-   * @param remote_addr remote InetAddress
-   * @param remote_port remote port
-   * @param local_addr local InetAddress
-   * @param local_port local port
-   * @param transport transport
-   * @param pending_closure if set to <code>true</code> the connection is closing
-   */
-  public BindingInfo(
-      InetAddress local_addr,
-      int local_port,
-      InetAddress remote_addr,
-      int remote_port,
-      Transport transport,
-      boolean pending_closure) {
-    m_IsTrying = false;
-    m_LocalAddress = local_addr;
-    m_LocalPort = local_port;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = pending_closure;
-    m_RemoteAddress = remote_addr;
-    m_RemotePort = remote_port;
-    m_Transport = transport;
-    m_Compress = false;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * Constructs the binding info with the specified remote address information.
-   *
-   * @param remote_addr remote InetAddress
-   * @param remote_port remote port
-   * @param transport the transport protocol
-   */
-  public BindingInfo(InetAddress remote_addr, int remote_port, Transport transport) {
-    this(remote_addr, remote_port, transport, false, false);
-  }
-
-  /**
-   * Constructs the binding info with the specified address information.
-   *
-   * @param addr the remote address
-   * @param port the remote port number
-   * @param transport the transport protocol
-   */
-  public BindingInfo(String addr, int port, Transport transport) {
-    m_IsTrying = false;
-    m_LocalAddress = null;
-    m_LocalPort = LOCAL_PORT_UNSPECIFIED;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = false;
-    m_Compress = false;
-    m_RemoteAddressStr = addr;
-    m_RemoteAddress = null;
-    m_RemotePort = port;
-    m_Transport = transport;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * Constructs the binding info with the specified address information.
-   *
-   * @param lAddr the local address
-   * @param lPort the local port number
-   * @param addr the remote address
-   * @param port the remote port number
-   * @param transport the transport protocol
-   */
-  public BindingInfo(InetAddress lAddr, int lPort, String addr, int port, Transport transport) {
-    m_IsTrying = false;
-    m_LocalAddress = lAddr;
-    m_LocalPort = lPort;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = false;
-    m_Compress = false;
-    m_RemoteAddressStr = addr;
-    m_RemoteAddress = null;
-    m_RemotePort = port;
-    m_Transport = transport;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * Constructs the binding info with the specified remote address, port and transport.
-   *
-   * @param remote_addr remote InetAddress
-   * @param remote_port remote port
-   * @param transport transport
-   * @param pending_closure if set to <code>true</code> the connection is closing
-   * @param compress if <code>true</code>, and the transport layer is capable, the message will be
-   *     compressed on transmission.
-   */
-  public BindingInfo(
-      InetAddress remote_addr,
-      int remote_port,
-      Transport transport,
-      boolean pending_closure,
-      boolean compress) {
-    m_IsTrying = false;
-    m_LocalAddress = null;
-    m_LocalPort = LOCAL_PORT_UNSPECIFIED;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = pending_closure;
-    m_Compress = compress;
-    m_RemoteAddress = remote_addr;
-    m_RemoteAddressStr = null;
-    m_RemotePort = remote_port;
-    m_Transport = transport;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * Constructs the binding info with the specified local and remote address information.
-   *
-   * @param remote_addr remote InetAddress
-   * @param remote_port remote port
-   * @param local_addr local InetAddress
-   * @param local_port local port
-   * @param transport transport
-   * @param pending_closure if set to <code>true</code> the connection is closing
-   * @param compress if <code>true</code>, and the transport layer is capable, the message will be
-   *     compressed on transmission.
-   */
-  public BindingInfo(
-      InetAddress local_addr,
-      int local_port,
-      InetAddress remote_addr,
-      int remote_port,
-      Transport transport,
-      boolean pending_closure,
-      boolean compress) {
-    m_IsTrying = false;
-    m_LocalAddress = local_addr;
-    m_LocalPort = local_port;
-    m_LocalEphemeralPort = m_LocalPort;
-    m_PendingClosure = pending_closure;
-    m_Compress = compress;
-    m_RemoteAddress = remote_addr;
-    m_RemotePort = remote_port;
-    m_Transport = transport;
-    m_Network = DhruvaNetwork.NONE;
-  }
-
-  /**
-   * TODO:DHRUVA , commenting for now have to take care if needed.
-   *
-   * <p>/** Returns the string describing the information contained in this binding info.
-   *
-   * @return the string representation of this class.
-   *     <p>public String toString() { String local_info = ""; String remote_info = ""; String
-   *     transport; String connId = ", Connection ID = ";
-   *     <p>switch (m_Transport) {
-   *     <p>case DsSipTransportType.UDP: transport = "UDP";
-   *     <p>break;
-   *     <p>case DsSipTransportType.TCP: transport = "TCP";
-   *     <p>break;
-   *     <p>case DsSipTransportType.MULTICAST: transport = "MULTICAST";
-   *     <p>break;
-   *     <p>case DsSipTransportType.TLS: transport = "TLS";
-   *     <p>break; default: transport = "UNKNOWN PROTOCOL"; }
-   *     <p>remote_info = " remote[[ port = " + m_RemotePort + " (" + ( getRemoteAddressStr() !=
-   *     null ? m_RemoteAddressStr : "?") + ") ]]";
-   *     <p>if (m_LocalAddress != null) { local_info = " local[[ port = " + m_LocalPort + " (" +
-   *     ((DsString.getHostAddress(m_LocalAddress) != null) ?
-   *     DsString.getHostAddress(m_LocalAddress) : "?") + ")]]"; } else { local_info = " local[[
-   *     port = " + m_LocalPort + "(?)]]"; }
-   *     <p>String nw = getNetwork() == null ? "null" : ("" + getNetwork().isTSIPEnabled()); return
-   *     transport + local_info + remote_info + connId + m_strConnectionId + ", network = " +
-   *     DsNetwork.getNetwork(m_Network) + ", TSIP = " + nw ; }
-   */
 
   /**
    * Returns true if Pending Closure, false otherwise.
@@ -551,8 +329,8 @@ public class BindingInfo implements Cloneable, Serializable {
     /*
      * !XOR means they are they are either both null or both !null
      */
-    boolean remote_null_agree = !((m_RemoteAddress == null) ^ (other.m_RemoteAddress == null));
-    boolean local_null_agree = !((m_LocalAddress == null) ^ (other.m_LocalAddress == null));
+    boolean remote_null_agree = (m_RemoteAddress == null) == (other.m_RemoteAddress == null);
+    boolean local_null_agree = (m_LocalAddress == null) == (other.m_LocalAddress == null);
 
     if (!(remote_null_agree && local_null_agree)) {
       ret_value = false;
@@ -561,8 +339,8 @@ public class BindingInfo implements Cloneable, Serializable {
       /* if one addr is not null at this point they are both not null */
       ret_value =
           ((m_Transport == other.m_Transport)
-              && (m_LocalAddress != null ? m_LocalAddress.equals(other.m_LocalAddress) : true)
-              && (m_RemoteAddress != null ? m_RemoteAddress.equals(other.m_RemoteAddress) : true)
+              && (m_LocalAddress == null || m_LocalAddress.equals(other.m_LocalAddress))
+              && (m_RemoteAddress == null || m_RemoteAddress.equals(other.m_RemoteAddress))
               && (m_LocalPort == other.m_LocalPort)
               && (m_RemotePort == other.m_RemotePort));
     }
@@ -586,61 +364,6 @@ public class BindingInfo implements Cloneable, Serializable {
    */
   public final void setTrying(boolean trying) {
     m_IsTrying = trying;
-  }
-
-  /**
-   * Updates this binding info as per the specified binding info.
-   *
-   * @param new_info the source binding info
-   */
-  public void update(BindingInfo new_info) {
-    m_IsTrying = new_info.m_IsTrying;
-    m_RemoteAddressStr = new_info.m_RemoteAddressStr;
-    m_RemoteAddress = new_info.m_RemoteAddress;
-    m_RemotePort = new_info.m_RemotePort;
-    m_LocalAddress = new_info.m_LocalAddress;
-    m_LocalPort = new_info.m_LocalPort;
-    m_LocalEphemeralPort = new_info.m_LocalEphemeralPort;
-    m_Transport = new_info.m_Transport;
-    m_PendingClosure = new_info.m_PendingClosure;
-    m_Network = new_info.m_Network;
-
-    //
-    // don't copy the m_Compress flag since here we are copying the info
-    // from the connection onto the message and the connection's
-    // m_Compress flag has no meaning since compression decision is made
-    // on message by message basis
-  }
-
-  /**
-   * Make a shallow copy of new_info to this object.
-   *
-   * @param new_info the source object
-   */
-  protected void clone(BindingInfo new_info) {
-    new_info.m_IsTrying = m_IsTrying;
-    new_info.m_RemoteAddressStr = m_RemoteAddressStr;
-    new_info.m_RemoteAddress = m_RemoteAddress;
-    new_info.m_RemotePort = m_RemotePort;
-    new_info.m_LocalAddress = m_LocalAddress;
-    new_info.m_LocalPort = m_LocalPort;
-    new_info.m_LocalEphemeralPort = m_LocalEphemeralPort;
-    new_info.m_Transport = m_Transport;
-    new_info.m_PendingClosure = m_PendingClosure;
-    new_info.m_Compress = m_Compress;
-    new_info.m_Network = m_Network;
-    new_info.m_strConnectionId = m_strConnectionId;
-  }
-
-  /**
-   * Returns a new copy of this object.
-   *
-   * @return a new copy of this object
-   */
-  public Object clone() {
-    BindingInfo new_info = new BindingInfo();
-    clone(new_info);
-    return new_info;
   }
 
   /**
@@ -715,4 +438,70 @@ public class BindingInfo implements Cloneable, Serializable {
    * !this.getRemoteAddress().equals(socketInfo.getRemoteInetAddress()))) {
    * this.setRemoteAddress(socketInfo.getRemoteInetAddress()); } this.isBindingInfoValid = true; }
    */
+  public static class BindingInfoBuilder {
+
+    private boolean m_IsTrying;
+    private String m_RemoteAddressStr;
+    private InetAddress m_RemoteAddress;
+    private int m_RemotePort;
+    private InetAddress m_LocalAddress;
+    private int m_LocalPort = LOCAL_PORT_UNSPECIFIED;
+    private int m_LocalEphemeralPort = m_LocalPort;
+    private Transport m_Transport = Transport.NONE;
+    private boolean m_PendingClosure;
+    private boolean m_Compress;
+    private String m_Network;
+
+    public BindingInfoBuilder() {
+      this.m_IsTrying = false;
+      this.m_LocalAddress = null;
+      this.m_LocalPort = LOCAL_PORT_UNSPECIFIED;
+      this.m_LocalEphemeralPort = m_LocalPort;
+      this.m_PendingClosure = false;
+      this.m_Compress = false;
+      this.m_RemoteAddress = null;
+      this.m_RemotePort = REMOTE_PORT_UNSPECIFIED;
+      this.m_Transport = Transport.NONE;
+      this.m_Network = DhruvaNetwork.NONE;
+    }
+
+    public BindingInfoBuilder setLocalAddress(InetAddress localAddress) {
+      this.m_LocalAddress = localAddress;
+      return this;
+    }
+
+    public BindingInfoBuilder setRemoteAddress(InetAddress remoteAddress) {
+      this.m_RemoteAddress = remoteAddress;
+      return this;
+    }
+
+    public BindingInfoBuilder setRemoteAddressStr(String remoteAddress) {
+      this.m_RemoteAddressStr = remoteAddress;
+      return this;
+    }
+
+    public BindingInfoBuilder setLocalPort(int localPort) {
+      this.m_LocalPort = localPort;
+      return this;
+    }
+
+    public BindingInfoBuilder setRemotePort(int remotePort) {
+      this.m_RemotePort = remotePort;
+      return this;
+    }
+
+    public BindingInfoBuilder setTransport(Transport transport) {
+      this.m_Transport = transport;
+      return this;
+    }
+
+    public BindingInfoBuilder setNetwork(String network) {
+      this.m_Network = network;
+      return this;
+    }
+
+    public BindingInfo build() {
+      return new BindingInfo(this);
+    }
+  }
 }

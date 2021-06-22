@@ -1,7 +1,7 @@
 package com.cisco.dsb.sip.util;
 
+import com.cisco.dhruva.sip.proxy.ViaListenInterface;
 import com.cisco.dsb.exception.DhruvaException;
-import com.cisco.dsb.sip.proxy.ViaListenInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import java.net.InetAddress;
