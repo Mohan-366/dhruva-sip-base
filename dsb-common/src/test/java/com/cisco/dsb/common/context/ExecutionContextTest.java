@@ -17,11 +17,11 @@ public class ExecutionContextTest {
   @Test
   public void testCommonKeys() {
     ExecutionContext context = new ExecutionContext();
-    context.set(CommonContext.PROXY_RESPONSE_HANDLER, new Object());
-    context.set(CommonContext.PROXY_REQUEST_HANDLER, new Object());
+    context.set(CommonContext.PROXY_CONTROLLER, new Object());
+    context.set(CommonContext.PROXY_CONSUMER, new Object());
 
-    Assert.assertNotNull(context.get(CommonContext.PROXY_REQUEST_HANDLER));
-    Assert.assertNotNull(context.get(CommonContext.PROXY_RESPONSE_HANDLER));
+    Assert.assertNotNull(context.get(CommonContext.PROXY_CONTROLLER));
+    Assert.assertNotNull(context.get(CommonContext.PROXY_CONSUMER));
   }
 
   @Test
