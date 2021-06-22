@@ -9,6 +9,7 @@ public class ProxyPacketProcessor implements SipListener {
 
   @Autowired ProxyEventListener proxyEventListener;
 
+  // TODO : this is where stack hands over msg to proxylayer
   @Override
   public void processRequest(RequestEvent requestEvent) {
     proxyEventListener.request(requestEvent);

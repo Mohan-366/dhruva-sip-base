@@ -13,7 +13,7 @@ import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import reactor.core.publisher.Sinks;
 @Component
 public class ProxyEventManager implements ProxyEventListener {
 
@@ -23,12 +23,12 @@ public class ProxyEventManager implements ProxyEventListener {
    * Thread pool executor for executing the request/response events. By processing in a thread, jain
    * sip stack thread get unblocked.
    */
-
   @Inject private StripedExecutorService executor;
 
   @Autowired private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   @Autowired ProxyService proxyService;
+
 
   @Override
   public void request(RequestEvent requestMessage) {
