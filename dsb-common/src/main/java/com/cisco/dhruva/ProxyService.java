@@ -9,7 +9,6 @@ import com.cisco.dhruva.bootstrap.DhruvaServer;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
-import com.cisco.dsb.common.messaging.DSIPMessage;
 import com.cisco.dsb.common.messaging.DSIPRequestMessage;
 import com.cisco.dsb.common.messaging.DSIPResponseMessage;
 import com.cisco.dsb.common.messaging.MessageConvertor;
@@ -20,6 +19,15 @@ import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.sip.SipException;
+import javax.sip.SipStack;
+import javax.sip.message.Request;
+import javax.sip.message.Response;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +35,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.sip.SipException;
-import javax.sip.SipStack;
-import javax.sip.message.Request;
-import javax.sip.message.Response;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class ProxyService {
@@ -53,8 +52,6 @@ public class ProxyService {
   @Autowired ControllerConfig controllerConfig;
 
   @Autowired private ProxyPacketProcessor proxyPacketProcessor;
-
-  //TODO create wrapper for request and reponse sink, inject it into ProxyAppAdaptor
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
 
