@@ -14,11 +14,13 @@ public abstract class ResponseEventHandler extends ProxyEventHandler {
 
   protected final String cSeq;
 
+  protected ResponseEvent responseEvent;
   public ResponseEventHandler(ProxyService proxyStack, ResponseEvent responseEvent) {
     super(
         proxyStack,
         JainSipHelper.getCallId(responseEvent.getResponse()),
         (SipProvider) responseEvent.getSource());
+    this.responseEvent = responseEvent;
     this.response = (SIPResponse) responseEvent.getResponse();
     cSeq = ProxyUtils.getCseqNumber(response);
   }

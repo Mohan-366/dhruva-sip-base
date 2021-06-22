@@ -40,7 +40,7 @@ public class DhruvaApp {
         logger.info("-------App: Got SIPMessage->Type:SIPResponse->CallId {}------",
                 dsipResponseMessage.getCallId());
         CallType callType = (CallType) dsipResponseMessage.getContext()
-                .getOrDefault(dsipResponseMessage.getCorrelationId(), defaultCallType);
+                .getOrDefault(dsipResponseMessage.getCallId(), defaultCallType);
         callType.getSink().tryEmitNext(dsipResponseMessage);
     };
     @PostConstruct

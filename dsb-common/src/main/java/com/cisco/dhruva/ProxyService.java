@@ -9,6 +9,7 @@ import com.cisco.dhruva.bootstrap.DhruvaServer;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
+import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.DSIPRequestMessage;
 import com.cisco.dsb.common.messaging.DSIPResponseMessage;
 import com.cisco.dsb.common.messaging.MessageConvertor;
@@ -19,11 +20,13 @@ import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
+import gov.nist.javax.sip.message.SIPRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.sip.ClientTransaction;
 import javax.sip.SipException;
 import javax.sip.SipStack;
 import javax.sip.message.Request;
@@ -128,7 +131,15 @@ public class ProxyService {
       try{
         if(dsipMessage.isRequest()){
           Request request = (Request) MessageConvertor.convertDhruvaMessageToJainSipMessage(dsipMessage);
-          dsipMessage.getProvider().sendRequest(request);
+          if(!((SIPRequest)dsipMessage.getSIPMessage()).getMethod().equals(Request.ACK)){
+            ClientTransaction clientTransaction = dsipMessage.getProvider().getNewClientTransaction((Request)request.clone());
+            clientTransaction.setApplicationData(dsipMessage.getContext().get(CommonContext.PROXY_CONTROLLER));
+            clientTransaction.sendRequest();
+          }
+          else{
+            dsipMessage.getProvider().sendRequest(request);
+          }
+
         }
         else{
           Response response = (Response) MessageConvertor.convertDhruvaMessageToJainSipMessage(dsipMessage);

@@ -16,7 +16,7 @@ public interface CallType {
         return (sipMessage)->{
             //executionContext.
             //change to enum for calltype value
-            sipMessage.getContext().put(sipMessage.getCorrelationId(), this);
+            sipMessage.getContext().put(sipMessage.getCallId(), this);
             return sipMessage;
         };
     }

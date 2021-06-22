@@ -3,6 +3,7 @@ package com.cisco.dhruva.sip.controller;
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.DSIPMessage;
 import com.cisco.dsb.common.messaging.DSIPRequestMessage;
+import com.cisco.dsb.common.messaging.DSIPResponseMessage;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
@@ -41,5 +42,9 @@ public class ProxyController {
               }
             });
     proxyAppAdaptor.handleRequest(dsipRequestMessage);
+  }
+
+  public void onResponse(DSIPResponseMessage dsipResponseMessage){
+      proxyAppAdaptor.handleResponse(dsipResponseMessage);
   }
 }
