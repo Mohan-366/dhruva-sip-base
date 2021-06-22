@@ -96,7 +96,7 @@ public final class DhruvaSipResponseMessage {
     }
 
     public DhruvaSipResponseMessageBuilder withTransaction(ClientTransaction transaction) {
-      //Assert.notNull(transaction, "Payload must not be null");
+      // Assert.notNull(transaction, "Payload must not be null");
       this.transaction = transaction;
       return this;
     }

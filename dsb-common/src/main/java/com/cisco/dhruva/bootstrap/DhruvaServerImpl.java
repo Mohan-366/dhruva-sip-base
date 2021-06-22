@@ -8,7 +8,6 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

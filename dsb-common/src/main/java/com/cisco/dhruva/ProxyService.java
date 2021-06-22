@@ -13,7 +13,6 @@ import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.sip.stack.dto.SipListenPoint;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
@@ -25,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.sip.SipStack;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -46,8 +44,7 @@ public class ProxyService {
 
   @Autowired private ProxyPacketProcessor proxyPacketProcessor;
 
-  ConcurrentHashMap<String, SipStack> proxyStackMap =
-          new ConcurrentHashMap<>();
+  ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
 
   @PostConstruct
   public void init() throws Exception {
@@ -109,7 +106,7 @@ public class ProxyService {
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
-      return Optional.ofNullable(proxyStackMap.get(sipListenPointName));
+    return Optional.ofNullable(proxyStackMap.get(sipListenPointName));
   }
 
   @PreDestroy

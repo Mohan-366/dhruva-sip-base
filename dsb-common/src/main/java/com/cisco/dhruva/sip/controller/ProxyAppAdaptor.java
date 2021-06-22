@@ -9,11 +9,8 @@ import org.springframework.stereotype.Component;
 public class ProxyAppAdaptor implements AppAdaptorInterface {
 
   @Override
-  public void handleRequest(DSIPRequestMessage requestMessage) throws DhruvaException {
-
-  }
+  public void handleRequest(DSIPRequestMessage requestMessage) throws DhruvaException {}
 
   @Override
   public void handleResponse(DSIPResponseMessage responseMessage) throws DhruvaException {}
 }
-
