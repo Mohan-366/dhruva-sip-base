@@ -15,6 +15,7 @@ public abstract class ResponseEventHandler extends ProxyEventHandler {
   protected final String cSeq;
 
   protected ResponseEvent responseEvent;
+
   public ResponseEventHandler(ProxyService proxyStack, ResponseEvent responseEvent) {
     super(
         proxyStack,

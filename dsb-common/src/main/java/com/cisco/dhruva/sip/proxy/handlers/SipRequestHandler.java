@@ -21,7 +21,6 @@ public class SipRequestHandler extends RequestEventHandler {
     sipProxyManager = applicationContext.getBean(SipProxyManager.class);
   }
 
-
   @Override
   public void executeRun() throws Exception {
     // Validate request, transform request, Invoke Controller

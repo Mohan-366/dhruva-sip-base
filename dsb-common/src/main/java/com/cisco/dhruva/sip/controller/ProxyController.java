@@ -44,7 +44,7 @@ public class ProxyController {
     proxyAppAdaptor.handleRequest(dsipRequestMessage);
   }
 
-  public void onResponse(DSIPResponseMessage dsipResponseMessage){
-      proxyAppAdaptor.handleResponse(dsipResponseMessage);
+  public void onResponse(DSIPResponseMessage dsipResponseMessage) {
+    proxyAppAdaptor.handleResponse(dsipResponseMessage);
   }
 }

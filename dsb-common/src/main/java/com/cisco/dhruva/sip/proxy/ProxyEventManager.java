@@ -13,7 +13,7 @@ import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Sinks;
+
 @Component
 public class ProxyEventManager implements ProxyEventListener {
 
@@ -28,7 +28,6 @@ public class ProxyEventManager implements ProxyEventListener {
   @Autowired private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   @Autowired ProxyService proxyService;
-
 
   @Override
   public void request(RequestEvent requestMessage) {
