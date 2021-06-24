@@ -52,7 +52,7 @@ node() {
                 containers.cisco.com/ayogalin/maven-builder:one \\
                 sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
-                sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
+                //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
                 step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'dsb-common/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
             }
         }

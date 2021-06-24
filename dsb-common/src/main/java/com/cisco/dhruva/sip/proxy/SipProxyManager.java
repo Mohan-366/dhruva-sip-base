@@ -20,15 +20,19 @@ public class SipProxyManager {
   public void request(DSIPRequestMessage request)
       throws TransactionAlreadyExistsException, TransactionUnavailableException {
     ServerTransaction serverTransaction = (ServerTransaction) request.getTransaction();
+
+    if (serverTransaction == null
+            && !((SIPRequest) request.getSIPMessage()).getMethod().equals(Request.ACK)) {
+      serverTransaction = request.getProvider().getNewServerTransaction(request.getMessage());
+    }
+
     ProxyController controller =
         proxyControllerFactory
             .proxyController()
             .apply(request.getTransaction(), request.getProvider());
-    if (serverTransaction == null
-        && !((SIPRequest) request.getSIPMessage()).getMethod().equals(Request.ACK)) {
-      serverTransaction = request.getProvider().getNewServerTransaction(request.getMessage());
-      serverTransaction.setApplicationData(controller);
-    }
+
+    assert serverTransaction != null;
+    serverTransaction.setApplicationData(controller);
 
     controller.onNewRequest(request);
   }
