@@ -2,6 +2,7 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.Trace;
+import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.header.SIPHeaderList;
 import javax.sip.address.SipURI;
 
@@ -25,7 +26,7 @@ public final class Location implements Cloneable, Comparable {
 
   protected SipURI uri;
   protected String serverGroupName;
-  protected SIPHeaderList routeHeaders;
+  protected SIPHeaderList<Route> routeHeaders;
   protected String connectionID;
   protected float qValue = DEFAULT_QVALUE;
   protected long lastUpdate = 0;

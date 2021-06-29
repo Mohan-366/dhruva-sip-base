@@ -4,11 +4,11 @@ import static org.mockito.Mockito.mock;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.DhruvaSipRequestMessage;
-import com.cisco.dsb.common.messaging.models.IDhruvaMessage;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.io.IOException;
 import java.util.Properties;
 import javax.sip.*;
 import org.testng.Assert;
@@ -29,11 +29,10 @@ public class MessageConvertorTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
-    IDhruvaMessage msg =
+    ProxySIPRequest msg =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, serverTransaction, new ExecutionContext());
     Assert.assertNotNull(msg);
-    Assert.assertTrue(msg instanceof DSIPRequestMessage);
   }
 
   @Test
@@ -44,11 +43,10 @@ public class MessageConvertorTest {
 
     SIPResponse response = new SIPRequestBuilder().getResponse(200);
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
-    IDhruvaMessage msg =
+    ProxySIPResponse msg =
         MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
             response, sipProvider, clientTransaction, new ExecutionContext());
     Assert.assertNotNull(msg);
-    Assert.assertTrue(msg instanceof DSIPResponseMessage);
   }
 
   @Test(expectedExceptions = {Exception.class})
@@ -56,15 +54,15 @@ public class MessageConvertorTest {
     SIPRequest request =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
-    IDhruvaMessage msg =
+    ProxySIPRequest msg =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, (ServerTransaction) request.getTransaction(), null);
   }
 
   @Test(expectedExceptions = {Exception.class})
-  public void shouldFailSIPToDhruvaMessageWithInvalidInput() {
+  public void shouldFailSIPToDhruvaMessageWithInvalidInput() throws IOException {
     SIPRequest request = null;
-    IDhruvaMessage msg =
+    ProxySIPRequest msg =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, null, new ExecutionContext());
   }
@@ -77,7 +75,7 @@ public class MessageConvertorTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
-    IDhruvaMessage message =
+    ProxySIPRequest message =
         DhruvaSipRequestMessage.newBuilder()
             .withContext(context)
             .withPayload(request)
@@ -85,7 +83,7 @@ public class MessageConvertorTest {
             .withProvider(sipProvider)
             .build();
 
-    SIPMessage msg = MessageConvertor.convertDhruvaMessageToJainSipMessage(message);
+    SIPMessage msg = MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(message);
     Assert.assertNotNull(msg);
   }
 

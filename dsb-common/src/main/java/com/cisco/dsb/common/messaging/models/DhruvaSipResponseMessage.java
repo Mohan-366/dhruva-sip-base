@@ -2,11 +2,12 @@ package com.cisco.dsb.common.messaging.models;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.DSIPResponseMessage;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.LogContext;
-import gov.nist.javax.sip.message.SIPMessage;
+import java.io.IOException;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
+import javax.sip.message.Response;
 import org.springframework.util.Assert;
 
 public final class DhruvaSipResponseMessage {
@@ -17,7 +18,7 @@ public final class DhruvaSipResponseMessage {
 
   public static final class DhruvaSipResponseMessageBuilder {
 
-    private SIPMessage payload;
+    private Response payload;
 
     private ExecutionContext context;
 
@@ -58,9 +59,9 @@ public final class DhruvaSipResponseMessage {
       this.network = network;
     }
 
-    public IDhruvaMessage build() {
-      IDhruvaMessage message =
-          new DSIPResponseMessage(this.context, this.sipProvider, this.payload, this.transaction);
+    public ProxySIPResponse build() throws IOException {
+      ProxySIPResponse message =
+          new ProxySIPResponse(this.context, this.sipProvider, this.payload, this.transaction);
       if (callType != null) {
         message.setCallType(callType);
       }
@@ -83,7 +84,7 @@ public final class DhruvaSipResponseMessage {
       return message;
     }
 
-    public DhruvaSipResponseMessageBuilder withPayload(SIPMessage payload) {
+    public DhruvaSipResponseMessageBuilder withPayload(Response payload) {
       Assert.notNull(payload, "Payload must not be null");
       this.payload = payload;
       return this;

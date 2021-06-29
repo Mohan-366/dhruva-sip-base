@@ -1,51 +1,51 @@
-package com.cisco.dsb.common.messaging;
+package com.cisco.dsb.common.messaging.models;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.models.IDhruvaMessage;
+import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.LogContext;
-import gov.nist.javax.sip.message.SIPMessage;
-import java.io.Serializable;
-import javax.sip.*;
-import javax.sip.message.Request;
+import com.cisco.dsb.util.log.Logger;
+import gov.nist.javax.sip.message.SIPResponse;
+import java.io.IOException;
+import javax.sip.ClientTransaction;
+import javax.sip.Dialog;
+import javax.sip.SipProvider;
 import javax.sip.message.Response;
 
-public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
+public abstract class AbstractSipResponse extends SipEventImpl implements SipResponse {
 
-  private final SipProvider _provider;
-  private final Transaction _transaction;
+  protected final Response response;
+  protected ClientTransaction ct;
+  private final SipProvider provider;
   private ExecutionContext context;
-  private SIPMessage sipMessage;
   private CallType callType;
   private String sessionId;
   private String reqURI;
   private String correlationID;
 
-  public DSIPMessage(
+  private static Logger logger = DhruvaLoggerFactory.getLogger(AbstractSipRequest.class);
+
+  public AbstractSipResponse(
       ExecutionContext executionContext,
-      SipProvider provider,
-      SIPMessage message,
-      ServerTransaction transaction) {
-    _provider = provider;
-    _transaction = transaction;
-    this.sipMessage = message;
+      SipProvider sipProvider,
+      ClientTransaction ct,
+      Response response)
+      throws IOException {
+    super(JainSipHelper.getCallId(response), JainSipHelper.getCSeq(response));
+    this.response = response;
+    this.ct = ct;
+    this.provider = sipProvider;
     this.context = executionContext;
   }
 
-  public DSIPMessage(
-      ExecutionContext executionContext,
-      SipProvider provider,
-      SIPMessage message,
-      ClientTransaction transaction) {
-    _provider = provider;
-    _transaction = transaction;
-    this.sipMessage = message;
-    this.context = executionContext;
+  public SIPResponse getResponse() {
+    return (SIPResponse) this.response;
   }
 
   @Override
-  public SIPMessage getSIPMessage() {
-    return this.sipMessage;
+  public ClientTransaction getClientTransaction() {
+    return ct;
   }
 
   @Override
@@ -62,7 +62,7 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
   public void setHasBody(boolean hasBody) {}
 
   public String getCallId() {
-    return sipMessage.getCallId().toString();
+    return this.callId;
   }
 
   @Override
@@ -114,7 +114,7 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
   public void setMidCall(boolean isMidCall) {}
 
   public boolean isRequest() {
-    return this.sipMessage instanceof Request;
+    return true;
   }
 
   @Override
@@ -129,11 +129,6 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
   }
 
   @Override
-  public IDhruvaMessage clone() {
-    return null;
-  }
-
-  @Override
   public LogContext getLogContext() {
     return null;
   }
@@ -142,22 +137,14 @@ public abstract class DSIPMessage implements Serializable, IDhruvaMessage {
   public void setLoggingContext(LogContext loggingContext) {}
 
   public boolean isResponse() {
-    return this.sipMessage instanceof Response;
+    return true;
   }
 
   public SipProvider getProvider() {
-    return _provider;
-  }
-
-  public <T extends javax.sip.message.Message> T getMessage() {
-    return (T) this.sipMessage;
+    return provider;
   }
 
   public Dialog getDialog() {
-    return _transaction.getDialog();
-  }
-
-  public <T extends Transaction> T getTransaction() {
-    return (T) _transaction;
+    return ct.getDialog();
   }
 }

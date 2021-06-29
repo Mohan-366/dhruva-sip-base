@@ -1,19 +1,24 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dsb.common.messaging.DSIPMessage;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import reactor.core.publisher.Sinks;
 
 public interface CallType {
-  Predicate<DSIPMessage> filter();
+  Predicate<ProxySIPRequest> filter();
 
-  Consumer<DSIPMessage> process();
+  Consumer<ProxySIPRequest> processRequest();
 
-  Sinks.Many<DSIPMessage> getSink();
+  Consumer<ProxySIPResponse> processResponse();
+
+  Sinks.Many<ProxySIPRequest> getSinkRequest();
+
+  Sinks.Many<ProxySIPResponse> getSinkResponse();
   // Can put common functions like addCallIdCallTypeMapping
-  default Function<DSIPMessage, DSIPMessage> addCallIdCallTypeMapping() {
+  default Function<ProxySIPRequest, ProxySIPRequest> addCallIdCallTypeMapping() {
     return (sipMessage) -> {
       // executionContext.
       // change to enum for calltype value

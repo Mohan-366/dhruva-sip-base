@@ -3,8 +3,8 @@ package com.cisco.dhruva.sip.proxy.handlers;
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.DSIPRequestMessage;
 import com.cisco.dsb.common.messaging.MessageConvertor;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.util.SpringApplicationContext;
 import javax.sip.RequestEvent;
@@ -24,15 +24,13 @@ public class SipRequestHandler extends RequestEventHandler {
   @Override
   public void executeRun() throws Exception {
     // Validate request, transform request, Invoke Controller
+    ProxySIPRequest proxySIPRequest =
+        MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
+            this.receivedRequest,
+            (SipProvider) requestEvent.getSource(),
+            requestEvent.getServerTransaction(),
+            new ExecutionContext());
 
-    DSIPRequestMessage dsipRequestMessage =
-        (DSIPRequestMessage)
-            MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
-                this.receivedRequest,
-                (SipProvider) requestEvent.getSource(),
-                requestEvent.getServerTransaction(),
-                new ExecutionContext());
-
-    sipProxyManager.request(dsipRequestMessage);
+    sipProxyManager.request(proxySIPRequest);
   }
 }

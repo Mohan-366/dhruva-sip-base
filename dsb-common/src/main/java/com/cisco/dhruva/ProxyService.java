@@ -10,9 +10,9 @@ import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
 import com.cisco.dsb.common.CommonContext;
-import com.cisco.dsb.common.messaging.DSIPRequestMessage;
-import com.cisco.dsb.common.messaging.DSIPResponseMessage;
 import com.cisco.dsb.common.messaging.MessageConvertor;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
@@ -21,6 +21,7 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,6 @@ import javax.sip.ClientTransaction;
 import javax.sip.SipException;
 import javax.sip.SipStack;
 import javax.sip.message.Request;
-import javax.sip.message.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -123,6 +123,7 @@ public class ProxyService {
   }
 
   private void handleMessageFromApp() {
+    // TODO DSB Define right Message type for RouteResult
     DhruvaSink.routeResultSink
         .asFlux()
         .subscribe(
@@ -130,24 +131,26 @@ public class ProxyService {
               logger.info("Received msg from App: callId{}", dsipMessage.getCallId());
               try {
                 if (dsipMessage.isRequest()) {
-                  Request request =
-                      (Request) MessageConvertor.convertDhruvaMessageToJainSipMessage(dsipMessage);
+                  SIPRequest request =
+                      MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(
+                          (ProxySIPRequest) dsipMessage);
                   if (!((SIPRequest) dsipMessage.getSIPMessage()).getMethod().equals(Request.ACK)) {
                     ClientTransaction clientTransaction =
-                        dsipMessage
+                        ((ProxySIPRequest) dsipMessage)
                             .getProvider()
                             .getNewClientTransaction((Request) request.clone());
                     clientTransaction.setApplicationData(
                         dsipMessage.getContext().get(CommonContext.PROXY_CONTROLLER));
                     clientTransaction.sendRequest();
                   } else {
-                    dsipMessage.getProvider().sendRequest(request);
+                    ((ProxySIPRequest) dsipMessage).getProvider().sendRequest(request);
                   }
 
                 } else {
-                  Response response =
-                      (Response) MessageConvertor.convertDhruvaMessageToJainSipMessage(dsipMessage);
-                  dsipMessage.getProvider().sendResponse(response);
+                  SIPResponse response =
+                      MessageConvertor.convertDhruvaResponseMessageToJainSipMessage(
+                          (ProxySIPResponse) dsipMessage);
+                  ((ProxySIPResponse) dsipMessage).getProvider().sendResponse(response);
                 }
               } catch (SipException exception) {
                 exception.printStackTrace();
@@ -164,14 +167,14 @@ public class ProxyService {
   Application Layer should call this function along with requestConsumer to process the request messages from
   proxylayer. Message format is DSIPRequestMessage
    */
-  public void registerForRequest(Consumer<DSIPRequestMessage> requestConsumer) {
+  public void registerForRequest(Consumer<ProxySIPRequest> requestConsumer) {
     DhruvaSink.requestSink.asFlux().subscribe(requestConsumer);
   }
   /*
   Application Layer should call this function along with requestConsumer to process the request messages from
   proxylayer. Message format is DSIPResponseMessage
    */
-  public void registerForResponse(Consumer<DSIPResponseMessage> responseConsumer) {
+  public void registerForResponse(Consumer<ProxySIPResponse> responseConsumer) {
     DhruvaSink.responseSink.asFlux().subscribe(responseConsumer);
   }
 }

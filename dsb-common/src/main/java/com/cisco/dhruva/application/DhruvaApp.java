@@ -5,8 +5,8 @@ import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.CallType1;
 import com.cisco.dhruva.application.calltype.CallType2;
 import com.cisco.dhruva.application.calltype.DefaultCallType;
-import com.cisco.dsb.common.messaging.DSIPRequestMessage;
-import com.cisco.dsb.common.messaging.DSIPResponseMessage;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.util.ArrayList;
@@ -24,18 +24,18 @@ public class DhruvaApp {
   @Autowired CallType1 callType1;
   @Autowired CallType2 callType2;
   @Autowired DefaultCallType defaultCallType;
-  private Consumer<DSIPRequestMessage> requestConsumer =
-      dsipRequestMessage -> {
+  private Consumer<ProxySIPRequest> requestConsumer =
+      proxySIPRequest -> {
         logger.info("-------App: Got SIPMessage->Type:SIPRequest------");
         callTypes.stream()
-            .filter(callType -> callType.filter().test(dsipRequestMessage))
+            .filter(callType -> callType.filter().test(proxySIPRequest))
             .findFirst()
             .orElse(defaultCallType)
-            .getSink()
-            .tryEmitNext(dsipRequestMessage);
+            .getSinkRequest()
+            .tryEmitNext(proxySIPRequest);
       };
 
-  private Consumer<DSIPResponseMessage> responseConsumer =
+  private Consumer<ProxySIPResponse> responseConsumer =
       dsipResponseMessage -> {
         logger.info(
             "-------App: Got SIPMessage->Type:SIPResponse->CallId {}------",
@@ -45,7 +45,7 @@ public class DhruvaApp {
                 dsipResponseMessage
                     .getContext()
                     .getOrDefault(dsipResponseMessage.getCallId(), defaultCallType);
-        callType.getSink().tryEmitNext(dsipResponseMessage);
+        callType.getSinkResponse().tryEmitNext(dsipResponseMessage);
       };
 
   @PostConstruct

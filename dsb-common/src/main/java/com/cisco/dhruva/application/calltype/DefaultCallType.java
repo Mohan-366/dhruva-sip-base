@@ -1,7 +1,8 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
-import com.cisco.dsb.common.messaging.DSIPMessage;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.util.function.Consumer;
@@ -14,36 +15,56 @@ import reactor.core.publisher.Sinks;
 // TODO can this be static type??? whole class???
 @Component
 public class DefaultCallType implements CallType {
-  Logger logger = DhruvaLoggerFactory.getLogger(DefaultCallType.class);
-  Sinks.Many<DSIPMessage> sink;
-  Flux<DSIPMessage> flux;
+  Logger logger = DhruvaLoggerFactory.getLogger(CallType2.class);
+  Sinks.Many<ProxySIPRequest> sinkRequest;
+  Sinks.Many<ProxySIPResponse> sinkResponse;
+  Flux<ProxySIPRequest> fluxRequest;
+  Flux<ProxySIPResponse> fluxResponse;
 
   @PostConstruct
   public void init() {
-    sink = Sinks.many().unicast().onBackpressureBuffer();
-    flux = sink.asFlux();
-    flux.subscribe(process());
+    sinkRequest = Sinks.many().unicast().onBackpressureBuffer();
+    fluxRequest = sinkRequest.asFlux();
+    fluxRequest.subscribe(processRequest());
+
+    sinkResponse = Sinks.many().unicast().onBackpressureBuffer();
+    fluxResponse = sinkResponse.asFlux();
+    fluxResponse.subscribe(processResponse());
   }
 
   @Override
-  public Predicate<DSIPMessage> filter() {
+  public Predicate<ProxySIPRequest> filter() {
     return dsipMessage -> true;
   }
 
   @Override
-  public Consumer<DSIPMessage> process() {
+  public Consumer<ProxySIPRequest> processRequest() {
     return dsipMessage -> {
       logger.info(
-          "SIP Message received by DefaultCallType, callID {} ~{}~, forwarding back to proxyLayer",
-          dsipMessage.getCallId(),
-          dsipMessage.getReqURI());
+          "SIP Message received by CallType1, callID {}, forwarding back to proxyLayer",
+          dsipMessage.getCallId());
       addCallIdCallTypeMapping().apply(dsipMessage);
       DhruvaSink.routeResultSink.tryEmitNext(dsipMessage);
     };
   }
 
   @Override
-  public Sinks.Many<DSIPMessage> getSink() {
-    return sink;
+  public Consumer<ProxySIPResponse> processResponse() {
+    return proxySIPResponse -> {
+      logger.info(
+          "SIP Message received by CallType1, callID {}, forwarding back to proxyLayer",
+          proxySIPResponse.getCallId());
+      DhruvaSink.routeResultSink.tryEmitNext(proxySIPResponse);
+    };
+  }
+
+  @Override
+  public Sinks.Many<ProxySIPRequest> getSinkRequest() {
+    return sinkRequest;
+  }
+
+  @Override
+  public Sinks.Many<ProxySIPResponse> getSinkResponse() {
+    return sinkResponse;
   }
 }

@@ -3,8 +3,8 @@ package com.cisco.dhruva.sip.proxy.handlers;
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.DSIPResponseMessage;
 import com.cisco.dsb.common.messaging.MessageConvertor;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.util.SpringApplicationContext;
 import javax.sip.ResponseEvent;
@@ -23,14 +23,14 @@ public class SipResponseHandler extends ResponseEventHandler {
 
   @Override
   public void executeRun() throws Exception {
-    DSIPResponseMessage dsipResponseMessage =
-        (DSIPResponseMessage)
+    ProxySIPResponse proxySIPResponse =
+        (ProxySIPResponse)
             MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
                 this.response,
                 (SipProvider) responseEvent.getSource(),
                 responseEvent.getClientTransaction(),
                 new ExecutionContext());
 
-    sipProxyManager.response(dsipResponseMessage);
+    sipProxyManager.response(proxySIPResponse);
   }
 }

@@ -1,8 +1,8 @@
 package com.cisco.dhruva.sip.controller;
 
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
-import com.cisco.dsb.common.messaging.DSIPRequestMessage;
-import com.cisco.dsb.common.messaging.DSIPResponseMessage;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
@@ -13,7 +13,7 @@ public class ProxyAppAdaptor implements AppAdaptorInterface {
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyAppAdaptor.class);
   // TODO get ref for request and reponse sink wrapper class
   @Override
-  public void handleRequest(DSIPRequestMessage requestMessage) throws DhruvaException {
+  public void handleRequest(ProxySIPRequest requestMessage) throws DhruvaException {
     /*Objects.requireNonNull(requestMessage);
     Objects.requireNonNull(requestMessage.getContext());
     requestMessage.getContext().set(CommonContext.PROXY_CONSUMER, handleMessageFromApp);*/
@@ -21,7 +21,7 @@ public class ProxyAppAdaptor implements AppAdaptorInterface {
   }
 
   @Override
-  public void handleResponse(DSIPResponseMessage responseMessage) throws DhruvaException {
+  public void handleResponse(ProxySIPResponse responseMessage) throws DhruvaException {
     logger.info("Sending response to App -callid {}", responseMessage.getCallId());
     DhruvaSink.responseSink.tryEmitNext(responseMessage);
     /*Consumer<DSIPMessage> handleMessageFromApp =
