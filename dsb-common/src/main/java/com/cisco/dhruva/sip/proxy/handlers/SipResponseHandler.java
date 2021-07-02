@@ -10,6 +10,7 @@ import com.cisco.dsb.util.SpringApplicationContext;
 import javax.sip.ResponseEvent;
 import javax.sip.SipProvider;
 import org.springframework.context.ApplicationContext;
+import reactor.core.publisher.Mono;
 
 public class SipResponseHandler extends ResponseEventHandler {
   SipProxyManager sipProxyManager;
@@ -23,6 +24,8 @@ public class SipResponseHandler extends ResponseEventHandler {
 
   @Override
   public void executeRun() throws Exception {
+    ProxyService.proxyResponseHandler.accept(Mono.just(responseEvent));
+
     ProxySIPResponse proxySIPResponse =
         (ProxySIPResponse)
             MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(

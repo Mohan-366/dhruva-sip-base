@@ -10,10 +10,13 @@ import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
 import com.cisco.dsb.common.CommonContext;
+import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.eventsink.RequestEventSink;
+import com.cisco.dsb.eventsink.ResponseEventSink;
 import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
@@ -22,6 +25,7 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,14 +33,14 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.sip.ClientTransaction;
-import javax.sip.SipException;
-import javax.sip.SipStack;
+import javax.sip.*;
 import javax.sip.message.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 public class ProxyService {
@@ -54,6 +58,13 @@ public class ProxyService {
   @Autowired ControllerConfig controllerConfig;
 
   @Autowired private ProxyPacketProcessor proxyPacketProcessor;
+
+  @Autowired RequestEventSink requestEventSink;
+
+  @Autowired ResponseEventSink responseEventSink;
+
+  private static Consumer<ProxySIPRequest> requestConsumer;
+  private static Consumer<ProxySIPResponse> responseConsumer;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
 
@@ -167,14 +178,93 @@ public class ProxyService {
   Application Layer should call this function along with requestConsumer to process the request messages from
   proxylayer. Message format is DSIPRequestMessage
    */
-  public void registerForRequest(Consumer<ProxySIPRequest> requestConsumer) {
-    DhruvaSink.requestSink.asFlux().subscribe(requestConsumer);
+  public static void registerForRequest(Consumer<ProxySIPRequest> appRequestConsumer) {
+    requestConsumer = appRequestConsumer;
+
+    // DhruvaSink.requestSink.asFlux().subscribe(requestConsumer);
   }
   /*
   Application Layer should call this function along with requestConsumer to process the request messages from
   proxylayer. Message format is DSIPResponseMessage
    */
-  public void registerForResponse(Consumer<ProxySIPResponse> responseConsumer) {
-    DhruvaSink.responseSink.asFlux().subscribe(responseConsumer);
+  public static void registerForResponse(Consumer<ProxySIPResponse> appResponseConsumer) {
+    responseConsumer = appResponseConsumer;
+    // DhruvaSink.responseSink.asFlux().subscribe(responseConsumer);
   }
+
+  private static Function<RequestEvent, Mono<RequestEvent>> filterProxyRequest =
+      (requestEvent) -> {
+        System.out.println("filtering request");
+
+        return Mono.just(requestEvent);
+      };
+
+  private static Function<ResponseEvent, Mono<ResponseEvent>> filterProxyResponse =
+      (responseEvent) -> {
+        System.out.println("filtering response");
+
+        return Mono.just(responseEvent);
+      };
+
+  private static Function<RequestEvent, ProxySIPRequest> createProxySipRequest =
+      (fluxRequestEvent) -> {
+        try {
+          return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
+              fluxRequestEvent.getRequest(),
+              (SipProvider) fluxRequestEvent.getSource(),
+              fluxRequestEvent.getServerTransaction(),
+              new ExecutionContext());
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        return null;
+      };
+
+  private static Function<ResponseEvent, ProxySIPResponse> createProxySipResponse =
+      (fluxResponseEvent) -> {
+        try {
+          return MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
+              fluxResponseEvent.getResponse(),
+              (SipProvider) fluxResponseEvent.getSource(),
+              fluxResponseEvent.getClientTransaction(),
+              new ExecutionContext());
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        return null;
+      };
+
+  public static Consumer<Mono<RequestEvent>> proxyRequestHandler =
+      requestEventMono -> {
+        requestEventMono
+            .<RequestEvent>handle(
+                (requestEvent, synchronousSink) -> {
+                  // processing
+                  try {
+                    synchronousSink.next(requestEvent);
+                  } catch (Exception e) {
+                    synchronousSink.error(e.getCause());
+                  }
+                })
+            .flatMap(filterProxyRequest)
+            .mapNotNull(createProxySipRequest)
+            .subscribe(requestConsumer);
+      };
+
+  public static Consumer<Mono<ResponseEvent>> proxyResponseHandler =
+      responseMono -> {
+        responseMono
+            .<ResponseEvent>handle(
+                (responseEvent, synchronousSink) -> {
+                  // processing
+                  try {
+                    synchronousSink.next(responseEvent);
+                  } catch (Exception e) {
+                    synchronousSink.error(e.getCause());
+                  }
+                })
+            .flatMap(filterProxyResponse)
+            .mapNotNull(createProxySipResponse)
+            .subscribe(responseConsumer);
+      };
 }
