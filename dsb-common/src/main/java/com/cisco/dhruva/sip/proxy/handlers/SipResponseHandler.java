@@ -24,7 +24,8 @@ public class SipResponseHandler extends ResponseEventHandler {
 
   @Override
   public void executeRun() throws Exception {
-    ProxyService.proxyResponseHandler.accept(Mono.just(responseEvent));
+    SpringApplicationContext.getAppContext().getBean(ProxyService.class)
+        .proxyResponseHandler.accept(Mono.just(responseEvent));
 
     ProxySIPResponse proxySIPResponse =
         (ProxySIPResponse)

@@ -2,8 +2,6 @@ package com.cisco.dhruva.application;
 
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.application.calltype.CallType;
-import com.cisco.dhruva.application.calltype.CallType1;
-import com.cisco.dhruva.application.calltype.CallType2;
 import com.cisco.dhruva.application.calltype.DefaultCallType;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
@@ -14,6 +12,7 @@ import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 public class DhruvaApp {
@@ -21,8 +20,7 @@ public class DhruvaApp {
   private ArrayList<CallType> callTypes;
   @Autowired ProxyService proxyService;
 
-  @Autowired CallType1 callType1;
-  @Autowired CallType2 callType2;
+
   @Autowired DefaultCallType defaultCallType;
   private Consumer<ProxySIPRequest> requestConsumer =
       proxySIPRequest -> {
@@ -31,33 +29,29 @@ public class DhruvaApp {
             .filter(callType -> callType.filter().test(proxySIPRequest))
             .findFirst()
             .orElse(defaultCallType)
-            .getSinkRequest()
-            .tryEmitNext(proxySIPRequest);
+            .processRequest().accept(Mono.just(proxySIPRequest));
       };
 
   private Consumer<ProxySIPResponse> responseConsumer =
-      dsipResponseMessage -> {
+      proxySIPResponse -> {
         logger.info(
             "-------App: Got SIPMessage->Type:SIPResponse->CallId {}------",
-            dsipResponseMessage.getCallId());
+            proxySIPResponse.getCallId());
         CallType callType =
             (CallType)
-                dsipResponseMessage
+                proxySIPResponse
                     .getContext()
-                    .getOrDefault(dsipResponseMessage.getCallId(), defaultCallType);
-        callType.getSinkResponse().tryEmitNext(dsipResponseMessage);
+                    .getOrDefault(proxySIPResponse.getCallId(), defaultCallType);
+        callType.processResponse().accept(Mono.just(proxySIPResponse));
       };
 
   @PostConstruct
   public void init() {
     // TODO change to single method register(res,req)
-    proxyService.registerForRequest(requestConsumer);
-    proxyService.registerForResponse(responseConsumer);
+    proxyService.register(requestConsumer,responseConsumer);
 
     // register for interested CallTypes
     callTypes = new ArrayList<>();
-    callTypes.add(callType1);
-    callTypes.add(callType2);
     callTypes.add(defaultCallType);
   }
 }

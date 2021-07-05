@@ -66,6 +66,6 @@ public class ProxySIPRequest extends AbstractSipRequest {
 
   @Override
   public SIPMessage getSIPMessage() {
-    return null;
+    return this.getRequest();
   }
 }

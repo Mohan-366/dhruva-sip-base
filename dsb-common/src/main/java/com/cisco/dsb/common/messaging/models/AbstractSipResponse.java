@@ -114,7 +114,7 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   public void setMidCall(boolean isMidCall) {}
 
   public boolean isRequest() {
-    return true;
+    return false;
   }
 
   @Override

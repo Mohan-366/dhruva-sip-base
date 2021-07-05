@@ -28,6 +28,10 @@ public class ProxyController {
     this.proxyAppAdaptor = appAdaptorInterface;
   }
 
+  public void setController(ProxySIPRequest request) {
+    request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
+  }
+
   public void onNewRequest(ProxySIPRequest request) {
     // Create proxu transaction
     // handle request params

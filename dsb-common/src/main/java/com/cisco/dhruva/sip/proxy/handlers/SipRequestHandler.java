@@ -25,15 +25,17 @@ public class SipRequestHandler extends RequestEventHandler {
   @Override
   public void executeRun() throws Exception {
     // Validate request, transform request, Invoke Controller
-    ProxyService.proxyRequestHandler.accept(Mono.just(requestEvent));
+    //ProxyService.proxyRequestHandler.accept(Mono.just(requestEvent));
+    SpringApplicationContext.getAppContext().getBean(ProxyService.class)
+            .proxyRequestHandler.accept(Mono.just(requestEvent));
 
-    ProxySIPRequest proxySIPRequest =
+/*    ProxySIPRequest proxySIPRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             this.receivedRequest,
             (SipProvider) requestEvent.getSource(),
             requestEvent.getServerTransaction(),
             new ExecutionContext());
 
-    sipProxyManager.request(proxySIPRequest);
+    sipProxyManager.request(proxySIPRequest);*/
   }
 }
