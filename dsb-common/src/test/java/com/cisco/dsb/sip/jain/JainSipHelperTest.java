@@ -28,7 +28,7 @@ public class JainSipHelperTest {
   }
 
   @Test(description = "fetch parameters from a header (here: contact header is used)")
-  public void testGetParameters() throws Exception {
+  public void testGetParameters() {
     ContactHeader contactHeader = mock(ContactHeader.class);
     when(contactHeader.toString())
         .thenReturn("sip:l2sipit-guest-6790308@192.168.1.77:5061;transport=tls");
@@ -163,5 +163,97 @@ public class JainSipHelperTest {
     Assert.assertEquals(
         "host",
         JainSipHelper.getDomain(JainSipHelper.getAddressFactory().createSipURI("user", "host")));
+  }
+
+  @Test(description = "sip scheme addition test")
+  public void addSipSchemeIfNeededTest() {
+    // Positive test cases where scheme is added
+    // basic test case
+    testAddSipSchemeIfNeededHelper("alice@example.com", "sip:alice@example.com");
+
+    // host only test case
+    testAddSipSchemeIfNeededHelper("example.com", "sip:example.com");
+
+    // test case doesn't change in user info part
+    testAddSipSchemeIfNeededHelper("ALICE@example.com", "sip:ALICE@example.com");
+
+    // test white space is ignored
+    testAddSipSchemeIfNeededHelper(" alice@example.com ", "sip:alice@example.com");
+
+    // Positive test cases where scheme already exists
+    // basic test case
+    testAddSipSchemeIfNeededHelper("sip:alice@example.com", "sip:alice@example.com");
+
+    // test white space is ignored when checking for scheme
+    testAddSipSchemeIfNeededHelper(" sip:alice@example.com ", "sip:alice@example.com");
+
+    // test case is ignored in scheme
+    testAddSipSchemeIfNeededHelper("SIP:alice@example.com", "SIP:alice@example.com");
+
+    // test sips: scheme
+    testAddSipSchemeIfNeededHelper("sips:alice@example.com", "sips:alice@example.com");
+
+    // Degenerate test cases
+    // test null case does nothing
+    testAddSipSchemeIfNeededHelper(null, null);
+
+    // test empty string does nothing
+    testAddSipSchemeIfNeededHelper("", "");
+  }
+
+  private void testAddSipSchemeIfNeededHelper(String sipUrl, String expected) {
+    Assert.assertEquals(JainSipHelper.addSipSchemeIfNeeded(sipUrl), expected);
+  }
+
+  @Test(description = "sip scheme removal test")
+  public void testRemoveSipScheme() {
+    // Positive test cases
+    // test sip: scheme
+    testRemoveSipSchemeHelper("sip:alice@example.com", "alice@example.com");
+
+    // test sips: scheme
+    testRemoveSipSchemeHelper("sips:alice@example.com", "alice@example.com");
+
+    // test case insensitivity in scheme
+    testRemoveSipSchemeHelper("SIP:alice@example.com", "alice@example.com");
+
+    // test case doesn't change in rest of SIP url
+    testRemoveSipSchemeHelper("sip:ALICE@example.com", "ALICE@example.com");
+
+    // ignore white space
+    testRemoveSipSchemeHelper(" sip:alice@example.com ", "alice@example.com");
+
+    // Negative test cases
+    // test null case
+    testRemoveSipSchemeHelper(null, null);
+
+    // test empty string case
+    testRemoveSipSchemeHelper("", "");
+
+    // test degenerate case of only scheme
+    testRemoveSipSchemeHelper("sip:", "");
+
+    // test that colon at end of scheme is required
+    testRemoveSipSchemeHelper("sipalice@example.com", "sipalice@example.com");
+  }
+
+  private void testRemoveSipSchemeHelper(String sipUrl, String expected) {
+    Assert.assertEquals(JainSipHelper.removeSipScheme(sipUrl), expected);
+  }
+
+  @DataProvider
+  public Object[][] urlEncodeData() {
+    return new Object[][] {
+      {"always", "always"},
+      {"disabled,l2sip=always", "disabled%2Cl2sip%3Dalways"},
+      {null, null},
+      {"", null}
+    };
+  }
+
+  @Test(dataProvider = "urlEncodeData")
+  public void testUrlEncode(String clear, String expectEncoded) {
+    String encoded = JainSipHelper.urlEncode(clear);
+    Assert.assertEquals(expectEncoded, encoded);
   }
 }

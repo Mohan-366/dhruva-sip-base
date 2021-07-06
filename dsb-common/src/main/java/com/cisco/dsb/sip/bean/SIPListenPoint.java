@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+// TODO: extend ListenPoint class
+
 @JsonDeserialize(builder = SIPListenPoint.SIPListenPointBuilder.class)
 public class SIPListenPoint {
 

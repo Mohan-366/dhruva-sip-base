@@ -8,7 +8,6 @@ import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
 import com.cisco.dsb.sip.dto.*;
 import com.cisco.dsb.sip.enums.DNSRecordSource;
 import com.cisco.dsb.sip.enums.LocateSIPServerTransportType;
-import com.cisco.dsb.sip.stack.SipTransportType;
 import com.cisco.dsb.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.sip.stack.util.IPValidator;
@@ -34,8 +33,8 @@ public class SipServerLocator implements SipResolver {
 
   private DnsInjectionService dnsInjectionService;
 
-  private static final int DEFAULT_PORT = SipTransportType.T_UDP.getDefaultPort();
-  private static final int TLS_DEFAULT_PORT = SipTransportType.T_TLS.getDefaultPort();
+  private static final int DEFAULT_PORT = Transport.UDP.getDefaultPort();
+  private static final int TLS_DEFAULT_PORT = Transport.TLS.getDefaultPort();
 
   @Autowired
   public SipServerLocator(DnsInjectionService dnsInjectionService, DnsLookup dnsLookup) {
@@ -662,7 +661,6 @@ public class SipServerLocator implements SipResolver {
         && (transport != BindingInfo.BINDING_TRANSPORT_UNSPECIFIED));
   }
 
-  @Override
   public boolean isSupported(Transport transport) {
     return true;
   }

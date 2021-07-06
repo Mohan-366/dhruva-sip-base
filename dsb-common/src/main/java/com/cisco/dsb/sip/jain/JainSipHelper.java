@@ -1,5 +1,8 @@
 package com.cisco.dsb.sip.jain;
 
+import static com.cisco.wx2.util.Token.At_Sign;
+
+import com.cisco.dsb.sip.parser.RemotePartyIDParser;
 import com.cisco.dsb.sip.util.SipConstants;
 import com.cisco.dsb.sip.util.SipPatterns;
 import com.cisco.dsb.sip.util.SipTokens;
@@ -12,11 +15,12 @@ import gov.nist.javax.sip.header.RecordRoute;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
+import javax.annotation.Nonnull;
 import javax.sip.*;
 import javax.sip.address.Address;
 import javax.sip.address.AddressFactory;
@@ -44,7 +48,7 @@ public class JainSipHelper {
   static {
     sipFactory = SipFactory.getInstance();
     // apps should set this based on the stack impl they want -> sipFactory.setPathName("gov.nist");
-    // RemotePartyIDParser.init();
+    RemotePartyIDParser.init();
     try {
       addressFactory = sipFactory.createAddressFactory();
       headerFactory = sipFactory.createHeaderFactory();
@@ -66,6 +70,10 @@ public class JainSipHelper {
 
   public static MessageFactory getMessageFactory() {
     return messageFactory;
+  }
+
+  public static SipFactory getSipFactory() {
+    return sipFactory;
   }
 
   public static String getCallId(Message message) {
@@ -112,6 +120,14 @@ public class JainSipHelper {
       return ((SipUri) uri).getHost();
     }
     return null;
+  }
+
+  public static String getDomainPart(String destination) {
+    if (destination == null) {
+      return null;
+    }
+    String[] parts = destination.toLowerCase().split(At_Sign, 2);
+    return parts[parts.length - 1];
   }
 
   public static String getToDomain(Message msg) {
@@ -229,13 +245,46 @@ public class JainSipHelper {
     return headerFactory.createHeader(headerName, headerLine);
   }
 
-  public ContactHeader createContactHeader(Address address) {
-    return headerFactory.createContactHeader(address);
+  private static Address createAddress(String displayName, String user, String host)
+      throws ParseException {
+    SipURI sipUri = addressFactory.createSipURI(user, host);
+    Address sipAddress = addressFactory.createAddress(sipUri);
+    sipAddress.setDisplayName(displayName);
+    return sipAddress;
   }
 
-  public static RouteHeader createRouteHeader(String host, int port, String transport)
-      throws ParseException {
-    SipURI hopUri = addressFactory.createSipURI("l2sip", host);
+  private static Address createAddress(String displayName, SipURI uri) throws ParseException {
+    Address sipAddress = addressFactory.createAddress(uri);
+    sipAddress.setDisplayName(displayName);
+    return sipAddress;
+  }
+
+  public static ContactHeader createContactHeader(
+      String displayName, String user, @Nonnull String host, int port) throws ParseException {
+    SipURI contactURI = addressFactory.createSipURI(user, host);
+    contactURI.setPort(port);
+    Address contactAddress = createAddress(displayName, contactURI);
+    return headerFactory.createContactHeader(contactAddress);
+  }
+
+  public static FromHeader createFromHeader(
+      String displayName, String user, @Nonnull String host, String tag) throws ParseException {
+    Objects.requireNonNull(host, "Host not provided");
+    Address fromNameAddress = createAddress(displayName, user, host);
+    return headerFactory.createFromHeader(fromNameAddress, "12345");
+  }
+
+  public static ToHeader createToHeader(
+      String displayName, String user, @Nonnull String host, String tag) throws ParseException {
+    Objects.requireNonNull(host, "Host not provided");
+    Address toNameAddress = createAddress(displayName, user, host);
+    return headerFactory.createToHeader(toNameAddress, tag);
+  }
+
+  public static RouteHeader createRouteHeader(
+      String user, @Nonnull String host, int port, String transport) throws ParseException {
+    Objects.requireNonNull(host, "Host not provided");
+    SipURI hopUri = addressFactory.createSipURI(user, host);
     hopUri.setPort(port);
     hopUri.setTransportParam(transport);
     hopUri.setLrParam();
@@ -342,6 +391,20 @@ public class JainSipHelper {
     return statusCode >= 200 && statusCode < 300;
   }
 
+  public static boolean isWhiteListedHost(
+      HeaderAddress headerAddress, Set<String> whiteListedSet, String whitelistName) {
+    boolean whiteListed = false;
+    if (headerAddress.getAddress().getURI() != null
+        && headerAddress.getAddress().getURI().isSipURI()) {
+      String host = ((SipURI) headerAddress.getAddress().getURI()).getHost();
+      if (whiteListedSet.contains(host)) {
+        // logger.info("Host {} is whileListed for {}.", host, whitelistName);
+        whiteListed = true;
+      }
+    }
+    return whiteListed;
+  }
+
   /**
    * Checks whether trimmed string has a leading sip: or sips: scheme.
    *
@@ -358,6 +421,25 @@ public class JainSipHelper {
   public static boolean hasCallIdParameter(Header header) {
     String parameters = getParameters(header);
     return parameters != null && parameters.toLowerCase().contains(SipConstants.CallId_Parameter);
+  }
+
+  // ---------------------------------------------//
+
+  // --------- Methods that CONVERT DATA ----------//
+
+  // Converts SIP URI to email format for CI lookup.
+  // Returns null if user or host elements are missing or if it's a TEL URI or it's a user=phone
+  // URI.
+  public static String identityUriToEmail(URI uri) {
+    if (!isPhoneType(uri) && uri instanceof SipUri) {
+      SipURI sipURI = (SipURI) uri;
+      String user = sipURI.getUser();
+      String host = sipURI.getHost();
+      if (!Strings.isNullOrEmpty(user) && !Strings.isNullOrEmpty(host)) {
+        return user + "@" + host;
+      }
+    }
+    return null;
   }
 
   // ---------------------------------------------//
@@ -463,5 +545,18 @@ public class JainSipHelper {
       return String.format(
           "%s call-Id=[%s] cseq=[%s]", sipMessage.getClass().getSimpleName(), callId, cseq);
     }
+  }
+
+  public static String urlEncode(String param) {
+    if (Strings.isNullOrEmpty(param)) {
+      return null;
+    }
+    String result = null;
+    try {
+      result = URLEncoder.encode(param, StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      // logger.error("Failed encoding [{}]", param, e);
+    }
+    return result;
   }
 }

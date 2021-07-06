@@ -68,7 +68,7 @@ public class ViaObj implements ViaListenInterface {
   }
 
   public Transport getProtocol() {
-    return Transport.valueOf(getViaTransport()).get();
+    return Transport.getTypeFromInt(getViaTransport()).orElse(Transport.NONE);
   }
 
   public String getAddress() {

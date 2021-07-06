@@ -10,8 +10,8 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import java.net.*;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /** the class describing an interface (port/protocol for now) to listen on */
 public class ListenIf implements ListenInterface {
