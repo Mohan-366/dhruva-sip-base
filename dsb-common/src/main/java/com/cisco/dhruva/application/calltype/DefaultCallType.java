@@ -8,6 +8,7 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -22,7 +23,7 @@ import reactor.core.scheduler.Schedulers;
 @Component
 public class DefaultCallType implements CallType {
   Logger logger = DhruvaLoggerFactory.getLogger(DefaultCallType.class);
-
+  Random booleanRandom = new Random();
 
   @PostConstruct
   public void init() {
@@ -42,6 +43,7 @@ public class DefaultCallType implements CallType {
               .map(addHeaders)
               .flatMap(mrsLookup)
               .subscribe(proxySIPRequest -> {
+                  logger.info("Sending to APP from leaf ,callid: "+proxySIPRequest.getCallId());
                 //proxySIPRequest.getContext().get()
                 //pc.reject(respCode,req)
                 //RouteResult.success(msg,location,exp)
@@ -63,15 +65,26 @@ public class DefaultCallType implements CallType {
   };
 
   private Function<ProxySIPRequest, Mono<ProxySIPRequest>> mrsLookup = proxySIPRequest -> Mono.just(proxySIPRequest)
-          .map(p -> {
+          .mapNotNull(p -> {
             try {
-              Thread.sleep(500);
-              logger.info("MRS lookup done, callID" + proxySIPRequest.getCallId());
+                logger.info("MRS lookup started, callID" + proxySIPRequest.getCallId());
+                Thread.sleep(500);
+                if(booleanRandom.nextBoolean()){
+                    logger.info("MRS lookup succeeded, callID" + proxySIPRequest.getCallId());
+                    return p;
+                }
+                else{
+                    logger.info("MRS lookup failed, callID" + proxySIPRequest.getCallId(),
+                            " Rejecting the call");
+                    DhruvaSink.routeResultSink.tryEmitNext(proxySIPRequest);
+                    return null;
+                }
               //if mrs failed, call controller api to reject
+
             } catch (InterruptedException e) {
               //
             }
-            return p;
+            return null;
           })
           .subscribeOn(Schedulers.boundedElastic());
         /*
