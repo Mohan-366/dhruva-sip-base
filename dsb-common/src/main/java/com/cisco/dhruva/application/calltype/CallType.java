@@ -5,9 +5,7 @@ import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 
 public interface CallType {
   Predicate<ProxySIPRequest> filter();

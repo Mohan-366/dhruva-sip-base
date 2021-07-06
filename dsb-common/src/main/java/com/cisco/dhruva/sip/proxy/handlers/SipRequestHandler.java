@@ -2,13 +2,9 @@ package com.cisco.dhruva.sip.proxy.handlers;
 
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
-import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.MessageConvertor;
-import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.util.SpringApplicationContext;
 import javax.sip.RequestEvent;
-import javax.sip.SipProvider;
 import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Mono;
 
@@ -25,11 +21,13 @@ public class SipRequestHandler extends RequestEventHandler {
   @Override
   public void executeRun() throws Exception {
     // Validate request, transform request, Invoke Controller
-    //ProxyService.proxyRequestHandler.accept(Mono.just(requestEvent));
-    SpringApplicationContext.getAppContext().getBean(ProxyService.class)
-            .proxyRequestHandler.accept(Mono.just(requestEvent));
+    // ProxyService.proxyRequestHandler.accept(Mono.just(requestEvent));
+    SpringApplicationContext.getAppContext()
+        .getBean(ProxyService.class)
+        .proxyRequestHandler
+        .accept(Mono.just(requestEvent));
 
-/*    ProxySIPRequest proxySIPRequest =
+    /*    ProxySIPRequest proxySIPRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             this.receivedRequest,
             (SipProvider) requestEvent.getSource(),

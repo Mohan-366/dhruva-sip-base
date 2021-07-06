@@ -43,8 +43,6 @@ import javax.sip.message.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 @Service
 public class ProxyService {
@@ -142,8 +140,9 @@ public class ProxyService {
     // TODO DSB Define right Message type for RouteResult
     DhruvaSink.routeResultSink
         .asFlux()
-            .onErrorContinue((err,msg)->{
-                System.out.println(err);
+        .onErrorContinue(
+            (err, msg) -> {
+              System.out.println(err);
             })
         .subscribe(
             dsipMessage -> {
@@ -176,7 +175,8 @@ public class ProxyService {
               }
 
               // dsipMessage.getProvider()
-            }, System.out::println);
+            },
+            System.out::println);
   }
 
   @PreDestroy
@@ -186,7 +186,9 @@ public class ProxyService {
   Application Layer should call this function along with requestConsumer to process the request messages from
   proxylayer. Message format is DSIPRequestMessage
    */
-  public void register(Consumer<ProxySIPRequest> appRequestConsumer, Consumer<ProxySIPResponse> appResponseConsumer) {
+  public void register(
+      Consumer<ProxySIPRequest> appRequestConsumer,
+      Consumer<ProxySIPResponse> appResponseConsumer) {
     requestConsumer = appRequestConsumer;
     responseConsumer = appResponseConsumer;
 
@@ -236,55 +238,59 @@ public class ProxyService {
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-
       };
-    private Function<RequestEvent,RequestEvent> validate = requestEvent -> {
+  private Function<RequestEvent, RequestEvent> validate =
+      requestEvent -> {
         System.out.println("Doing some validations on Request Event");
         return requestEvent;
-    };
+      };
 
-    private Function<ProxySIPRequest, ProxySIPRequest> createProxyController = proxySIPRequest -> {
+  private Function<ProxySIPRequest, ProxySIPRequest> createProxyController =
+      proxySIPRequest -> {
         ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
         if (serverTransaction == null
-                && !((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
-            try {
-                serverTransaction = proxySIPRequest.getProvider().getNewServerTransaction(proxySIPRequest.getRequest());
-            } catch (TransactionAlreadyExistsException e) {
-                e.printStackTrace();
-            } catch (TransactionUnavailableException e) {
-                e.printStackTrace();
-            }
+            && !((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
+          try {
+            serverTransaction =
+                proxySIPRequest.getProvider().getNewServerTransaction(proxySIPRequest.getRequest());
+          } catch (TransactionAlreadyExistsException e) {
+            e.printStackTrace();
+          } catch (TransactionUnavailableException e) {
+            e.printStackTrace();
+          }
         }
         ProxyController controller =
-                proxyControllerFactory
-                        .proxyController()
-                        .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
+            proxyControllerFactory
+                .proxyController()
+                .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
 
         assert serverTransaction != null;
         serverTransaction.setApplicationData(controller);
         controller.setController(proxySIPRequest);
         return proxySIPRequest;
-    };
+      };
 
-    private Function<ProxySIPResponse, ProxySIPResponse> toProxyController = proxySIPResponse -> {
-        //some proxy controller operations
+  private Function<ProxySIPResponse, ProxySIPResponse> toProxyController =
+      proxySIPResponse -> {
+        // some proxy controller operations
         /*ProxyController proxyController =
-                (ProxyController) proxySIPResponse.getClientTransaction().getApplicationData();*/
+        (ProxyController) proxySIPResponse.getClientTransaction().getApplicationData();*/
         return proxySIPResponse;
-    };
-  public Consumer<Mono<RequestEvent>> proxyRequestHandler = requestEventMono -> {
+      };
+  public Consumer<Mono<RequestEvent>> proxyRequestHandler =
+      requestEventMono -> {
+        requestEventMono
+            .mapNotNull(validate)
+            .mapNotNull(createProxySipRequest)
+            .mapNotNull(createProxyController)
+            .subscribe(requestConsumer);
+      };
 
-        requestEventMono.mapNotNull(validate)
-                        .mapNotNull(createProxySipRequest)
-                        .mapNotNull(createProxyController)
-                        .subscribe(requestConsumer);
-  };
-
-
-
-  public Consumer<Mono<ResponseEvent>> proxyResponseHandler = responsEventMono ->{
-      responsEventMono.mapNotNull(createProxySipResponse)
-                      .mapNotNull(toProxyController)
-                      .subscribe(responseConsumer);
-  } ;
+  public Consumer<Mono<ResponseEvent>> proxyResponseHandler =
+      responsEventMono -> {
+        responsEventMono
+            .mapNotNull(createProxySipResponse)
+            .mapNotNull(toProxyController)
+            .subscribe(responseConsumer);
+      };
 }
