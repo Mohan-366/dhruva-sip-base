@@ -40,6 +40,6 @@ public class ProxyEventManager implements ProxyEventListener {
   }
 
   private void startProcessing(ProxyEventHandler proxyEventHandler) {
-    executor.execute(proxyEventHandler);
+    executor.submit(proxyEventHandler);
   }
 }
