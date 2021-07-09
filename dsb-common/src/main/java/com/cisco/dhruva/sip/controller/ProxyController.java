@@ -12,7 +12,6 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.util.concurrent.CompletableFuture;
 import javax.sip.*;
 import javax.sip.message.Request;
 
@@ -52,19 +51,42 @@ public class ProxyController implements ProxyInterface {
   }
 
   public void respond(int responseCode, ProxySIPRequest proxySIPRequest) {
-    try {
-      CompletableFuture<Void> responseResult =
-          ProxySendMessage.sendResponse(
-              responseCode,
-              proxySIPRequest.getProvider(),
-              proxySIPRequest.getServerTransaction(),
-              proxySIPRequest.getRequest());
-    } catch (Exception e) {
-      System.out.println(e.getMessage());
-    }
+
+    ProxySendMessage.sendResponse(
+            responseCode,
+            proxySIPRequest.getProvider(),
+            proxySIPRequest.getServerTransaction(),
+            proxySIPRequest.getRequest())
+        .subscribe(
+            req -> {},
+            err -> {
+              // Handle exception
+            });
   }
 
+
   public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location) throws SipException {
+
+    // Mono.just(proxySIPRequest).subscribe();
+
+    // ## Sending out the Request
+    // process the Location object - validate Location
+    // Trunk Service - getNextElement
+    // Client transaction - proxy -
+    // Client transaction - stack
+    // post processing - Addition Via , Route  , Record-Route
+    // Send the packet out using stack interface
+
+    // Proxy Error , returns failure
+    // Stack return error - (transaction processing)
+    // IO Exception - Transport errors
+
+    // Response
+    // 200, 180
+    // Flip record route
+    // Find the right server transaction - other leg
+    //
+
     SIPRequest request =
         MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(proxySIPRequest);
     if (!((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
