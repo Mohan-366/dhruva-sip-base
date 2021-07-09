@@ -6,7 +6,7 @@ import gov.nist.core.NameValue;
 /**
  * Constants used in SIP messages
  *
- * <p>NOTE: ----- Following constants which sounded specific to l2sip are removed:
+ * <p>NOTE: ----- Following constants which sounded specific to l2sip are not included here:
  *
  * <p>- L2SIP_IT_HURON_DOMAIN - L2SIP_INTEGRATION_TEST_DOMAINS - SPARK_SIP_DOMAINS -
  * NON_CMR_WEBEX_DOMAINS - FORCE_PROXY_PARAMETER - HEADER_DROP_THIS_MSG - CANARY_OPTS_PARAMETER -

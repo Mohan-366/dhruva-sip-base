@@ -2,6 +2,7 @@ package com.cisco.dsb.util.log;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.util.SipConstants;
+import com.cisco.dsb.util.ObfuscationAspect;
 import com.cisco.dsb.util.SipAddressUtils;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.base.Strings;
@@ -10,15 +11,16 @@ import gov.nist.core.GenericObject;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.sip.address.SipURI;
+import javax.sip.address.TelURL;
+import javax.sip.address.URI;
 import java.text.ParseException;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.sip.address.SipURI;
-import javax.sip.address.TelURL;
-import javax.sip.address.URI;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class LogUtils {
 
@@ -291,6 +293,7 @@ public class LogUtils {
       // replace dtmf digits in content
       result = DhruvaStackLogger.obfuscateDigits(result);
 
+
       result = LogUtils.obfuscatePinForEscalatedMeeting(result, object);
     }
     return result;
@@ -314,6 +317,7 @@ public class LogUtils {
               logger.info(
                   "Exception setting user in obfuscatePinForEscalatedMeeting , effects "
                       + "only masking functionality for mats flow , doesn't impact call");
+
               return result;
             }
             return result.replaceAll(Pattern.quote(sipURI.toString()), clonedSipURI.toString());
@@ -334,6 +338,7 @@ public class LogUtils {
         objectEncoded = LogUtils.obfuscate(objectEncoded, true, true);
 
         // replace dtmf digits in content
+
         return DhruvaStackLogger.obfuscateDigits(objectEncoded);
       } finally {
         ObfuscationAspect.disableObfuscationForThisThread();

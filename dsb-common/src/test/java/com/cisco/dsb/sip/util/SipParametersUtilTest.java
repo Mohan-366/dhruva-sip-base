@@ -1,6 +1,8 @@
 package com.cisco.dsb.sip.util;
 
+import com.cisco.dsb.sip.header.RemotePartyIDHeader;
 import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.sip.parser.RemotePartyIDParser;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import javax.sip.address.SipURI;
@@ -12,6 +14,10 @@ import org.testng.annotations.Test;
 
 @Test
 public class SipParametersUtilTest {
+
+  static {
+    RemotePartyIDParser.init();
+  }
 
   @DataProvider
   public Object[][] headerParametersData() throws Exception {
@@ -66,44 +72,44 @@ public class SipParametersUtilTest {
             .put("p3", "p3val")
             .put("p4", "p4val")
             .build()
-      } /*,
-        {
-          JainSipHelper.getHeaderFactory()
-              .createHeader(
-                  RemotePartyIDHeader.NAME,
-                  "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
-          SipParametersUtil.ParametersType.SIP_URI,
-          ImmutableMap.builder().put("x-cisco-number", "+14084744493").build()
-        },
-        {
-          JainSipHelper.getHeaderFactory()
-              .createHeader(
-                  RemotePartyIDHeader.NAME,
-                  "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
-          SipParametersUtil.ParametersType.HEADER,
-          ImmutableMap.builder()
-              .put("party", "calling")
-              .put("screen", "yes")
-              .put("privacy", "off")
-              .put("x-cisco-tenant", "7e88d491-d6ca-4786-82ed-cbe9efb02ad2")
-              .put("no-anchor", "")
-              .build()
-        },
-        {
-          JainSipHelper.getHeaderFactory()
-              .createHeader(
-                  RemotePartyIDHeader.NAME,
-                  "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
-          SipParametersUtil.ParametersType.BOTH,
-          ImmutableMap.builder()
-              .put("x-cisco-number", "+14084744493")
-              .put("party", "calling")
-              .put("screen", "yes")
-              .put("privacy", "off")
-              .put("x-cisco-tenant", "7e88d491-d6ca-4786-82ed-cbe9efb02ad2")
-              .put("no-anchor", "")
-              .build()
-        }*/
+      },
+      {
+        JainSipHelper.getHeaderFactory()
+            .createHeader(
+                RemotePartyIDHeader.NAME,
+                "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
+        SipParametersUtil.ParametersType.SIP_URI,
+        ImmutableMap.builder().put("x-cisco-number", "+14084744493").build()
+      },
+      {
+        JainSipHelper.getHeaderFactory()
+            .createHeader(
+                RemotePartyIDHeader.NAME,
+                "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
+        SipParametersUtil.ParametersType.HEADER,
+        ImmutableMap.builder()
+            .put("party", "calling")
+            .put("screen", "yes")
+            .put("privacy", "off")
+            .put("x-cisco-tenant", "7e88d491-d6ca-4786-82ed-cbe9efb02ad2")
+            .put("no-anchor", "")
+            .build()
+      },
+      {
+        JainSipHelper.getHeaderFactory()
+            .createHeader(
+                RemotePartyIDHeader.NAME,
+                "\"User21 VSPstnShared21\" <sip:+14084744574@192.168.91.101;x-cisco-number=+14084744493>;party=calling;screen=yes;privacy=off;x-cisco-tenant=7e88d491-d6ca-4786-82ed-cbe9efb02ad2;no-anchor"),
+        SipParametersUtil.ParametersType.BOTH,
+        ImmutableMap.builder()
+            .put("x-cisco-number", "+14084744493")
+            .put("party", "calling")
+            .put("screen", "yes")
+            .put("privacy", "off")
+            .put("x-cisco-tenant", "7e88d491-d6ca-4786-82ed-cbe9efb02ad2")
+            .put("no-anchor", "")
+            .build()
+      }
     };
   }
 

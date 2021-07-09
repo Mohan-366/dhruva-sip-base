@@ -1,88 +1,96 @@
-/*
- * Copyright (c) 2020  by Cisco Systems, Inc.All Rights Reserved.
- * @author graivitt
- */
-
 package com.cisco.dsb.transport;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 public enum Transport {
-  NONE(0) {
+  NONE(0, 5060) {
     @Override
     public boolean isReliable() {
       return false;
     }
   },
-  UDP(1) {
+  UDP(1, 5060) {
     @Override
     public boolean isReliable() {
       return false;
     }
   },
-  TCP(2) {
+  TCP(2, 5060) {
     @Override
     public boolean isReliable() {
       return true;
     }
   },
-  MULTICAST(3) {
+  MULTICAST(3, 5060) {
     @Override
     public boolean isReliable() {
       return false;
     }
   },
-  TLS(4) {
+  TLS(4, 5061) {
     @Override
     public boolean isReliable() {
       return true;
     }
   },
-  SCTP(5) {
+  SCTP(5, 5060) {
     @Override
     public boolean isReliable() {
       return true;
     }
-  };
+  }
+// TODO: what is the use of UNSUPPORTED?
+/*,
+@JsonEnumDefaultValue UNSUPPORTED(-1)*/ ;
+
+  // NOTE: if more than one method need to be included, mention all the methods in a separate
+  // interface
+  // eg: getConnection() from Dhruva.Transport
+  public abstract boolean isReliable();
 
   private int value;
+  private int defaultPort;
 
-  Transport(int transport) {
-    this.value = transport;
-  }
-
-  public static Optional<Transport> valueOf(int value) {
-    return Arrays.stream(values()).filter(transport -> transport.value == value).findFirst();
+  Transport(int value, int defaultPort) {
+    this.value = value;
+    this.defaultPort = defaultPort;
   }
 
   public int getValue() {
     return value;
   }
 
-  /** Byte mask constant for the transport type. */
-  public static final byte UDP_MASK = 1;
+  public int getDefaultPort() {
+    return defaultPort;
+  }
 
-  public static final byte TCP_MASK = 2;
-  public static final byte MULTICAST_MASK = 4;
-  public static final byte TLS_MASK = 8;
-  public static final byte SCTP_MASK = 16;
+  /**
+   * given an integer value, return the corresponding TransportType wrapped in an Optional if
+   * present else, return empty Optional
+   *
+   * @param value
+   * @return {@code Optional} with/without TransportType
+   */
+  public static Optional<Transport> getTypeFromInt(int value) {
+    return Arrays.stream(values()).filter(transport -> transport.value == value).findFirst();
+  }
 
-  /** Lower case string representation of transport type. */
-  public static final String STR_NONE = "none";
-
-  public static final String STR_UDP = "udp";
-  public static final String STR_TCP = "tcp";
-  public static final String STR_TLS = "tls";
-
-  /** Upper case string representation of transport type. */
-  public static final String UC_STR_NONE = "NONE";
-
-  public static final String UC_STR_UDP = "UDP";
-  public static final String UC_STR_TCP = "TCP";
-  public static final String UC_STR_TLS = "TLS";
-
-  public static final String TRANSPORT = "transport";
-
-  public abstract boolean isReliable();
+  /**
+   * given a string value, return the corresponding TransportType wrapped in an Optional if present
+   * else, return empty Optional
+   *
+   * @param transport
+   * @return {@code Optional} with/without TransportType
+   */
+  public static Optional<Transport> getTypeFromString(@Nonnull String transport) {
+    Objects.requireNonNull(transport, "transport for which to get TransportType is null");
+    try {
+      return Optional.of(Transport.valueOf(transport.toUpperCase()));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
 }

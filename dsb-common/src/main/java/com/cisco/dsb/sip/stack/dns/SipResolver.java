@@ -44,10 +44,10 @@ interface SipResolver {
 
   /**
    * Return <code>true</code> if this resolver has been configured to support a particular transport
-   * as defined in DsSipObject.DsSipTransportType.
+   * as defined in enum Transport.
    *
    * @return <code>true</code> if this resolver has been configured to support a particular
-   *     transport as defined in DsSipObject.DsSipTransportType.
+   *     transport as defined in enum Transport.
    */
   boolean isSupported(Transport transport);
 }
