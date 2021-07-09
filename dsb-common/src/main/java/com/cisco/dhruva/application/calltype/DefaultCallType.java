@@ -1,29 +1,28 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dhruva.application.DhruvaApp;
-import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
+import com.cisco.dhruva.sip.controller.ProxyController;
+import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import javax.sip.SipException;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.PostConstruct;
-
-import org.slf4j.MDC;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 // TODO can this be static type??? whole class???
 @Component
 public class DefaultCallType implements CallType {
   Logger logger = DhruvaLoggerFactory.getLogger(DefaultCallType.class);
   Random booleanRandom = new Random();
+
 
   @PostConstruct
   public void init() {
@@ -42,21 +41,29 @@ public class DefaultCallType implements CallType {
       proxySIPRequestMono
               .map(addHeaders)
               .flatMap(mrsLookup)
+              .metrics()
+              .name("defaultType")
               .subscribe(proxySIPRequest -> {
                   logger.info("Sending to APP from leaf ,callid: "+proxySIPRequest.getCallId());
-                //proxySIPRequest.getContext().get()
-                //pc.reject(respCode,req)
-                //RouteResult.success(msg,location,exp)
-                //pc.proxyTo(routeResult)
-                DhruvaSink.routeResultSink.tryEmitNext(proxySIPRequest);
-              }); //TODO call proxyservice handle message from app
+                  try {
+                      ((ProxyController)proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
+                              .proxyRequest(proxySIPRequest, null);
+                  } catch (SipException exception) {
+                      exception.printStackTrace();
+                  }
+
+              });
     };
   }
 
   @Override
   public Consumer<Mono<ProxySIPResponse>> processResponse() {
     //pipeline for response
-    return proxySIPResponseMono -> proxySIPResponseMono.subscribe(DhruvaSink.routeResultSink::tryEmitNext);
+    return proxySIPResponseMono -> proxySIPResponseMono
+            .subscribe(proxySIPResponse -> {
+                ((ProxyController)proxySIPResponse.getContext().get(CommonContext.PROXY_CONTROLLER))
+                        .proxyResponse(proxySIPResponse);
+    });
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> addHeaders = proxySIPRequest -> {
@@ -65,6 +72,8 @@ public class DefaultCallType implements CallType {
   };
 
   private Function<ProxySIPRequest, Mono<ProxySIPRequest>> mrsLookup = proxySIPRequest -> Mono.just(proxySIPRequest)
+          .metrics()
+          .name("mrs")
           .mapNotNull(p -> {
             try {
                 logger.info("MRS lookup started, callID" + proxySIPRequest.getCallId());
@@ -76,7 +85,8 @@ public class DefaultCallType implements CallType {
                 else{
                     logger.info("MRS lookup failed, callID" + proxySIPRequest.getCallId(),
                             " Rejecting the call");
-                    DhruvaSink.routeResultSink.tryEmitNext(proxySIPRequest);
+                    ((ProxyController)proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
+                            .respond(404,proxySIPRequest);
                     return null;
                 }
               //if mrs failed, call controller api to reject
@@ -86,15 +96,6 @@ public class DefaultCallType implements CallType {
             }
             return null;
           })
-          .subscribeOn(Schedulers.boundedElastic());
-        /*
-          This is for handing of MDC when thread switch happens.
-            Schedulers.onScheduleHook("MDC Hook", runnable -> {
-                Map<String, String> map=MDC.getCopyOfContextMap();
-                return ()->{
-                  if(map != null)
-                    MDC.setContextMap(map);
-                  runnable.run();
-                };
-          }*/
+          .subscribeOn(Schedulers.newBoundedElastic(100,100000,"MRS_SERVICE"));
+
 }

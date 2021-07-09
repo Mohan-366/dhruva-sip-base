@@ -39,29 +39,12 @@ public class ProxyController implements ProxyInterface {
     request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
   }
 
-  public void onNewRequest(ProxySIPRequest request) {
-    // Create proxu transaction
-    // handle request params
-    request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
-    //    dsipRequestMessage
-    //        .getContext()
-    //        .set(
-    //            CommonContext.APP_MESSAGE_HANDLER,
-    //            new AppMessageListener() {
-    //              @Override
-    //              public void onMessage(DSIPMessage message) {
-    //                // Handle the message from App
-    //              }
-    //            });
-    proxyAppAdaptor.handleRequest(request);
-  }
-
-  public void respond(ProxySIPResponse proxySIPResponse) throws DhruvaException {
+  public void proxyResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
 
     SIPResponse response =
         MessageConvertor.convertDhruvaResponseMessageToJainSipMessage(proxySIPResponse);
     try {
-      (proxySIPResponse).getProvider().sendResponse(response);
+      proxySIPResponse.getProvider().sendResponse(response);
 
     } catch (SipException exception) {
       exception.printStackTrace();
@@ -81,7 +64,7 @@ public class ProxyController implements ProxyInterface {
     }
   }
 
-  public void proxyTo(ProxySIPRequest proxySIPRequest, Location location) throws SipException {
+  public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location) throws SipException {
     SIPRequest request =
         MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(proxySIPRequest);
     if (!((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
@@ -95,7 +78,5 @@ public class ProxyController implements ProxyInterface {
     }
   }
 
-  public void onResponse(ProxySIPResponse proxySIPResponse) {
-    proxyAppAdaptor.handleResponse(proxySIPResponse);
-  }
+
 }

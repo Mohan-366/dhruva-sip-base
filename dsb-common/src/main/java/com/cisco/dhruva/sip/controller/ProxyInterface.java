@@ -7,9 +7,9 @@ import com.cisco.dsb.exception.DhruvaException;
 import javax.sip.SipException;
 
 public interface ProxyInterface {
-  public void respond(ProxySIPResponse proxySIPResponse) throws DhruvaException;
+  public void proxyResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException;
 
   public void respond(int responseCode, ProxySIPRequest proxySIPRequest);
 
-  public void proxyTo(ProxySIPRequest proxySIPRequest, Location location) throws SipException;
+  public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location) throws SipException;
 }

@@ -25,8 +25,6 @@ public class ProxyEventManager implements ProxyEventListener {
    */
   @Inject private StripedExecutorService executor;
 
-  @Autowired private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-
   @Autowired ProxyService proxyService;
 
   @Override
@@ -40,6 +38,6 @@ public class ProxyEventManager implements ProxyEventListener {
   }
 
   private void startProcessing(ProxyEventHandler proxyEventHandler) {
-    executor.execute(proxyEventHandler);
+    executor.submit(proxyEventHandler);
   }
 }

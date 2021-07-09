@@ -24,6 +24,7 @@ public class DhruvaApp {
   private Consumer<ProxySIPRequest> requestConsumer =
       proxySIPRequest -> {
         logger.info("-------App: Got SIPMessage->Type:SIPRequest------");
+        //TODO Can we do this in 'for loop' as it's faster for small amount of iteration
         callTypes.stream()
             .filter(callType -> callType.filter().test(proxySIPRequest))
             .findFirst()
