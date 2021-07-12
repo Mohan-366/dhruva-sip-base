@@ -14,8 +14,8 @@ import gov.nist.javax.sip.header.Server;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.SIPStackTimerTask;
 import gov.nist.javax.sip.stack.SIPTransactionStack;
-import org.apache.commons.lang3.tuple.Pair;
-
+import java.text.ParseException;
+import java.util.*;
 import javax.net.ssl.KeyManager;
 import javax.sip.*;
 import javax.sip.address.Address;
@@ -25,8 +25,7 @@ import javax.sip.header.*;
 import javax.sip.message.Message;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.text.ParseException;
-import java.util.*;
+import org.apache.commons.lang3.tuple.Pair;
 
 // This class is not loaded by Spring so autowire does not work.
 // TODO: Implement SipStackWrapper and uncomment the commented methods.

@@ -1,9 +1,9 @@
 package com.cisco.dsb.util.log;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.util.SipAddressUtils;
 import com.cisco.dsb.sip.util.SipConstants;
 import com.cisco.dsb.util.ObfuscationAspect;
+import com.cisco.dsb.util.SipAddressUtils;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -22,7 +22,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class LogUtils {
-  // private static Logger logger = DSB.getLogger(LogUtils.class);
+
+  private static Logger logger = DhruvaLoggerFactory.getLogger(LogUtils.class);
   private static boolean obfuscateLog = true;
 
   public static void setObfuscateLog(boolean obfuscateLog) {
@@ -171,7 +172,7 @@ public class LogUtils {
       }
 
     } catch (ParseException e) {
-      // logger.error("Error creating masked URI", e);
+      logger.error("Error creating masked URI", e);
     }
 
     // Fall through if exception trapped
@@ -289,7 +290,7 @@ public class LogUtils {
       // This will obfuscate just the SDP
       result = LogUtils.obfuscate(result, true, true);
       // replace dtmf digits in content
-      // result = L2SipStackLogger.obfuscateDigits(result);
+      result = DhruvaStackLogger.obfuscateDigits(result);
 
       result = LogUtils.obfuscatePinForEscalatedMeeting(result, object);
     }
@@ -311,9 +312,10 @@ public class LogUtils {
               clonedSipURI.setUser(
                   userParts[0] + "+" + StringUtils.repeat("*", userParts[1].length()));
             } catch (ParseException e) {
-              /* logger.info(
-              "Exception setting user in obfuscatePinForEscalatedMeeting , effects "
-                  + "only masking functionality for mats flow , doesn't impact call");*/
+              logger.info(
+                  "Exception setting user in obfuscatePinForEscalatedMeeting , effects "
+                      + "only masking functionality for mats flow , doesn't impact call");
+
               return result;
             }
             return result.replaceAll(Pattern.quote(sipURI.toString()), clonedSipURI.toString());
@@ -334,8 +336,8 @@ public class LogUtils {
         objectEncoded = LogUtils.obfuscate(objectEncoded, true, true);
 
         // replace dtmf digits in content
-        // return L2SipStackLogger.obfuscateDigits(objectEncoded);
-        return null;
+
+        return DhruvaStackLogger.obfuscateDigits(objectEncoded);
       } finally {
         ObfuscationAspect.disableObfuscationForThisThread();
       }

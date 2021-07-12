@@ -7,16 +7,16 @@ import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.JsonUtilFactory;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
+import com.cisco.wx2.dto.BuildInfo;
 import java.security.KeyStore;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
-@Component
+@Configuration
+@Qualifier("dhruvaSIPConfigProperties")
 public class DhruvaSIPConfigProperties {
 
   public static final String SIP_LISTEN_POINTS = "sipListenPoints";
@@ -99,6 +99,10 @@ public class DhruvaSIPConfigProperties {
   public static int DEFAULT_PORT_UDP = 5060;
 
   @Autowired private Environment env;
+
+  private static BuildInfo buildInfo;
+
+  public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
   private String[] tlsProtocols = new String[] {"TLSv1.2"};
 

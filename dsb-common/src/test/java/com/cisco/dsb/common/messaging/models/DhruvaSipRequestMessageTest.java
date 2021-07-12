@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import gov.nist.javax.sip.message.SIPRequest;
 import javax.sip.ServerTransaction;
@@ -11,8 +12,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class DhruvaSipRequestMessageTest {
-
-  private IDhruvaMessage message;
 
   @Test
   public void testDhruvaSipRequestMessageBuilder() throws Exception {
@@ -23,7 +22,7 @@ public class DhruvaSipRequestMessageTest {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
-    IDhruvaMessage message =
+    ProxySIPRequest message =
         DhruvaSipRequestMessage.newBuilder()
             .withContext(context)
             .withPayload(request)
@@ -34,7 +33,7 @@ public class DhruvaSipRequestMessageTest {
             .sessionId("testSession")
             .build();
 
-    Assert.assertEquals(message.getSIPMessage(), request);
+    Assert.assertEquals(message.getRequest(), request);
     Assert.assertEquals(message.getContext(), context);
 
     Assert.assertEquals(message.getCallType(), CallType.SIP);
