@@ -15,15 +15,14 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.Nullable;
-import javax.sip.address.SipURI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import javax.sip.address.SipURI;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SipServerLocator implements SipResolver {

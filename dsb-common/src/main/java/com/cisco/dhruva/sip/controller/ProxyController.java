@@ -64,7 +64,6 @@ public class ProxyController implements ProxyInterface {
             });
   }
 
-
   public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location) throws SipException {
 
     // Mono.just(proxySIPRequest).subscribe();
@@ -99,6 +98,4 @@ public class ProxyController implements ProxyInterface {
       (proxySIPRequest).getProvider().sendRequest(request);
     }
   }
-
-
 }

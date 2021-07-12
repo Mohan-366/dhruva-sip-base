@@ -3,7 +3,6 @@ package com.cisco.dhruva.sip.proxy.handlers;
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dsb.util.SpringApplicationContext;
 import javax.sip.ResponseEvent;
-
 import reactor.core.publisher.Mono;
 
 public class SipResponseHandler extends ResponseEventHandler {
@@ -18,6 +17,5 @@ public class SipResponseHandler extends ResponseEventHandler {
         .getBean(ProxyService.class)
         .proxyResponseHandler
         .accept(Mono.just(responseEvent));
-
   }
 }

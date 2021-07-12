@@ -11,16 +11,15 @@ import gov.nist.core.GenericObject;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.sip.address.SipURI;
-import javax.sip.address.TelURL;
-import javax.sip.address.URI;
 import java.text.ParseException;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.sip.address.SipURI;
+import javax.sip.address.TelURL;
+import javax.sip.address.URI;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class LogUtils {
 
@@ -292,7 +291,6 @@ public class LogUtils {
       result = LogUtils.obfuscate(result, true, true);
       // replace dtmf digits in content
       result = DhruvaStackLogger.obfuscateDigits(result);
-
 
       result = LogUtils.obfuscatePinForEscalatedMeeting(result, object);
     }

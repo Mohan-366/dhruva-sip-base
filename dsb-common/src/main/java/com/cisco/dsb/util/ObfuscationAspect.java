@@ -1,5 +1,8 @@
 package com.cisco.dsb.util;
 
+import static gov.nist.javax.sip.address.AddressImpl.NAME_ADDR;
+import static gov.nist.javax.sip.address.AddressImpl.WILD_CARD;
+
 import com.cisco.dsb.util.log.LogUtils;
 import gov.nist.core.NameValueList;
 import gov.nist.core.Separators;
@@ -7,14 +10,10 @@ import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.address.TelephoneNumber;
 import gov.nist.javax.sip.header.ExtensionHeaderImpl;
+import javax.sip.address.URI;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-
-import javax.sip.address.URI;
-
-import static gov.nist.javax.sip.address.AddressImpl.NAME_ADDR;
-import static gov.nist.javax.sip.address.AddressImpl.WILD_CARD;
 
 /** Has methods that obfuscates various parts of a sip msg */
 @Aspect

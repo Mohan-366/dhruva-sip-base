@@ -7,14 +7,9 @@ package com.cisco.dhruva;
 
 import com.cisco.dhruva.bootstrap.DhruvaServer;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
-import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
-import com.cisco.dhruva.sip.proxy.sinks.DhruvaSink;
-import com.cisco.dsb.common.CommonContext;
-import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
@@ -26,10 +21,6 @@ import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
-import gov.nist.javax.sip.message.SIPRequest;
-import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,15 +28,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.sip.*;
-import javax.sip.message.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 public class ProxyService {
@@ -138,41 +126,38 @@ public class ProxyService {
     return Optional.ofNullable(proxyStackMap.get(sipListenPointName));
   }
 
-    @PreDestroy
+  @PreDestroy
   private void releaseServiceResources() {}
 
-    /**
-     * Applications should use register to get callback for ProxySIPRequest and ProxySIPResponse
-     * @param requestConsumer application should provide the behaviour to process the ProxySIPRequest
-     * @param responseConsumer application should provide the behaviour to process the ProxySIPResponse
-     */
+  /**
+   * Applications should use register to get callback for ProxySIPRequest and ProxySIPResponse
+   *
+   * @param requestConsumer application should provide the behaviour to process the ProxySIPRequest
+   * @param responseConsumer application should provide the behaviour to process the
+   *     ProxySIPResponse
+   */
   public void register(
-      Consumer<ProxySIPRequest> requestConsumer,
-      Consumer<ProxySIPResponse> responseConsumer) {
+      Consumer<ProxySIPRequest> requestConsumer, Consumer<ProxySIPResponse> responseConsumer) {
     this.requestConsumer = requestConsumer;
     this.responseConsumer = responseConsumer;
-
   }
 
-
-    /**
-     * placeholder for processing the RequestEvent from Stack
-     */
+  /** placeholder for processing the RequestEvent from Stack */
   public Consumer<Mono<RequestEvent>> proxyRequestHandler =
-      requestEventMono -> requestEventMono
-          .mapNotNull(sipProxyManager.validate)
-          .mapNotNull(sipProxyManager.createProxySipRequest)
-          .mapNotNull(sipProxyManager.createProxyController)
-              //.onErrorResume()
-              //.subscribeOn(Schedulers.fromExecutorService(StripedExecutorService))
-          .subscribe(requestConsumer);
-//flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
-    /**
-     * placeholder for processing the ResponseEvent from Stack
-     */
+      requestEventMono ->
+          requestEventMono
+              .mapNotNull(sipProxyManager.validate)
+              .mapNotNull(sipProxyManager.createProxySipRequest)
+              .mapNotNull(sipProxyManager.createProxyController)
+              // .onErrorResume()
+              // .subscribeOn(Schedulers.fromExecutorService(StripedExecutorService))
+              .subscribe(requestConsumer);
+  // flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
+  /** placeholder for processing the ResponseEvent from Stack */
   public Consumer<Mono<ResponseEvent>> proxyResponseHandler =
-      responsEventMono -> responsEventMono
-          .mapNotNull(sipProxyManager.createProxySipResponse)
-          .mapNotNull(sipProxyManager.toProxyController)
-          .subscribe(responseConsumer);
+      responsEventMono ->
+          responsEventMono
+              .mapNotNull(sipProxyManager.createProxySipResponse)
+              .mapNotNull(sipProxyManager.toProxyController)
+              .subscribe(responseConsumer);
 }
