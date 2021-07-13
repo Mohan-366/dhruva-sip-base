@@ -406,14 +406,19 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         // for response matching
         clientTrans.setApplicationData(this);
 
+        // TODO DSB
+        // Returns Mono
         ProxySendMessage.sendRequest(sipProvider, clientTrans, request)
             .subscribe(
-                req -> {},
+                req -> {
+                  controller.onProxySuccess(this, cookie, proxyClientTrans);
+                },
                 err -> {
                   // Handle exception
+                  // Check error Type
+                  controller.onProxyFailure(
+                      this, cookie, ControllerInterface.INVALID_STATE, err.getMessage(), err);
                 });
-
-        controller.onProxySuccess(this, cookie, proxyClientTrans);
 
       } catch (Exception e) {
         Log.error("Got exception in proxyTo()!", e);

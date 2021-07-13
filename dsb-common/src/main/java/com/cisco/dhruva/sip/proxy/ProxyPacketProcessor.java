@@ -25,7 +25,7 @@ public class ProxyPacketProcessor implements SipListener {
     proxyEventListener.response(responseEvent);
   }
 
-  // TODO DSB
+  // TODO DSB, have different pipeline
   @Override
   public void processTimeout(TimeoutEvent timeoutEvent) {}
 

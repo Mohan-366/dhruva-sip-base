@@ -3,6 +3,7 @@ package com.cisco.dhruva.sip.controller;
 import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dhruva.sip.proxy.Location;
 import com.cisco.dhruva.sip.proxy.ProxySendMessage;
+import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
@@ -15,10 +16,7 @@ import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.Optional;
-import javax.sip.ClientTransaction;
-import javax.sip.ServerTransaction;
-import javax.sip.SipException;
-import javax.sip.SipProvider;
+import javax.sip.*;
 import javax.sip.message.Request;
 
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -28,6 +26,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   private AppAdaptorInterface proxyAppAdaptor;
   private ControllerConfig controllerConfig;
+  private ProxyTransaction proxyTransaction;
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyController.class);
 
   public ProxyController(
@@ -132,6 +131,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     } else {
       (proxySIPRequest).getProvider().sendRequest(request);
     }
+    // proxyTransaction.proxyTo();
   }
 
   public void onResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
@@ -140,6 +140,39 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request) {
+
+    // Create ServerTransaction if not available from Jain.server could be null
+    DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+    Optional<SipProvider> optionalSipProvider =
+        DhruvaNetwork.getProviderFromNetwork(network.getName());
+    SipProvider sipProvider;
+    if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
+    else {
+      logger.error("provider is not set in request");
+      return null;
+    }
+    if (server == null) {
+      try {
+        serverTransaction = sipProvider.getNewServerTransaction(request);
+      } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex1) {
+        logger.error("exception while creating new server transaction in jain" + ex1.getMessage());
+        return null;
+      }
+    }
+
+    // Create proxy transaction.TODO
+    ProxyFactoryInterface proxyFactoryInterface = new ProxyFactory();
+    try {
+      proxyTransaction =
+          (ProxyTransaction)
+              proxyFactoryInterface.createProxyTransaction(this, null, serverTransaction, request);
+    } catch (InternalProxyErrorException ex) {
+      logger.error("exception while creating proxy transaction" + ex.getMessage());
+      return null;
+    }
+
+    serverTransaction.setApplicationData(proxyTransaction);
+
     return null;
   }
 
