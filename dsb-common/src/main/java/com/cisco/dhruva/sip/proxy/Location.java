@@ -2,7 +2,6 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.Trace;
-import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.header.SIPHeaderList;
 import javax.sip.address.SipURI;
@@ -70,11 +69,7 @@ public final class Location implements Cloneable, Comparable {
   }
 
   public Location(
-          URI uri,
-          RouteList routeHeaders,
-      String serverGroupName,
-      float qValue,
-      long lastUpdate) {
+      URI uri, RouteList routeHeaders, String serverGroupName, float qValue, long lastUpdate) {
     this.uri = uri;
     this.serverGroupName = serverGroupName;
     this.routeHeaders = routeHeaders;

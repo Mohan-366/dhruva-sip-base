@@ -1,4 +1,5 @@
 package com.cisco.dhruva.sip.proxy.errors;
+
 import com.cisco.dsb.exception.DhruvaException;
 
 /**
@@ -7,7 +8,7 @@ import com.cisco.dsb.exception.DhruvaException;
  */
 public class InvalidStateException extends DhruvaException {
 
-    public InvalidStateException(String msg) {
-        super(msg);
-    }
+  public InvalidStateException(String msg) {
+    super(msg);
+  }
 }

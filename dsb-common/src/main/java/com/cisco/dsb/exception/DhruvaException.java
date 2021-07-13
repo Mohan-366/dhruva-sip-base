@@ -1,6 +1,5 @@
 package com.cisco.dsb.exception;
 
-
 import java.io.*;
 
 /**
@@ -15,6 +14,7 @@ import java.io.*;
 public class DhruvaException extends Exception {
   /** Used to get the original stack trace and exception message. */
   Exception exception;
+
   private String errorCause;
 
   /**
@@ -57,22 +57,6 @@ public class DhruvaException extends Exception {
       exception.printStackTrace();
     } else {
       super.printStackTrace();
-    }
-  }
-
-  public void printStackTrace(PrintStream s) {
-    if (exception != null) {
-      exception.printStackTrace(s);
-    } else {
-      super.printStackTrace(s);
-    }
-  }
-
-  public void printStackTrace(PrintWriter s) {
-    if (exception != null) {
-      exception.printStackTrace(s);
-    } else {
-      super.printStackTrace(s);
     }
   }
 }

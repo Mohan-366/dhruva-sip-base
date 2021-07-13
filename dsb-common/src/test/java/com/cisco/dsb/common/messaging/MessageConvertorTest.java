@@ -1,14 +1,21 @@
 package com.cisco.dsb.common.messaging;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.DhruvaSipRequestMessage;
+import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.sip.bean.SIPListenPoint;
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import javax.sip.*;
 import org.testng.Assert;
@@ -20,9 +27,29 @@ public class MessageConvertorTest {
 
   private SipProvider sipProvider;
   private SipStack sipStack;
+  private SIPListenPoint defaultListenPoint;
+
+  @BeforeClass
+  void init() throws Exception {
+    defaultListenPoint =
+        new SIPListenPoint.SIPListenPointBuilder()
+            .setName("Default")
+            .setHostIPAddress("127.0.0.1")
+            .setTransport(Transport.UDP)
+            .setPort(5060)
+            .setRecordRoute(false)
+            .build();
+  }
 
   @Test
   public void validateConvertJainSipRequestMessageToDhruvaMessage() throws Exception {
+
+    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+
+    List<SIPListenPoint> listenPointList = new ArrayList<>();
+    listenPointList.add(defaultListenPoint);
+    when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
 
     SIPRequest request =
         SIPRequestBuilder.createRequest(
@@ -51,6 +78,13 @@ public class MessageConvertorTest {
 
   @Test(expectedExceptions = {Exception.class})
   public void shouldFailSIPToDhruvaMessageWithNullContext() throws Exception {
+    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+
+    List<SIPListenPoint> listenPointList = new ArrayList<>();
+    listenPointList.add(defaultListenPoint);
+    when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+
     SIPRequest request =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
@@ -61,6 +95,13 @@ public class MessageConvertorTest {
 
   @Test(expectedExceptions = {Exception.class})
   public void shouldFailSIPToDhruvaMessageWithInvalidInput() throws IOException {
+    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+
+    List<SIPListenPoint> listenPointList = new ArrayList<>();
+    listenPointList.add(defaultListenPoint);
+    when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+
     SIPRequest request = null;
     ProxySIPRequest msg =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
@@ -69,6 +110,14 @@ public class MessageConvertorTest {
 
   @Test
   public void validateDhruvaToSIPRequestConversion() throws Exception {
+
+    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+
+    List<SIPListenPoint> listenPointList = new ArrayList<>();
+    listenPointList.add(defaultListenPoint);
+    when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+
     ExecutionContext context = new ExecutionContext();
     SIPRequest request =
         SIPRequestBuilder.createRequest(

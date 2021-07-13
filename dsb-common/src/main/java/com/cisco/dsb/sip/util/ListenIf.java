@@ -12,7 +12,6 @@ import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-
 /** the class describing an interface (port/protocol for now) to listen on */
 public class ListenIf implements ListenInterface {
 

@@ -8,7 +8,6 @@ import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.stack.SipTransportType;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.sip.util.ReConstants;
@@ -32,10 +31,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterface, Cloneable {
 
-  public static final byte UDP = (byte) SipTransportType.UDP;
-  public static final byte TCP = (byte) SipTransportType.TCP;
-  public static final byte NONE = (byte) SipTransportType.NONE;
-  public static final byte TLS = (byte) SipTransportType.TLS;
+  public static final byte UDP = (byte) Transport.UDP.getValue();
+  public static final byte TCP = (byte) Transport.TCP.getValue();
+  public static final byte NONE = (byte) Transport.NONE.getValue();
+  public static final byte TLS = (byte) Transport.TLS.getValue();
 
   Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
 
@@ -173,13 +172,12 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return true;
   }
 
-  public String checkRecordRoutes(
-          String user, String host, int port, String transport) {
+  public String checkRecordRoutes(String user, String host, int port, String transport) {
     if (user != null) {
       String usr = user.toString();
       if (usr.startsWith(ReConstants.RR_TOKEN)
-              || usr.endsWith(ReConstants.RR_TOKEN1)
-              || usr.contains(ReConstants.RR_TOKEN2)) {
+          || usr.endsWith(ReConstants.RR_TOKEN1)
+          || usr.contains(ReConstants.RR_TOKEN2)) {
         Set rrs = recordRoutesMap.keySet();
         String key;
         for (Object o : rrs) {
@@ -195,12 +193,12 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   }
 
   /** normalizes the protocol value to either UDP, TCP */
-  public static byte normalizedProtocol(int protocol) {
+  public static int normalizedProtocol(int protocol) {
     if ((protocol != ControllerConfig.TCP) && (protocol != ControllerConfig.TLS)) {
-      return ControllerConfig.UDP;
+      return (int) ControllerConfig.UDP;
     }
 
-    return (byte) protocol;
+    return (int) protocol;
   }
 
   @Override
@@ -210,7 +208,17 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public RecordRouteHeader getRecordRouteInterface(String direction) {
-    return null;
+    return getRecordRouteInterface(direction, true);
+  }
+
+  public RecordRouteHeader getRecordRouteInterface(String direction, boolean clone) {
+    logger.debug("recordRoutesMap contains :\n" + recordRoutesMap.toString() + '\n');
+    RecordRouteHeader rrHeader = (RecordRouteHeader) recordRoutesMap.get(direction);
+    if (rrHeader != null && clone) {
+      rrHeader = (RecordRouteHeader) rrHeader.clone();
+    }
+    logger.debug("Leaving getRecordRouteInterface() returning: " + rrHeader);
+    return rrHeader;
   }
 
   @Override

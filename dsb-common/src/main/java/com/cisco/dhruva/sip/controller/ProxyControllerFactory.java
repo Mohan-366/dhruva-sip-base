@@ -25,6 +25,10 @@ public class ProxyControllerFactory {
   private ProxyController getProxyController(
       ServerTransaction serverTransaction, SipProvider sipProvider) {
     return new ProxyController(
-        serverTransaction, sipProvider, dhruvaSIPConfigProperties, proxyAppAdaptor, controllerConfig);
+        serverTransaction,
+        sipProvider,
+        dhruvaSIPConfigProperties,
+        proxyAppAdaptor,
+        controllerConfig);
   }
 }

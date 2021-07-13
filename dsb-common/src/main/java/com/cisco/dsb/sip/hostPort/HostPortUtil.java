@@ -1,6 +1,5 @@
 package com.cisco.dhruva.sip.hostPort;
 
-
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ListenInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -9,30 +8,28 @@ import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-
-
-import javax.sip.address.SipURI;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.Predicate;
+import javax.sip.address.SipURI;
 
 public class HostPortUtil {
 
   private static final Logger Log = DhruvaLoggerFactory.getLogger(HostPortUtil.class);
   private static ControllerConfig controllerConfig;
+
   static {
-    controllerConfig =
-            SpringApplicationContext.getAppContext().getBean(ControllerConfig.class);
+    controllerConfig = SpringApplicationContext.getAppContext().getBean(ControllerConfig.class);
   }
 
   private HostPortUtil() {}
 
   private static Predicate<ListenInterface> hostPortCheck =
-          (ListenInterface listenIf) ->
-                  DhruvaNetwork.getDhruvaSIPConfigProperties().isHostPortEnabled()
-                          && listenIf != null
-                          && listenIf.shouldAttachExternalIp();
+      (ListenInterface listenIf) ->
+          DhruvaNetwork.getDhruvaSIPConfigProperties().isHostPortEnabled()
+              && listenIf != null
+              && listenIf.shouldAttachExternalIp();
 
   private static Optional<String> getHostInfo(ListenInterface listenIf) {
     if (hostPortCheck.test(listenIf)) {
@@ -51,31 +48,27 @@ public class HostPortUtil {
    */
   public static String convertLocalIpToHostInfo(SipURI uri) {
     try {
-      String transportStr =
-              uri.getTransportParam();
+      String transportStr = uri.getTransportParam();
       Transport transport = Transport.valueOf(transportStr);
 
       ListenIf listenIf =
-              (ListenIf)
-                      controllerConfig
-                              .getInterface(
-                                      InetAddress.getByName(uri.getHost()),
-                                      transport,
-                                      uri.getPort());
+          (ListenIf)
+              controllerConfig.getInterface(
+                  InetAddress.getByName(uri.getHost()), transport, uri.getPort());
 
       Optional<String> hostInfo = getHostInfo(listenIf);
 
       return hostInfo
-              .map(
-                      h -> {
-                        Log.debug("Host IP/FQDN {} obtained for {}", h, uri);
-                        return h;
-                      })
-              .orElseGet(
-                      () -> {
-                        Log.debug("No host IP/FQDN found. Use local IP from {}", uri);
-                        return uri.getHost();
-                      });
+          .map(
+              h -> {
+                Log.debug("Host IP/FQDN {} obtained for {}", h, uri);
+                return h;
+              })
+          .orElseGet(
+              () -> {
+                Log.debug("No host IP/FQDN found. Use local IP from {}", uri);
+                return uri.getHost();
+              });
 
     } catch (UnknownHostException e) {
       Log.warn("No IP address for the host[{}] found ", uri.getHost());
@@ -93,20 +86,19 @@ public class HostPortUtil {
    */
   public static String convertLocalIpToHostInfo(ListenInterface listenIf) {
 
-
     Optional<String> hostInfo = getHostInfo(listenIf);
 
     return hostInfo
-            .map(
-                    h -> {
-                      Log.debug("Host IP/FQDN {} obtained for {}", h, listenIf);
-                      return h;
-                    })
-            .orElseGet(
-                    () -> {
-                      Log.debug("No host IP/FQDN found. Use local IP from {}", listenIf);
-                      return listenIf.getAddress();
-                    });
+        .map(
+            h -> {
+              Log.debug("Host IP/FQDN {} obtained for {}", h, listenIf);
+              return h;
+            })
+        .orElseGet(
+            () -> {
+              Log.debug("No host IP/FQDN found. Use local IP from {}", listenIf);
+              return listenIf.getAddress();
+            });
   }
 
   /**
@@ -120,13 +112,10 @@ public class HostPortUtil {
    */
   public static String reverseHostInfoToLocalIp(SipURI uri) {
 
-    String transportStr =
-            uri.getTransportParam();
+    String transportStr = uri.getTransportParam();
     Transport transport = Transport.valueOf(transportStr);
 
-    ListenIf listenIf =
-            (ListenIf)
-                    controllerConfig.getInterface(uri.getPort(), transport);
+    ListenIf listenIf = (ListenIf) controllerConfig.getInterface(uri.getPort(), transport);
 
     if (hostPortCheck.test(listenIf)) {
       Log.debug("Local IP {} found for {}", listenIf.getAddress(), uri);

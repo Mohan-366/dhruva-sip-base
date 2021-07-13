@@ -7,8 +7,11 @@ import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import javax.sip.SipProvider;
 
 public class DhruvaNetwork implements Cloneable {
 
@@ -17,12 +20,30 @@ public class DhruvaNetwork implements Cloneable {
   public static final String NONE = "none";
 
   SIPListenPoint sipListenPoint;
+  // SipProvider networkProvider;
+  /** The name of the default network. */
+  public static final String STR_DEFAULT = "DEFAULT";
+
+  /** The default network. */
+  public static DhruvaNetwork DEFAULT = null;
 
   public DhruvaNetwork(SIPListenPoint sipListenPoint) {
     this.sipListenPoint = sipListenPoint;
   }
 
   private static ConcurrentHashMap<String, DhruvaNetwork> networkMap = new ConcurrentHashMap<>();
+  private static ConcurrentHashMap<String, SipProvider> networkToProviderMap =
+      new ConcurrentHashMap<>();
+
+  public static synchronized DhruvaNetwork getDefault() {
+    if (DEFAULT == null) {
+      SIPListenPoint defaultListenPoint = dhruvaSIPConfigProperties.getListeningPoints().get(0);
+      DEFAULT =
+          networkMap.computeIfAbsent(
+              STR_DEFAULT, (network) -> new DhruvaNetwork(defaultListenPoint));
+    }
+    return DEFAULT;
+  }
 
   public static void setDhruvaConfigProperties(
       DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
@@ -32,7 +53,6 @@ public class DhruvaNetwork implements Cloneable {
   public static DhruvaSIPConfigProperties getDhruvaSIPConfigProperties() {
     return dhruvaSIPConfigProperties;
   }
-
 
   public static long getConnectionWriteTimeoutInMilliSeconds() {
     return dhruvaSIPConfigProperties.getConnectionWriteTimeoutInMilliSeconds();
@@ -71,6 +91,18 @@ public class DhruvaNetwork implements Cloneable {
     return network.map(dhruvaNetwork -> dhruvaNetwork.getListenPoint().getTransport());
   }
 
+  public static Optional<String> getNetworkFromProvider(SipProvider sipProvider) {
+    Stream<String> keys =
+        networkToProviderMap.entrySet().stream()
+            .filter(entry -> sipProvider.equals(entry.getValue()))
+            .map(Map.Entry::getKey);
+    return keys.findFirst();
+  }
+
+  public static Optional<SipProvider> getProviderFromNetwork(String networkName) {
+    return Optional.ofNullable(networkToProviderMap.get(networkName));
+  }
+
   public Transport getTransport() {
     return this.sipListenPoint.getTransport();
   }
@@ -95,5 +127,9 @@ public class DhruvaNetwork implements Cloneable {
 
   public String getName() {
     return this.sipListenPoint.getName();
+  }
+
+  public static void setSipProvider(String name, SipProvider sipProvider) {
+    networkToProviderMap.putIfAbsent(name, sipProvider);
   }
 }
