@@ -15,6 +15,7 @@ import java.io.*;
 public class DhruvaException extends Exception {
   /** Used to get the original stack trace and exception message. */
   Exception exception;
+  private String errorCause;
 
   /**
    * Constructor which accepts the exception message. This will print stack traces from the creation

@@ -2,6 +2,7 @@ package com.cisco.dsb.util.log;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.util.SipConstants;
+import com.cisco.dsb.util.ObfuscationAspect;
 import com.cisco.dsb.util.SipAddressUtils;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.base.Strings;
@@ -314,6 +315,7 @@ public class LogUtils {
               logger.info(
                   "Exception setting user in obfuscatePinForEscalatedMeeting , effects "
                       + "only masking functionality for mats flow , doesn't impact call");
+
               return result;
             }
             return result.replaceAll(Pattern.quote(sipURI.toString()), clonedSipURI.toString());
@@ -334,6 +336,7 @@ public class LogUtils {
         objectEncoded = LogUtils.obfuscate(objectEncoded, true, true);
 
         // replace dtmf digits in content
+
         return DhruvaStackLogger.obfuscateDigits(objectEncoded);
       } finally {
         ObfuscationAspect.disableObfuscationForThisThread();

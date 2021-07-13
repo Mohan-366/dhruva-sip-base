@@ -1,6 +1,10 @@
 package com.cisco.dhruva.sip.controller;
 
 import com.cisco.dhruva.sip.proxy.*;
+
+import com.cisco.dhruva.sip.proxy.Location;
+import com.cisco.dhruva.sip.proxy.ProxySendMessage;
+
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
@@ -11,6 +15,7 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+
 
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
@@ -39,9 +44,6 @@ public class ProxyController implements ControllerInterface , ProxyInterface {
     this.controllerConfig = controllerConfig;
   }
 
-  public void setController(ProxySIPRequest request) {
-    request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
-  }
 //
 //  public void onNewRequest(ProxySIPRequest request) throws DhruvaException {
 //    // Create proxy transaction
@@ -61,6 +63,9 @@ public class ProxyController implements ControllerInterface , ProxyInterface {
 //    proxyAppAdaptor.handleRequest(request);
 //  }
 
+  public void setController(ProxySIPRequest request) {
+    request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
+  }
 
   public void proxyResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
 

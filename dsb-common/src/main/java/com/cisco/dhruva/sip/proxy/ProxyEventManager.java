@@ -4,7 +4,6 @@ import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.sip.proxy.handlers.ProxyEventHandler;
 import com.cisco.dhruva.sip.proxy.handlers.SipRequestHandler;
 import com.cisco.dhruva.sip.proxy.handlers.SipResponseHandler;
-import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
@@ -25,8 +24,6 @@ public class ProxyEventManager implements ProxyEventListener {
    */
   @Inject private StripedExecutorService executor;
 
-  @Autowired private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-
   @Autowired ProxyService proxyService;
 
   @Override
@@ -40,6 +37,6 @@ public class ProxyEventManager implements ProxyEventListener {
   }
 
   private void startProcessing(ProxyEventHandler proxyEventHandler) {
-    executor.execute(proxyEventHandler);
+    executor.submit(proxyEventHandler);
   }
 }

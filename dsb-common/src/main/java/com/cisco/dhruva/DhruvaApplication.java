@@ -21,6 +21,16 @@ public class DhruvaApplication extends SpringBootServletInitializer {
   }
 
   public static void main(String[] args) {
+    /*
+    This is for handing of MDC when thread switch happens.
+      Schedulers.onScheduleHook("MDC Hook", runnable -> {
+          Map<String, String> map=MDC.getCopyOfContextMap();
+          return ()->{
+            if(map != null)
+              MDC.setContextMap(map);
+            runnable.run();
+          };
+    }*/
     SpringApplication.run(DhruvaApplication.class, args);
   }
 }

@@ -20,16 +20,17 @@ public class DhruvaApp {
   private ArrayList<CallType> callTypes;
   @Autowired ProxyService proxyService;
 
-
   @Autowired DefaultCallType defaultCallType;
   private Consumer<ProxySIPRequest> requestConsumer =
       proxySIPRequest -> {
         logger.info("-------App: Got SIPMessage->Type:SIPRequest------");
+        // TODO Can we do this in 'for loop' as it's faster for small amount of iteration
         callTypes.stream()
             .filter(callType -> callType.filter().test(proxySIPRequest))
             .findFirst()
             .orElse(defaultCallType)
-            .processRequest().accept(Mono.just(proxySIPRequest));
+            .processRequest()
+            .accept(Mono.just(proxySIPRequest));
       };
 
   private Consumer<ProxySIPResponse> responseConsumer =
@@ -48,7 +49,7 @@ public class DhruvaApp {
   @PostConstruct
   public void init() {
     // TODO change to single method register(res,req)
-    proxyService.register(requestConsumer,responseConsumer);
+    proxyService.register(requestConsumer, responseConsumer);
 
     // register for interested CallTypes
     callTypes = new ArrayList<>();

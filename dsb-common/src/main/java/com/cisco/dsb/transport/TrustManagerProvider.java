@@ -43,8 +43,7 @@ public class TrustManagerProvider {
     if (!tms.isPresent() || tms.get().length == 0) {
       return Optional.empty();
     }
-    TrustManager[] ts = tms.get();
-    for (TrustManager tm : ts) {
+    for (TrustManager tm : tms.get()) {
       if (tm instanceof X509TrustManager) {
         return Optional.of((X509TrustManager) tm);
       }
