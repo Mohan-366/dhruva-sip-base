@@ -136,7 +136,8 @@ public class ProxyServerTransaction {
         if (controllerConfig.doRecordRoute()) setRecordRouteInterface(response);
       }
 
-      serverTransaction.sendResponse(response);
+      // TODO DSB
+      ProxySendMessage.sendResponse(serverTransaction, response);
 
       this.response = response;
 

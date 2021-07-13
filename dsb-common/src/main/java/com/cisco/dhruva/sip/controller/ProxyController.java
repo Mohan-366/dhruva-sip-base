@@ -11,34 +11,40 @@ import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
+import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.text.ParseException;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sip.*;
+import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import javax.sip.message.Response;
 
 public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private ServerTransaction serverTransaction;
   private SipProvider sipProvider;
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-  private AppAdaptorInterface proxyAppAdaptor;
+  private ProxyFactory proxyFactory;
   private ControllerConfig controllerConfig;
-  private ProxyTransaction proxyTransaction;
+  private ProxyStatelessTransaction proxyTransaction;
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyController.class);
 
   public ProxyController(
       ServerTransaction serverTransaction,
       SipProvider sipProvider,
       DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
-      AppAdaptorInterface appAdaptorInterface,
+      ProxyFactory proxyFactory,
       ControllerConfig controllerConfig) {
     this.serverTransaction = serverTransaction;
     this.sipProvider = sipProvider;
     this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
-    this.proxyAppAdaptor = appAdaptorInterface;
+    this.proxyFactory = proxyFactory;
     this.controllerConfig = controllerConfig;
   }
 
@@ -135,7 +141,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   public void onResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
-    proxyAppAdaptor.handleResponse(proxySIPResponse);
+    // proxyAppAdaptor.handleResponse(proxySIPResponse);
   }
 
   @Override
@@ -151,29 +157,184 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       logger.error("provider is not set in request");
       return null;
     }
-    if (server == null) {
-      try {
-        serverTransaction = sipProvider.getNewServerTransaction(request);
-      } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex1) {
-        logger.error("exception while creating new server transaction in jain" + ex1.getMessage());
-        return null;
-      }
-    }
 
-    // Create proxy transaction.TODO
-    ProxyFactoryInterface proxyFactoryInterface = new ProxyFactory();
-    try {
-      proxyTransaction =
-          (ProxyTransaction)
-              proxyFactoryInterface.createProxyTransaction(this, null, serverTransaction, request);
-    } catch (InternalProxyErrorException ex) {
-      logger.error("exception while creating proxy transaction" + ex.getMessage());
-      return null;
-    }
+    Optional<ServerTransaction> optionalServerTransaction =
+        checkServerTransaction(sipProvider, request, serverTransaction);
+    if (optionalServerTransaction.isPresent()) {
+      serverTransaction = optionalServerTransaction.get();
+    } else logger.info("server transaction not created for request" + request.getMethod());
 
+    // Create ProxyTransaction
+    // ProxyTransaction internally creates ProxyServerTransaction
+    proxyTransaction =
+        createProxyTransaction(
+            controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
+
+    // Set the proxyTransaction in jain server transaction for future reference
     serverTransaction.setApplicationData(proxyTransaction);
 
     return null;
+  }
+
+  /**
+   * Creates a <CODE>DsProxyStatelessTransaction</CODE> object if the proxy is configured to be
+   * stateless. Otherwise if either the proxy is configured to be stateful or if the controller
+   * decides that the current transaction should be stateful , it creates the <CODE>
+   * DsProxyTransaction</CODE> object. This method can only be used to create a transaction if one
+   * has not been created yet.
+   *
+   * @param setStateful Indicates that the current transaction be stateful,irrespective of the
+   *     controller configuration.
+   * @param request The request that will be used to create the transaction
+   */
+  public ProxyStatelessTransaction createProxyTransaction(
+      boolean setStateful,
+      SIPRequest request,
+      ServerTransaction serverTrans,
+      ProxyFactory proxyFactory) {
+    Objects.requireNonNull(request);
+    Objects.requireNonNull(proxyFactory);
+
+    if (proxyTransaction == null) {
+      DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+
+      if (setStateful || (network.getTransport() == Transport.TCP)) {
+        try {
+          proxyTransaction =
+              (ProxyTransaction)
+                  proxyFactory.proxyTransaction().apply(this, null, serverTrans, request);
+        } catch (InternalProxyErrorException ex) {
+          logger.error("exception while creating proxy transaction" + ex.getMessage());
+          return null;
+        }
+      } else {
+        try {
+          proxyTransaction = new ProxyStatelessTransaction(this, null, request);
+        } catch (InternalProxyErrorException dse) {
+          sendFailureResponse(request, Response.SERVER_INTERNAL_ERROR);
+          return null;
+        }
+        logger.debug("Created stateless proxy transaction ");
+      }
+    }
+    return proxyTransaction;
+  }
+
+  /**
+   * Creates a new ServerTransaction object that will handle the request if necessary and if request
+   * type is to be handled by transactions.
+   *
+   * @param sipProvider SipProvider object
+   * @param request Incoming request
+   * @param st ServerTransaction that was retrieved from RequestEvent
+   * @return
+   */
+  private Optional<ServerTransaction> checkServerTransaction(
+      SipProvider sipProvider, Request request, ServerTransaction st) {
+    ServerTransaction serverTransaction = st;
+
+    // ACKs are not handled by transactions
+    if (controllerConfig.isStateful()
+        && serverTransaction == null
+        && !request.getMethod().equals(Request.ACK)) {
+      try {
+        serverTransaction = sipProvider.getNewServerTransaction(request);
+      } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex) {
+        logger.error("exception while creating new server transaction in jain" + ex.getMessage());
+        return Optional.empty();
+      }
+    }
+
+    return Optional.ofNullable(serverTransaction);
+  }
+
+  /*
+   * Overwrites a stateful DsProxyTransaction with a DsStatelessProxy transaction.
+   */
+  public boolean overwriteStatelessMode(SIPRequest request) {
+
+    // Set it to null if it is stateless
+    if (proxyTransaction != null && !(proxyTransaction instanceof ProxyTransaction)) {
+      proxyTransaction = null;
+    }
+
+    logger.debug("Changing stateless proxy transaction to a stateful one");
+
+    ViaList vias = request.getViaHeaders();
+    if (null != vias) {
+      ViaHeader topvia = (ViaHeader) vias.getFirst();
+      if (controllerConfig.recognize(
+          null, topvia.getHost(), topvia.getPort(), Transport.valueOf(topvia.getTransport()))) {
+        logger.debug(
+            "Removing the top via since its our own and we are trying to respond in stateless mode");
+        vias.removeFirst();
+      }
+    }
+
+    // Create a stateful proxy
+    createProxyTransaction(true, request, serverTransaction);
+
+    return !(proxyTransaction == null);
+  }
+
+  /**
+   * Creates a <CODE>DsProxyStatelessTransaction</CODE> object if the proxy is configured to be
+   * stateless. Otherwise if either the proxy is configured to be stateful or if the controller
+   * decides that the current transaction should be stateful , it creates the <CODE>
+   * DsProxyTransaction</CODE> object. This method can only be used to create a transaction if one
+   * has not been created yet.
+   *
+   * @param setStateful Indicates that the current transaction be stateful,irrespective of the
+   *     controller configuration.
+   */
+  protected void createProxyTransaction(
+      boolean setStateful, SIPRequest request, ServerTransaction serverTrans) {
+
+    createProxyTransaction(setStateful, request, serverTrans, proxyFactory);
+  }
+
+  /* Attempts to change to stateful mode to send are response with the given response
+   * code.
+   * @param responseCode The response code of the response to send upstream.
+   * @returns True if it could change to stateful mode, false if we couldn't
+   */
+  protected boolean changeToStatefulForResponse(SIPRequest request, int responseCode) {
+    // Make sure we are stateful before sending the response
+    boolean success = overwriteStatelessMode(request);
+    if (!success) {
+      // Just drop it, and log the event
+      logger.warn("Unable to change state to send " + responseCode + ", dropping the response");
+    }
+
+    return success;
+  }
+
+  /*
+   * Sends a 404 or 500 response.
+   */
+  protected void sendFailureResponse(SIPRequest request, int errorResponseCode) {
+
+    if (errorResponseCode == Response.SERVER_INTERNAL_ERROR) {
+      if (changeToStatefulForResponse(request, Response.SERVER_INTERNAL_ERROR)) {
+        try {
+          ProxyResponseGenerator.sendServerInternalErrorResponse(
+              request, (ProxyTransaction) proxyTransaction);
+        } catch (DhruvaException | ParseException e) {
+          logger.error("Error encountered while sending internal error response", e);
+        }
+        // failureResponseSent = true;
+      }
+    } else if (errorResponseCode == Response.NOT_FOUND) {
+      if (changeToStatefulForResponse(request, Response.NOT_FOUND)) {
+        try {
+          ProxyResponseGenerator.sendNotFoundResponse(request, (ProxyTransaction) proxyTransaction);
+        } catch (DhruvaException | ParseException e) {
+          // Warn Logging
+          logger.error("Unable to create not found response", e);
+        }
+        // failureResponseSent = true;
+      }
+    }
   }
 
   @Override

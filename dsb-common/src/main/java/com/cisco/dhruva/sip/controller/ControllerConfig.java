@@ -172,6 +172,36 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return true;
   }
 
+  public boolean recognize(String user, String host, int port, Transport transport) {
+    // Check Record-Route
+    logger.debug("Checking Record-Route interfaces");
+
+    if (null != checkRecordRoutes(user, host, port, transport.toString())) return true;
+
+    logger.debug("Checking listen interfaces");
+    ArrayList<ListenIf> listenList = getListenPorts();
+    for (ListenIf anIf : listenList) {
+      if (isMyRoute(host, port, transport, anIf)) return true;
+    }
+    // Check popid
+    return false;
+  }
+
+  public static boolean isMyRoute(
+      String routeHost, int routePort, Transport routeTransport, ListenIf myIF) {
+    boolean match = false;
+    if (myIF != null) {
+      if (routeHost.equals(myIF.getAddress())) {
+        if (routePort == myIF.getPort()) {
+          if (routeTransport == myIF.getProtocol()) {
+            match = true;
+          }
+        }
+      }
+    }
+    return match;
+  }
+
   public String checkRecordRoutes(String user, String host, int port, String transport) {
     if (user != null) {
       String usr = user.toString();
