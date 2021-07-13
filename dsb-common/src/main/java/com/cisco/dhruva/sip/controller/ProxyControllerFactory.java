@@ -15,6 +15,8 @@ public class ProxyControllerFactory {
 
   @Autowired ProxyAppAdaptor proxyAppAdaptor;
 
+  @Autowired ControllerConfig controllerConfig;
+
   @Bean
   public BiFunction<ServerTransaction, SipProvider, ProxyController> proxyController() {
     return this::getProxyController;
@@ -23,6 +25,6 @@ public class ProxyControllerFactory {
   private ProxyController getProxyController(
       ServerTransaction serverTransaction, SipProvider sipProvider) {
     return new ProxyController(
-        serverTransaction, sipProvider, dhruvaSIPConfigProperties, proxyAppAdaptor);
+        serverTransaction, sipProvider, dhruvaSIPConfigProperties, proxyAppAdaptor, controllerConfig);
   }
 }

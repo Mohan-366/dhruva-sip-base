@@ -1,73 +1,77 @@
 package com.cisco.dsb.exception;
 
-public class DhruvaException extends RuntimeException {
-  private String errorCause;
-  private int statusCode = 500;
-  private boolean shouldLogAsError = true;
+
+import java.io.*;
+
+/**
+ * Base class for all dynamicsoft exceptions. All exceptions thrown in the object library or in
+ * other libraries derive from this class.
+ *
+ * <p>This class now contains the original exception for the cases where we catch a Java exception
+ * and the a DsException. This way, when stack traces are printed, we will be able to see the
+ * original stack trace, which make debugging a lot easier, since we can see the root of the
+ * exception.
+ */
+public class DhruvaException extends Exception {
+  /** Used to get the original stack trace and exception message. */
+  Exception exception;
 
   /**
-   * Source Throwable, message, status code and info about the cause
+   * Constructor which accepts the exception message. This will print stack traces from the creation
+   * of this exception.
    *
-   * @param sMessage
-   * @param throwable
-   * @param errorCause
+   * @param message the exception message
    */
-  public DhruvaException(String sMessage, Throwable throwable, String errorCause) {
-    super(sMessage, throwable);
-    this.errorCause = errorCause;
+  public DhruvaException(String message) {
+    super(message);
   }
 
   /**
-   * error message, status code and info about the cause
+   * Constructor which accepts the original exception. This exception's <code>printStackTrace()
+   * </code> will be used. <code>exception.toString()</code> will be used for this exceptions
+   * message.
    *
-   * @param sMessage
-   * @param errorCause
+   * @param exception the exception that was re-cast to this exception
    */
-  public DhruvaException(String sMessage, String errorCause) {
-    this(sMessage, errorCause, false);
+  public DhruvaException(Exception exception) {
+    super(exception.toString());
+    this.exception = exception;
   }
 
-  public DhruvaException(String sMessage, String errorCause, boolean noStackTrace) {
-    super(sMessage, null, noStackTrace, !noStackTrace);
-    this.errorCause = errorCause;
+  /**
+   * Constructor which accepts the original exception and a message. This exception's <code>
+   * printStackTrace()</code> will be used. <code>message</code> will be used for this exceptions
+   * message.
+   *
+   * @param message the exception message
+   * @param exception the exception that was re-cast to this exception
+   */
+  public DhruvaException(String message, Exception exception) {
+    super(message);
+    this.exception = exception;
   }
 
-  public DhruvaException(Throwable throwable, String sMessage, boolean noStackTrace) {
-    super(sMessage, throwable, noStackTrace, !noStackTrace);
-    this.errorCause = "GENERAL";
+  public void printStackTrace() {
+    if (exception != null) {
+      exception.printStackTrace();
+    } else {
+      super.printStackTrace();
+    }
   }
 
-  public DhruvaException(Throwable throwable) {
-    super(throwable);
-    this.errorCause = "GENERAL";
+  public void printStackTrace(PrintStream s) {
+    if (exception != null) {
+      exception.printStackTrace(s);
+    } else {
+      super.printStackTrace(s);
+    }
   }
 
-  public DhruvaException(String sMessage) {
-    this(sMessage, false);
-  }
-
-  public DhruvaException(String sMessage, boolean noStackTrace) {
-    super(sMessage, null, noStackTrace, !noStackTrace);
-    this.errorCause = "GENERAL";
-  }
-
-  public int getStatusCode() {
-    return statusCode;
-  }
-
-  public void setStatusCode(int statusCode) {
-    this.statusCode = statusCode;
-  }
-
-  public void dontLogAsError() {
-    shouldLogAsError = false;
-  }
-
-  public boolean shouldLogAsError() {
-    return shouldLogAsError;
-  }
-
-  public String getErrorCause() {
-    return errorCause;
+  public void printStackTrace(PrintWriter s) {
+    if (exception != null) {
+      exception.printStackTrace(s);
+    } else {
+      super.printStackTrace(s);
+    }
   }
 }

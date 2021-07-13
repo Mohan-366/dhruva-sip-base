@@ -97,6 +97,7 @@ public class ProxyService {
           (sipStack, throwable) -> {
             if (throwable == null) {
               proxyStackMap.putIfAbsent(sipListenPoint.getName(), sipStack);
+              //Set the provider in network
               try {
                 logger.info("Server socket created for {}", sipStack);
                 controllerConfig.addListenInterface(
@@ -272,6 +273,7 @@ public class ProxyService {
                 (ProxyController) proxySIPResponse.getClientTransaction().getApplicationData();*/
         return proxySIPResponse;
     };
+
   public Consumer<Mono<RequestEvent>> proxyRequestHandler = requestEventMono -> {
 
         requestEventMono.mapNotNull(validate)
@@ -279,8 +281,6 @@ public class ProxyService {
                         .mapNotNull(createProxyController)
                         .subscribe(requestConsumer);
   };
-
-
 
   public Consumer<Mono<ResponseEvent>> proxyResponseHandler = responsEventMono ->{
       responsEventMono.mapNotNull(createProxySipResponse)

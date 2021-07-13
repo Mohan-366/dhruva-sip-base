@@ -29,6 +29,11 @@ public class DhruvaNetwork implements Cloneable {
     DhruvaNetwork.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
   }
 
+  public static DhruvaSIPConfigProperties getDhruvaSIPConfigProperties() {
+    return dhruvaSIPConfigProperties;
+  }
+
+
   public static long getConnectionWriteTimeoutInMilliSeconds() {
     return dhruvaSIPConfigProperties.getConnectionWriteTimeoutInMilliSeconds();
   }

@@ -34,7 +34,7 @@ public class SipProxyManager {
     assert serverTransaction != null;
     serverTransaction.setApplicationData(controller);
 
-    controller.onNewRequest(request);
+    controller.onNewRequest(request.getServerTransaction(), request.getRequest());
   }
 
   public void response(ProxySIPResponse responseMessage) {
