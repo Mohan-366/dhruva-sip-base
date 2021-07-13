@@ -1,26 +1,37 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.proxy.SipUtils;
+import com.cisco.dsb.sip.stack.util.SipTag;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.MessageChannel;
+import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.sip.InvalidArgumentException;
+import javax.sip.ServerTransaction;
+import javax.sip.SipException;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
+import javax.sip.address.URI;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.ContactHeader;
+import javax.sip.header.ToHeader;
 
 public class ProxyUtils {
   private static Logger logger = DhruvaLoggerFactory.getLogger(ProxyUtils.class);
 
   private static final String nullString = "null";
+
+  private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyUtils.class);
 
   public static void updateContactHeader(
       final SIPMessage sipMessage,
@@ -78,5 +89,63 @@ public class ProxyUtils {
     SSLSession sslSession = SipUtils.getSslSession(messageChannel);
 
     return (X509Certificate) sslSession.getPeerCertificates()[0];
+  }
+
+  public static int getResponseClass(SIPResponse response) {
+    return response.getStatusCode() / 100;
+  }
+
+  /**
+   * Sends a final response without creating ProxyTransaction This is used to send error responses
+   * to requests that fail sanity checks performed in DsProxyUtils.validateRequest().
+   *
+   * @param server request in question
+   * @param response to send
+   * @return DsSipServerTransaction transaction to return to Low Level
+   */
+  protected static ServerTransaction sendErrorResponse(
+      ServerTransaction server, SIPResponse response)
+      throws DhruvaException, IOException, ParseException, SipException, InvalidArgumentException {
+    ToHeader to = response.getToHeader();
+
+    // To header is not null if we got to here
+    if (to.getTag() == null) {
+      to.setTag(SipTag.generateTag());
+    }
+
+    server.sendResponse(response);
+
+    return server;
+  }
+
+  public static boolean recognize(URI uri, SipURI myURL) {
+    boolean b = false;
+
+    if (uri.isSipURI()) {
+      SipURI url = (SipURI) uri;
+      b = recognize(url, myURL);
+    }
+    return b;
+  }
+
+  public static boolean recognize(SipURI url, SipURI myURL) {
+    boolean b = false;
+
+    if (url.getMAddrParam() != null) {
+      b = recognize(url.getMAddrParam(), url.getPort(), url.getTransportParam(), myURL);
+    } else {
+      b = recognize(url.getHost(), url.getPort(), url.getTransportParam(), myURL);
+    }
+    return b;
+  }
+
+  public static boolean recognize(String host, int port, String transport, SipURI myURL) {
+    Log.debug("Entering recognize(" + host + ", " + port + ", " + transport + ", " + myURL + ")");
+    boolean b =
+        (host.equals(myURL.getHost())
+            && port == myURL.getPort()
+            && transport.toString() == myURL.getTransportParam());
+    Log.debug("Leaving recognize(), returning " + b);
+    return b;
   }
 }

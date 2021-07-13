@@ -1,44 +1,78 @@
 package com.cisco.dhruva.sip.controller;
 
+import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dhruva.sip.proxy.Location;
 import com.cisco.dhruva.sip.proxy.ProxySendMessage;
+import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.util.Optional;
 import javax.sip.*;
 import javax.sip.message.Request;
 
-public class ProxyController implements ProxyInterface {
+public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private ServerTransaction serverTransaction;
   private SipProvider sipProvider;
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   private AppAdaptorInterface proxyAppAdaptor;
+  private ControllerConfig controllerConfig;
+  private ProxyTransaction proxyTransaction;
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyController.class);
 
   public ProxyController(
       ServerTransaction serverTransaction,
       SipProvider sipProvider,
       DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
-      AppAdaptorInterface appAdaptorInterface) {
+      AppAdaptorInterface appAdaptorInterface,
+      ControllerConfig controllerConfig) {
     this.serverTransaction = serverTransaction;
     this.sipProvider = sipProvider;
     this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
     this.proxyAppAdaptor = appAdaptorInterface;
+    this.controllerConfig = controllerConfig;
   }
 
+  //
+  //  public void onNewRequest(ProxySIPRequest request) throws DhruvaException {
+  //    // Create proxy transaction
+  //    // handle request params
+  //    // Return ProxySipRequest
+  //    request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
+  //    //    dsipRequestMessage
+  //    //        .getContext()
+  //    //        .set(
+  //    //            CommonContext.APP_MESSAGE_HANDLER,
+  //    //            new AppMessageListener() {
+  //    //              @Override
+  //    //              public void onMessage(DSIPMessage message) {
+  //    //                // Handle the message from App
+  //    //              }
+  //    //            });
+  //    proxyAppAdaptor.handleRequest(request);
+  //  }
+
   public void setController(ProxySIPRequest request) {
+
+    Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
+    String network;
+
+    network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
+
+    request.getRequest().setApplicationData(DhruvaNetwork.getNetwork(network));
     request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
   }
 
-  public void proxyResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
+  public void proxyResponse(ProxySIPResponse proxySIPResponse) {
 
     SIPResponse response =
         MessageConvertor.convertDhruvaResponseMessageToJainSipMessage(proxySIPResponse);
@@ -97,5 +131,138 @@ public class ProxyController implements ProxyInterface {
     } else {
       (proxySIPRequest).getProvider().sendRequest(request);
     }
+    // proxyTransaction.proxyTo();
+  }
+
+  public void onResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
+    proxyAppAdaptor.handleResponse(proxySIPResponse);
+  }
+
+  @Override
+  public ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request) {
+
+    // Create ServerTransaction if not available from Jain.server could be null
+    DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+    Optional<SipProvider> optionalSipProvider =
+        DhruvaNetwork.getProviderFromNetwork(network.getName());
+    SipProvider sipProvider;
+    if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
+    else {
+      logger.error("provider is not set in request");
+      return null;
+    }
+    if (server == null) {
+      try {
+        serverTransaction = sipProvider.getNewServerTransaction(request);
+      } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex1) {
+        logger.error("exception while creating new server transaction in jain" + ex1.getMessage());
+        return null;
+      }
+    }
+
+    // Create proxy transaction.TODO
+    ProxyFactoryInterface proxyFactoryInterface = new ProxyFactory();
+    try {
+      proxyTransaction =
+          (ProxyTransaction)
+              proxyFactoryInterface.createProxyTransaction(this, null, serverTransaction, request);
+    } catch (InternalProxyErrorException ex) {
+      logger.error("exception while creating proxy transaction" + ex.getMessage());
+      return null;
+    }
+
+    serverTransaction.setApplicationData(proxyTransaction);
+
+    return null;
+  }
+
+  @Override
+  public void onProxySuccess(
+      ProxyStatelessTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans) {}
+
+  @Override
+  public void onProxyFailure(
+      ProxyStatelessTransaction proxy,
+      ProxyCookieInterface cookie,
+      int errorCode,
+      String errorPhrase,
+      Throwable exception) {}
+
+  @Override
+  public void onResponseSuccess(ProxyTransaction proxy, ProxyServerTransaction trans) {}
+
+  @Override
+  public void onResponseFailure(
+      ProxyTransaction proxy,
+      ProxyServerTransaction trans,
+      int errorCode,
+      String errorPhrase,
+      Throwable exception) {}
+
+  @Override
+  public void onFailureResponse(
+      ProxyTransaction proxy,
+      ProxyCookieInterface cookie,
+      ProxyClientTransaction trans,
+      SIPResponse response) {}
+
+  @Override
+  public void onRedirectResponse(
+      ProxyTransaction proxy,
+      ProxyCookieInterface cookie,
+      ProxyClientTransaction trans,
+      SIPResponse response) {}
+
+  @Override
+  public void onSuccessResponse(
+      ProxyTransaction proxy,
+      ProxyCookieInterface cookie,
+      ProxyClientTransaction trans,
+      SIPResponse response) {}
+
+  @Override
+  public void onGlobalFailureResponse(
+      ProxyTransaction proxy,
+      ProxyCookieInterface cookie,
+      ProxyClientTransaction trans,
+      SIPResponse response) {}
+
+  @Override
+  public void onProvisionalResponse(
+      ProxyTransaction proxy,
+      ProxyCookieInterface cookie,
+      ProxyClientTransaction trans,
+      SIPResponse response) {}
+
+  @Override
+  public void onBestResponse(ProxyTransaction proxy, SIPResponse response) {}
+
+  @Override
+  public void onRequestTimeOut(
+      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans) {}
+
+  @Override
+  public void onResponseTimeOut(ProxyTransaction proxy, ProxyServerTransaction trans) {}
+
+  @Override
+  public void onICMPError(ProxyTransaction proxy, ProxyServerTransaction trans) {}
+
+  @Override
+  public void onICMPError(
+      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans) {}
+
+  @Override
+  public void onAck(ProxyTransaction proxy, ProxyServerTransaction transaction, SIPRequest ack) {}
+
+  @Override
+  public void onCancel(ProxyTransaction proxy, ProxyServerTransaction trans, SIPRequest cancel)
+      throws DhruvaException {}
+
+  @Override
+  public void onResponse(SIPResponse response) {}
+
+  @Override
+  public ControllerConfig getControllerConfig() {
+    return this.controllerConfig;
   }
 }

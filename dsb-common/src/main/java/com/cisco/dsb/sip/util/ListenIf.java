@@ -5,7 +5,6 @@
 package com.cisco.dsb.sip.util;
 
 import com.cisco.dhruva.sip.proxy.ListenInterface;
-import com.cisco.dsb.sip.hostPort.HostPortUtil;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -34,7 +33,7 @@ public class ListenIf implements ListenInterface {
 
   protected boolean attachExternalIp;
   // Our Log object
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(HostPortUtil.class);
+  private static final Logger Log = DhruvaLoggerFactory.getLogger(ListenIf.class);
 
   /**
    * Creates a new ListenIf that based on the resolveAddress parameter, will try create an

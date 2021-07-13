@@ -80,6 +80,7 @@ public class SipProxyManager {
                 .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
 
         assert serverTransaction != null;
+        // TODO DSB, set proxyTransaction
         serverTransaction.setApplicationData(controller);
         controller.setController(proxySIPRequest);
         return proxySIPRequest;

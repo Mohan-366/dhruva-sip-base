@@ -22,9 +22,7 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -63,13 +61,15 @@ public class ProxyService {
   private static Consumer<ProxySIPResponse> responseConsumer;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
+  // Map of network and provider
+  private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
 
   @PostConstruct
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = dhruvaSIPConfigProperties.getListeningPoints();
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
-
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
@@ -86,6 +86,18 @@ public class ProxyService {
           (sipStack, throwable) -> {
             if (throwable == null) {
               proxyStackMap.putIfAbsent(sipListenPoint.getName(), sipStack);
+
+              SipProvider sipProvider = null;
+              Optional<SipProvider> optionalSipProvider = getSipProvider(sipStack, sipListenPoint);
+              if (optionalSipProvider.isPresent()) {
+                sipProvider = optionalSipProvider.get();
+              } else {
+                logger.error("sip provider is not set !!!");
+                throw new RuntimeException(
+                    "Unable to initialize stack properly, provider is not initialized!!");
+              }
+              sipProvidertoNetworkMap.put(sipProvider, networkConfig.getName());
+              DhruvaNetwork.setSipProvider(networkConfig.getName(), sipProvider);
               try {
                 logger.info("Server socket created for {}", sipStack);
                 controllerConfig.addListenInterface(
@@ -124,6 +136,24 @@ public class ProxyService {
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
     return Optional.ofNullable(proxyStackMap.get(sipListenPointName));
+  }
+
+  /*
+   This is with the assumption that per network has single stack and provider associated with it.
+  */
+  private Optional<SipProvider> getSipProvider(SipStack sipStack, SIPListenPoint sipListenPoint) {
+    Iterator sipProviders = sipStack.getSipProviders();
+    while (sipProviders.hasNext()) {
+      SipProvider sipProvider = (SipProvider) sipProviders.next();
+      ListeningPoint[] lps = sipProvider.getListeningPoints();
+      for (ListeningPoint lp : lps) {
+        if (sipListenPoint.getHostIPAddress().equals(lp.getIPAddress())
+            && sipListenPoint.getPort() == lp.getPort()) {
+          return Optional.of(sipProvider);
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   @PreDestroy

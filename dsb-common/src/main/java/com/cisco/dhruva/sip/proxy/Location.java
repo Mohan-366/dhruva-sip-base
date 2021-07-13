@@ -2,9 +2,10 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.Trace;
-import gov.nist.javax.sip.header.Route;
+import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.header.SIPHeaderList;
 import javax.sip.address.SipURI;
+import javax.sip.address.URI;
 
 /**
  * This class is used to encapsulate various parameters for an outgoing request uri. This object is
@@ -24,9 +25,9 @@ public final class Location implements Cloneable, Comparable {
   public static final boolean USE_DEST_INFO_DEFAULT = false;
   public static final boolean PROCESS_ROUTE_DEFAULT = true;
 
-  protected SipURI uri;
+  protected URI uri;
   protected String serverGroupName;
-  protected SIPHeaderList<Route> routeHeaders;
+  protected RouteList routeHeaders;
   protected String connectionID;
   protected float qValue = DEFAULT_QVALUE;
   protected long lastUpdate = 0;
@@ -52,7 +53,7 @@ public final class Location implements Cloneable, Comparable {
    *
    * @param uri The DsURI to send to.
    */
-  public Location(SipURI uri) {
+  public Location(URI uri) {
     this(uri, null, null, DEFAULT_QVALUE, 0);
   }
 
@@ -63,16 +64,12 @@ public final class Location implements Cloneable, Comparable {
    * @param serverGroupName The server group name that should be used when load balancing.
    * @param qValue The qValue for this contact/uri.
    */
-  public Location(SipURI uri, SIPHeaderList routeHeaders, String serverGroupName, float qValue) {
+  public Location(SipURI uri, RouteList routeHeaders, String serverGroupName, float qValue) {
     this(uri, routeHeaders, serverGroupName, qValue, 0);
   }
 
   public Location(
-      SipURI uri,
-      SIPHeaderList routeHeaders,
-      String serverGroupName,
-      float qValue,
-      long lastUpdate) {
+      URI uri, RouteList routeHeaders, String serverGroupName, float qValue, long lastUpdate) {
     this.uri = uri;
     this.serverGroupName = serverGroupName;
     this.routeHeaders = routeHeaders;
@@ -82,7 +79,7 @@ public final class Location implements Cloneable, Comparable {
 
   /** @noinspection CloneDoesntCallSuperClone */
   public Object clone() {
-    SipURI clonedURI = (SipURI) uri.clone();
+    URI clonedURI = (URI) uri.clone();
     Location location = new Location(clonedURI, routeHeaders, serverGroupName, qValue, lastUpdate);
     location.setLoadBalancer(lb);
     location.setProcessRoute(processRoute);
@@ -105,7 +102,7 @@ public final class Location implements Cloneable, Comparable {
     return defaultNetwork;
   }
 
-  public SipURI getURI() {
+  public URI getURI() {
     return this.uri;
   }
 
@@ -129,7 +126,7 @@ public final class Location implements Cloneable, Comparable {
     return routeHeaders;
   }
 
-  public void setRouteHeaders(SIPHeaderList routeHeaders) {
+  public void setRouteHeaders(RouteList routeHeaders) {
     this.routeHeaders = routeHeaders;
   }
 

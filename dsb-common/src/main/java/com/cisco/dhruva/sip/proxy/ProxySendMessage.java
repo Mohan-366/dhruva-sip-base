@@ -1,9 +1,8 @@
 package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPRequest;
-import gov.nist.javax.sip.stack.SIPClientTransaction;
+import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
@@ -25,14 +24,14 @@ public class ProxySendMessage {
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
               } catch (Exception e) {
-                throw new DhruvaException(e.getCause());
+                throw new RuntimeException(e.getCause());
               }
             })
         .subscribeOn(Schedulers.boundedElastic());
   }
 
   public static Mono<Void> sendRequest(
-      SipProvider provider, SIPClientTransaction transaction, SIPRequest request) {
+      SipProvider provider, ClientTransaction transaction, SIPRequest request) {
 
     return Mono.<Void>fromRunnable(
             () -> {
@@ -43,7 +42,7 @@ public class ProxySendMessage {
                   provider.sendRequest(request);
                 }
               } catch (Exception e) {
-                throw new DhruvaException(e.getCause());
+                throw new RuntimeException(e.getCause());
               }
             })
         .subscribeOn(Schedulers.boundedElastic());

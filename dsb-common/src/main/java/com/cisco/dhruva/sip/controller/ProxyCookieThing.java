@@ -20,7 +20,6 @@ public class ProxyCookieThing implements ProxyCookieInterface {
 
   public ProxyCookieThing(Location location, SIPRequest request) {
     this.location = location;
-
     outboundRequest = request;
   }
 
