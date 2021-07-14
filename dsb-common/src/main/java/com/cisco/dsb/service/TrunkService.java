@@ -16,9 +16,9 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SGService {
+public class TrunkService {
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(SGService.class);
+  private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
 
   public ServerInterface getElement(SipServerLocatorService resolver, AbstractSipRequest request) {
 
