@@ -10,12 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProxyFactory {
 
-  //
-  //  @Bean
-  //  public BiFunction<ServerTransaction, SipProvider, ProxyController> proxyController() {
-  //    return this::getProxyController;
-  //  }
-
   @Bean
   public QuadFunction<
           ControllerInterface,

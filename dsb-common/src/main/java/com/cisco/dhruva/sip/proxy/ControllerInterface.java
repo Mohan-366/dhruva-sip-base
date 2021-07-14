@@ -1,10 +1,10 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.ControllerConfig;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import javax.sip.ServerTransaction;
 
 /**
  * This interface is used to control a proxy. The proxy will invoke the various public methods of
@@ -22,7 +22,7 @@ public interface ControllerInterface {
    * @param request received request
    * @return ProxyTransaction
    */
-  public ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request);
+  public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest);
 
   /* =============================================================== */
   /* =============================================================== */

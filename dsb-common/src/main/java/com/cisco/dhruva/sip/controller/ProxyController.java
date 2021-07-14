@@ -33,6 +33,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private ProxyFactory proxyFactory;
   private ControllerConfig controllerConfig;
   private ProxyStatelessTransaction proxyTransaction;
+  /* Stores the request for this controller */
+  protected SIPRequest ourRequest;
+  /* Stores the original request as a clone */
+  protected SIPRequest originalRequest;
+  /* Stores the request with pre-normalization and xcl processing applied */
+  protected SIPRequest preprocessedRequest;
+
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyController.class);
 
   public ProxyController(
@@ -104,11 +111,23 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             });
   }
 
+  //
+  //  Consumer<Mono<ProxySIPRequest>> proyto = (proxySIPRequestMono) -> {
+  //      proxySIPRequestMono.
+  //  }
+
+  //  Function<ProxySIPRequest, Mono<ProxySIPRequest>> proxyTo = (proxySIPRequest) -> {
+  //    return Mono.just(proxySIPRequest).;
+  //  };
+
   public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location) throws SipException {
-
+    // StepVerifier.create(proxyTo.apply(proxySIPRequest)).ex
+    // proxyTo.apply(proxySIPRequest).subscribe((val) -> {},(err) -> {}
+    // );
+    // ConcatMap
     // Mono.just(proxySIPRequest).subscribe();
-
     // ## Sending out the Request
+    // Clone the request
     // process the Location object - validate Location
     // Trunk Service - getNextElement
     // Client transaction - proxy -
@@ -126,6 +145,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // Find the right server transaction - other leg
     //
 
+    // Mono.just(proxySIPRequest).mapNotNull(processlocation).flatMap(TrunkService::process).map(location1 -> proxyTransaction.proxyTo(proxySIPRequest, location)).subscribe(()-<{}, ()=>{})
+
     SIPRequest request =
         MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(proxySIPRequest);
     if (!((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
@@ -137,6 +158,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     } else {
       (proxySIPRequest).getProvider().sendRequest(request);
     }
+
     // proxyTransaction.proxyTo();
   }
 
@@ -145,18 +167,19 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   @Override
-  public ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request) {
+  public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest) {
 
+    SIPRequest request = proxySIPRequest.getRequest();
     // Create ServerTransaction if not available from Jain.server could be null
-    DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
-    Optional<SipProvider> optionalSipProvider =
-        DhruvaNetwork.getProviderFromNetwork(network.getName());
-    SipProvider sipProvider;
-    if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
-    else {
-      logger.error("provider is not set in request");
-      return null;
-    }
+    //    DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+    //    Optional<SipProvider> optionalSipProvider =
+    //        DhruvaNetwork.getProviderFromNetwork(network.getName());
+    //    SipProvider sipProvider;
+    //    if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
+    //    else {
+    //      logger.error("provider is not set in request");
+    //      return null;
+    //    }
 
     Optional<ServerTransaction> optionalServerTransaction =
         checkServerTransaction(sipProvider, request, serverTransaction);
@@ -169,11 +192,18 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     proxyTransaction =
         createProxyTransaction(
             controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
+    // Fetch the network from provider
+    SipProvider sipProvider = proxySIPRequest.getProvider();
+    Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
+    String network;
+    network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
 
+    proxySIPRequest.setProxyController(this);
+    proxySIPRequest.setNetwork(network);
+    proxySIPRequest.setMidCall(ProxyUtils.isMidDialogRequest(request));
     // Set the proxyTransaction in jain server transaction for future reference
     serverTransaction.setApplicationData(proxyTransaction);
-
-    return null;
+    return proxySIPRequest;
   }
 
   /**
@@ -240,7 +270,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       try {
         serverTransaction = sipProvider.getNewServerTransaction(request);
       } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex) {
-        logger.error("exception while creating new server transaction in jain" + ex.getMessage());
+        logger.warn("exception while creating new server transaction in jain" + ex.getMessage());
         return Optional.empty();
       }
     }

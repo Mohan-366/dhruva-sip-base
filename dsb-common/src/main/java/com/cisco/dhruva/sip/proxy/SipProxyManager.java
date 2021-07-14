@@ -7,11 +7,9 @@ import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
-import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
 import java.util.function.Function;
 import javax.sip.*;
-import javax.sip.message.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -62,26 +60,13 @@ public class SipProxyManager {
    */
   public Function<ProxySIPRequest, ProxySIPRequest> createProxyController =
       proxySIPRequest -> {
-        ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
-        if (serverTransaction == null
-            && !((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
-          try {
-            serverTransaction =
-                proxySIPRequest.getProvider().getNewServerTransaction(proxySIPRequest.getRequest());
-          } catch (TransactionAlreadyExistsException e) {
-            e.printStackTrace();
-          } catch (TransactionUnavailableException e) {
-            e.printStackTrace();
-          }
-        }
         ProxyController controller =
             proxyControllerFactory
                 .proxyController()
                 .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
 
-        assert serverTransaction != null;
+        proxySIPRequest = controller.onNewRequest(proxySIPRequest);
         // TODO DSB, set proxyTransaction
-        serverTransaction.setApplicationData(controller);
         controller.setController(proxySIPRequest);
         return proxySIPRequest;
       };
