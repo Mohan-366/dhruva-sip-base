@@ -1,9 +1,11 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.ControllerConfig;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import gov.nist.javax.sip.message.SIPRequest;
+
 import javax.sip.ServerTransaction;
 
 /**
@@ -18,11 +20,12 @@ public interface ControllerInterface {
    * and return it to the ProxyManager // * @param proxy ProxyTransaction object that will handle //
    * * the received request
    *
-   * @param server ServerTransaction for this request
-   * @param request received request
+   *
+   * @param proxySIPRequest received request
    * @return ProxyTransaction
    */
-  ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request);
+
+  ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest);
 
   /* =============================================================== */
   /* =============================================================== */

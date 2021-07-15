@@ -162,8 +162,8 @@ public class ProxyService {
    */
   public void register(
       Consumer<ProxySIPRequest> requestConsumer, Consumer<ProxySIPResponse> responseConsumer) {
-    this.requestConsumer = requestConsumer;
-    this.responseConsumer = responseConsumer;
+    ProxyService.requestConsumer = requestConsumer;
+    ProxyService.responseConsumer = responseConsumer;
   }
 
   /** placeholder for processing the RequestEvent from Stack */

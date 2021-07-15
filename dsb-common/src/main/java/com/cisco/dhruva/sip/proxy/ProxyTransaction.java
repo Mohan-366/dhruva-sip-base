@@ -5,6 +5,7 @@ import com.cisco.dhruva.sip.proxy.errors.DestinationUnreachableException;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -310,18 +311,20 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * code will not check to make sure the controller is not adding or removing critical headers like
    * To, From, Call-ID.
    *
-   * @param request request to send
+   * @param proxySIPRequest request to send
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      SIPRequest request, ProxyCookie cookie, ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest,
+      ProxyCookie cookie,
+      ProxyBranchParamsInterface params) {
     try {
-
+      SIPRequest request = proxySIPRequest.getRequest();
       Log.debug("Entering DsProxyTransaction proxyTo()");
 
       // if a stray ACK or CANCEL, proxy statelessly.
       if (getStrayStatus() == STRAY_ACK || getStrayStatus() == STRAY_CANCEL) {
-        super.proxyTo(request, cookie, params);
+        super.proxyTo(proxySIPRequest, cookie, params);
 
         Log.debug("Leaving DsProxyTransaction proxyTo()");
 
@@ -346,7 +349,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       }
 
       try {
-        prepareRequest(request, params);
+        prepareRequest(proxySIPRequest, params);
 
         Log.debug("proxying request");
         Log.debug("Creating SIP client transaction with request:" + NL + request.toString());
@@ -355,8 +358,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         // create jain client transaction using provider
         // Set the proxy tansaction in client transaction application data
         // Get Network from Location object
+        DhruvaNetwork network;
+        Optional<DhruvaNetwork> optionalDhruvaNetwork =
+            DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
+        network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
 
-        DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
         Optional<SipProvider> optionalSipProvider =
             DhruvaNetwork.getProviderFromNetwork(network.getName());
         SipProvider sipProvider = optionalSipProvider.get();

@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.messaging;
 
 import com.cisco.dhruva.sip.proxy.ProxyTransaction;
+import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import gov.nist.javax.sip.message.SIPMessage;
@@ -15,6 +16,8 @@ import lombok.Setter;
 
 public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter ProxyTransaction proxyTransaction;
+  @Getter @Setter private ProxyController proxyController;
+  @Getter @Setter private String network;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,

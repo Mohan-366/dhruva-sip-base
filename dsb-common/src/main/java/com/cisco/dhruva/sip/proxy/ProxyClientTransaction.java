@@ -12,7 +12,7 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 import javax.sip.ClientTransaction;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
@@ -217,9 +217,13 @@ public class ProxyClientTransaction {
   }
 
   protected void setTimeout(long milliSec) {
-    // TODO DSB
-
-    // timeoutTimer = DsTimer.schedule(milliSec, proxy.getTransactionInterfaces(), branch);
+    // TODO DSB, check support from CSB, else metrics will not be collected
+    ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
+    Runnable task =
+        () -> {
+          this.proxy.timeOut(this.branch);
+        };
+    timeoutTimer = ses.schedule(task, milliSec, TimeUnit.MILLISECONDS);
     Log.debug("Set user timer for " + milliSec + " milliseconds");
   }
 

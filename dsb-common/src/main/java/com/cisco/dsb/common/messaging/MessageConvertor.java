@@ -6,13 +6,11 @@ import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.DhruvaSipRequestMessage;
 import com.cisco.dsb.common.messaging.models.DhruvaSipResponseMessage;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.LogContext;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
-import java.util.Optional;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -31,11 +29,9 @@ public class MessageConvertor {
     requireNonNull(message, "sip message should not be null");
     requireNonNull(context);
     String reqURI = null;
-    Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
-    String network;
-    network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
-
+    String network = null;
     LogContext logContext = LogContext.newLogContext();
+
     return DhruvaSipRequestMessage.newBuilder()
         .withContext(context)
         .withPayload(message)

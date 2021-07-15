@@ -8,13 +8,15 @@ import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import gov.nist.javax.sip.message.SIPRequest;
-import java.io.IOException;
-import java.util.function.Function;
-import javax.sip.*;
-import javax.sip.message.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.sip.ClientTransaction;
+import javax.sip.RequestEvent;
+import javax.sip.ResponseEvent;
+import javax.sip.SipProvider;
+import java.io.IOException;
+import java.util.function.Function;
 
 @Service
 public class SipProxyManager {
@@ -65,27 +67,14 @@ public class SipProxyManager {
    */
   public Function<ProxySIPRequest, ProxySIPRequest> createProxyController =
       proxySIPRequest -> {
-        ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
-        if (serverTransaction == null
-            && !((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
-          try {
-            serverTransaction =
-                proxySIPRequest.getProvider().getNewServerTransaction(proxySIPRequest.getRequest());
-          } catch (TransactionAlreadyExistsException e) {
-            e.printStackTrace();
-          } catch (TransactionUnavailableException e) {
-            e.printStackTrace();
-          }
-        }
         ProxyController controller =
             proxyControllerFactory
                 .proxyController()
                 .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
 
-        // TODO RamG- Handle ACK/CANCEL, since we dont create server transaction for them???
-        assert serverTransaction != null;
+
+        proxySIPRequest = controller.onNewRequest(proxySIPRequest);
         // TODO DSB, set proxyTransaction
-        serverTransaction.setApplicationData(controller);
         controller.setController(proxySIPRequest);
         // find the request type and call appropriate method of controller???
         return proxySIPRequest;

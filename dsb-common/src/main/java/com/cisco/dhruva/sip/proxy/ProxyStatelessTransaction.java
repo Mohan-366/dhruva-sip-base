@@ -2,6 +2,7 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.util.ParseProxyParamUtil;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.proxy.SipUtils;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -136,10 +137,11 @@ public class ProxyStatelessTransaction {
    * This method allows the controller to proxy to a specified URL the code will not check to make
    * sure the controller is not adding or removing critical headers like To, From, Call-ID.
    *
-   * @param request request to send
+   * @param proxySIPRequest request to send
    */
-  public synchronized void proxyTo(SIPRequest request, ProxyCookie cookie) {
-    proxyTo(request, cookie, null);
+
+  public synchronized void proxyTo(ProxySIPRequest proxySIPRequest, ProxyCookie cookie) {
+    proxyTo(proxySIPRequest, cookie, null);
   }
 
   /**
@@ -147,11 +149,15 @@ public class ProxyStatelessTransaction {
    * code will not check to make sure the controller is not adding or removing critical headers like
    * To, From, Call-ID.
    *
-   * @param request request to send
+   * @param proxySIPRequest request to send
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      SIPRequest request, ProxyCookie cookie, ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest,
+      ProxyCookie cookie,
+      ProxyBranchParamsInterface params) {
+
+    SIPRequest request = proxySIPRequest.getRequest();
 
     Log.debug("Entering DsProxyStatelessTransaction proxyTo()");
 
@@ -165,13 +171,16 @@ public class ProxyStatelessTransaction {
     }
 
     try {
-      prepareRequest(request, params);
+      prepareRequest(proxySIPRequest, params);
 
       Log.debug("proxying request");
 
       // TODO DSB, network must be from location object
       // Stateless transmission, using provider
-      DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+      DhruvaNetwork network;
+      Optional<DhruvaNetwork> optionalDhruvaNetwork =
+          DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
+      network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
 
       Optional<SipProvider> optionalSipProvider =
           DhruvaNetwork.getProviderFromNetwork(network.getName());
@@ -239,13 +248,14 @@ public class ProxyStatelessTransaction {
    * This is an internal implementation of proxying code. It's necessary to allow easy subclassing
    * in DsProxyTransaction, which will need to create DsProxyClientTransaction etc.
    *
-   * @param request request to send
+   * @param proxySIPRequest request to send
    * @param params extra params to set for this branch
    */
-  protected synchronized void prepareRequest(SIPRequest request, ProxyBranchParamsInterface params)
+  protected synchronized void prepareRequest(
+      ProxySIPRequest proxySIPRequest, ProxyBranchParamsInterface params)
       throws InvalidParameterException, ParseException, SipException, InvalidArgumentException {
     Log.debug("Entering prepareRequest()");
-
+    SIPRequest request = proxySIPRequest.getRequest();
     RouteHeader route;
 
     if (params == null) params = getDefaultParams();
@@ -271,7 +281,13 @@ public class ProxyStatelessTransaction {
       // invoke branch constructor with the URL and
       // add a Via field with this branch
       String branch = SipUtils.generateBranchId();
-      DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+
+      DhruvaNetwork network;
+      Optional<DhruvaNetwork> optionalDhruvaNetwork =
+          DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
+      network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
+
+      // DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
       Log.debug("branch=" + branch);
 
       // The following block fixes up Via protocol in case Route is used

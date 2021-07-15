@@ -2,6 +2,8 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
+import java.util.Objects;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -23,6 +25,20 @@ public class ProxySendMessage {
                     JainSipHelper.getMessageFactory().createResponse(responseID, request);
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
+              } catch (Exception e) {
+                throw new RuntimeException(e.getCause());
+              }
+            })
+        .subscribeOn(Schedulers.boundedElastic());
+  }
+
+  public static Mono<Void> sendResponse(ServerTransaction serverTransaction, SIPResponse response) {
+    Objects.requireNonNull(response);
+    Objects.requireNonNull(serverTransaction);
+    return Mono.<Void>fromRunnable(
+            () -> {
+              try {
+                serverTransaction.sendResponse(response);
               } catch (Exception e) {
                 throw new RuntimeException(e.getCause());
               }

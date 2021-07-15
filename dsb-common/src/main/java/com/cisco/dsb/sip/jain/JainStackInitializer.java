@@ -194,6 +194,9 @@ public class JainStackInitializer {
     properties.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
     properties.setProperty("gov.nist.javax.sip.PASS_INVITE_NON_2XX_ACK_TO_LISTENER", "true");
 
+    // ACK re-tranmissions, check this out, may not be required.
+    // properties.setProperty("gov.nist.javax.sip.DELIVER_RETRANSMITTED_ACK_TO_LISTENER", "true")
+
     // threading related
     properties.setProperty("gov.nist.javax.sip.REENTRANT_LISTENER", "true");
     properties.setProperty("gov.nist.javax.sip.THREAD_POOL_SIZE", "64");

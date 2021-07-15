@@ -24,6 +24,7 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   private String sessionId;
   private String reqURI;
   private String correlationID;
+  private boolean isMidCall;
 
   private static Logger logger = DhruvaLoggerFactory.getLogger(AbstractSipRequest.class);
 
@@ -105,11 +106,13 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
 
   @Override
   public boolean isMidCall() {
-    return false;
+    return this.isMidCall;
   }
 
   @Override
-  public void setMidCall(boolean isMidCall) {}
+  public void setMidCall(boolean isMidCall) {
+    this.isMidCall = isMidCall;
+  }
 
   public boolean isRequest() {
     return true;
@@ -117,14 +120,6 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
 
   @Override
   public void setRequest(boolean isRequest) {}
-
-  @Override
-  public void setNetwork(String network) {}
-
-  @Override
-  public String getNetwork() {
-    return null;
-  }
 
   @Override
   public LogContext getLogContext() {
