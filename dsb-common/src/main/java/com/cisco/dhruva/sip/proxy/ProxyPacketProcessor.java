@@ -1,7 +1,5 @@
 package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dsb.eventsink.RequestEventSink;
-import com.cisco.dsb.eventsink.ResponseEventSink;
 import javax.sip.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,10 +8,6 @@ import org.springframework.stereotype.Component;
 public class ProxyPacketProcessor implements SipListener {
 
   @Autowired ProxyEventListener proxyEventListener;
-
-  @Autowired RequestEventSink requestEventSink;
-
-  @Autowired ResponseEventSink responseEventSink;
 
   @Override
   public void processRequest(RequestEvent requestEvent) {

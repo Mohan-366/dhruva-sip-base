@@ -38,9 +38,9 @@ public class ProxyStatelessTransaction {
   private static final int PROXY_DONE = 1;
 
   // for NAT Traversal
-  public static final String RPORT = new String("rport");
-  public static final String RPORT_COOKIE_START = new String("0000");
-  public static final String RPORT_COOKIE_END = new String("1111");
+  public static final String RPORT = "rport";
+  public static final String RPORT_COOKIE_START = "0000";
+  public static final String RPORT_COOKIE_END = "1111";
 
   /** is this transaction handles a stray ACK or CANCEL? */
   protected static final int NOT_STRAY = 0;
@@ -138,7 +138,7 @@ public class ProxyStatelessTransaction {
    *
    * @param request request to send
    */
-  public synchronized void proxyTo(SIPRequest request, ProxyCookieInterface cookie) {
+  public synchronized void proxyTo(SIPRequest request, ProxyCookie cookie) {
     proxyTo(request, cookie, null);
   }
 
@@ -151,7 +151,7 @@ public class ProxyStatelessTransaction {
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      SIPRequest request, ProxyCookieInterface cookie, ProxyBranchParamsInterface params) {
+      SIPRequest request, ProxyCookie cookie, ProxyBranchParamsInterface params) {
 
     Log.debug("Entering DsProxyStatelessTransaction proxyTo()");
 
@@ -183,7 +183,6 @@ public class ProxyStatelessTransaction {
               err -> {
                 // Handle exception
               });
-      ;
 
       state = PROXY_DONE;
 

@@ -1,6 +1,7 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -52,7 +53,7 @@ public class ProxyClientTransaction {
   private int state;
 
   /** Holds a cookie used in asynchronous callbacks */
-  private ProxyCookieInterface cookie;
+  private ProxyCookie cookie;
 
   protected DhruvaNetwork network;
 
@@ -68,10 +69,7 @@ public class ProxyClientTransaction {
   private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyClientTransaction.class);
 
   protected ProxyClientTransaction(
-      ProxyTransaction proxy,
-      ClientTransaction branch,
-      ProxyCookieInterface cookie,
-      SIPRequest request) {
+      ProxyTransaction proxy, ClientTransaction branch, ProxyCookie cookie, SIPRequest request) {
 
     this.proxy = proxy;
     this.branch = branch;
@@ -178,14 +176,14 @@ public class ProxyClientTransaction {
   }
 
   /** Saves the last response received */
-  protected void gotResponse(SIPResponse resp) {
+  protected void gotResponse(ProxySIPResponse proxySIPResponse) {
     Log.debug("Entering gotResponse()");
 
     if (response == null || ProxyUtils.getResponseClass(response) == 1) {
-      response = resp;
-      int responseClass = ProxyUtils.getResponseClass(response);
+      response = proxySIPResponse.getResponse();
 
-      if (responseClass == 1) {
+      if (proxySIPResponse.getResponseClass() == 1) {
+        // TODO request passport state change can be recorded here
         state = STATE_PROV_RECVD;
         Log.debug("In STATE_PROV_RECVD");
       } else {
@@ -206,7 +204,7 @@ public class ProxyClientTransaction {
   }
 
   /** @return The cookie that the user code associated with this branch */
-  protected ProxyCookieInterface getCookie() {
+  protected ProxyCookie getCookie() {
     return cookie;
   }
 

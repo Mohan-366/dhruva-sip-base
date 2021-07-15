@@ -6,19 +6,19 @@ package com.cisco.dhruva.sip.controller;
  */
 
 import com.cisco.dhruva.sip.proxy.Location;
-import com.cisco.dhruva.sip.proxy.ProxyCookieInterface;
+import com.cisco.dhruva.sip.proxy.ProxyCookie;
 import gov.nist.javax.sip.message.SIPRequest;
 
-public class ProxyCookieThing implements ProxyCookieInterface {
+public class ProxyCookieImpl implements ProxyCookie {
 
   protected Location location;
   protected SIPRequest outboundRequest = null;
 
-  public ProxyCookieThing(Location location) {
+  public ProxyCookieImpl(Location location) {
     this.location = location;
   }
 
-  public ProxyCookieThing(Location location, SIPRequest request) {
+  public ProxyCookieImpl(Location location, SIPRequest request) {
     this.location = location;
     outboundRequest = request;
   }

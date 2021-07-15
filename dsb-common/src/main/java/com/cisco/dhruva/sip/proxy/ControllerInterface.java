@@ -1,9 +1,9 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.ControllerConfig;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import gov.nist.javax.sip.message.SIPRequest;
-import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ServerTransaction;
 
 /**
@@ -18,11 +18,11 @@ public interface ControllerInterface {
    * and return it to the ProxyManager // * @param proxy ProxyTransaction object that will handle //
    * * the received request
    *
-   * @param trans ServerTransaction for this request
+   * @param server ServerTransaction for this request
    * @param request received request
    * @return ProxyTransaction
    */
-  public ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request);
+  ProxyStatelessTransaction onNewRequest(ServerTransaction server, SIPRequest request);
 
   /* =============================================================== */
   /* =============================================================== */
@@ -46,8 +46,8 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans newly created DsProxyClientTransaction
    */
-  public void onProxySuccess(
-      ProxyStatelessTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+  void onProxySuccess(
+      ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This callback is invoked when there was a synchronous exception forwarding a request and
@@ -59,9 +59,9 @@ public interface ControllerInterface {
    * @param errorPhrase the String from the exception
    * @param exception exception that caused the error; null if not available
    */
-  public void onProxyFailure(
+  void onProxyFailure(
       ProxyStatelessTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       int errorCode,
       String errorPhrase,
       Throwable exception);
@@ -73,7 +73,7 @@ public interface ControllerInterface {
    * @param proxy ProxyTransaction object
    * @param trans DsProxyServerTransaction on which the response was sent
    */
-  public void onResponseSuccess(ProxyTransaction proxy, ProxyServerTransaction trans);
+  void onResponseSuccess(ProxyTransaction proxy, ProxyServerTransaction trans);
 
   /**
    * This callback is invoked when there was a synchronous exception forwarding a response and
@@ -83,7 +83,7 @@ public interface ControllerInterface {
    * @param errorCode identifies the exception thrown when forwarding request
    * @param errorPhrase the String from the exception
    */
-  public void onResponseFailure(
+  void onResponseFailure(
       ProxyTransaction proxy,
       ProxyServerTransaction trans,
       int errorCode,
@@ -96,17 +96,17 @@ public interface ControllerInterface {
   /**
    * This method is invoked by the proxy when a 4xx or 5xx response to a proxied request is received
    *
-   * @param response Response message that was received. Note that the top Via header will be
-   *     stripped off before its passed.
+   * @param proxy ProxyTransaction object
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction representing the branch that the response was received on
-   * @param proxy ProxyTransaction object
+   * @param response Response message that was received. Note that the top Via header will be
+   *     stripped off before its passed.
    */
-  public void onFailureResponse(
+  void onFailureResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response);
+      ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 3xx response to a proxied request is received. Its a
@@ -117,11 +117,11 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  public void onRedirectResponse(
+  void onRedirectResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response);
+      ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 2xx response to a proxied request is received.
@@ -131,11 +131,11 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  public void onSuccessResponse(
+  void onSuccessResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response);
+      ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 6xx response to a proxied request is received.
@@ -145,11 +145,11 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  public void onGlobalFailureResponse(
+  void onGlobalFailureResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response);
+      ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 1xx response to a proxied request is received.
@@ -159,16 +159,16 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  public void onProvisionalResponse(
+  void onProvisionalResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response);
+      ProxySIPResponse response);
 
   /**
    * This method is invoked when the proxy receives a response it would like to send.
    *
-   * @param response The response the proxy believes is the best and would like to send.
+   * @param proxySIPResponse The response the proxy believes is the best and would like to send.
    * @param proxy The proxy object Note: this interface will need to be changed to handle multiple
    *     200 OKs. My understanding is that Low Level API currently drops all 200 OKs after the first
    *     one so I didn't bother to define a controller API for this as well
@@ -178,10 +178,10 @@ public interface ControllerInterface {
   //   * needs to be sent. This is only relevant for multiple 200 OK
   //   * responses.
 
-  public void onBestResponse(
+  void onBestResponse(
       ProxyTransaction proxy,
       /*DsProxyServerTransaction trans,*/
-      SIPResponse response);
+      ProxySIPResponse proxySIPResponse);
 
   /**
    * This method is invoked whenever a ClientTransaction times out before receiving a response
@@ -190,8 +190,7 @@ public interface ControllerInterface {
    * @param trans DsProxyClientTransaction where the timeout occurred
    * @param cookie cookie object passed to proxyTo()
    */
-  public void onRequestTimeOut(
-      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+  void onRequestTimeOut(ProxyTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This method is invoked whenever a ServerTransaction times out, i.e., no ACK is received within
@@ -203,7 +202,7 @@ public interface ControllerInterface {
    *     undertake any actions in response to this event, it might pass the request back to the
    *     ProxyTransaction to identify the timed out ClientTransaction
    */
-  public void onResponseTimeOut(ProxyTransaction proxy, ProxyServerTransaction trans);
+  void onResponseTimeOut(ProxyTransaction proxy, ProxyServerTransaction trans);
 
   /**
    * This is invoked whenever an ICMP error occurs while retransmitting a response over UDP
@@ -211,7 +210,7 @@ public interface ControllerInterface {
    * @param proxy The proxy object
    * @param trans DsProxyServerTransaction where the timeout occurred
    */
-  public void onICMPError(ProxyTransaction proxy, ProxyServerTransaction trans);
+  void onICMPError(ProxyTransaction proxy, ProxyServerTransaction trans);
 
   /**
    * This is invoked whenever an ICMP error occurs while retransmitting a request over UDP
@@ -220,8 +219,7 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction where the timeout occurred
    */
-  public void onICMPError(
-      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+  void onICMPError(ProxyTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This is invoked whenever an ACK is received for the response we sent back.
@@ -230,7 +228,7 @@ public interface ControllerInterface {
    * @param transaction the ServerTransaction being ACKed
    * @param ack the ACK request
    */
-  public void onAck(ProxyTransaction proxy, ProxyServerTransaction transaction, SIPRequest ack);
+  void onAck(ProxyTransaction proxy, ProxyServerTransaction transaction, SIPRequest ack);
 
   /**
    * this is called when a CANCEL is received for the original Transaction
@@ -238,19 +236,19 @@ public interface ControllerInterface {
    * @param proxy The proxyTransaction object
    * @param trans ServerTransaction being cancelled
    * @param cancel the CANCEL request
-   * @throws DsException
+   * @throws DhruvaException
    */
-  public void onCancel(ProxyTransaction proxy, ProxyServerTransaction trans, SIPRequest cancel)
+  void onCancel(ProxyTransaction proxy, ProxyServerTransaction trans, SIPRequest cancel)
       throws DhruvaException;
 
   /**
-   * this method is triggered whenever {@link
-   * DsProxyTransaction#finalResponse(DsSipClientTransaction, DsSipResponse)} receives response
+   * this method is triggered whenever {@link ProxyTransaction#finalResponse(ProxySIPResponse)}
+   * receives response
    *
    * @param response
    * @return
    */
-  public void onResponse(SIPResponse response);
+  void onResponse(ProxySIPResponse response);
 
-  public ControllerConfig getControllerConfig();
+  ControllerConfig getControllerConfig();
 }
