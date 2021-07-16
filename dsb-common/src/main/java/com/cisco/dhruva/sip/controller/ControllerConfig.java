@@ -11,14 +11,17 @@ import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.sip.util.ReConstants;
+import com.cisco.dsb.sip.util.ViaListenIf;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sip.address.Address;
@@ -42,6 +45,10 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
+
+  protected ConcurrentHashMap ViaIfMap = new ConcurrentHashMap<>();
+
+  protected HashMap ViaListenHash = new HashMap();
 
   protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
@@ -254,6 +261,71 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public ViaListenInterface getViaInterface(Transport protocol, String direction) {
+
+    DhruvaNetwork net;
+    // Grab the via interface if it has already been stored by protocol and direction
+    ViaListenInterface viaIf;
+    Optional<DhruvaNetwork> optionalDhruvaNetwork = DhruvaNetwork.getNetwork(direction);
+    if (optionalDhruvaNetwork.isPresent()) net = optionalDhruvaNetwork.get();
+    else {
+      logger.error("exception getting network {}", direction);
+      return null;
+    }
+    viaIf = getVia(protocol, net);
+    if (viaIf == null) {
+      viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
+    }
+    if (viaIf == null) {
+
+      logger.info("No via interface stored for this protocol/direction pair, creating one");
+
+      // Find a listen if with the same protocol and direction, if there is more
+      // than one the first on will be selected.
+
+      ListenInterface tempInterface = getInterface(protocol, net);
+      if (tempInterface != null) {
+        try {
+          viaIf =
+              new ViaListenIf(
+                  tempInterface.getPort(),
+                  tempInterface.getProtocol(),
+                  tempInterface.getAddress(),
+                  tempInterface.shouldAttachExternalIp(),
+                  net,
+                  -1,
+                  null,
+                  null,
+                  null,
+                  -1);
+        } catch (UnknownHostException | DhruvaException unhe) {
+          logger.error("Couldn't create a new via interface", unhe);
+          return null;
+        }
+        HashMap viaListenHashDir = (HashMap) ViaListenHash.get(direction);
+        if (viaListenHashDir == null) {
+          viaListenHashDir = new HashMap();
+          ViaListenHash.put(direction, viaListenHashDir);
+        }
+        viaListenHashDir.put(protocol.getValue(), viaIf);
+      }
+    }
+
+    logger.debug(
+        "Leaving getViaInterface(+ "
+            + protocol
+            + ", "
+            + direction
+            + " ) with return value: "
+            + viaIf);
+
+    return viaIf;
+  }
+
+  public ViaObj getVia(Transport transport, DhruvaNetwork direction) {
+    HashMap viaDirMap = (HashMap) ViaIfMap.get(direction);
+    if (viaDirMap != null) {
+      return (ViaObj) viaDirMap.get(new Integer(String.valueOf(transport)));
+    }
     return null;
   }
 

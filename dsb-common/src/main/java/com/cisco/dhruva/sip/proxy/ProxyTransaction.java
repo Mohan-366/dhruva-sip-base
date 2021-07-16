@@ -206,7 +206,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    */
   public synchronized void init(
       @lombok.NonNull ControllerInterface controller,
-      ProxyParamsInterface config,
+      @NonNull ProxyParamsInterface config,
       @NonNull ServerTransaction server,
       @NonNull SIPRequest request)
       throws InternalProxyErrorException {
@@ -411,15 +411,19 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         // Returns Mono
         ProxySendMessage.sendRequestAsync(sipProvider, clientTrans, request)
             .subscribe(
-                req -> {
-                  controller.onProxySuccess(this, cookie, proxyClientTrans);
-                },
+                req -> {},
                 err -> {
                   // Handle exception
                   // Check error Type
                   controller.onProxyFailure(
-                      this, cookie, ControllerInterface.INVALID_STATE, err.getMessage(), err);
-                });
+                      this,
+                      cookie,
+                      ControllerInterface.DESTINATION_UNREACHABLE,
+                      err.getMessage(),
+                      err);
+                },
+                // OnComplete signal, runnable does not emit value
+                () -> controller.onProxySuccess(this, cookie, proxyClientTrans));
 
       } catch (Exception e) {
         Log.error("Got exception in proxyTo()!", e);

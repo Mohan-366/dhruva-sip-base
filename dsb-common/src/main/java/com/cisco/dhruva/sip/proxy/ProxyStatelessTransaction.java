@@ -377,7 +377,10 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
     ViaListenInterface listenIf = null;
     for (int t : transports) {
-      listenIf = getDefaultParams().getViaInterface(Transport.getTypeFromInt(t).get(), direction);
+      Optional<Transport> optionalTransport = Transport.getTypeFromInt(t);
+      if (optionalTransport.isPresent()) transport = optionalTransport.get();
+      else continue;
+      listenIf = getDefaultParams().getViaInterface(transport, direction);
       if (listenIf != null) break;
     }
     Log.debug("Leaving getPreferredListenIf(), returning " + listenIf);

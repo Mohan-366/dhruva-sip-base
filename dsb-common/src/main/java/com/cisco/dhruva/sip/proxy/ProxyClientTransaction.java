@@ -79,7 +79,7 @@ public class ProxyClientTransaction {
   static {
     dhruvaExecutorService =
         SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE, 2);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 2);
     scheduledExecutor =
         dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
   }

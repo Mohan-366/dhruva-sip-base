@@ -54,6 +54,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   /** If true, will cancel all branches on CANCEL, 2xx and 6xx respnses */
   @Getter @Setter protected boolean cancelBranchesAutomatically = false;
 
+  protected ArrayList unCancelledBranches = new ArrayList(3);
+
   public HashMap<Integer, Map<String, String>> parsedProxyParamsByType = null;
 
   // Order in which the transport is selected.
@@ -67,7 +69,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   protected byte stateMode = -1;
 
   public ProxyController(
-      @NonNull ServerTransaction serverTransaction,
+      ServerTransaction serverTransaction,
       @NonNull SipProvider sipProvider,
       @NonNull DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
       @NonNull ProxyFactory proxyFactory,
@@ -574,14 +576,16 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         try {
           proxyTransaction =
               (ProxyTransaction)
-                  proxyFactory.proxyTransaction().apply(this, null, serverTrans, request);
+                  proxyFactory
+                      .proxyTransaction()
+                      .apply(this, controllerConfig, serverTrans, request);
         } catch (InternalProxyErrorException ex) {
           logger.error("exception while creating proxy transaction" + ex.getMessage());
           return null;
         }
       } else {
         try {
-          proxyTransaction = new ProxyStatelessTransaction(this, null, request);
+          proxyTransaction = new ProxyStatelessTransaction(this, controllerConfig, request);
         } catch (InternalProxyErrorException dse) {
           sendFailureResponse(request, Response.SERVER_INTERNAL_ERROR);
           return null;
@@ -616,7 +620,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         return Optional.empty();
       }
     }
-
     return Optional.ofNullable(serverTransaction);
   }
 
@@ -711,7 +714,28 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onProxySuccess(
-      ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans) {}
+      ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans) {
+    logger.debug("Entering onProxySuccess() ");
+    // demarshall the cookie object
+    ProxyCookieImpl cookieThing = (ProxyCookieImpl) cookie;
+    // ProxyResponseInterface responseIf = cookieThing.getResponseInterface();
+    Location location = cookieThing.getLocation();
+
+    // See if this is a branch that should be cancelled
+    int index;
+    if ((index = unCancelledBranches.indexOf(location)) != -1) {
+
+      logger.debug("Found an uncancelled branch, cancelling it now ");
+
+      trans.cancel();
+      unCancelledBranches.remove(index);
+      return;
+    }
+
+    // Store the mapping between this location and its client transaction so we
+    // can easily cancel the branch if we need to
+    locToTransMap.put(location, trans);
+  }
 
   @Override
   public void onProxyFailure(
