@@ -100,7 +100,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   //    proxyAppAdaptor.handleRequest(request);
   //  }
 
-  public void setController(ProxySIPRequest request) {
+  public void setController(@NonNull ProxySIPRequest request) {
 
     // Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
     // String network;
@@ -111,7 +111,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     request.getContext().set(CommonContext.PROXY_CONTROLLER, this);
   }
 
-  public void proxyResponse(ProxySIPResponse proxySIPResponse) {
+  public void proxyResponse(@NonNull ProxySIPResponse proxySIPResponse) {
 
     /*SIPResponse response =
         MessageConvertor.convertDhruvaResponseMessageToJainSipMessage(proxySIPResponse);
@@ -121,7 +121,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     } catch (SipException exception) {
       exception.printStackTrace();
     }*/
-    if (ourRequest == null) {
+    if (ourRequest != null) {
       SIPRequest req = ourRequest;
       if ((!req.getMethod().equals(Request.ACK)) && (!req.getMethod().equals(Request.CANCEL))) {
         // Change to statefull if we are stateless

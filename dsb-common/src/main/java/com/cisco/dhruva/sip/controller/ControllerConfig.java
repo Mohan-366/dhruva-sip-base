@@ -28,6 +28,9 @@ import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.RecordRouteHeader;
+
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -336,7 +339,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public boolean doRecordRoute() {
-    return false;
+    return doRecordRoute;
   }
 
   @Override

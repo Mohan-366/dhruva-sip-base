@@ -16,6 +16,7 @@ import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.util.Optional;
 import javax.sip.*;
+import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.RecordRouteHeader;
@@ -239,7 +240,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     if (!params.doRecordRoute()) {
       return;
     }
-    addRecordRoute(proxySIPRequest.getRequest(), getOriginalRequest().getRequestURI(), params);
+    addRecordRoute(proxySIPRequest, getOriginalRequest().getRequestURI(), params);
   }
 
   /**
@@ -320,7 +321,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       via =
           JainSipHelper.getHeaderFactory()
               .createViaHeader(
-                  com.cisco.dhruva.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(listenIf),
+                  com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(listenIf),
                   listenIf.getPort(),
                   Transport.getTypeFromInt(viaTransport).get().name(),
                   branch);
@@ -452,26 +453,29 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   // REDDY_RR_CHANGE
   // Insert itself in Record-Route if required
   protected void addRecordRoute(
-      SIPRequest request, URI _requestURI, ProxyBranchParamsInterface params)
+      ProxySIPRequest proxySIPRequest, URI _requestURI, ProxyBranchParamsInterface params)
       throws SipException, ParseException {
     Log.debug("Entering addRecordRoute()");
+    SIPRequest request = proxySIPRequest.getClonedRequest();
     if (request.getMethod().equals(Request.INVITE)
         || request.getMethod().equals(Request.SUBSCRIBE)
         || request.getMethod().equals(Request.NOTIFY)) {
-      ServerTransaction serverTransaction = (ServerTransaction) request.getTransaction();
 
-      DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
-      RecordRouteHeader rr = getDefaultParams().getRecordRouteInterface(network.getName());
+      //Verify if this has to be outgoing network or incoming network
+      //DSB TODO
+      String network = proxySIPRequest.getNetwork();
+      RecordRouteHeader rr = getDefaultParams().getRecordRouteInterface(network);
 
       if (rr != null) {
-        SipURI rrURL = (SipURI) rr.getAddress();
         boolean cloned = false;
-        if (_requestURI.isSipURI()) {
+        Address routeAddress = rr.getAddress();
+        URI routeURI = routeAddress.getURI();
+        if (_requestURI.isSipURI() && routeURI.isSipURI()) {
           SipURI url = (SipURI) _requestURI;
           if (url.isSecure()) {
             rr = (RecordRouteHeader) rr.clone();
             cloned = true;
-            rrURL = (SipURI) rr.getAddress();
+            SipURI rrURL = (SipURI) routeURI;
             rrURL.setSecure(true);
           }
         }
@@ -497,11 +501,11 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         //                        rrURL.removeParameter(DsTokenSipConstants.s_TokParamName);
         //                    }
         //                }
-        SipURI uri = (SipURI) rr.getAddress();
+        SipURI uri = (SipURI) routeURI;
         uri.setUser(params.getRecordRouteUserParams());
 
         // replace Record-Route localIP with externalIP for public network
-        uri.setHost(com.cisco.dhruva.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(uri));
+        uri.setHost(com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(uri));
 
         Log.info("Adding " + rr);
         request.addFirst(rr);

@@ -217,7 +217,7 @@ public class ProxyServerTransaction {
       // get the network corresponding to the host portion in RR. If host contains externalIP,
       // get the localIP to know the network accordingly
       currentRRURLHost =
-          com.cisco.dhruva.sip.hostPort.HostPortUtil.reverseHostInfoToLocalIp(currentRRURL);
+          com.cisco.dsb.sip.hostPort.HostPortUtil.reverseHostInfoToLocalIp(currentRRURL);
 
       String network = null;
       String name =
@@ -268,7 +268,7 @@ public class ProxyServerTransaction {
 
         // replace local IP with External IP for public network when modifying user portion of RR
         currentRRURL.setHost(
-            com.cisco.dhruva.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(RRUrl));
+            com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(RRUrl));
 
         if (RRUrl.getPort() >= 0) {
           currentRRURL.setPort(RRUrl.getPort());
