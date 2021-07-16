@@ -2,19 +2,25 @@ package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
-import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import java.io.IOException;
 import java.util.function.Function;
-import javax.sip.*;
+import javax.sip.ClientTransaction;
+import javax.sip.RequestEvent;
+import javax.sip.ResponseEvent;
+import javax.sip.SipProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SipProxyManager {
+
+  private final Logger logger = DhruvaLoggerFactory.getLogger(SipProxyManager.class);
 
   @Autowired ProxyControllerFactory proxyControllerFactory;
   /** Utility Function to Convert RequestEvent from JAIN Stack to ProxySIPRequest */
@@ -68,19 +74,57 @@ public class SipProxyManager {
         proxySIPRequest = controller.onNewRequest(proxySIPRequest);
         // TODO DSB, set proxyTransaction
         controller.setController(proxySIPRequest);
+        // find the request type and call appropriate method of controller???
         return proxySIPRequest;
       };
 
-  /** placeholder for getting ProxyController for SIPResponse */
-  public Function<ProxySIPResponse, ProxySIPResponse> toProxyController =
-      proxySIPResponse -> {
-        // some proxy controller operations
+  public Function<ProxySIPRequest, ProxySIPRequest> processRequest =
+      proxySIPRequest -> {
+        // find the right method call of proxyController
         ProxyController proxyController =
-            (ProxyController) proxySIPResponse.getClientTransaction().getApplicationData();
-        proxySIPResponse.getContext().set(CommonContext.PROXY_CONTROLLER, proxyController);
-        // we can access proxycontroller using clientTransaction, just to make it uniform across
-        // request and response
-        // keeping it in context
-        return proxySIPResponse;
+            (ProxyController) proxySIPRequest.getProxyStatelessTransaction().getController();
+        return proxySIPRequest;
+      };
+
+  public Function<ResponseEvent, ProxySIPResponse> findProxyTransaction =
+      responseEvent -> {
+        // transaction will be provided by stack
+        ClientTransaction clientTransaction = responseEvent.getClientTransaction();
+
+        if (clientTransaction != null) {
+          ProxySIPResponse proxySIPResponse = createProxySipResponse.apply(responseEvent);
+          proxySIPResponse.setProxyTransaction(
+              (ProxyTransaction) clientTransaction.getApplicationData());
+          return proxySIPResponse;
+        } else {
+          // TODO stray response handling
+          return null;
+        }
+      };
+
+  /**
+   * This method calls appropriate ProxyTransaction methods to handle the response. Throws
+   * NullPointerException if the ProxySIPResponse is a stray Response, i.e without ClientTransaction
+   */
+  public Function<ProxySIPResponse, ProxySIPResponse> processProxyTransaction =
+      proxySIPResponse -> {
+        ProxyTransaction proxyTransaction = proxySIPResponse.getProxyTransaction();
+        // Is this check for null needed because if it's null this function will/should not be
+        // called
+        if (proxyTransaction != null) {
+          switch (proxySIPResponse.getResponseClass()) {
+            case 1:
+              proxyTransaction.provisionalResponse(proxySIPResponse);
+              break;
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+              proxyTransaction.finalResponse(proxySIPResponse);
+              break;
+          }
+        }
+        return proxySIPResponse.isToApplication() ? proxySIPResponse : null;
       };
 }

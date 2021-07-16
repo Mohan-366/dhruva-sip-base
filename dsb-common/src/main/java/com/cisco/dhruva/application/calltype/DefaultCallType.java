@@ -1,7 +1,6 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.sip.controller.ProxyController;
-import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -44,8 +43,7 @@ public class DefaultCallType implements CallType {
               proxySIPRequest -> {
                 logger.info("Sending to APP from leaf ,callid: " + proxySIPRequest.getCallId());
                 try {
-                  ((ProxyController)
-                          proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
+                  ((ProxyController) proxySIPRequest.getProxyStatelessTransaction().getController())
                       .proxyRequest(proxySIPRequest, null);
                 } catch (SipException exception) {
                   exception.printStackTrace();
@@ -60,7 +58,7 @@ public class DefaultCallType implements CallType {
     return proxySIPResponseMono ->
         proxySIPResponseMono.subscribe(
             proxySIPResponse -> {
-              ((ProxyController) proxySIPResponse.getContext().get(CommonContext.PROXY_CONTROLLER))
+              ((ProxyController) proxySIPResponse.getProxyTransaction().getController())
                   .proxyResponse(proxySIPResponse);
             });
   }
@@ -89,7 +87,7 @@ public class DefaultCallType implements CallType {
                             "MRS lookup failed, callID" + proxySIPRequest.getCallId(),
                             " Rejecting the call");
                         ((ProxyController)
-                                proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
+                                proxySIPRequest.getProxyStatelessTransaction().getController())
                             .respond(404, proxySIPRequest);
                         return null;
                       }

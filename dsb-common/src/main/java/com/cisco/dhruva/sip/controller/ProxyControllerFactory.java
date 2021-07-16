@@ -14,8 +14,6 @@ public class ProxyControllerFactory {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
-  @Autowired ProxyAppAdaptor proxyAppAdaptor;
-
   @Autowired ControllerConfig controllerConfig;
 
   @Autowired ProxyFactory proxyFactory;

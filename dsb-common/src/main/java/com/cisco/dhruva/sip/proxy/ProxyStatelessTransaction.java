@@ -39,9 +39,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   private static final int PROXY_DONE = 1;
 
   // for NAT Traversal
-  public static final String RPORT = new String("rport");
-  public static final String RPORT_COOKIE_START = new String("0000");
-  public static final String RPORT_COOKIE_END = new String("1111");
+  public static final String RPORT = "rport";
+  public static final String RPORT_COOKIE_START = "0000";
+  public static final String RPORT_COOKIE_END = "1111";
 
   /** is this transaction handles a stray ACK or CANCEL? */
   protected static final int NOT_STRAY = 0;
@@ -189,7 +189,6 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
               err -> {
                 // Handle exception
               });
-      ;
 
       state = PROXY_DONE;
 
@@ -531,6 +530,15 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
   public boolean processVia() {
     return true;
+  }
+
+  /**
+   * Returns the DsControllerInterface used for callbacks
+   *
+   * @return controller Controller to notify of proxy events.
+   */
+  public ControllerInterface getController() {
+    return controller;
   }
 
   /**

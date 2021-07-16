@@ -2,11 +2,8 @@ package com.cisco.dhruva.sip.controller;
 
 import com.cisco.dhruva.sip.controller.util.ParseProxyParamUtil;
 import com.cisco.dhruva.sip.proxy.*;
-import com.cisco.dhruva.sip.proxy.Location;
-import com.cisco.dhruva.sip.proxy.ProxySendMessage;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.CommonContext;
-import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
@@ -23,6 +20,7 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.*;
+import java.util.HashMap;
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -40,6 +38,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private SipProvider sipProvider;
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   private ProxyFactory proxyFactory;
+
   @Getter @Setter private ControllerConfig controllerConfig;
   @Getter @Setter private ProxyStatelessTransaction proxyTransaction;
   /* Stores the request for this controller */
@@ -52,12 +51,20 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Getter @Setter protected SIPRequest preprocessedRequest;
 
   @Getter @Setter protected int timeToTry = 32;
+  /** If true, will cancel all branches on CANCEL, 2xx and 6xx respnses */
+  @Getter @Setter protected boolean cancelBranchesAutomatically = false;
+
   public HashMap<Integer, Map<String, String>> parsedProxyParamsByType = null;
 
   // Order in which the transport is selected.
   private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
 
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyController.class);
+  /* A mapping of Locations to client transactions used when cancelling */
+  protected HashMap locToTransMap = new HashMap(11);
+
+  /* Stores if we are in stateful or stateless mode */
+  protected byte stateMode = -1;
 
   public ProxyController(
       @NonNull ServerTransaction serverTransaction,
@@ -104,13 +111,40 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public void proxyResponse(ProxySIPResponse proxySIPResponse) {
 
-    SIPResponse response =
+    /*SIPResponse response =
         MessageConvertor.convertDhruvaResponseMessageToJainSipMessage(proxySIPResponse);
     try {
       proxySIPResponse.getProvider().sendResponse(response);
 
     } catch (SipException exception) {
       exception.printStackTrace();
+    }*/
+    if (ourRequest == null) {
+      SIPRequest req = ourRequest;
+      if ((!req.getMethod().equals(Request.ACK)) && (!req.getMethod().equals(Request.CANCEL))) {
+        // Change to statefull if we are stateless
+        if (stateMode != ControllerConfig.STATEFUL) {
+          overwriteStatelessMode(req);
+        }
+        // MEETPASS TODO
+        //        if (DsMappedResponseCreator.getInstance() != null) {
+        //          response =
+        //              DsMappedResponseCreator.getInstance()
+        //                  .createresponse(
+        //                      incomingNetwork.toString(),
+        //                      proxyErrorAggregator.getProxyErrorList(),
+        //                      response);
+        //        }
+        // TODO can be sent using Mono
+        ProxyResponseGenerator.sendResponse(
+            proxySIPResponse.getResponse(), (ProxyTransaction) proxyTransaction);
+      } else {
+        logger.warn("in respond() - not forwarding response because request method was ACK");
+      }
+    } else {
+      logger.error(
+          "Request is null for response, this should have never come here, as there is"
+              + " transaction check before sending to application!!!");
     }
   }
 
@@ -216,6 +250,16 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     if (network != null) {
       proxySIPRequest.setOutgoingNetwork(network.getName());
+
+      //    SIPRequest request =
+      //        MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(proxySIPRequest);
+      //    if (!((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
+      //      ClientTransaction clientTransaction =
+      //          (proxySIPRequest).getProvider().getNewClientTransaction((Request)
+      // request.clone());
+      //      clientTransaction.setApplicationData(proxySIPRequest.getProxyTransaction());
+      //      clientTransaction.sendRequest();
+
     } else {
       logger.warn("Could not find the network to set to the request");
       // until then we need to fail the call.
@@ -462,10 +506,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return proxyParams;
   }
 
-  public void onResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException {
-    // proxyAppAdaptor.handleResponse(proxySIPResponse);
-  }
-
   @Override
   public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest) {
 
@@ -690,45 +730,127 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       ProxyServerTransaction trans,
       int errorCode,
       String errorPhrase,
-      Throwable exception) {}
+      Throwable exception) {
+    logger.warn(
+        "onResponseFailure()- Could not send response , exception" + exception.getMessage());
+    /*
+    //TODO what action should be taken???
+    if (proxyErrorAggregator != null) {
+      DsSipResponse response = proxy.getBestResponse();
+      proxyErrorAggregator.onResponseFailure(exception, response, errorCode);
+    }*/
+  }
 
   @Override
   public void onFailureResponse(
       ProxyTransaction proxy,
       ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response) {}
+      ProxySIPResponse proxySIPResponse) {
+    logger.info("Entering onFailureResponse():");
+    // not copying proxyError Aggregator Code, how is this functionality covered???
+    // TODO add retry logic once loadbalancer is ready
+    // as of now we are sending all response to Application layer
+    proxySIPResponse.setToApplication(true);
+    logger.info("Leaving onFailureResponse");
+  }
 
   @Override
   public void onRedirectResponse(
       ProxyTransaction proxy,
       ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response) {}
+      ProxySIPResponse proxySIPResponse) {
+    logger.info("Entering onRedirectResponse():");
+
+    proxySIPResponse.setToApplication(true);
+
+    logger.info("Leaving onRedirectResponse()");
+  }
 
   @Override
   public void onSuccessResponse(
       ProxyTransaction proxy,
       ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response) {}
+      ProxySIPResponse proxySIPResponse) {
+    ProxyCookieImpl cookieImpl = (ProxyCookieImpl) cookie;
+    Location location = cookieImpl.getLocation();
+
+    /*if (location.getLoadBalancer() != null)
+      location.getLoadBalancer().getLastServerTried().onSuccess();
+    */
+    // Remove the mapping to this location since it is no longer cancellable
+    locToTransMap.remove(location);
+
+    // Cancel all outstanding branches if we are supposed to
+    if (cancelBranchesAutomatically) {
+      proxy.cancel();
+      locToTransMap.clear();
+    }
+    logger.info("Entering onSuccessResponse():");
+
+    proxySIPResponse.setToApplication(true);
+
+    logger.info("Leaving onSuccessResponse():");
+  }
 
   @Override
   public void onGlobalFailureResponse(
       ProxyTransaction proxy,
       ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response) {}
+      ProxySIPResponse proxySIPResponse) {
+    logger.info("Entering onGlobalFailureResponse():");
+    Location location = ((ProxyCookieImpl) cookie).getLocation();
+    /*
+    if (location.getLoadBalancer() != null)
+      location.getLoadBalancer().getLastServerTried().onSuccess();
+      */
+    locToTransMap.remove(location);
+    if (cancelBranchesAutomatically) {
+      proxy.cancel();
+      locToTransMap.clear();
+    }
+    proxySIPResponse.setToApplication(true);
+
+    logger.info("Leaving onGlobalFailureResponse():");
+  }
 
   @Override
   public void onProvisionalResponse(
       ProxyTransaction proxy,
       ProxyCookie cookie,
       ProxyClientTransaction trans,
-      SIPResponse response) {}
+      ProxySIPResponse proxySIPResponse) {
+    SIPResponse response = proxySIPResponse.getResponse();
+    logger.debug("Entering onProvisionalResponse()");
+
+    /*ProxyCookieThing cookieThing = (ProxyCookieThing) cookie;
+    AppAdaptorInterface responseIf = cookieThing.getResponseInterface();
+    Location location = cookieThing.getLocation();
+    //TODO uncomment after loadbalancer impl
+    if (location.getLoadBalancer() != null)
+      location.getLoadBalancer().getLastServerTried().onSuccess();
+
+    int responseCode = response.getStatusCode();
+    if (responseCode != 100) {
+      // proxy.respond(response);
+      Log.debug("sent " + responseCode + " response ");
+    }
+
+    // pass the provisional response back
+    if (responseIf != null)
+      responseIf.handleResponse(location, Optional.of(response), responseCode);*/
+    logger.info("Entering onProvisionalResponse():");
+
+    proxySIPResponse.setToApplication(true);
+
+    logger.info("Leaving onProvisionalResponse()");
+  }
 
   @Override
-  public void onBestResponse(ProxyTransaction proxy, SIPResponse response) {}
+  public void onBestResponse(ProxyTransaction proxy, ProxySIPResponse proxySIPResponse) {}
 
   @Override
   public void onRequestTimeOut(
@@ -752,7 +874,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       throws DhruvaException {}
 
   @Override
-  public void onResponse(SIPResponse response) {}
+  public void onResponse(ProxySIPResponse response) {
+    // TODO what to do here???
+    /*response.setNormalizationState(
+    DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
+  }
 
   //  @Override
   //  public ControllerConfig getControllerConfig() {

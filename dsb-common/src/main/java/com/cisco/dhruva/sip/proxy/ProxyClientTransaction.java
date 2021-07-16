@@ -3,6 +3,7 @@ package com.cisco.dhruva.sip.proxy;
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.SpringApplicationContext;
@@ -194,14 +195,14 @@ public class ProxyClientTransaction {
   }
 
   /** Saves the last response received */
-  protected void gotResponse(SIPResponse resp) {
+  protected void gotResponse(ProxySIPResponse proxySIPResponse) {
     Log.debug("Entering gotResponse()");
 
     if (response == null || ProxyUtils.getResponseClass(response) == 1) {
-      response = resp;
-      int responseClass = ProxyUtils.getResponseClass(response);
+      response = proxySIPResponse.getResponse();
 
-      if (responseClass == 1) {
+      if (proxySIPResponse.getResponseClass() == 1) {
+        // TODO request passport state change can be recorded here
         state = STATE_PROV_RECVD;
         Log.debug("In STATE_PROV_RECVD");
       } else {

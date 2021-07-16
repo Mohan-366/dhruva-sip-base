@@ -13,8 +13,6 @@ import com.cisco.dhruva.sip.proxy.SipProxyManager;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
-import com.cisco.dsb.eventsink.RequestEventSink;
-import com.cisco.dsb.eventsink.ResponseEventSink;
 import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
@@ -49,10 +47,6 @@ public class ProxyService {
   @Autowired ControllerConfig controllerConfig;
 
   @Autowired private ProxyPacketProcessor proxyPacketProcessor;
-
-  @Autowired RequestEventSink requestEventSink;
-
-  @Autowired ResponseEventSink responseEventSink;
 
   @Autowired ProxyControllerFactory proxyControllerFactory;
 
@@ -187,7 +181,10 @@ public class ProxyService {
   public Consumer<Mono<ResponseEvent>> proxyResponseHandler =
       responsEventMono ->
           responsEventMono
-              .mapNotNull(sipProxyManager.createProxySipResponse)
-              .mapNotNull(sipProxyManager.toProxyController)
+              .mapNotNull(sipProxyManager.findProxyTransaction)
+              .mapNotNull(
+                  sipProxyManager
+                      .processProxyTransaction) // findTransaction function with stray response
+              // handling, part of SPManager
               .subscribe(responseConsumer);
 }
