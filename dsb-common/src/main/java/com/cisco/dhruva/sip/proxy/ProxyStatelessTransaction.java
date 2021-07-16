@@ -30,7 +30,7 @@ import javax.sip.message.Request;
  * request DsProxyTransaction inherits from from StatelessTransaction and defines lots of additional
  * operations
  */
-public class ProxyStatelessTransaction {
+public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
   // internal state constants
   /** The transaction is in the initial state when created */
@@ -139,7 +139,7 @@ public class ProxyStatelessTransaction {
    *
    * @param proxySIPRequest request to send
    */
-  public synchronized void proxyTo(ProxySIPRequest proxySIPRequest, ProxyCookieInterface cookie) {
+  public synchronized void proxyTo(ProxySIPRequest proxySIPRequest, ProxyCookie cookie) {
     proxyTo(proxySIPRequest, cookie, null);
   }
 
@@ -152,11 +152,9 @@ public class ProxyStatelessTransaction {
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest,
-      ProxyCookieInterface cookie,
-      ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
 
-    SIPRequest request = proxySIPRequest.getRequest();
+    SIPRequest request = proxySIPRequest.getClonedRequest();
 
     Log.debug("Entering DsProxyStatelessTransaction proxyTo()");
 
@@ -178,14 +176,14 @@ public class ProxyStatelessTransaction {
       // Stateless transmission, using provider
       DhruvaNetwork network;
       Optional<DhruvaNetwork> optionalDhruvaNetwork =
-          DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
+          DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
       network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
 
       Optional<SipProvider> optionalSipProvider =
           DhruvaNetwork.getProviderFromNetwork(network.getName());
       SipProvider sipProvider = optionalSipProvider.get();
       // Client transaction is null for stateless requests
-      ProxySendMessage.sendRequest(sipProvider, null, request)
+      ProxySendMessage.sendRequestAsync(sipProvider, null, request)
           .subscribe(
               req -> {},
               err -> {
@@ -237,11 +235,12 @@ public class ProxyStatelessTransaction {
   }
 
   public synchronized void addProxyRecordRoute(
-      SIPRequest request, ProxyBranchParamsInterface params) throws SipException, ParseException {
+      ProxySIPRequest proxySIPRequest, ProxyBranchParamsInterface params)
+      throws SipException, ParseException {
     if (!params.doRecordRoute()) {
       return;
     }
-    addRecordRoute(request, getOriginalRequest().getRequestURI(), params);
+    addRecordRoute(proxySIPRequest.getRequest(), getOriginalRequest().getRequestURI(), params);
   }
 
   /**
@@ -284,7 +283,7 @@ public class ProxyStatelessTransaction {
 
       DhruvaNetwork network;
       Optional<DhruvaNetwork> optionalDhruvaNetwork =
-          DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
+          DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
       network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
 
       // DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();

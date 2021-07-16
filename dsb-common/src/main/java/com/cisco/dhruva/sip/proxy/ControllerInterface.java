@@ -47,7 +47,7 @@ public interface ControllerInterface {
    * @param trans newly created DsProxyClientTransaction
    */
   public void onProxySuccess(
-      ProxyStatelessTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+      ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This callback is invoked when there was a synchronous exception forwarding a request and
@@ -61,7 +61,7 @@ public interface ControllerInterface {
    */
   public void onProxyFailure(
       ProxyStatelessTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       int errorCode,
       String errorPhrase,
       Throwable exception);
@@ -104,7 +104,7 @@ public interface ControllerInterface {
    */
   public void onFailureResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
       SIPResponse response);
 
@@ -119,7 +119,7 @@ public interface ControllerInterface {
    */
   public void onRedirectResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
       SIPResponse response);
 
@@ -133,7 +133,7 @@ public interface ControllerInterface {
    */
   public void onSuccessResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
       SIPResponse response);
 
@@ -147,7 +147,7 @@ public interface ControllerInterface {
    */
   public void onGlobalFailureResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
       SIPResponse response);
 
@@ -161,7 +161,7 @@ public interface ControllerInterface {
    */
   public void onProvisionalResponse(
       ProxyTransaction proxy,
-      ProxyCookieInterface cookie,
+      ProxyCookie cookie,
       ProxyClientTransaction trans,
       SIPResponse response);
 
@@ -191,7 +191,7 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    */
   public void onRequestTimeOut(
-      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+      ProxyTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This method is invoked whenever a ServerTransaction times out, i.e., no ACK is received within
@@ -220,8 +220,7 @@ public interface ControllerInterface {
    * @param cookie cookie object passed to proxyTo()
    * @param trans DsProxyClientTransaction where the timeout occurred
    */
-  public void onICMPError(
-      ProxyTransaction proxy, ProxyCookieInterface cookie, ProxyClientTransaction trans);
+  public void onICMPError(ProxyTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
 
   /**
    * This is invoked whenever an ACK is received for the response we sent back.

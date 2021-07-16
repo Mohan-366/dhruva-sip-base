@@ -1,9 +1,11 @@
 package com.cisco.dsb.common.messaging;
 
-import com.cisco.dhruva.sip.controller.ProxyController;
+import com.cisco.dhruva.sip.proxy.Location;
+import com.cisco.dhruva.sip.proxy.ProxyStatelessTransaction;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
@@ -14,8 +16,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class ProxySIPRequest extends AbstractSipRequest {
-  @Getter @Setter private ProxyController proxyController;
+  @Getter @Setter private ProxyStatelessTransaction proxyStatelessTransaction;
   @Getter @Setter private String network;
+  @Getter @Setter private SIPRequest clonedRequest;
+  @Getter @Setter private Location location;
+  @Getter @Setter private String outgoingNetwork;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,

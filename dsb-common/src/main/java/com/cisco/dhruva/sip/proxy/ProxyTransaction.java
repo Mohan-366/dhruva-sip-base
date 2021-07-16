@@ -256,7 +256,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * @return DsProxyClientTransaction or a derived class
    */
   protected ProxyClientTransaction createProxyClientTransaction(
-      ClientTransaction clientTrans, ProxyCookieInterface cookie, SIPRequest request) {
+      ClientTransaction clientTrans, ProxyCookie cookie, SIPRequest request) {
     return new ProxyClientTransaction(this, clientTrans, cookie, request);
   }
 
@@ -310,11 +310,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest,
-      ProxyCookieInterface cookie,
-      ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
     try {
-      SIPRequest request = proxySIPRequest.getRequest();
+      SIPRequest request = proxySIPRequest.getClonedRequest();
       Log.debug("Entering DsProxyTransaction proxyTo()");
 
       // if a stray ACK or CANCEL, proxy statelessly.
@@ -414,7 +412,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
         // TODO DSB
         // Returns Mono
-        ProxySendMessage.sendRequest(sipProvider, clientTrans, request)
+        ProxySendMessage.sendRequestAsync(sipProvider, clientTrans, request)
             .subscribe(
                 req -> {
                   controller.onProxySuccess(this, cookie, proxyClientTrans);
