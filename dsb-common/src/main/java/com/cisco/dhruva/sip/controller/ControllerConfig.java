@@ -38,7 +38,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
   public static final byte TLS = (byte) Transport.TLS.getValue();
-  //TODO DSB confirm this
+  // TODO DSB confirm this
   public static final byte STATEFUL = (byte) 1;
 
   Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
@@ -177,6 +177,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     logger.info("Setting record route(" + recordRouteHeader + ") on network: " + direction);
   }
 
+  // Always return stateful
   public boolean isStateful() {
     return true;
   }
@@ -370,8 +371,48 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return null;
   }
 
+  /**
+   * This method is invoked by the DsSipRequest to perform the procedures necessary to interoperate
+   * with strict routers. For incoming requests, the class which implements this interface is first
+   * asked to recognize the request URI. If the request URI is recognized, it is saved internally by
+   * the invoking DsSipRequest as the LRFIX URI and replaced by the URI of the bottom Route header.
+   * If the request URI is not recognized, the supplied interface is asked to recognize the URI of
+   * the top Route header. If the top Route header's URI is recognized, it is removed and saved
+   * internally as the LRFIX URI. If neither is recognized, the DsSipRequest's FIX URI is set to
+   * null.
+   *
+   * @param uri a URI from the SIP request as described above
+   * @param isRequestURI true if the uri is the request-URI else false
+   * @return true if the uri is recognized as a uri that was inserted into a Record-Route header,
+   *     otherwise returns false
+   */
   @Override
   public boolean recognize(URI uri, boolean isRequestURI) {
-    return false;
+    boolean b = false;
+    if (uri.isSipURI()) {
+      SipURI url = (SipURI) uri;
+
+      String host = null;
+      int port = url.getPort();
+
+      Optional<Transport> optionalTransport = Transport.getTypeFromString(url.getTransportParam());
+      Transport transport = optionalTransport.orElse(Transport.NONE);
+
+      if (transport == Transport.NONE) transport = Transport.UDP;
+
+      String user = url.getUser();
+
+      if (isRequestURI) {
+        host = url.getHost();
+        b = (null != checkRecordRoutes(user, host, port, transport.toString()));
+        if (b) logger.debug("request-uri matches with one of Record-Route interfaces");
+      } else {
+        host = url.getMAddrParam();
+        if (host == null) host = url.getHost();
+        b = recognize(user, host, port, transport);
+      }
+    }
+    logger.debug("Leaving recognize(), returning " + b);
+    return b;
   }
 }

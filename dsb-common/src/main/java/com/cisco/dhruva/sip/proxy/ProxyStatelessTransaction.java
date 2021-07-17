@@ -253,8 +253,8 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     if (processVia()) {
       // invoke branch constructor with the URL and
       // add a Via field with this branch
-      //stateful and stateless beahvior is different in cloudproxy, getBranchID
-      //verify this
+      // stateful and stateless beahvior is different in cloudproxy, getBranchID
+      // verify this
       String branch = SipUtils.generateBranchId();
 
       DhruvaNetwork network;

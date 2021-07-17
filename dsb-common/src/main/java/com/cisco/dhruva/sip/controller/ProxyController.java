@@ -23,8 +23,10 @@ import java.util.*;
 import java.util.HashMap;
 import java.util.function.Function;
 import javax.sip.*;
+import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
+import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
@@ -81,7 +83,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     this.proxyFactory = proxyFactory;
     this.controllerConfig = controllerConfig;
   }
-
 
   public void setController(@NonNull ProxySIPRequest request) {
 
@@ -150,7 +151,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     proxySIPRequest.setLocation(location);
     proxyTo(location, proxySIPRequest, timeToTry);
-
   }
 
   public void proxyTo(Location location, ProxySIPRequest proxySIPRequest, long timeToTry) {
@@ -187,6 +187,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   sentRequest.getProxyClientTransaction());
             },
             err -> {
+              //TODO Akshay, we need to send failure to other leg, via app?
               this.onProxyFailure(
                   this.proxyTransaction,
                   proxySIPRequest.getCookie(),
@@ -288,6 +289,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         if (null != locUri && locUri.isSipURI()) {
           SipURI url = (SipURI) locUri;
           dpp.setProxyToAddress(url.getMAddrParam() != null ? url.getMAddrParam() : url.getHost());
+          // TODO DSB
           //          String host = url.getMAddrParam() != null ? url.getMAddrParam() :
           // url.getHost();
           //          if (SipUtils.isHostIPAddr(host)) {
@@ -364,7 +366,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             + ReConstants.BS_NETWORK_TOKEN
             + proxySIPRequest.getNetwork();
 
-    //TODO DSB Not sure what does this fn do?
+    // TODO DSB Not sure what does this fn do?
     //    if (escape) {
     //      rrUser = SipURI.getEscapedString(rrUser, SipURI.USER_ESCAPE_BYTES);
     //    }
@@ -455,12 +457,90 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return proxyParams;
   }
 
+  Function<SIPRequest, SIPRequest> processIncomingProxyRequestMAddr =
+      request -> {
+        // MAddr handling of proxy
+        URI uri = request.getRequestURI();
+        if (uri.isSipURI()) {
+          SipURI sipURI = (SipURI) uri;
+          if (sipURI.getMAddrParam() != null) {
+            if (controllerConfig.recognize(uri, false)) {
+              sipURI.removeParameter("maddr");
+              if (sipURI.getPort() >= 0) sipURI.removePort();
+              if (sipURI.getTransportParam() != null) sipURI.removeParameter("transport");
+            }
+          }
+        }
+        return request;
+      };
+
+  Function<SIPRequest, SIPRequest> processIncomingProxyRequestRoute =
+      request -> {
+        ListIterator routes = request.getHeaders(RouteHeader.NAME);
+        // Remove TopMost Route Header
+        if (routes != null && routes.hasNext()) {
+          RouteHeader routeHeader = (RouteHeader) routes.next();
+          Address routeAddress = routeHeader.getAddress();
+          URI routeURI = routeAddress.getURI();
+          if (routeURI.isSipURI()) {
+            SipURI routeSipURI = (SipURI) routeURI;
+            String routeHost = routeSipURI.getHost();
+            int routePort = routeSipURI.getPort();
+            if (routePort == -1) routePort = 5060;
+
+            boolean routeMatches =
+                controllerConfig.recognize(
+                    null,
+                    routeHost,
+                    routePort,
+                    Transport.getTypeFromString(routeSipURI.getTransportParam())
+                        .orElse(Transport.UDP));
+            if (routeMatches) {
+              logger.debug("removing top most route header that matches dhruva addr");
+              request.removeFirst(RouteHeader.NAME);
+            }
+          } else logger.info("Route header is not sip uri");
+        } else logger.debug("incoming request does not have route header");
+        return request;
+      };
+
+  Function<SIPRequest, SIPRequest> incomingProxyRequestFixLr =
+      request -> {
+        // lrfix
+        ListIterator routes = request.getHeaders(RouteHeader.NAME);
+        if (routes != null && routes.hasNext()) {
+          if (controllerConfig.recognize(request.getRequestURI(), true)) {
+            RouteHeader lastRouteHeader;
+
+            // Get to the last value
+            do lastRouteHeader = (RouteHeader) routes.next();
+            while (routes.hasNext());
+
+            request.setRequestURI(lastRouteHeader.getAddress().getURI());
+            request.removeLast(RouteHeader.NAME);
+          }
+        }
+        return request;
+      };
+
   @Override
   public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getRequest();
-    // Create ServerTransaction if not available from Jain.server could be null
 
+    request = incomingProxyRequestFixLr.apply(request);
+    request = processIncomingProxyRequestMAddr.apply(request);
+    request = processIncomingProxyRequestRoute.apply(request);
+
+    // Fetch the network from provider
+    SipProvider sipProvider = proxySIPRequest.getProvider();
+    Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
+    String network;
+    network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
+    incomingNetwork = network;
+    proxySIPRequest.setNetwork(network);
+
+    // Create ServerTransaction if not available from Jain.server could be null
     ourRequest = request;
     originalRequest = (SIPRequest) request.clone();
 
@@ -475,14 +555,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     proxyTransaction =
         createProxyTransaction(
             controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
-    // Fetch the network from provider
-    SipProvider sipProvider = proxySIPRequest.getProvider();
-    Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
-    String network;
-    network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
-    incomingNetwork = network;
+
+    if (proxyTransaction == null) {
+      logger.error("unable to create proxy transaction for new incoming request");
+      return null;
+    }
+
     proxySIPRequest.setProxyStatelessTransaction(proxyTransaction);
-    proxySIPRequest.setNetwork(network);
     proxySIPRequest.setMidCall(ProxyUtils.isMidDialogRequest(request));
     // Set the proxyTransaction in jain server transaction for future reference
     serverTransaction.setApplicationData(proxyTransaction);
@@ -509,9 +588,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     Objects.requireNonNull(proxyFactory);
 
     if (proxyTransaction == null) {
-      DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
+      Transport transport = Transport.NONE;
+      if (incomingNetwork != null)
+        transport =
+            DhruvaNetwork.getNetwork(incomingNetwork)
+                .orElseGet(DhruvaNetwork::getDefault)
+                .getTransport();
 
-      if (setStateful || (network.getTransport() == Transport.TCP)) {
+      if (setStateful || (transport == Transport.TCP)) {
         try {
           proxyTransaction =
               (ProxyTransaction)

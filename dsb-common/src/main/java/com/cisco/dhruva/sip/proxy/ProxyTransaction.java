@@ -371,7 +371,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
     return proxySIPRequest;
   }
-  
 
   @Override
   public synchronized Mono<ProxySIPRequest> proxySendOutBoundRequest(

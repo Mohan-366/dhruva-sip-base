@@ -198,8 +198,7 @@ public class ProxyServerTransaction {
     //        boolean compress = msg.shouldCompress();
     //        DsTokenSipDictionary encode = msg.shouldEncode();
 
-
-    if(rrList == null) {
+    if (rrList == null) {
       Log.info("route header list is null in incoming message, not processing record route");
       return;
     }
