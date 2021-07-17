@@ -38,7 +38,8 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
   public static final byte TLS = (byte) Transport.TLS.getValue();
-  public static final byte STATEFUL = (byte) 0;
+  //TODO DSB confirm this
+  public static final byte STATEFUL = (byte) 1;
 
   Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
 

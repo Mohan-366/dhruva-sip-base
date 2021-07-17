@@ -371,21 +371,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
     return proxySIPRequest;
   }
-
-  //              .subscribe(
-  //          req -> {},
-  //  err -> {
-  //    // Handle exception
-  //    // Check error Type
-  //    controller.onProxyFailure(
-  //            this,
-  //            cookie,
-  //            ControllerInterface.DESTINATION_UNREACHABLE,
-  //            err.getMessage(),
-  //            err);
-  //  },
-  //          // OnComplete signal, runnable does not emit value
-  //          () -> controller.onProxySuccess(this, cookie, proxyClientTrans));
+  
 
   @Override
   public synchronized Mono<ProxySIPRequest> proxySendOutBoundRequest(

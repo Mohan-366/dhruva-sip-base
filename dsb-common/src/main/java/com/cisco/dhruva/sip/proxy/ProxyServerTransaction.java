@@ -173,7 +173,7 @@ public class ProxyServerTransaction {
   public void setRecordRouteInterface(SIPMessage msg) throws DhruvaException, ParseException {
     Log.debug("Entering setRecordRouteInterface()");
 
-    if (msg.getHeaders(RecordRouteHeader.NAME) != null) {
+    if (msg.getHeaders(RecordRouteHeader.NAME).hasNext()) {
       if (rrIndexFromEnd >= 0) {
         // stateful, just flip your own
         setRecordRouteInterfaceStateful(msg);
@@ -198,6 +198,11 @@ public class ProxyServerTransaction {
     //        boolean compress = msg.shouldCompress();
     //        DsTokenSipDictionary encode = msg.shouldEncode();
 
+
+    if(rrList == null) {
+      Log.info("route header list is null in incoming message, not processing record route");
+      return;
+    }
     int routeIndex = rrList.size() - rrIndexFromEnd - 1;
 
     if ((routeIndex >= 0) && (routeIndex < rrList.size())) {

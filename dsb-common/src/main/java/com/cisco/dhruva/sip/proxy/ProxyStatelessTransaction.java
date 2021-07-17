@@ -253,6 +253,8 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     if (processVia()) {
       // invoke branch constructor with the URL and
       // add a Via field with this branch
+      //stateful and stateless beahvior is different in cloudproxy, getBranchID
+      //verify this
       String branch = SipUtils.generateBranchId();
 
       DhruvaNetwork network;
@@ -454,27 +456,8 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
           }
         }
 
-        //                if (request.shouldCompress()) {
-        //                    if (!cloned) rr = (RecordRouteHeader) rr.clone();
-        //                    cloned = true;
-        //                    rrURL = (SipURI) rr.getAddress();
-        //                    rrURL.setCompParam(DsSipConstants.BS_SIGCOMP);
-        //                }
-        //                DsTokenSipDictionary tokDic = request.shouldEncode();
-        //                if (null != tokDic) {
-        //                    if (!cloned) rr = (DsSipRecordRouteHeader) rr.clone();
-        //                    cloned = true;
-        //                    rrURL = (DsSipURL) rr.getURI();
-        //                    rrURL.setParameter(DsTokenSipConstants.s_TokParamName,
-        // tokDic.getName());
-        //                } else {
-        //                    if (rrURL.hasParameter(DsTokenSipConstants.s_TokParamName)) {
-        //                        if (!cloned) rr = (DsSipRecordRouteHeader) rr.clone();
-        //                        cloned = true;
-        //                        rrURL = (DsSipURL) rr.getURI();
-        //                        rrURL.removeParameter(DsTokenSipConstants.s_TokParamName);
-        //                    }
-        //                }
+        //  TODO DSB              if (request.shouldCompress()) {
+
         SipURI uri = (SipURI) routeURI;
         uri.setUser(params.getRecordRouteUserParams());
 
