@@ -27,6 +27,7 @@ import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Response;
 import lombok.NonNull;
+import reactor.core.publisher.Mono;
 
 /**
  * The proxy object. The proxy class interfaces to the client and server transactions, and presents
@@ -303,22 +304,21 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * To, From, Call-ID.
    *
    * @param proxySIPRequest request to send
-   * @param params extra params to set for this branch
    */
-  public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
+  public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
+
+    ProxyCookie cookie = proxySIPRequest.getCookie();
+    ProxyBranchParamsInterface params = proxySIPRequest.getParams();
+    SIPRequest request = proxySIPRequest.getClonedRequest();
 
     try {
-      SIPRequest request = proxySIPRequest.getClonedRequest();
       Log.debug("Entering DsProxyTransaction proxyTo()");
 
       // if a stray ACK or CANCEL, proxy statelessly.
       if (getStrayStatus() == STRAY_ACK || getStrayStatus() == STRAY_CANCEL) {
-        super.proxyTo(proxySIPRequest, cookie, params);
-
         Log.debug("Leaving DsProxyTransaction proxyTo()");
-
-        return;
+        proxySIPRequest.setStatefulClientTransaction(false);
+        return super.proxyTo(proxySIPRequest);
       }
 
       if (currentServerState == PROXY_SENT_200 || currentServerState == PROXY_SENT_NON200) {
@@ -339,44 +339,79 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       }
 
       try {
-        prepareRequest(proxySIPRequest, params);
+        proxySIPRequest.setStatefulClientTransaction(true);
+        prepareRequest(proxySIPRequest);
 
         Log.debug("proxying request");
         Log.debug("Creating SIP client transaction with request:" + NL + request.toString());
 
-        // TODO DSB
-        // create jain client transaction using provider
-        // Set the proxy tansaction in client transaction application data
-        // Get Network from Location object
-        DhruvaNetwork network;
-        Optional<DhruvaNetwork> optionalDhruvaNetwork =
-            DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork());
-        network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
+      } catch (Exception e) {
+        Log.error("Got exception in proxyTo()!", e);
+        // This exception looks like it will be caught immediately by the series
+        // of catch blocks below.  Can we do this in a less expensive way? - JPS
+        DestinationUnreachableException exception =
+            new DestinationUnreachableException(e.getMessage());
+        exception.addSuppressed(e);
+        throw exception;
+      }
 
-        Optional<SipProvider> optionalSipProvider =
-            DhruvaNetwork.getProviderFromNetwork(network.getName());
-        SipProvider sipProvider = optionalSipProvider.get();
+    } catch (InvalidStateException e) {
+      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_STATE, e.getMessage(), e);
+      return null;
+    } catch (InvalidParameterException e) {
+      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
+      return null;
+    } catch (DestinationUnreachableException e) {
+      controller.onProxyFailure(
+          this, cookie, ControllerInterface.DESTINATION_UNREACHABLE, e.getMessage(), e);
+      return null;
+    } catch (Throwable e) {
+      controller.onProxyFailure(this, cookie, ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
+      return null;
+    }
+    return proxySIPRequest;
+  }
 
-        ClientTransaction clientTrans = sipProvider.getNewClientTransaction(request);
+  //              .subscribe(
+  //          req -> {},
+  //  err -> {
+  //    // Handle exception
+  //    // Check error Type
+  //    controller.onProxyFailure(
+  //            this,
+  //            cookie,
+  //            ControllerInterface.DESTINATION_UNREACHABLE,
+  //            err.getMessage(),
+  //            err);
+  //  },
+  //          // OnComplete signal, runnable does not emit value
+  //          () -> controller.onProxySuccess(this, cookie, proxyClientTrans));
+
+  @Override
+  public synchronized Mono<ProxySIPRequest> proxySendOutBoundRequest(
+      ProxySIPRequest proxySIPRequest) {
+
+    boolean statefulClientTransaction = proxySIPRequest.isStatefulClientTransaction();
+    ProxyCookie cookie = proxySIPRequest.getCookie();
+
+    DhruvaNetwork network;
+    Optional<DhruvaNetwork> optionalDhruvaNetwork =
+        DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
+    network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
+
+    Optional<SipProvider> optionalSipProvider =
+        DhruvaNetwork.getProviderFromNetwork(network.getName());
+    SipProvider sipProvider = optionalSipProvider.get();
+
+    SIPRequest request = proxySIPRequest.getClonedRequest();
+
+    ClientTransaction clientTrans = null;
+    try {
+      if (statefulClientTransaction) {
+        clientTrans = sipProvider.getNewClientTransaction(request);
 
         ProxyClientTransaction proxyClientTrans =
             createProxyClientTransaction(clientTrans, cookie, request);
-
-        // SIPSession sipSession = SIPSessions.getActiveSession(request.getCallId().toString());
-
-        // adding end point to the sip session
-        // if (sipSession != null) {
-        // MEETPASS TODO
-        //          EndPoint ep =
-        //              new EndPoint(
-        //
-        // DsByteString.newInstance(request.getBindingInfo().getNetwork().toString()),
-        //
-        // DsByteString.newInstance(request.getBindingInfo().getRemoteAddressStr()),
-        //                  request.getBindingInfo().getRemotePort(),
-        //                  request.getBindingInfo().getTransport());
-        //          sipSession.setDestination(ep);
-        // }
 
         if ((!m_isForked) && (m_originalClientTrans == null)) {
           m_originalProxyClientTrans = proxyClientTrans;
@@ -396,6 +431,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
         // set the user provided timer if necessary
         long timeout;
+        ProxyBranchParamsInterface params = proxySIPRequest.getParams();
         if (params != null) timeout = params.getRequestTimeout();
         else timeout = 0;
 
@@ -405,45 +441,15 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
         // DSB
         // for response matching
+        proxySIPRequest.setProxyClientTransaction(proxyClientTrans);
         clientTrans.setApplicationData(this);
-
-        // TODO DSB
-        // Returns Mono
-        ProxySendMessage.sendRequestAsync(sipProvider, clientTrans, request)
-            .subscribe(
-                req -> {},
-                err -> {
-                  // Handle exception
-                  // Check error Type
-                  controller.onProxyFailure(
-                      this,
-                      cookie,
-                      ControllerInterface.DESTINATION_UNREACHABLE,
-                      err.getMessage(),
-                      err);
-                },
-                // OnComplete signal, runnable does not emit value
-                () -> controller.onProxySuccess(this, cookie, proxyClientTrans));
-
-      } catch (Exception e) {
-        Log.error("Got exception in proxyTo()!", e);
-        // This exception looks like it will be caught immediately by the series
-        // of catch blocks below.  Can we do this in a less expensive way? - JPS
-        DestinationUnreachableException exception =
-            new DestinationUnreachableException(e.getMessage());
-        exception.addSuppressed(e);
-        throw exception;
       }
 
-    } catch (InvalidStateException e) {
-      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_STATE, e.getMessage(), e);
-    } catch (InvalidParameterException e) {
-      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
-    } catch (DestinationUnreachableException e) {
-      controller.onProxyFailure(
-          this, cookie, ControllerInterface.DESTINATION_UNREACHABLE, e.getMessage(), e);
+      return ProxySendMessage.sendProxyRequestAsync(sipProvider, clientTrans, proxySIPRequest);
     } catch (Throwable e) {
       controller.onProxyFailure(this, cookie, ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
+      return Mono.error(
+          new DhruvaException("exception while sending proxy request" + e.getMessage()));
     }
   }
 

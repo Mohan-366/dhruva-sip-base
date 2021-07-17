@@ -28,9 +28,6 @@ import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.RecordRouteHeader;
-
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -215,7 +212,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   public String checkRecordRoutes(String user, String host, int port, String transport) {
     if (user != null) {
-      String usr = user.toString();
+      String usr = user;
       if (usr.startsWith(ReConstants.RR_TOKEN)
           || usr.endsWith(ReConstants.RR_TOKEN1)
           || usr.contains(ReConstants.RR_TOKEN2)) {

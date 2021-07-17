@@ -1,5 +1,6 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -90,6 +91,25 @@ public class ProxySendMessage {
               } catch (Exception e) {
                 throw new RuntimeException(e.getCause());
               }
+            })
+        .subscribeOn(Schedulers.boundedElastic());
+  }
+
+  public static Mono<ProxySIPRequest> sendProxyRequestAsync(
+      SipProvider provider, ClientTransaction transaction, ProxySIPRequest proxySIPRequest) {
+
+    return Mono.<ProxySIPRequest>fromCallable(
+            () -> {
+              try {
+                if (transaction != null) {
+                  transaction.sendRequest();
+                } else {
+                  provider.sendRequest(proxySIPRequest.getClonedRequest());
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e.getCause());
+              }
+              return proxySIPRequest;
             })
         .subscribeOn(Schedulers.boundedElastic());
   }

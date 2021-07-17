@@ -23,6 +23,7 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import reactor.core.publisher.Mono;
 
 /**
  * Represents a stateless proxy transaction. Stateless transaction only allows a very limited set of
@@ -135,27 +136,18 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   }
 
   /**
-   * This method allows the controller to proxy to a specified URL the code will not check to make
-   * sure the controller is not adding or removing critical headers like To, From, Call-ID.
-   *
-   * @param proxySIPRequest request to send
-   */
-  public synchronized void proxyTo(ProxySIPRequest proxySIPRequest, ProxyCookie cookie) {
-    proxyTo(proxySIPRequest, cookie, null);
-  }
-
-  /**
    * This method allows the controller to proxy to a specified URL using specified parameters the
    * code will not check to make sure the controller is not adding or removing critical headers like
    * To, From, Call-ID.
    *
    * @param proxySIPRequest request to send
-   * @param params extra params to set for this branch
    */
-  public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
+  public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getClonedRequest();
+
+    ProxyCookie cookie = proxySIPRequest.getCookie();
+    ProxyBranchParamsInterface params = proxySIPRequest.getParams();
 
     Log.debug("Entering DsProxyStatelessTransaction proxyTo()");
 
@@ -166,53 +158,26 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
           ControllerInterface.INVALID_PARAM,
           "Cannot fork stateless transaction!",
           null);
+      return null;
     }
 
     try {
-      prepareRequest(proxySIPRequest, params);
+      prepareRequest(proxySIPRequest);
 
       Log.debug("proxying request");
 
-      // TODO DSB, network must be from location object
-      // Stateless transmission, using provider
-      DhruvaNetwork network;
-      Optional<DhruvaNetwork> optionalDhruvaNetwork =
-          DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
-      network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
-
-      Optional<SipProvider> optionalSipProvider =
-          DhruvaNetwork.getProviderFromNetwork(network.getName());
-      SipProvider sipProvider = optionalSipProvider.get();
-      // Client transaction is null for stateless requests
-      ProxySendMessage.sendRequestAsync(sipProvider, null, request)
-          .subscribe(
-              req -> {},
-              err -> {
-                // Handle exception
-              });
-
       state = PROXY_DONE;
+      Log.debug("Leaving DsProxyStatelessTransaction  proxyTo()");
+      return proxySIPRequest;
 
-      // TODO DSB
-      // This needs to be in implementation of sipListener, processIOTimeout etc
-      //        } catch (IOException e) {
-      //            controller.onProxyFailure(
-      //                    this, cookie, ControllerInterface.DESTINATION_UNREACHABLE,
-      // e.getMessage(), e);
-      //            return;
-      //        } catch (DhruvaException e) {
-      //            Log.error("Got DsException in proxyTo()!", e);
-      //            controller.onProxyFailure(
-      //                    this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
-      //            return;
     } catch (ParseException | InvalidArgumentException | SipException e) {
       Log.error("Got DsException in proxyTo()!", e);
       controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
+      return null;
     }
 
-    controller.onProxySuccess(this, cookie, null);
+    // controller.onProxySuccess(this, cookie, null);
 
-    Log.debug("Leaving DsProxyStatelessTransaction  proxyTo()");
   }
 
   /**
@@ -234,13 +199,22 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     if (sourceAddress != null) request.setLocalAddress(sourceAddress);
   }
 
-  public synchronized void addProxyRecordRoute(
-      ProxySIPRequest proxySIPRequest, ProxyBranchParamsInterface params)
+  public synchronized void addProxyRecordRoute(ProxySIPRequest proxySIPRequest)
       throws SipException, ParseException {
+
+    ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     if (!params.doRecordRoute()) {
       return;
     }
-    addRecordRoute(proxySIPRequest, getOriginalRequest().getRequestURI(), params);
+
+    // addRecordRoute(proxySIPRequest, getOriginalRequest().getRequestURI(), params);
+    addRecordRoute(proxySIPRequest, getOriginalRequest().getRequestURI());
+  }
+
+  @Override
+  public synchronized Mono<ProxySIPRequest> proxySendOutBoundRequest(
+      ProxySIPRequest proxySIPRequest) {
+    return Mono.empty();
   }
 
   /**
@@ -248,13 +222,13 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    * in DsProxyTransaction, which will need to create DsProxyClientTransaction etc.
    *
    * @param proxySIPRequest request to send
-   * @param params extra params to set for this branch
    */
-  protected synchronized void prepareRequest(
-      ProxySIPRequest proxySIPRequest, ProxyBranchParamsInterface params)
+  protected synchronized void prepareRequest(ProxySIPRequest proxySIPRequest)
       throws InvalidParameterException, ParseException, SipException, InvalidArgumentException {
+    ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     Log.debug("Entering prepareRequest()");
-    SIPRequest request = proxySIPRequest.getRequest();
+    // Always get cloned request
+    SIPRequest request = proxySIPRequest.getClonedRequest();
     RouteHeader route;
 
     if (params == null) params = getDefaultParams();
@@ -452,17 +426,17 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   */
   // REDDY_RR_CHANGE
   // Insert itself in Record-Route if required
-  protected void addRecordRoute(
-      ProxySIPRequest proxySIPRequest, URI _requestURI, ProxyBranchParamsInterface params)
+  protected void addRecordRoute(ProxySIPRequest proxySIPRequest, URI _requestURI)
       throws SipException, ParseException {
     Log.debug("Entering addRecordRoute()");
     SIPRequest request = proxySIPRequest.getClonedRequest();
+    ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     if (request.getMethod().equals(Request.INVITE)
         || request.getMethod().equals(Request.SUBSCRIBE)
         || request.getMethod().equals(Request.NOTIFY)) {
 
-      //Verify if this has to be outgoing network or incoming network
-      //DSB TODO
+      // Verify if this has to be outgoing network or incoming network
+      // DSB TODO
       String network = proxySIPRequest.getNetwork();
       RecordRouteHeader rr = getDefaultParams().getRecordRouteInterface(network);
 

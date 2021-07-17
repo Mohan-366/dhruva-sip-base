@@ -51,7 +51,7 @@ public class HostPortUtil {
       String transportStr = uri.getTransportParam();
       Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
       Transport transport = Transport.NONE;
-      if(optionalTransport.isPresent()) {
+      if (optionalTransport.isPresent()) {
         transport = optionalTransport.get();
       }
 
@@ -120,7 +120,7 @@ public class HostPortUtil {
 
     Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
     Transport transport = Transport.NONE;
-    if(optionalTransport.isPresent()) {
+    if (optionalTransport.isPresent()) {
       transport = optionalTransport.get();
     }
 

@@ -1,7 +1,6 @@
 package com.cisco.dsb.common.messaging;
 
-import com.cisco.dhruva.sip.proxy.Location;
-import com.cisco.dhruva.sip.proxy.ProxyStatelessTransaction;
+import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import gov.nist.javax.sip.message.SIPMessage;
@@ -21,6 +20,10 @@ public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private SIPRequest clonedRequest;
   @Getter @Setter private Location location;
   @Getter @Setter private String outgoingNetwork;
+  @Getter @Setter private ProxyCookie cookie;
+  @Getter @Setter private ProxyBranchParamsInterface params;
+  @Getter @Setter private boolean statefulClientTransaction;
+  @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,

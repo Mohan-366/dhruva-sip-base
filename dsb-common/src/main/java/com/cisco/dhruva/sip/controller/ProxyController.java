@@ -21,6 +21,7 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.*;
 import java.util.HashMap;
+import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -228,7 +229,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     logger.debug("Entering proxyTo Location: " + location);
     logger.debug("timeout for proxyTo() is: " + timeToTry);
 
-    DhruvaNetwork network;
     RouteList routeHeaders = location.getRouteHeaders();
     if (routeHeaders != null && location.getLoadBalancer() == null) {
       List<Route> routeList = routeHeaders.getHeaderList();
@@ -242,66 +242,79 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     ProxyCookieImpl cookie = new ProxyCookieImpl(location, request);
+    proxySIPRequest.setCookie(cookie);
 
     // Get Static Server Group
     // If static is null get Dynamic server
 
     // retrieve network information based on location and servergroup
-    String serverGroup = null;
-    network = getNetwork(location, serverGroup); // TODO DSB, SG integration
 
-    if (network != null) {
-      proxySIPRequest.setOutgoingNetwork(network.getName());
-
-      //    SIPRequest request =
-      //        MessageConvertor.convertDhruvaRequestMessageToJainSipMessage(proxySIPRequest);
-      //    if (!((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
-      //      ClientTransaction clientTransaction =
-      //          (proxySIPRequest).getProvider().getNewClientTransaction((Request)
-      // request.clone());
-      //      clientTransaction.setApplicationData(proxySIPRequest.getProxyTransaction());
-      //      clientTransaction.sendRequest();
-
-    } else {
-      logger.warn("Could not find the network to set to the request");
-      // until then we need to fail the call.
-      sendFailureResponse(request, Response.SERVER_INTERNAL_ERROR);
-      return;
-    }
-
-    if (serverGroup != null) {
-      // proxyToServerGroup
-      logger.info("server group is null");
-    } else {
-      proxyTransactionProcessRequest(proxySIPRequest, cookie);
-    }
+    Mono.just(proxySIPRequest)
+        .flatMap(getElement)
+        .mapNotNull(fetchOutboundNetwork)
+        .mapNotNull(proxyTransactionProcessRequest)
+        .flatMap((proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest)))
+        .subscribe(
+            sentRequest -> {
+              this.onProxySuccess(
+                  this.proxyTransaction,
+                  sentRequest.getCookie(),
+                  sentRequest.getProxyClientTransaction());
+            },
+            err -> {
+              this.onProxyFailure(
+                  this.proxyTransaction,
+                  proxySIPRequest.getCookie(),
+                  ControllerInterface.DESTINATION_UNREACHABLE,
+                  err.getMessage(),
+                  err);
+            });
   }
 
-  // Get static server group
-  public Mono<String> getStaticServerGroup(ProxySIPRequest proxySIPRequest) {
-    boolean found = false;
-    if (found) {
-      return Mono.just("10.1.1.1");
-    } else return Mono.empty();
-  }
+  private Function<ProxySIPRequest, ProxySIPRequest> fetchOutboundNetwork =
+      proxySIPRequest -> {
+        DhruvaNetwork network;
+        String serverGroup = null;
+        network =
+            getNetwork(proxySIPRequest.getLocation(), serverGroup); // TODO DSB, SG integration
+        if (network != null) {
+          proxySIPRequest.setOutgoingNetwork(network.getName());
 
-  // Get dynamic server group
+        } else {
+          logger.warn("Could not find the network to set to the request");
+          // until then we need to fail the call.
+          sendFailureResponse(proxySIPRequest.getClonedRequest(), Response.SERVER_INTERNAL_ERROR);
+          return null;
+        }
+        return proxySIPRequest;
+      };
 
-  public Mono<String> getDynamicServerGroup(ProxySIPRequest proxySIPRequest) {
-    // return Trunk Service output
-    return Mono.empty();
-  }
+  private Function<ProxySIPRequest, Mono<ProxySIPRequest>> getElement = Mono::just;
 
-  public void proxyTransactionProcessRequest(
-      ProxySIPRequest proxySIPRequest, ProxyCookieImpl cookieThing) {
-    ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
-    try {
-      proxyTransaction.addProxyRecordRoute(proxySIPRequest, pp);
-      proxyTransaction.proxyTo(proxySIPRequest, cookieThing, pp);
-    } catch (SipException | ParseException e) {
-      logger.error("exception while adding record route" + e.getMessage());
-    }
-  }
+  private Function<ProxySIPRequest, ProxySIPRequest> proxyTransactionProcessRequest =
+      proxySIPRequest -> {
+        ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
+        proxySIPRequest.setParams(pp);
+        try {
+          proxyTransaction.addProxyRecordRoute(proxySIPRequest);
+          return proxyTransaction.proxyTo(proxySIPRequest);
+        } catch (SipException | ParseException e) {
+          logger.error("exception while adding record route" + e.getMessage());
+          return null;
+        }
+      };
+  //  public ProxySIPRequest proxyTransactionProcessRequest(
+  //      ProxySIPRequest proxySIPRequest) {
+  //    ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
+  //    proxySIPRequest.setParams(pp);
+  //    try {
+  //      proxyTransaction.addProxyRecordRoute(proxySIPRequest);
+  //      return proxyTransaction.proxyTo(proxySIPRequest);
+  //    } catch (SipException | ParseException e) {
+  //      logger.error("exception while adding record route" + e.getMessage());
+  //      return null;
+  //    }
+  //  }
 
   public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest) {
     SIPRequest request = proxySIPRequest.getClonedRequest();
