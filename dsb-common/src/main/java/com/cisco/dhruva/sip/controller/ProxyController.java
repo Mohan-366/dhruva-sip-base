@@ -15,8 +15,8 @@ import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.util.HashMap;
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import javax.sip.*;
@@ -33,6 +33,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private ControllerConfig controllerConfig;
   /** If true, will cancel all branches on CANCEL, 2xx and 6xx responses */
   private boolean cancelBranchesAutomatically = false;
+
   private ProxyStatelessTransaction proxyTransaction;
   /* Stores the request for this controller */
   private ProxySIPRequest ourRequest;
@@ -120,7 +121,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         //                      response);
         //        }
         // TODO can be sent using Mono
-        ProxyResponseGenerator.sendResponse(proxySIPResponse.getResponse(), (ProxyTransaction) proxyTransaction);
+        ProxyResponseGenerator.sendResponse(
+            proxySIPResponse.getResponse(), (ProxyTransaction) proxyTransaction);
       } else {
         logger.warn("in respond() - not forwarding response because request method was ACK");
       }

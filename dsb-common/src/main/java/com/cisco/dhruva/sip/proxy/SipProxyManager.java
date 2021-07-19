@@ -1,5 +1,6 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
 import com.cisco.dsb.common.context.ExecutionContext;
@@ -8,15 +9,15 @@ import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.sip.ClientTransaction;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
 import javax.sip.SipProvider;
-import java.io.IOException;
-import java.util.function.Function;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SipProxyManager {
@@ -24,6 +25,7 @@ public class SipProxyManager {
   private final Logger logger = DhruvaLoggerFactory.getLogger(SipProxyManager.class);
 
   @Autowired ProxyControllerFactory proxyControllerFactory;
+  @Autowired ControllerConfig config;
   /** Utility Function to Convert RequestEvent from JAIN Stack to ProxySIPRequest */
   public Function<RequestEvent, ProxySIPRequest> createProxySipRequest =
       (fluxRequestEvent) -> {
@@ -53,6 +55,53 @@ public class SipProxyManager {
         }
       };
 
+  /**
+   * Process stray response based on IP:PORT present in Via header. Sends out using the network
+   * through which the corresponding request came in if found, else send out via default network
+   */
+  public Consumer<ProxySIPResponse> processStrayResponse =
+      proxySIPResponse -> {
+
+        /*if (config.doRecordRoute()) {
+
+            try {
+                setRecordRouteInterface(response);
+            } catch (DsException e) {
+                e.printStackTrace(); // To change body of catch statement use File | Settings | File
+                // Templates.
+            }
+        }
+
+        // check the top Via;
+        ViaHeader myVia;
+        myVia = proxySIPResponse.getResponse().getTopmostViaHeader();
+        if (myVia == null)
+            return;
+
+        // check the the top Via matches our proxy
+        if (myVia.getBranch() == null) { // we always insert branch
+            logger.info("Dropped stray response with bad Via");
+            return;
+        }
+
+        //TODO add condition to check if we are listening on a given host and port and transport
+
+        //ProxyUtils.removeTopVia(response);
+          proxySIPResponse.getResponse().removeFirst(ViaHeader.NAME);
+
+        ViaHeader via;
+        via = proxySIPResponse.getResponse().getTopmostViaHeader();
+        if (via == null) {
+            logger.error("Top via header is null. Return");
+            return;
+        }*/
+
+        // TODO need to maintain some table similar to connection table so that via can be processed
+        // and sent out on
+        // on that network.
+
+      };
+
   /** Dummy function which does some validation */
   public Function<RequestEvent, RequestEvent> validate =
       requestEvent -> {
@@ -71,7 +120,6 @@ public class SipProxyManager {
             proxyControllerFactory
                 .proxyController()
                 .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
-
 
         proxySIPRequest = controller.onNewRequest(proxySIPRequest);
         // TODO DSB, set proxyTransaction
@@ -92,14 +140,15 @@ public class SipProxyManager {
       responseEvent -> {
         // transaction will be provided by stack
         ClientTransaction clientTransaction = responseEvent.getClientTransaction();
-
+        ProxySIPResponse proxySIPResponse = createProxySipResponse.apply(responseEvent);
         if (clientTransaction != null) {
-          ProxySIPResponse proxySIPResponse = createProxySipResponse.apply(responseEvent);
+
           proxySIPResponse.setProxyTransaction(
               (ProxyTransaction) clientTransaction.getApplicationData());
           return proxySIPResponse;
         } else {
           // TODO stray response handling
+          processStrayResponse.accept(proxySIPResponse);
           return null;
         }
       };

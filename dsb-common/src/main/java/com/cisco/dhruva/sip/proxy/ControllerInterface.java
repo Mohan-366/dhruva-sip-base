@@ -6,8 +6,6 @@ import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import gov.nist.javax.sip.message.SIPRequest;
 
-import javax.sip.ServerTransaction;
-
 /**
  * This interface is used to control a proxy. The proxy will invoke the various public methods of
  * the controller at opportune times.
@@ -20,11 +18,9 @@ public interface ControllerInterface {
    * and return it to the ProxyManager // * @param proxy ProxyTransaction object that will handle //
    * * the received request
    *
-   *
    * @param proxySIPRequest received request
    * @return ProxyTransaction
    */
-
   ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest);
 
   /* =============================================================== */

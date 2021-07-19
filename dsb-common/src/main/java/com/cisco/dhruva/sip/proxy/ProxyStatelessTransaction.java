@@ -139,7 +139,6 @@ public class ProxyStatelessTransaction {
    *
    * @param proxySIPRequest request to send
    */
-
   public synchronized void proxyTo(ProxySIPRequest proxySIPRequest, ProxyCookie cookie) {
     proxyTo(proxySIPRequest, cookie, null);
   }
@@ -153,9 +152,7 @@ public class ProxyStatelessTransaction {
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest,
-      ProxyCookie cookie,
-      ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
 
     SIPRequest request = proxySIPRequest.getRequest();
 

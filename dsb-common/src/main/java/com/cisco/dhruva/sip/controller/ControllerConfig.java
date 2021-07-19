@@ -178,13 +178,15 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     logger.debug("Checking Record-Route interfaces");
 
     if (null != checkRecordRoutes(user, host, port, transport.toString())) return true;
+    return recognize(host, port, transport);
+  }
 
+  public boolean recognize(String host, int port, Transport transport) {
     logger.debug("Checking listen interfaces");
     ArrayList<ListenIf> listenList = getListenPorts();
     for (ListenIf anIf : listenList) {
       if (isMyRoute(host, port, transport, anIf)) return true;
     }
-    // Check popid
     return false;
   }
 
@@ -252,6 +254,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return rrHeader;
   }
 
+  public synchronized void removeRecordRouteInterface(String direction) {
+
+    logger.debug("Entering removeRecordRouteInterface(direction) with direction = " + direction);
+    logger.debug("Removing record route on :" + direction);
+    recordRoutesMap.remove(direction);
+
+    if (recordRoutesMap.size() == 0) {
+      doRecordRoute = false;
+    }
+    logger.debug("Leaving removeRecordRouteInterface(direction)");
+  }
+
   @Override
   public ViaListenInterface getViaInterface(Transport protocol, String direction) {
     return null;
@@ -264,7 +278,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public boolean doRecordRoute() {
-    return false;
+    return doRecordRoute;
   }
 
   @Override

@@ -4,8 +4,8 @@ import com.cisco.dhruva.sip.controller.ProxyResponseGenerator;
 import com.cisco.dhruva.sip.proxy.errors.DestinationUnreachableException;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
-import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -315,9 +315,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * @param params extra params to set for this branch
    */
   public synchronized void proxyTo(
-      ProxySIPRequest proxySIPRequest,
-      ProxyCookie cookie,
-      ProxyBranchParamsInterface params) {
+      ProxySIPRequest proxySIPRequest, ProxyCookie cookie, ProxyBranchParamsInterface params) {
     try {
       SIPRequest request = proxySIPRequest.getRequest();
       Log.debug("Entering DsProxyTransaction proxyTo()");
