@@ -46,7 +46,7 @@ public class DnsNextHop extends AbstractNextHop {
     HashMap elementMap = new HashMap();
     elementMap.put(SG.sgSgElementSgName, parent);
     elementMap.put(SG.sgSgElementHost, getDomainName());
-    elementMap.put(SG.sgSgElementPort, new Integer(getPort()));
+    elementMap.put(SG.sgSgElementPort, getPort());
     elementMap.put(SG.sgSgElementTransport, getProtocol());
     elementMap.put(SG.sgSgElementQValue, String.valueOf(getQValue()));
     elementMap.put(SG.sgSgElementWeight, String.valueOf(getWeight()));

@@ -72,7 +72,7 @@ public class DnsServerGroupUtil {
     return Optional.ofNullable(getServerGroupFromHops(hops, network, host, protocol, lbType));
   }
 
-  public ServerGroupInterface getServerGroupFromHops(
+  private ServerGroupInterface getServerGroupFromHops(
       @Nullable List<Hop> hops, String network, String host, Transport protocol, int lbType) {
 
     assert hops != null;
