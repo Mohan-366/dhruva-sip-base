@@ -132,7 +132,7 @@ public class SipProxyManager {
       proxySIPRequest -> {
         // find the right method call of proxyController
         ProxyController proxyController =
-            (ProxyController) proxySIPRequest.getProxyTransaction().getController();
+            (ProxyController) proxySIPRequest.getProxyStatelessTransaction().getController();
         return proxySIPRequest;
       };
 

@@ -3,9 +3,10 @@ package com.cisco.dhruva.sip.proxy;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.Trace;
 import gov.nist.javax.sip.header.RouteList;
-import gov.nist.javax.sip.header.SIPHeaderList;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class is used to encapsulate various parameters for an outgoing request uri. This object is
@@ -25,10 +26,9 @@ public final class Location implements Cloneable, Comparable {
   public static final boolean USE_DEST_INFO_DEFAULT = false;
   public static final boolean PROCESS_ROUTE_DEFAULT = true;
 
-  protected URI uri;
-  protected String serverGroupName;
-  protected RouteList routeHeaders;
-  protected String connectionID;
+  @Getter @Setter protected URI uri;
+  @Getter @Setter protected String serverGroupName;
+  @Getter @Setter protected RouteList routeHeaders;
   protected float qValue = DEFAULT_QVALUE;
   protected long lastUpdate = 0;
   protected boolean useDestInfo = USE_DEST_INFO_DEFAULT;
@@ -37,8 +37,9 @@ public final class Location implements Cloneable, Comparable {
   protected boolean removeExistingRoutesOnRedirect = false;
   protected boolean copiedURIHeadersToRequest = false;
 
-  protected DhruvaNetwork network = null;
-  protected DhruvaNetwork defaultNetwork = null;
+  @Getter @Setter protected DhruvaNetwork network = null;
+
+  @Getter @Setter protected DhruvaNetwork defaultNetwork = null;
   protected int hashCode = -1;
 
   protected LBInterface lb;
@@ -86,48 +87,11 @@ public final class Location implements Cloneable, Comparable {
     location.setUseDestInfo(useDestInfo);
     location.setNetwork(network);
     location.setDefaultNetwork(defaultNetwork);
-    location.setConnectionID(connectionID);
     location.setRemoveExistingRoutes(removeExistingRoutes);
     location.setRemoveExistingRoutesOnRedirect(removeExistingRoutesOnRedirect);
     location.setCopiedURIHeadersToRequest(copiedURIHeadersToRequest);
 
     return location;
-  }
-
-  public void setDefaultNetwork(DhruvaNetwork defaultNetwork) {
-    this.defaultNetwork = defaultNetwork;
-  }
-
-  public DhruvaNetwork getDefaultNetwork() {
-    return defaultNetwork;
-  }
-
-  public URI getURI() {
-    return this.uri;
-  }
-
-  public void setNetwork(DhruvaNetwork network) {
-    this.network = network;
-  }
-
-  public DhruvaNetwork getNetwork() {
-    return network;
-  }
-
-  public String getServerGroupName() {
-    return this.serverGroupName;
-  }
-
-  public void setServerGroupName(String sgName) {
-    this.serverGroupName = sgName;
-  }
-
-  public SIPHeaderList getRouteHeaders() {
-    return routeHeaders;
-  }
-
-  public void setRouteHeaders(RouteList routeHeaders) {
-    this.routeHeaders = routeHeaders;
   }
 
   public LBInterface getLoadBalancer() {
@@ -172,18 +136,18 @@ public final class Location implements Cloneable, Comparable {
     // See if the URIs in the contact header match
     boolean equals = false;
 
-    if (lbURI.getURI().equals(this.uri)) {
+    if (lbURI.getUri().equals(this.uri)) {
       // See if the Server groups match
       boolean serverGroupMatch = false;
       if (lbURI.getServerGroupName() != null && this.serverGroupName != null)
         serverGroupMatch = lbURI.getServerGroupName().equals(this.serverGroupName);
       else serverGroupMatch = lbURI.getServerGroupName() == null && serverGroupName == null;
 
-      if (serverGroupMatch) {
-        if (connectionID != null && lbURI.getConnectionID() != null)
-          equals = connectionID.equals(lbURI.getConnectionID());
-        else equals = connectionID == null && lbURI.getConnectionID() == null;
-      }
+      //      if (serverGroupMatch) {
+      //        if (connectionID != null && lbURI.getConnectionID() != null)
+      //          equals = connectionID.equals(lbURI.getConnectionID());
+      //        else equals = connectionID == null && lbURI.getConnectionID() == null;
+      //      }
     }
     if (Log.on && Log.isTraceEnabled()) Log.trace("Leaving equals(), returning " + equals);
     return equals;
@@ -196,8 +160,6 @@ public final class Location implements Cloneable, Comparable {
 
     if (serverGroupName != null) hashCode += serverGroupName.hashCode();
 
-    if (connectionID != null) hashCode += connectionID.hashCode();
-
     hashCode += uri.hashCode();
 
     return hashCode % Integer.MAX_VALUE;
@@ -209,8 +171,6 @@ public final class Location implements Cloneable, Comparable {
         + this.serverGroupName
         + ", Route Headers: "
         + this.routeHeaders
-        + ", Connection-ID = "
-        + connectionID
         + ", Q-value= "
         + this.qValue
         + ", Process Route: "
@@ -278,14 +238,6 @@ public final class Location implements Cloneable, Comparable {
 
   public void setProcessRoute(boolean processRoute) {
     this.processRoute = processRoute;
-  }
-
-  public String getConnectionID() {
-    return connectionID;
-  }
-
-  public void setConnectionID(String connectionID) {
-    this.connectionID = connectionID;
   }
 
   public void setRemoveExistingRoutes(boolean flag) {

@@ -1,9 +1,12 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Via;
@@ -68,6 +71,19 @@ public class ProxyClientTransaction {
 
   private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyClientTransaction.class);
 
+  private static final ScheduledThreadPoolExecutor scheduledExecutor;
+  private static final DhruvaExecutorService dhruvaExecutorService;
+
+  // Have a fixed size of 1 or 2 , threads.Get from DhruvaExecutorService.Don't created one thread
+  // per request for timeout.
+  static {
+    dhruvaExecutorService =
+        SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 2);
+    scheduledExecutor =
+        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
+  }
+
   protected ProxyClientTransaction(
       ProxyTransaction proxy, ClientTransaction branch, ProxyCookie cookie, SIPRequest request) {
 
@@ -106,12 +122,15 @@ public class ProxyClientTransaction {
             cancelRequest.addFirst(topVia);
           }
 
-          // TODO DSB
+          // TODO DSB, should via Mono
 
           Optional<SipProvider> sipProvider =
               DhruvaNetwork.getProviderFromNetwork(this.network.getName());
           ClientTransaction cancelTransaction =
               sipProvider.get().getNewClientTransaction(cancelRequest);
+
+          // ProxySendMessage.sendRequest(sipProvider.get(), cancelTransaction, (SIPRequest)
+          // cancelRequest);
           cancelTransaction.sendRequest();
 
           state = STATE_CANCEL_SENT;
@@ -126,7 +145,7 @@ public class ProxyClientTransaction {
 
   /** @return <b>true</b> if this is an INVITE transaction, <b>false</b> otherwise */
   public boolean isInvite() {
-    return (getRequest().getMethod() == Request.INVITE);
+    return (getRequest().getMethod().equals(Request.INVITE));
   }
 
   /** sends an ACK */
@@ -218,12 +237,12 @@ public class ProxyClientTransaction {
 
   protected void setTimeout(long milliSec) {
     // TODO DSB, check support from CSB, else metrics will not be collected
-    ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
+    // ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
     Runnable task =
         () -> {
           this.proxy.timeOut(this.branch);
         };
-    timeoutTimer = ses.schedule(task, milliSec, TimeUnit.MILLISECONDS);
+    timeoutTimer = scheduledExecutor.schedule(task, milliSec, TimeUnit.MILLISECONDS);
     Log.debug("Set user timer for " + milliSec + " milliseconds");
   }
 

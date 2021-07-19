@@ -1,5 +1,7 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -13,7 +15,7 @@ import reactor.core.scheduler.Schedulers;
 
 public class ProxySendMessage {
 
-  public static Mono<Void> sendResponse(
+  public static Mono<Void> sendResponseAsync(
       int responseID,
       SipProvider sipProvider,
       ServerTransaction serverTransaction,
@@ -32,7 +34,8 @@ public class ProxySendMessage {
         .subscribeOn(Schedulers.boundedElastic());
   }
 
-  public static Mono<Void> sendResponse(ServerTransaction serverTransaction, SIPResponse response) {
+  public static Mono<Void> sendResponseAsync(
+      ServerTransaction serverTransaction, SIPResponse response) {
     Objects.requireNonNull(response);
     Objects.requireNonNull(serverTransaction);
     return Mono.<Void>fromRunnable(
@@ -46,7 +49,35 @@ public class ProxySendMessage {
         .subscribeOn(Schedulers.boundedElastic());
   }
 
-  public static Mono<Void> sendRequest(
+  public static void sendResponse(
+      int responseID,
+      SipProvider sipProvider,
+      ServerTransaction serverTransaction,
+      SIPRequest request)
+      throws DhruvaException {
+
+    try {
+      Response response = JainSipHelper.getMessageFactory().createResponse(responseID, request);
+      if (serverTransaction != null) serverTransaction.sendResponse(response);
+      else sipProvider.sendResponse(response);
+    } catch (Exception e) {
+      throw new DhruvaException(e.getMessage());
+    }
+  }
+
+  public static void sendResponse(ServerTransaction serverTransaction, SIPResponse response)
+      throws DhruvaException {
+    Objects.requireNonNull(response);
+    Objects.requireNonNull(serverTransaction);
+
+    try {
+      serverTransaction.sendResponse(response);
+    } catch (Exception e) {
+      throw new DhruvaException(e.getMessage());
+    }
+  }
+
+  public static Mono<Void> sendRequestAsync(
       SipProvider provider, ClientTransaction transaction, SIPRequest request) {
 
     return Mono.<Void>fromRunnable(
@@ -60,6 +91,25 @@ public class ProxySendMessage {
               } catch (Exception e) {
                 throw new RuntimeException(e.getCause());
               }
+            })
+        .subscribeOn(Schedulers.boundedElastic());
+  }
+
+  public static Mono<ProxySIPRequest> sendProxyRequestAsync(
+      SipProvider provider, ClientTransaction transaction, ProxySIPRequest proxySIPRequest) {
+
+    return Mono.<ProxySIPRequest>fromCallable(
+            () -> {
+              try {
+                if (transaction != null) {
+                  transaction.sendRequest();
+                } else {
+                  provider.sendRequest(proxySIPRequest.getClonedRequest());
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e.getCause());
+              }
+              return proxySIPRequest;
             })
         .subscribeOn(Schedulers.boundedElastic());
   }

@@ -1,8 +1,11 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.sip.controller.ProxyController;
+import com.cisco.dhruva.sip.proxy.Location;
+import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.security.SecureRandom;
@@ -43,8 +46,13 @@ public class DefaultCallType implements CallType {
               proxySIPRequest -> {
                 logger.info("Sending to APP from leaf ,callid: " + proxySIPRequest.getCallId());
                 try {
-                  ((ProxyController) proxySIPRequest.getProxyTransaction().getController())
-                      .proxyRequest(proxySIPRequest, null);
+                  ProxyController controller =
+                      (ProxyController)
+                          proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER);
+                  Location loc = new Location(proxySIPRequest.getRequest().getRequestURI());
+                  loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                  loc.setProcessRoute(true);
+                  controller.proxyRequest(proxySIPRequest, loc);
                 } catch (SipException exception) {
                   exception.printStackTrace();
                 }
@@ -78,15 +86,18 @@ public class DefaultCallType implements CallType {
                   p -> {
                     try {
                       logger.info("MRS lookup started, callID" + proxySIPRequest.getCallId());
-                      Thread.sleep(500);
-                      if (booleanRandom.nextBoolean()) {
+                      Thread.sleep(10);
+                      boolean succeed = true;
+                      // if (booleanRandom.nextBoolean()) {
+                      if (succeed) {
                         logger.info("MRS lookup succeeded, callID" + proxySIPRequest.getCallId());
                         return p;
                       } else {
                         logger.info(
                             "MRS lookup failed, callID" + proxySIPRequest.getCallId(),
                             " Rejecting the call");
-                        ((ProxyController) proxySIPRequest.getProxyTransaction().getController())
+                        ((ProxyController)
+                                proxySIPRequest.getProxyStatelessTransaction().getController())
                             .respond(404, proxySIPRequest);
                         return null;
                       }

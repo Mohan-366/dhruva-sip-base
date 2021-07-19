@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.sip.SipProvider;
+import lombok.NonNull;
 
 public class DhruvaNetwork implements Cloneable {
 
@@ -116,7 +117,7 @@ public class DhruvaNetwork implements Cloneable {
     return this.sipListenPoint;
   }
 
-  public static Optional<DhruvaNetwork> getNetwork(String name) {
+  public static Optional<DhruvaNetwork> getNetwork(@NonNull String name) {
     if (networkMap.containsKey(name)) return Optional.of(networkMap.get(name));
     else return Optional.empty();
   }

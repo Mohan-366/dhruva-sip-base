@@ -53,7 +53,8 @@ public class ParseProxyParamUtil {
     switch (type) {
       case ReConstants.MY_URI:
         // TODO DSB
-        userPortion = getUserPortionFromUri(request.getRequestURI());
+        // userPortion = getUserPortionFromUri(request.getRequestURI());
+        userPortion = null;
         break;
       case ReConstants.R_URI:
         userPortion = getUserPortionFromUri(request.getRequestURI());

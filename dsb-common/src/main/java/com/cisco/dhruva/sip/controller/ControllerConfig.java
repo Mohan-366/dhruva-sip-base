@@ -11,14 +11,17 @@ import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.sip.util.ReConstants;
+import com.cisco.dsb.sip.util.ViaListenIf;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sip.address.Address;
@@ -35,13 +38,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
   public static final byte TLS = (byte) Transport.TLS.getValue();
-  public static final byte STATEFUL = (byte) 0;
+  // TODO DSB confirm this
+  public static final byte STATEFUL = (byte) 1;
 
   Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
+
+  protected ConcurrentHashMap ViaIfMap = new ConcurrentHashMap<>();
+
+  protected HashMap ViaListenHash = new HashMap();
 
   protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
@@ -169,6 +177,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     logger.info("Setting record route(" + recordRouteHeader + ") on network: " + direction);
   }
 
+  // Always return stateful
   public boolean isStateful() {
     return true;
   }
@@ -207,7 +216,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   public String checkRecordRoutes(String user, String host, int port, String transport) {
     if (user != null) {
-      String usr = user.toString();
+      String usr = user;
       if (usr.startsWith(ReConstants.RR_TOKEN)
           || usr.endsWith(ReConstants.RR_TOKEN1)
           || usr.contains(ReConstants.RR_TOKEN2)) {
@@ -268,6 +277,71 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public ViaListenInterface getViaInterface(Transport protocol, String direction) {
+
+    DhruvaNetwork net;
+    // Grab the via interface if it has already been stored by protocol and direction
+    ViaListenInterface viaIf;
+    Optional<DhruvaNetwork> optionalDhruvaNetwork = DhruvaNetwork.getNetwork(direction);
+    if (optionalDhruvaNetwork.isPresent()) net = optionalDhruvaNetwork.get();
+    else {
+      logger.error("exception getting network {}", direction);
+      return null;
+    }
+    viaIf = getVia(protocol, net);
+    if (viaIf == null) {
+      viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
+    }
+    if (viaIf == null) {
+
+      logger.info("No via interface stored for this protocol/direction pair, creating one");
+
+      // Find a listen if with the same protocol and direction, if there is more
+      // than one the first on will be selected.
+
+      ListenInterface tempInterface = getInterface(protocol, net);
+      if (tempInterface != null) {
+        try {
+          viaIf =
+              new ViaListenIf(
+                  tempInterface.getPort(),
+                  tempInterface.getProtocol(),
+                  tempInterface.getAddress(),
+                  tempInterface.shouldAttachExternalIp(),
+                  net,
+                  -1,
+                  null,
+                  null,
+                  null,
+                  -1);
+        } catch (UnknownHostException | DhruvaException unhe) {
+          logger.error("Couldn't create a new via interface", unhe);
+          return null;
+        }
+        HashMap viaListenHashDir = (HashMap) ViaListenHash.get(direction);
+        if (viaListenHashDir == null) {
+          viaListenHashDir = new HashMap();
+          ViaListenHash.put(direction, viaListenHashDir);
+        }
+        viaListenHashDir.put(protocol.getValue(), viaIf);
+      }
+    }
+
+    logger.debug(
+        "Leaving getViaInterface(+ "
+            + protocol
+            + ", "
+            + direction
+            + " ) with return value: "
+            + viaIf);
+
+    return viaIf;
+  }
+
+  public ViaObj getVia(Transport transport, DhruvaNetwork direction) {
+    HashMap viaDirMap = (HashMap) ViaIfMap.get(direction);
+    if (viaDirMap != null) {
+      return (ViaObj) viaDirMap.get(new Integer(String.valueOf(transport)));
+    }
     return null;
   }
 
@@ -311,8 +385,48 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return null;
   }
 
+  /**
+   * This method is invoked by the DsSipRequest to perform the procedures necessary to interoperate
+   * with strict routers. For incoming requests, the class which implements this interface is first
+   * asked to recognize the request URI. If the request URI is recognized, it is saved internally by
+   * the invoking DsSipRequest as the LRFIX URI and replaced by the URI of the bottom Route header.
+   * If the request URI is not recognized, the supplied interface is asked to recognize the URI of
+   * the top Route header. If the top Route header's URI is recognized, it is removed and saved
+   * internally as the LRFIX URI. If neither is recognized, the DsSipRequest's FIX URI is set to
+   * null.
+   *
+   * @param uri a URI from the SIP request as described above
+   * @param isRequestURI true if the uri is the request-URI else false
+   * @return true if the uri is recognized as a uri that was inserted into a Record-Route header,
+   *     otherwise returns false
+   */
   @Override
   public boolean recognize(URI uri, boolean isRequestURI) {
-    return false;
+    boolean b = false;
+    if (uri.isSipURI()) {
+      SipURI url = (SipURI) uri;
+
+      String host = null;
+      int port = url.getPort();
+
+      Optional<Transport> optionalTransport = Transport.getTypeFromString(url.getTransportParam());
+      Transport transport = optionalTransport.orElse(Transport.NONE);
+
+      if (transport == Transport.NONE) transport = Transport.UDP;
+
+      String user = url.getUser();
+
+      if (isRequestURI) {
+        host = url.getHost();
+        b = (null != checkRecordRoutes(user, host, port, transport.toString()));
+        if (b) logger.debug("request-uri matches with one of Record-Route interfaces");
+      } else {
+        host = url.getMAddrParam();
+        if (host == null) host = url.getHost();
+        b = recognize(user, host, port, transport);
+      }
+    }
+    logger.debug("Leaving recognize(), returning " + b);
+    return b;
   }
 }

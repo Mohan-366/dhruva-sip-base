@@ -42,7 +42,7 @@ public abstract class ProxyResponseGenerator {
     if (size > 0) {
       if (size == 1) {
         Location location = (Location) locations.get(0);
-        URI uri = location.getURI();
+        URI uri = location.getUri();
         ContactHeader contactHeader =
             JainSipHelper.getHeaderFactory().createContactHeader((Address) uri);
         contactHeader.setQValue(location.getQValue());
@@ -50,7 +50,7 @@ public abstract class ProxyResponseGenerator {
       } else {
         for (Object o : locations) {
           Location location = (Location) o;
-          URI uri = location.getURI();
+          URI uri = location.getUri();
           ContactHeader contactHeader =
               JainSipHelper.getHeaderFactory().createContactHeader((Address) uri);
           contactHeader.setQValue(location.getQValue());

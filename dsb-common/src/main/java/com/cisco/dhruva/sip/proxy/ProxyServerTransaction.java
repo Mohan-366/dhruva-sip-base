@@ -137,7 +137,8 @@ public class ProxyServerTransaction {
       }
 
       // TODO DSB
-      ProxySendMessage.sendResponse(serverTransaction, response);
+      serverTransaction.sendResponse(response);
+      // ProxySendMessage.sendResponse(serverTransaction, response);
 
       this.response = response;
 
@@ -172,7 +173,7 @@ public class ProxyServerTransaction {
   public void setRecordRouteInterface(SIPMessage msg) throws DhruvaException, ParseException {
     Log.debug("Entering setRecordRouteInterface()");
 
-    if (msg.getHeaders(RecordRouteHeader.NAME) != null) {
+    if (msg.getHeaders(RecordRouteHeader.NAME).hasNext()) {
       if (rrIndexFromEnd >= 0) {
         // stateful, just flip your own
         setRecordRouteInterfaceStateful(msg);
@@ -197,6 +198,10 @@ public class ProxyServerTransaction {
     //        boolean compress = msg.shouldCompress();
     //        DsTokenSipDictionary encode = msg.shouldEncode();
 
+    if (rrList == null) {
+      Log.info("route header list is null in incoming message, not processing record route");
+      return;
+    }
     int routeIndex = rrList.size() - rrIndexFromEnd - 1;
 
     if ((routeIndex >= 0) && (routeIndex < rrList.size())) {
@@ -216,7 +221,7 @@ public class ProxyServerTransaction {
       // get the network corresponding to the host portion in RR. If host contains externalIP,
       // get the localIP to know the network accordingly
       currentRRURLHost =
-          com.cisco.dhruva.sip.hostPort.HostPortUtil.reverseHostInfoToLocalIp(currentRRURL);
+          com.cisco.dsb.sip.hostPort.HostPortUtil.reverseHostInfoToLocalIp(currentRRURL);
 
       String network = null;
       String name =
@@ -267,7 +272,7 @@ public class ProxyServerTransaction {
 
         // replace local IP with External IP for public network when modifying user portion of RR
         currentRRURL.setHost(
-            com.cisco.dhruva.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(RRUrl));
+            com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(RRUrl));
 
         if (RRUrl.getPort() >= 0) {
           currentRRURL.setPort(RRUrl.getPort());

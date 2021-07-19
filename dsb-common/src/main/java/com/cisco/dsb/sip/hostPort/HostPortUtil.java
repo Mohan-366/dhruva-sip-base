@@ -1,4 +1,4 @@
-package com.cisco.dhruva.sip.hostPort;
+package com.cisco.dsb.sip.hostPort;
 
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ListenInterface;
@@ -49,7 +49,11 @@ public class HostPortUtil {
   public static String convertLocalIpToHostInfo(SipURI uri) {
     try {
       String transportStr = uri.getTransportParam();
-      Transport transport = Transport.valueOf(transportStr);
+      Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
+      Transport transport = Transport.NONE;
+      if (optionalTransport.isPresent()) {
+        transport = optionalTransport.get();
+      }
 
       ListenIf listenIf =
           (ListenIf)
@@ -113,7 +117,12 @@ public class HostPortUtil {
   public static String reverseHostInfoToLocalIp(SipURI uri) {
 
     String transportStr = uri.getTransportParam();
-    Transport transport = Transport.valueOf(transportStr);
+
+    Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
+    Transport transport = Transport.NONE;
+    if (optionalTransport.isPresent()) {
+      transport = optionalTransport.get();
+    }
 
     ListenIf listenIf = (ListenIf) controllerConfig.getInterface(uri.getPort(), transport);
 

@@ -26,6 +26,8 @@ public class ProxyEventManager implements ProxyEventListener {
 
   @Autowired ProxyService proxyService;
 
+  // TODO DSB
+  // Verify the total number min and max stripped threads allocated to the pool
   @Override
   public void request(RequestEvent requestMessage) {
     startProcessing(new SipRequestHandler(proxyService, requestMessage));
