@@ -306,6 +306,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    *
    * @param proxySIPRequest request to send
    */
+
   public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
 
     ProxyCookie cookie = proxySIPRequest.getCookie();
