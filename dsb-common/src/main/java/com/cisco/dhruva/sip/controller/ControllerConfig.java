@@ -226,7 +226,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
           key = (String) o;
           RecordRouteHeader rr = recordRoutesMap.get(key);
           if (rr != null) {
-            if (ProxyUtils.recognize(host, port, transport, (SipURI) rr.getAddress())) return key;
+            if (ProxyUtils.recognize(host, port, transport, (SipURI) rr.getAddress().getURI())) return key;
           }
         }
       }

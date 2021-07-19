@@ -526,10 +526,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getRequest();
+    request = incomingProxyRequestFixLr
+            .andThen(processIncomingProxyRequestMAddr)
+            .andThen(processIncomingProxyRequestRoute)
+            .apply(request);
 
-    request = incomingProxyRequestFixLr.apply(request);
-    request = processIncomingProxyRequestMAddr.apply(request);
-    request = processIncomingProxyRequestRoute.apply(request);
 
     // Fetch the network from provider
     SipProvider sipProvider = proxySIPRequest.getProvider();
@@ -568,10 +569,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   /**
-   * Creates a <CODE>DsProxyStatelessTransaction</CODE> object if the proxy is configured to be
+   * Creates a <CODE>ProxyStatelessTransaction</CODE> object if the proxy is configured to be
    * stateless. Otherwise if either the proxy is configured to be stateful or if the controller
    * decides that the current transaction should be stateful , it creates the <CODE>
-   * DsProxyTransaction</CODE> object. This method can only be used to create a transaction if one
+   * ProxyTransaction</CODE> object. This method can only be used to create a transaction if one
    * has not been created yet.
    *
    * @param setStateful Indicates that the current transaction be stateful,irrespective of the
@@ -580,11 +581,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    */
   public ProxyStatelessTransaction createProxyTransaction(
       boolean setStateful,
-      SIPRequest request,
+      @NonNull SIPRequest request,
       ServerTransaction serverTrans,
-      ProxyFactory proxyFactory) {
-    Objects.requireNonNull(request);
-    Objects.requireNonNull(proxyFactory);
+      @NonNull ProxyFactory proxyFactory) {
 
     if (proxyTransaction == null) {
       Transport transport = Transport.NONE;
@@ -597,7 +596,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       if (setStateful || (transport == Transport.TCP)) {
         try {
           proxyTransaction =
-              (ProxyTransaction)
                   proxyFactory
                       .proxyTransaction()
                       .apply(this, controllerConfig, serverTrans, request);
