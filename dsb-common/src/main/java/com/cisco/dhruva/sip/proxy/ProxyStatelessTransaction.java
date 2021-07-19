@@ -276,7 +276,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
           if (routeURI.getTransportParam() != null) {
             viaTransport = Transport.valueOf(routeURI.getTransportParam()).getValue();
           } else {
-            viaTransport = ParseProxyParamUtil.getNetworkTransport(network).getValue();
+            viaTransport =
+                ParseProxyParamUtil.getNetworkTransport(controller.getControllerConfig(), network)
+                    .getValue();
           }
         }
       }
@@ -462,7 +464,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         uri.setUser(params.getRecordRouteUserParams());
 
         // replace Record-Route localIP with externalIP for public network
-        uri.setHost(com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(uri));
+        uri.setHost(
+            com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(
+                getDefaultParams(), uri));
 
         Log.info("Adding " + rr);
         request.addFirst(rr);

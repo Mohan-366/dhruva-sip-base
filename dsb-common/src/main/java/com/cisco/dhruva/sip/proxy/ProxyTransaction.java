@@ -263,7 +263,8 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    */
   protected ProxyClientTransaction createProxyClientTransaction(
       ClientTransaction clientTrans, ProxyCookie cookie, SIPRequest request) {
-    return new ProxyClientTransaction(this, clientTrans, cookie, request);
+    return new ProxyClientTransaction(
+        this, clientTrans, cookie, request, this.getController().getDhruvaExecutorService());
   }
 
   /**

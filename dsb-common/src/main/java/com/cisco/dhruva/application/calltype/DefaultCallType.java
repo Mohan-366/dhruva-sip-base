@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
-import javax.sip.SipException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -53,7 +52,7 @@ public class DefaultCallType implements CallType {
                   loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
                   loc.setProcessRoute(true);
                   controller.proxyRequest(proxySIPRequest, loc);
-                } catch (SipException exception) {
+                } catch (Exception exception) {
                   exception.printStackTrace();
                 }
               });

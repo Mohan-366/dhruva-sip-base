@@ -1,6 +1,8 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
+import java.net.InetAddress;
 import javax.sip.header.RecordRouteHeader;
 
 /** Describes configuration settings of a ProxyTransaction */
@@ -29,4 +31,10 @@ public interface ProxyParamsInterface extends ProxyBranchParamsInterface {
    *     used by the proxy core anymore
    */
   Transport getDefaultProtocol();
+
+  ListenInterface getInterface(InetAddress address, Transport prot, int port);
+
+  ListenInterface getInterface(Transport protocol, DhruvaNetwork direction);
+
+  ListenInterface getInterface(int port, Transport protocol);
 }

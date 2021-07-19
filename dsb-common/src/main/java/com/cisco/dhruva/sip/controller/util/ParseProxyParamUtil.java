@@ -6,7 +6,6 @@ import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ReConstants;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Route;
@@ -24,12 +23,6 @@ public class ParseProxyParamUtil {
   // Order in which the transport is selected.
   private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
   protected static final Logger logger = DhruvaLoggerFactory.getLogger(ParseProxyParamUtil.class);
-
-  private static ControllerConfig controllerConfig;
-
-  static {
-    controllerConfig = SpringApplicationContext.getAppContext().getBean(ControllerConfig.class);
-  }
 
   private ParseProxyParamUtil() {}
 
@@ -113,7 +106,8 @@ public class ParseProxyParamUtil {
     return userPortion;
   }
 
-  public static Transport getNetworkTransport(DhruvaNetwork network) {
+  public static Transport getNetworkTransport(
+      ControllerConfig controllerConfig, DhruvaNetwork network) {
     Transport networkTransport = Transport.NONE;
     for (Transport transport : Transports) {
       if (network != null && controllerConfig.getInterface(transport, network) != null) {
