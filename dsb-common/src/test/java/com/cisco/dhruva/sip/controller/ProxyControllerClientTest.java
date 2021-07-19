@@ -3,9 +3,7 @@ package com.cisco.dhruva.sip.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.cisco.dhruva.sip.proxy.Location;
-import com.cisco.dhruva.sip.proxy.ProxyFactory;
-import com.cisco.dhruva.sip.proxy.ProxyTransaction;
+import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -30,8 +28,10 @@ import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.context.ApplicationContext;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import reactor.test.StepVerifier;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProxyControllerClientTest {
@@ -148,7 +148,7 @@ public class ProxyControllerClientTest {
 
   public SIPListenPoint createOutgoingUDPSipListenPoint() throws JsonProcessingException {
     String json =
-        "{ \"name\": \"net_internal_udp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5080, \"transport\": \"UDP\", "
+        "{ \"name\": \"net_internal_udp\", \"hostIPAddress\": \"2.2.2.2\", \"port\": 5080, \"transport\": \"UDP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
@@ -188,7 +188,6 @@ public class ProxyControllerClientTest {
   @Test(description = "test proxy client creation for outgoing request")
   public void testOutgoingRequestProxyTransaction() throws SipException {
 
-    // doNothing().when(dhruvaExecutorService).getScheduledExecutorThreadPool(any(ExecutorType.class));
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -196,7 +195,6 @@ public class ProxyControllerClientTest {
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
-    // doReturn(mock(ClientTransaction.class)).when(outgoingSipProvider.getNewClientTransaction(any(Request.class)));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
     doNothing().when(clientTransaction).sendRequest();
@@ -208,19 +206,72 @@ public class ProxyControllerClientTest {
     Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
     location.setProcessRoute(true);
     location.setNetwork(outgoingNetwork);
-    proxyController.proxyRequest(proxySIPRequest, location);
+    // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
-    //        proxySIPRequest.setLocation(location);
-    //        SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    //        proxyController.setPreprocessedRequest(preprocessedRequest);
-    //        proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
-    //
-    //        //Mono<ProxySIPRequest> monoResponse = proxyController.proxyForwardRequest(location,
-    // proxySIPRequest, proxyController.timeToTry);
-    //
-    //
-    //        StepVerifier.create(proxyController.proxyForwardRequest(location, proxySIPRequest,
-    // proxyController.timeToTry)).expectComplete().verify();
+    proxySIPRequest.setLocation(location);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                location, proxySIPRequest, proxyController.timeToTry))
+        .assertNext(
+            request -> {
+              assert request.getProxyClientTransaction() != null;
+              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getLocation().getUri() == request.getRequest().getRequestURI();
+              assert request.getClonedRequest() != null;
+              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+            })
+        .verifyComplete();
+
+    ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
+    verify(outgoingSipProvider, Mockito.times(1)).getNewClientTransaction(argumentCaptor.capture());
+
+    SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
+
+    Assert.assertNotNull(sendRequest);
+    Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
+    Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
+
+    verify(clientTransaction, Mockito.times(1)).sendRequest();
+  }
+
+  @Test(description = "stack send request throws SipException")
+  public void testOutgoingRequestException() throws SipException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+
+    // Throw SipException
+    doThrow(SipException.class).when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
+    location.setProcessRoute(true);
+    location.setNetwork(outgoingNetwork);
+
+    proxySIPRequest.setLocation(location);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                location, proxySIPRequest, proxyController.timeToTry))
+        .verifyErrorMatches(err -> err instanceof SipException);
 
     verify(clientTransaction, Mockito.times(1)).sendRequest();
   }

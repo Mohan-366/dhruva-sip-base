@@ -19,11 +19,9 @@ import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import reactor.core.publisher.Mono;
-
+import java.text.ParseException;
+import java.util.*;
+import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
@@ -32,9 +30,10 @@ import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.text.ParseException;
-import java.util.*;
-import java.util.function.Function;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import reactor.core.publisher.Mono;
 
 public class ProxyController implements ControllerInterface, ProxyInterface {
 
@@ -172,10 +171,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             },
             err -> {
               // TODO on Akshay, we need to send failure to other leg, via app?
+              int errorCode = ControllerInterface.UNKNOWN_ERROR;
+              if (err instanceof SipException)
+                errorCode = ControllerInterface.DESTINATION_UNREACHABLE;
               this.onProxyFailure(
                   this.proxyTransaction,
                   proxySIPRequest.getCookie(),
-                  ControllerInterface.DESTINATION_UNREACHABLE,
+                  errorCode,
                   err.getMessage(),
                   err);
             });

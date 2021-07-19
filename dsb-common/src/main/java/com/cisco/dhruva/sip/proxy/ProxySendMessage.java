@@ -28,7 +28,7 @@ public class ProxySendMessage {
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
               } catch (Exception e) {
-                throw new RuntimeException(e.getCause());
+                throw new RuntimeException(e);
               }
             })
         .subscribeOn(Schedulers.boundedElastic());
@@ -61,7 +61,7 @@ public class ProxySendMessage {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
     } catch (Exception e) {
-      throw new DhruvaException(e.getMessage());
+      throw new DhruvaException(e);
     }
   }
 
@@ -73,26 +73,8 @@ public class ProxySendMessage {
     try {
       serverTransaction.sendResponse(response);
     } catch (Exception e) {
-      throw new DhruvaException(e.getMessage());
+      throw new DhruvaException(e);
     }
-  }
-
-  public static Mono<Void> sendRequestAsync(
-      SipProvider provider, ClientTransaction transaction, SIPRequest request) {
-
-    return Mono.<Void>fromRunnable(
-            () -> {
-              try {
-                if (transaction != null) {
-                  transaction.sendRequest();
-                } else {
-                  provider.sendRequest(request);
-                }
-              } catch (Exception e) {
-                throw new RuntimeException(e.getCause());
-              }
-            })
-        .subscribeOn(Schedulers.boundedElastic());
   }
 
   public static Mono<ProxySIPRequest> sendProxyRequestAsync(
@@ -100,14 +82,10 @@ public class ProxySendMessage {
 
     return Mono.<ProxySIPRequest>fromCallable(
             () -> {
-              try {
-                if (transaction != null) {
-                  transaction.sendRequest();
-                } else {
-                  provider.sendRequest(proxySIPRequest.getClonedRequest());
-                }
-              } catch (Exception e) {
-                throw new RuntimeException(e.getCause());
+              if (transaction != null) {
+                transaction.sendRequest();
+              } else {
+                provider.sendRequest(proxySIPRequest.getClonedRequest());
               }
               return proxySIPRequest;
             })

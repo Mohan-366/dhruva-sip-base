@@ -142,7 +142,6 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    *
    * @param proxySIPRequest request to send
    */
-
   public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getClonedRequest();

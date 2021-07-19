@@ -306,7 +306,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    *
    * @param proxySIPRequest request to send
    */
-
   public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
 
     ProxyCookie cookie = proxySIPRequest.getCookie();
@@ -434,6 +433,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
       return ProxySendMessage.sendProxyRequestAsync(sipProvider, clientTrans, proxySIPRequest);
     } catch (Throwable e) {
+      // In the calling function, subscribe call this api, cross check TODO DSB
       controller.onProxyFailure(this, cookie, ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
       return Mono.error(
           new DhruvaException("exception while sending proxy request" + e.getMessage()));
