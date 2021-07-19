@@ -4,6 +4,7 @@ import com.cisco.dhruva.sip.controller.util.ParseProxyParamUtil;
 import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.CommonContext;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
@@ -18,11 +19,9 @@ import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import reactor.core.publisher.Mono;
-
+import java.text.ParseException;
+import java.util.*;
+import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
@@ -31,9 +30,10 @@ import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.text.ParseException;
-import java.util.*;
-import java.util.function.Function;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import reactor.core.publisher.Mono;
 
 public class ProxyController implements ControllerInterface, ProxyInterface {
 
@@ -42,6 +42,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   private ProxyFactory proxyFactory;
   @Getter @Setter private ControllerConfig controllerConfig;
+
+  @Getter @Setter private DhruvaExecutorService dhruvaExecutorService;
+
   @Getter @Setter private ProxyStatelessTransaction proxyTransaction;
   /* Stores the request for this controller */
   @Getter @Setter protected SIPRequest ourRequest;
@@ -75,12 +78,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       @NonNull SipProvider sipProvider,
       @NonNull DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
       @NonNull ProxyFactory proxyFactory,
-      @NonNull ControllerConfig controllerConfig) {
+      @NonNull ControllerConfig controllerConfig,
+      @NonNull DhruvaExecutorService dhruvaExecutorService) {
     this.serverTransaction = serverTransaction;
     this.sipProvider = sipProvider;
     this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
     this.proxyFactory = proxyFactory;
     this.controllerConfig = controllerConfig;
+    this.dhruvaExecutorService = dhruvaExecutorService;
   }
 
   public void setController(@NonNull ProxySIPRequest request) {
@@ -122,8 +127,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             });
   }
 
-  public void proxyRequest(@NonNull ProxySIPRequest proxySIPRequest, @NonNull Location location)
-      throws SipException {
+  public void proxyRequest(@NonNull ProxySIPRequest proxySIPRequest, @NonNull Location location) {
     // StepVerifier.create(proxyTo.apply(proxySIPRequest)).ex
     // proxyTo.apply(proxySIPRequest).subscribe((val) -> {},(err) -> {}
     // );
@@ -157,11 +161,30 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
-    proxyForwardRequest(location, proxySIPRequest, timeToTry);
+    proxyForwardRequest(location, proxySIPRequest, timeToTry)
+        .subscribe(
+            sentRequest -> {
+              this.onProxySuccess(
+                  this.proxyTransaction,
+                  sentRequest.getCookie(),
+                  sentRequest.getProxyClientTransaction());
+            },
+            err -> {
+              // TODO on Akshay, we need to send failure to other leg, via app?
+              int errorCode = ControllerInterface.UNKNOWN_ERROR;
+              if (err instanceof SipException)
+                errorCode = ControllerInterface.DESTINATION_UNREACHABLE;
+              this.onProxyFailure(
+                  this.proxyTransaction,
+                  proxySIPRequest.getCookie(),
+                  errorCode,
+                  err.getMessage(),
+                  err);
+            });
   }
 
   // Always access the cloned request
-  private void proxyForwardRequest(
+  public Mono<ProxySIPRequest> proxyForwardRequest(
       @NonNull Location location, @NonNull ProxySIPRequest proxySIPRequest, long timeToTry) {
 
     logger.debug("Entering proxyTo Location: " + location);
@@ -172,28 +195,28 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     // retrieve network information based on location and servergroup
 
-    Mono.just(proxySIPRequest)
+    return Mono.just(proxySIPRequest)
         .mapNotNull(processLocation)
         .flatMap(getElement)
         .mapNotNull(fetchOutboundNetwork)
         .mapNotNull(proxyTransactionProcessRequest)
-        .flatMap((proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest)))
-        .subscribe(
-            sentRequest -> {
-              this.onProxySuccess(
-                  this.proxyTransaction,
-                  sentRequest.getCookie(),
-                  sentRequest.getProxyClientTransaction());
-            },
-            err -> {
-              //TODO Akshay, we need to send failure to other leg, via app?
-              this.onProxyFailure(
-                  this.proxyTransaction,
-                  proxySIPRequest.getCookie(),
-                  ControllerInterface.DESTINATION_UNREACHABLE,
-                  err.getMessage(),
-                  err);
-            });
+        .flatMap((proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest)));
+    //        .subscribe(
+    //            sentRequest -> {
+    //              this.onProxySuccess(
+    //                  this.proxyTransaction,
+    //                  sentRequest.getCookie(),
+    //                  sentRequest.getProxyClientTransaction());
+    //            },
+    //            err -> {
+    //              //TODO on Akshay, we need to send failure to other leg, via app?
+    //              this.onProxyFailure(
+    //                  this.proxyTransaction,
+    //                  proxySIPRequest.getCookie(),
+    //                  ControllerInterface.DESTINATION_UNREACHABLE,
+    //                  err.getMessage(),
+    //                  err);
+    //            });
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> processLocation =
@@ -486,14 +509,15 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             String routeHost = routeSipURI.getHost();
             int routePort = routeSipURI.getPort();
             if (routePort == -1) routePort = 5060;
-
+            String routeTransport = "udp";
+            if (routeSipURI.getTransportParam() != null)
+              routeTransport = routeSipURI.getTransportParam();
             boolean routeMatches =
                 controllerConfig.recognize(
                     null,
                     routeHost,
                     routePort,
-                    Transport.getTypeFromString(routeSipURI.getTransportParam())
-                        .orElse(Transport.UDP));
+                    Transport.getTypeFromString(routeTransport).orElse(Transport.UDP));
             if (routeMatches) {
               logger.debug("removing top most route header that matches dhruva addr");
               request.removeFirst(RouteHeader.NAME);

@@ -3,8 +3,10 @@ package com.cisco.dhruva.sip.controller;
 import com.cisco.dhruva.sip.proxy.ListenInterface;
 import com.cisco.dhruva.sip.proxy.ProxyParamsInterface;
 import com.cisco.dhruva.sip.proxy.ViaListenInterface;
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.header.ims.PathHeader;
+import java.net.InetAddress;
 import javax.sip.header.RecordRouteHeader;
 
 /**
@@ -52,6 +54,21 @@ public class ProxyParams extends ProxyBranchParams implements ProxyParamsInterfa
   /** @return the default protocol to be used for outgoing requests or to put in Record-Route */
   public Transport getDefaultProtocol() {
     return defaultProtocol;
+  }
+
+  @Override
+  public ListenInterface getInterface(InetAddress address, Transport prot, int port) {
+    return storedIface.getInterface(address, prot, port);
+  }
+
+  @Override
+  public ListenInterface getInterface(Transport protocol, DhruvaNetwork direction) {
+    return storedIface.getInterface(protocol, direction);
+  }
+
+  @Override
+  public ListenInterface getInterface(int port, Transport protocol) {
+    return storedIface.getInterface(port, protocol);
   }
 
   /**

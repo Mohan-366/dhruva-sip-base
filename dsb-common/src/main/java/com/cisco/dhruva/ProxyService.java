@@ -9,6 +9,8 @@ import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
@@ -16,6 +18,7 @@ import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
@@ -50,6 +53,9 @@ public class ProxyService {
   @Autowired ProxyControllerFactory proxyControllerFactory;
 
   @Autowired SipProxyManager sipProxyManager;
+
+  @Autowired DhruvaExecutorService dhruvaExecutorService;
+
   private static Consumer<ProxySIPRequest> requestConsumer;
   private static Consumer<ProxySIPResponse> responseConsumer;
 
@@ -125,6 +131,10 @@ public class ProxyService {
     }
 
     listenPointFutures.forEach(CompletableFuture::join);
+
+    dhruvaExecutorService =
+        SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 2);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {

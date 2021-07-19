@@ -1,11 +1,10 @@
 package com.cisco.dsb.sip.hostPort;
 
-import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ListenInterface;
+import com.cisco.dhruva.sip.proxy.ProxyParamsInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
@@ -13,15 +12,11 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javax.sip.address.SipURI;
+import lombok.NonNull;
 
 public class HostPortUtil {
 
   private static final Logger Log = DhruvaLoggerFactory.getLogger(HostPortUtil.class);
-  private static ControllerConfig controllerConfig;
-
-  static {
-    controllerConfig = SpringApplicationContext.getAppContext().getBean(ControllerConfig.class);
-  }
 
   private HostPortUtil() {}
 
@@ -46,7 +41,8 @@ public class HostPortUtil {
    * @param uri
    * @return DsByteString of the resulting IP
    */
-  public static String convertLocalIpToHostInfo(SipURI uri) {
+  public static String convertLocalIpToHostInfo(
+      @NonNull ProxyParamsInterface controllerConfig, @NonNull SipURI uri) {
     try {
       String transportStr = uri.getTransportParam();
       Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
@@ -114,7 +110,8 @@ public class HostPortUtil {
    * @param uri
    * @return DsByteString of the resulting IP
    */
-  public static String reverseHostInfoToLocalIp(SipURI uri) {
+  public static String reverseHostInfoToLocalIp(
+      @NonNull ProxyParamsInterface controllerConfig, @NonNull SipURI uri) {
 
     String transportStr = uri.getTransportParam();
 

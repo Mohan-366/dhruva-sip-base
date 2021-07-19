@@ -409,8 +409,14 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       String host = null;
       int port = url.getPort();
 
-      Optional<Transport> optionalTransport = Transport.getTypeFromString(url.getTransportParam());
-      Transport transport = optionalTransport.orElse(Transport.NONE);
+      Transport transport;
+      if (url.getTransportParam() != null) {
+        Optional<Transport> optionalTransport =
+            Transport.getTypeFromString(url.getTransportParam());
+        transport = optionalTransport.orElse(Transport.NONE);
+      } else {
+        transport = Transport.NONE;
+      }
 
       if (transport == Transport.NONE) transport = Transport.UDP;
 

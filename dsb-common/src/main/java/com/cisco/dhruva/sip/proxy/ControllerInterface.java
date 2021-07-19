@@ -1,6 +1,7 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dhruva.sip.controller.ControllerConfig;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
@@ -250,4 +251,6 @@ public interface ControllerInterface {
   void onResponse(ProxySIPResponse response);
 
   ControllerConfig getControllerConfig();
+
+  DhruvaExecutorService getDhruvaExecutorService();
 }

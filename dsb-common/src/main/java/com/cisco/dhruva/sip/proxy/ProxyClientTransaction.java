@@ -6,7 +6,6 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Via;
@@ -23,6 +22,7 @@ import javax.sip.SipProvider;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import lombok.NonNull;
 
 /**
  * This is a wrapper class for the ClientTransaction, which adds some additional data members needed
@@ -71,27 +71,25 @@ public class ProxyClientTransaction {
 
   private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyClientTransaction.class);
 
-  private static final ScheduledThreadPoolExecutor scheduledExecutor;
-  private static final DhruvaExecutorService dhruvaExecutorService;
-
-  // Have a fixed size of 1 or 2 , threads.Get from DhruvaExecutorService.Don't created one thread
-  // per request for timeout.
-  static {
-    dhruvaExecutorService =
-        SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 2);
-    scheduledExecutor =
-        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
-  }
+  private ScheduledThreadPoolExecutor scheduledExecutor;
+  private DhruvaExecutorService dhruvaExecutorService;
 
   protected ProxyClientTransaction(
-      ProxyTransaction proxy, ClientTransaction branch, ProxyCookie cookie, SIPRequest request) {
+      @NonNull ProxyTransaction proxy,
+      @NonNull ClientTransaction branch,
+      @NonNull ProxyCookie cookie,
+      @NonNull SIPRequest request,
+      @NonNull DhruvaExecutorService dhruvaExecutorService) {
 
     this.proxy = proxy;
     this.branch = branch;
     this.request = request;
     state = STATE_REQUEST_SENT;
     this.cookie = cookie;
+    this.dhruvaExecutorService = dhruvaExecutorService;
+
+    this.scheduledExecutor =
+        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
 
     Log.debug("ProxyClientTransaction for " + request.getMethod() + " : connid=" + connId);
     // end

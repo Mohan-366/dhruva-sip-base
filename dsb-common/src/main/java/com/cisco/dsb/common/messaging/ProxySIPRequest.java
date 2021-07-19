@@ -1,6 +1,5 @@
 package com.cisco.dsb.common.messaging;
 
-
 import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
@@ -22,7 +21,7 @@ public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private Location location;
   @Getter @Setter private String outgoingNetwork;
   @Getter @Setter private ProxyCookie cookie;
-  @Getter @Setter private ProxyBranchParamsInterface params;
+  @Getter @Setter private ProxyParamsInterface params;
   @Getter @Setter private boolean statefulClientTransaction;
   @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
 
