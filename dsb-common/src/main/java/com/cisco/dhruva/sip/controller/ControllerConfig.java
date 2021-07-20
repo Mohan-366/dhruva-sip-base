@@ -226,7 +226,8 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
           key = (String) o;
           RecordRouteHeader rr = recordRoutesMap.get(key);
           if (rr != null) {
-            if (ProxyUtils.recognize(host, port, transport, (SipURI) rr.getAddress())) return key;
+            if (ProxyUtils.recognize(host, port, transport, (SipURI) rr.getAddress().getURI()))
+              return key;
           }
         }
       }
@@ -403,6 +404,14 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   @Override
   public boolean recognize(URI uri, boolean isRequestURI) {
     boolean b = false;
+
+    String ruri = uri.toString();
+    ruri =
+        ruri.replaceAll(
+            ReConstants.ESCALATE_MEETING_REQUEST_URI_REGEX_PATTERN,
+            ReConstants.ESCALATE_MEETING_REQUEST_URI_MASK);
+    logger.debug("Entering recognize(" + ruri + ", " + isRequestURI + ')');
+
     if (uri.isSipURI()) {
       SipURI url = (SipURI) uri;
 
@@ -424,7 +433,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
       if (isRequestURI) {
         host = url.getHost();
-        b = (null != checkRecordRoutes(user, host, port, transport.toString()));
+        b = (null != checkRecordRoutes(user, host, port, transport.toString().toLowerCase()));
         if (b) logger.debug("request-uri matches with one of Record-Route interfaces");
       } else {
         host = url.getMAddrParam();

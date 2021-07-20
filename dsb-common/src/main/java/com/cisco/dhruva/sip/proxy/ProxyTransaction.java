@@ -387,7 +387,12 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     Optional<SipProvider> optionalSipProvider =
         DhruvaNetwork.getProviderFromNetwork(network.getName());
-    SipProvider sipProvider = optionalSipProvider.get();
+    SipProvider sipProvider;
+    if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
+    else
+      return Mono.error(
+          new DhruvaException(
+              "unable to find provider for outbound request with network:" + network.getName()));
 
     SIPRequest request = proxySIPRequest.getClonedRequest();
 
@@ -631,13 +636,13 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           Log.debug("propagating ACK to 200OK downstream...");
 
           if (branch.getState() != ProxyClientTransaction.STATE_ACK_SENT) {
+            // getHeader Gets the first header
             RouteHeader route = (RouteHeader) ack.getHeader(RouteHeader.NAME);
             if (route != null
                 && this.getController()
                     .getControllerConfig()
                     .recognize((URI) route.getAddress(), false)) {
               ack.removeFirst(RouteHeader.NAME);
-              // ack.removeHeader(DsSipRouteHeader.sID);
             }
             // REDDY how to solve when servergroup is used
             branch.ack(ack);
@@ -645,7 +650,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           } else {
             // if a retransmission of the ACK, forward it statelessly
             // to work around bug #2562
-            // TODO DSB
+            // TODO DSB Shri Harini
             // handleAckForUnknownBranch(ack);
             Log.debug("propagated retransmitted ACK to 200OK downstream");
           }

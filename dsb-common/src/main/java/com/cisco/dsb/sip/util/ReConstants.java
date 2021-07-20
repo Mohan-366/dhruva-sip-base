@@ -41,4 +41,11 @@ public class ReConstants {
   public static final String R_URI_STR = "request-uri";
   public static final String ROUTE_STR = "route";
   public static final String P_A_ID_STR = "p-asserted-identity";
+
+  public static final String ESCALATE_MEETING_REQUEST_URI_REGEX_PATTERN =
+      "(sip:[a-zA-Z0-9_\\-]{1,64}[+])[0-9]{6}([@])";
+  public static final String ESCALATE_MEETING_REQUEST_URI_USER_REGEX_PATTERN =
+      "(^[a-zA-Z0-9_\\-]{1,64}[+])[0-9]{6}$";
+  public static final String ESCALATE_MEETING_REQUEST_URI_MASK = "$1******$2";
+  public static final String ESCALATE_MEETING_REQUEST_URI_USER_MASK = "$1******";
 }

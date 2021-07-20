@@ -4,9 +4,12 @@
 package com.cisco.dsb.sip.stack.dto;
 
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +30,8 @@ public class DhruvaNetwork implements Cloneable {
 
   /** The default network. */
   public static DhruvaNetwork DEFAULT = null;
+
+  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaNetwork.class);
 
   public DhruvaNetwork(SIPListenPoint sipListenPoint) {
     this.sipListenPoint = sipListenPoint;
@@ -122,8 +127,14 @@ public class DhruvaNetwork implements Cloneable {
     else return Optional.empty();
   }
 
-  public static DhruvaNetwork createNetwork(String name, SIPListenPoint sipListenPoint) {
-    return networkMap.computeIfAbsent(name, (network) -> new DhruvaNetwork(sipListenPoint));
+  public static DhruvaNetwork createNetwork(String name, SIPListenPoint sipListenPoint)
+      throws DhruvaException {
+    if (name.equals(sipListenPoint.getName()))
+      return networkMap.computeIfAbsent(name, (network) -> new DhruvaNetwork(sipListenPoint));
+    else {
+      logger.error("network name provided and sip listen point mismatch, should be same");
+      throw new DhruvaException("mismatch in network name and sip listen point");
+    }
   }
 
   public String getName() {
@@ -132,5 +143,9 @@ public class DhruvaNetwork implements Cloneable {
 
   public static void setSipProvider(String name, SipProvider sipProvider) {
     networkToProviderMap.putIfAbsent(name, sipProvider);
+  }
+
+  public static void removeSipProvider(@NonNull String name) {
+    networkToProviderMap.remove(name);
   }
 }

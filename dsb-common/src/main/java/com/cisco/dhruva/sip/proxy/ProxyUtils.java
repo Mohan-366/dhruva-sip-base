@@ -144,7 +144,7 @@ public class ProxyUtils {
     boolean b =
         (host.equals(myURL.getHost())
             && port == myURL.getPort()
-            && transport.toString() == myURL.getTransportParam());
+            && transport.equalsIgnoreCase(myURL.getTransportParam()));
     Log.debug("Leaving recognize(), returning " + b);
     return b;
   }
