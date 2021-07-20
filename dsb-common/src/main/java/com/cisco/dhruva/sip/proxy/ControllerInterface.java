@@ -253,4 +253,6 @@ public interface ControllerInterface {
   ControllerConfig getControllerConfig();
 
   DhruvaExecutorService getDhruvaExecutorService();
+
+  ProxyFactoryInterface getProxyFactory();
 }

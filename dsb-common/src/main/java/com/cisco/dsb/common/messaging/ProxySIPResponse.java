@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.messaging;
 
+import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.proxy.ProxyCookie;
 import com.cisco.dhruva.sip.proxy.ProxyTransaction;
 import com.cisco.dsb.common.context.ExecutionContext;
@@ -65,5 +66,10 @@ public class ProxySIPResponse extends AbstractSipResponse {
   @Override
   public SIPMessage getSIPMessage() {
     return null;
+  }
+
+  @Override
+  public void proxy() {
+    ((ProxyController) proxyTransaction.getController()).proxyResponse(this);
   }
 }

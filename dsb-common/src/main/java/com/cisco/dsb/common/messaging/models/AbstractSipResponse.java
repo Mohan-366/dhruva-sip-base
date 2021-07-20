@@ -147,4 +147,6 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   public Dialog getDialog() {
     return ct.getDialog();
   }
+
+  public abstract void proxy();
 }

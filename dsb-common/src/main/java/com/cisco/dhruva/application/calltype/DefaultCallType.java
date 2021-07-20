@@ -63,11 +63,7 @@ public class DefaultCallType implements CallType {
   public Consumer<Mono<ProxySIPResponse>> processResponse() {
     // pipeline for response
     return proxySIPResponseMono ->
-        proxySIPResponseMono.subscribe(
-            proxySIPResponse -> {
-              ((ProxyController) proxySIPResponse.getProxyTransaction().getController())
-                  .proxyResponse(proxySIPResponse);
-            });
+        proxySIPResponseMono.subscribe(proxySIPResponse -> proxySIPResponse.proxy());
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> addHeaders =

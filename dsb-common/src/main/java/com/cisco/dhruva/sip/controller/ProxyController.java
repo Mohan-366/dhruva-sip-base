@@ -550,11 +550,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getRequest();
-    request = incomingProxyRequestFixLr
+    request =
+        incomingProxyRequestFixLr
             .andThen(processIncomingProxyRequestMAddr)
             .andThen(processIncomingProxyRequestRoute)
             .apply(request);
-
 
     // Fetch the network from provider
     SipProvider sipProvider = proxySIPRequest.getProvider();
@@ -596,8 +596,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    * Creates a <CODE>ProxyStatelessTransaction</CODE> object if the proxy is configured to be
    * stateless. Otherwise if either the proxy is configured to be stateful or if the controller
    * decides that the current transaction should be stateful , it creates the <CODE>
-   * ProxyTransaction</CODE> object. This method can only be used to create a transaction if one
-   * has not been created yet.
+   * ProxyTransaction</CODE> object. This method can only be used to create a transaction if one has
+   * not been created yet.
    *
    * @param setStateful Indicates that the current transaction be stateful,irrespective of the
    *     controller configuration.
@@ -620,9 +620,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       if (setStateful || (transport == Transport.TCP)) {
         try {
           proxyTransaction =
-                  proxyFactory
-                      .proxyTransaction()
-                      .apply(this, controllerConfig, serverTrans, request);
+              proxyFactory.proxyTransaction().apply(this, controllerConfig, serverTrans, request);
         } catch (InternalProxyErrorException ex) {
           logger.error("exception while creating proxy transaction" + ex.getMessage());
           return null;
@@ -946,6 +944,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // TODO what to do here???
     /*response.setNormalizationState(
     DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
+  }
+
+  @Override
+  public ProxyFactoryInterface getProxyFactory() {
+    return proxyFactory;
   }
 
   //  @Override
