@@ -2,6 +2,7 @@ package com.cisco.dhruva.sip.controller.util;
 
 import com.cisco.dhruva.sip.controller.AppParamsInterface;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ReConstants;
@@ -26,7 +27,7 @@ public class ParseProxyParamUtil {
 
   private ParseProxyParamUtil() {}
 
-  public static AppParamsInterface getAppParamsInterface(SIPRequest request) {
+  public static AppParamsInterface getAppParamsInterface(ProxySIPRequest request) {
 
     return () -> {
       try {
@@ -39,15 +40,18 @@ public class ParseProxyParamUtil {
   }
 
   public static Map<String, String> getParsedProxyParams(
-      SIPRequest request, int type, boolean decompress, String delimiter) throws DhruvaException {
+      ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter)
+      throws DhruvaException {
     logger.info("Dhruva getParsedProxyParams" + type);
+    SIPRequest request = proxySIPRequest.getRequest();
     String userPortion = null;
     HeaderAddress header = null;
     switch (type) {
       case ReConstants.MY_URI:
         // TODO DSB
-        // userPortion = getUserPortionFromUri(request.getRequestURI());
-        userPortion = null;
+        if (proxySIPRequest.getLrFixUri() != null)
+          userPortion = getUserPortionFromUri(request.getRequestURI());
+        else userPortion = null;
         break;
       case ReConstants.R_URI:
         userPortion = getUserPortionFromUri(request.getRequestURI());

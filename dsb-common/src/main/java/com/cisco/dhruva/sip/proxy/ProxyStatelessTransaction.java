@@ -273,8 +273,10 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       else {
         if (route.getAddress().getURI().isSipURI()) {
           SipURI routeURI = (SipURI) route.getAddress().getURI();
-          if (routeURI.getTransportParam() != null) {
-            viaTransport = Transport.valueOf(routeURI.getTransportParam()).getValue();
+          if (routeURI.getTransportParam() != null
+              && Transport.getTypeFromString(routeURI.getTransportParam()).isPresent()) {
+            viaTransport =
+                Transport.getTypeFromString(routeURI.getTransportParam()).get().getValue();
           } else {
             viaTransport =
                 ParseProxyParamUtil.getNetworkTransport(controller.getControllerConfig(), network)
@@ -441,11 +443,16 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
       // Verify if this has to be outgoing network or incoming network
       // DSB TODO
-      String network = proxySIPRequest.getNetwork();
+      String network = proxySIPRequest.getOutgoingNetwork();
       RecordRouteHeader rr = getDefaultParams().getRecordRouteInterface(network);
 
       if (rr != null) {
         boolean cloned = false;
+        /**
+         * If the Request-URI contains a SIPS URI, or the topmost Route header field value (after
+         * the post processing of bullet 6) contains a SIPS URI, the URI placed into the
+         * Record-Route header field MUST be a SIPS URI.
+         */
         Address routeAddress = rr.getAddress();
         URI routeURI = routeAddress.getURI();
         if (_requestURI.isSipURI() && routeURI.isSipURI()) {

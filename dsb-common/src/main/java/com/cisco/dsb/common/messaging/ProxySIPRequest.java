@@ -9,6 +9,7 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
+import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
 import javax.sip.message.Request;
 import lombok.Getter;
@@ -19,11 +20,12 @@ public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private String network;
   @Getter @Setter private SIPRequest clonedRequest;
   @Getter @Setter private Location location;
-  @Getter @Setter private String outgoingNetwork;
+  @Getter @Setter private String outgoingNetwork = null;
   @Getter @Setter private ProxyCookie cookie;
   @Getter @Setter private ProxyParamsInterface params;
   @Getter @Setter private boolean statefulClientTransaction;
   @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
+  @Getter @Setter private URI lrFixUri = null;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,

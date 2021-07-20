@@ -252,6 +252,9 @@ public class ProxyServerTransaction {
           currentRRURL.setUser(user);
 
         } else {
+
+          // TODO DSB , Akshay, fill the network in response msg and fetch.We are no more setting in
+          // jain req/resp obj
           network = ((DhruvaNetwork) msg.getApplicationData()).getName();
         }
 
