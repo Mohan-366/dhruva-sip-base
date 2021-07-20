@@ -578,6 +578,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         return proxySIPRequest;
       };
 
+  // TODO check CP behavior Shri Harini
   Function<ProxySIPRequest, ProxySIPRequest> incomingProxyRequestFixLr =
       proxySIPRequest -> {
         SIPRequest request = proxySIPRequest.getRequest();
@@ -593,6 +594,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
             request.setRequestURI(lastRouteHeader.getAddress().getURI());
             request.removeLast(RouteHeader.NAME);
+
+            // Set in proxy request to used while fetching proxy params
             proxySIPRequest.setLrFixUri(lastRouteHeader.getAddress().getURI());
           }
         }
@@ -604,11 +607,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     SIPRequest request = proxySIPRequest.getRequest();
 
-    proxySIPRequest = incomingProxyRequestFixLr.apply(proxySIPRequest);
-
-    ourRequest = proxySIPRequest;
-    proxySIPRequest = processIncomingProxyRequestMAddr.apply(proxySIPRequest);
-    proxySIPRequest = processIncomingProxyRequestRoute.apply(proxySIPRequest);
+    proxySIPRequest =
+        incomingProxyRequestFixLr
+            .andThen(
+                (proxyRequest) ->
+                    ourRequest = proxyRequest) // Set the controller ourRequest after lrfix
+            .andThen(processIncomingProxyRequestMAddr)
+            .andThen(processIncomingProxyRequestRoute)
+            .apply(proxySIPRequest);
 
     // Fetch the network from provider
     SipProvider sipProvider = proxySIPRequest.getProvider();
@@ -647,11 +653,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   /**
-   * Creates a <CODE>DsProxyStatelessTransaction</CODE> object if the proxy is configured to be
+   * Creates a <CODE>ProxyStatelessTransaction</CODE> object if the proxy is configured to be
    * stateless. Otherwise if either the proxy is configured to be stateful or if the controller
    * decides that the current transaction should be stateful , it creates the <CODE>
-   * DsProxyTransaction</CODE> object. This method can only be used to create a transaction if one
-   * has not been created yet.
+   * ProxyTransaction</CODE> object. This method can only be used to create a transaction if one has
+   * not been created yet.
    *
    * @param setStateful Indicates that the current transaction be stateful,irrespective of the
    *     controller configuration.
@@ -659,11 +665,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    */
   public ProxyStatelessTransaction createProxyTransaction(
       boolean setStateful,
-      SIPRequest request,
+      @NonNull SIPRequest request,
       ServerTransaction serverTrans,
-      ProxyFactory proxyFactory) {
-    Objects.requireNonNull(request);
-    Objects.requireNonNull(proxyFactory);
+      @NonNull ProxyFactory proxyFactory) {
 
     if (proxyTransaction == null) {
       Transport transport = Transport.NONE;
@@ -676,10 +680,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       if (setStateful || (transport == Transport.TCP)) {
         try {
           proxyTransaction =
-              (ProxyTransaction)
-                  proxyFactory
-                      .proxyTransaction()
-                      .apply(this, controllerConfig, serverTrans, request);
+              proxyFactory.proxyTransaction().apply(this, controllerConfig, serverTrans, request);
         } catch (InternalProxyErrorException ex) {
           logger.error("exception while creating proxy transaction" + ex.getMessage());
           return null;

@@ -485,8 +485,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
         assert response != null;
         Log.debug("Response sent for");
+      } else {
+        Log.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
       }
-      Log.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
     } catch (DestinationUnreachableException e) {
       controller.onResponseFailure(
           this,
