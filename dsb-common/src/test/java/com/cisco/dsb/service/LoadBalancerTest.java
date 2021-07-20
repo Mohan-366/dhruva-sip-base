@@ -4,10 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.loadbalancer.LBCallID;
-import com.cisco.dsb.loadbalancer.LBWeight;
-import com.cisco.dsb.loadbalancer.ServerGroupElementInterface;
-import com.cisco.dsb.loadbalancer.ServerGroupInterface;
+import com.cisco.dsb.loadbalancer.*;
 import com.cisco.dsb.servergroups.AbstractNextHop;
 import com.cisco.dsb.servergroups.DefaultNextHop;
 import com.cisco.dsb.transport.Transport;
@@ -70,7 +67,8 @@ public class LoadBalancerTest {
     callBased.setServerInfo("SG2", serverGroup, message);
     callBased.setDomainsToTry(set);
 
-    assertEquals(callBased.getServer(null), list.get(result));
+    assertEquals(callBased.getServer(), list.get(result));
+
   }
 
   @Test(
@@ -101,7 +99,6 @@ public class LoadBalancerTest {
     set.add(anh4);
     set.add(anh5);
     set.add(anh6);
-
     List<ServerGroupElementInterface> list = new ArrayList<ServerGroupElementInterface>();
     list.addAll(set);
     ServerGroupInterface serverGroup = mock(ServerGroupInterface.class);
@@ -122,7 +119,7 @@ public class LoadBalancerTest {
       anh5.setWeight(90);
       anh6.setWeight(90);
 
-      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer(null);
+      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer();
       assertEquals(dnh.getQValue(), 0.9f);
     }
 
@@ -136,7 +133,7 @@ public class LoadBalancerTest {
       anh5.setWeight(90);
       anh6.setWeight(0);
 
-      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer(null);
+      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer();
       assertEquals(dnh.getQValue(), 0.6f);
     }
     {
@@ -148,7 +145,7 @@ public class LoadBalancerTest {
       anh5.setWeight(90);
       anh6.setWeight(0);
 
-      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer(null);
+      DefaultNextHop dnh = (DefaultNextHop) callBased.getServer();
 
       assertEquals(dnh.getQValue(), anh5.getQValue());
     }
@@ -163,7 +160,7 @@ public class LoadBalancerTest {
       anh5.setWeight(0);
       anh6.setWeight(0);
 
-      assertEquals(callBased.getServer(null), null);
+      assertEquals(callBased.getServer(), null);
     }
   }
 }

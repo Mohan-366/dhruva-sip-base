@@ -17,7 +17,11 @@
 package com.cisco.dsb.loadbalancer;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
+import com.cisco.dsb.servergroups.DnsServerGroupUtil;
 import com.cisco.dsb.servergroups.ServerGroupElement;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -30,6 +34,8 @@ import java.util.TreeSet;
  * @see RepositoryReceiverInterface
  */
 public abstract class LBBase implements RepositoryReceiverInterface {
+
+  private static final Logger log = DhruvaLoggerFactory.getLogger(LBBase.class);
 
   protected ServerInterface lastTried;
 
@@ -50,19 +56,10 @@ public abstract class LBBase implements RepositoryReceiverInterface {
    */
   public ServerInterface getServer() {
 
-    lastTried = pickServer(null);
+    lastTried = pickServer();
     return lastTried;
   }
 
-  /**
-   * This method performs the appropriate load balancing algorithm to determine the next hop, using
-   * the passed in key (varKey), to perform the hashing.
-   */
-  public ServerInterface getServer(String varKey) {
-
-    lastTried = pickServer(varKey);
-    return lastTried;
-  }
 
   /**
    * Gets the last server that was tried.
@@ -90,22 +87,21 @@ public abstract class LBBase implements RepositoryReceiverInterface {
 
   protected abstract void setKey();
 
-  public ServerInterface pickServer(String varKey) {
+  public ServerInterface pickServer() {
 
     lastTried = null;
 
     if (domainsToTry == null) initializeDomains();
     if (domainsToTry.size() == 0) {
-      //   if (Log.on && Log.isEnabled(Level.WARN)) Log.warn("No more routes remain");
+           log.warn("No more routes remain");
       return null;
     }
 
-    ServerGroupElementInterface selectedElement = selectElement(varKey);
-    boolean isMyNextHop = true;
+    ServerGroupElementInterface selectedElement = selectElement();
 
     if (selectedElement == null) {
       domainsToTry.clear();
-    } else if (isMyNextHop) {
+    } else {
       domainsToTry.remove(selectedElement);
 
       lastTried = (ServerInterface) selectedElement;
@@ -158,7 +154,5 @@ public abstract class LBBase implements RepositoryReceiverInterface {
    */
   protected abstract ServerGroupElementInterface selectElement();
 
-  protected ServerGroupElementInterface selectElement(String varKey) {
-    return selectElement();
-  }
+
 }

@@ -62,16 +62,6 @@ public abstract class AbstractNextHop extends ServerGroupElement
     setParent(serverGroup);
   }
 
-  protected AbstractNextHop(
-      String network,
-      String host,
-      int port,
-      Transport protocol,
-      String serverGroup,
-      Boolean dnsServerGroup) {
-    this(network, host, port, protocol, ServerGroupElement.DEFAULT_Q, serverGroup, dnsServerGroup);
-  }
-
   /**
    * Gets the destination this <code>NextHop</code> is keeping track of.
    *
@@ -90,17 +80,6 @@ public abstract class AbstractNextHop extends ServerGroupElement
    */
   public final ServerGlobalStateWrapper getGlobalWrapper() {
     return globalWrapper;
-  }
-
-  /**
-   * Sets the object containing the globally available state for this endpoint.
-   *
-   * @param wrapper the <code>GlobalStateWrapper</code> containing the globally available state for
-   *     this endpoint.
-   * @see ServerGlobalStateWrapper
-   */
-  public final void setGlobalWrapper(ServerGlobalStateWrapper wrapper) {
-    this.globalWrapper = wrapper;
   }
 
   /**
@@ -264,6 +243,7 @@ public abstract class AbstractNextHop extends ServerGroupElement
    * @return the port for this endpoint.
    */
   public final int getPort() {
+
     return endpoint.getPort();
   }
 

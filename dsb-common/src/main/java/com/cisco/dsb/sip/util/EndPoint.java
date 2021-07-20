@@ -2,11 +2,14 @@ package com.cisco.dsb.sip.util;
 
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.Trace;
+import lombok.*;
 
 /**
  * This class describes/represents the end address to a network application. It encapsulates the
  * device address, port and the protocol and has accessor methods to get and set them.
  */
+@Getter
+@NoArgsConstructor
 public class EndPoint implements Cloneable {
 
   private static final Trace Log = Trace.getTrace(EndPoint.class.getName());
@@ -23,7 +26,7 @@ public class EndPoint implements Cloneable {
   /* The protocol for this end point */
   protected Transport protocol = Transport.UDP;
 
-  private String key = null;
+  @ToString.Include private String key = null;
   private String _intern = null;
   private int hashCode = -1;
 
@@ -37,50 +40,14 @@ public class EndPoint implements Cloneable {
    * @param protocol The int representing the protocol.
    */
   public EndPoint(String network, String host, int port, Transport protocol) {
-    if (Log.on && Log.isDebugEnabled()) Log.debug("Entering EndPoint()");
+    Log.debug("Entering EndPoint()");
     this.network = network;
     this.host = host;
     if (port > 0) this.port = port;
 
     if (protocol != null) this.protocol = protocol;
     createKey();
-    if (Log.on && Log.isDebugEnabled()) Log.debug("Leaving EndPoint()");
-  }
-
-  /**
-   * Gets the network name.
-   *
-   * @return the network name.
-   */
-  public final String getNetwork() {
-    return network;
-  }
-
-  /**
-   * Gets the domain name.
-   *
-   * @return the domain name.
-   */
-  public final String getHost() {
-    return host;
-  }
-
-  /**
-   * returns the port number of this end point
-   *
-   * @return port number
-   */
-  public final int getPort() {
-    return port;
-  }
-
-  /**
-   * returns the protocol of this end point address
-   *
-   * @return int representing the protocol.
-   */
-  public final Transport getProtocol() {
-    return protocol;
+    Log.debug("Leaving EndPoint()");
   }
 
   /** our equals implementation */
@@ -90,16 +57,8 @@ public class EndPoint implements Cloneable {
     return (_intern.equals(ep._intern));
   }
 
-  public String toString() {
-    return key;
-  }
-
   public final int hashCode() {
     return hashCode;
-  }
-
-  public final String getHashKey() {
-    return key;
   }
 
   private void createKey() {

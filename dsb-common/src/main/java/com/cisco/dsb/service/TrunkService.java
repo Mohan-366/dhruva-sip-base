@@ -7,30 +7,34 @@ import com.cisco.dsb.loadbalancer.ServerGroupInterface;
 import com.cisco.dsb.loadbalancer.ServerInterface;
 import com.cisco.dsb.servergroups.DnsServerGroupUtil;
 import com.cisco.dsb.servergroups.SG;
+import com.cisco.dsb.sip.proxy.SipUtils;
 import com.cisco.dsb.sip.util.EndPoint;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.DSBMessageHelper;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TrunkService {
 
-  @Autowired SipServerLocatorService resolver;
+  SipServerLocatorService resolver;
+
+  public TrunkService(SipServerLocatorService resolver){
+    this.resolver = resolver;
+  }
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
 
   public EndPoint getElement(AbstractSipRequest request) {
 
     String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
-    String uri = DSBMessageHelper.getHostPortion(reqUri);
+    String uri = SipUtils.getHostPortion(reqUri);
     logger.info("Dynamic Server Group to be created for  {} ", uri);
 
     try {
+
       DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(resolver);
       Optional<ServerGroupInterface> serverGroupInterfaceOptional =
           dnsServerGroupUtil.createDNSServerGroup(

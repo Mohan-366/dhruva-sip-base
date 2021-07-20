@@ -16,23 +16,11 @@ public class LBHashBasedMsid extends LBBase {
   @Override
   public final ServerInterface getServer() {
 
-    lastTried = pickServer(null);
+    lastTried = pickServer();
     return lastTried;
   }
 
-  /**
-   * This method performs the appropriate load balancing algorithm to determine the next hop, using
-   * the passed in key (varKey), to perform the hashing.
-   */
-  @Override
-  public final ServerInterface getServer(String varKey) {
-
-    lastTried = pickServer(varKey);
-    return lastTried;
-  }
-
-  @Override
-  public final ServerInterface pickServer(String varKey) {
+  public final ServerInterface pickServer() {
 
     lastTried = null;
 
@@ -41,7 +29,7 @@ public class LBHashBasedMsid extends LBBase {
       return null;
     }
 
-    ServerGroupElementInterface selectedElement = selectElement(varKey);
+    ServerGroupElementInterface selectedElement = selectElement();
     boolean isMyNextHop = true;
     if (selectedElement == null) {
       domainsToTry.clear();
@@ -54,8 +42,7 @@ public class LBHashBasedMsid extends LBBase {
     return lastTried;
   }
 
-  @Override
-  protected final ServerGroupElementInterface selectElement(String varKey) {
+  protected final ServerGroupElementInterface selectElement() {
     ServerGroupElementInterface selectedElement = null;
 
     if (domainsToTry.isEmpty()) {
@@ -66,7 +53,7 @@ public class LBHashBasedMsid extends LBBase {
       lbList.remove(0);
       domainsToTry.remove(selectedElement);
     } else {
-      selectedElement = getElementFromLB(varKey);
+      selectedElement = getElementFromLB();
     }
     ServerInterface nextHop = (ServerInterface) selectedElement;
     if (isDsCall()) {
@@ -77,7 +64,7 @@ public class LBHashBasedMsid extends LBBase {
       while (nextHop != null && !nextHop.isAvailable()) {
         if (lbList.isEmpty()) {
 
-          selectedElement = selectElement(null);
+          selectedElement = selectElement();
           return selectedElement;
         }
         selectedElement = (ServerGroupElementInterface) lbList.get(0);
@@ -89,7 +76,7 @@ public class LBHashBasedMsid extends LBBase {
     return selectedElement;
   }
 
-  private ServerGroupElementInterface getElementFromLB(String varKey) {
+  private ServerGroupElementInterface getElementFromLB() {
     ServerGroupElementInterface selectedElement = null;
     float highestQ = -1;
     for (Object o : domainsToTry) {
@@ -107,14 +94,14 @@ public class LBHashBasedMsid extends LBBase {
       lbList.remove(0);
       domainsToTry.remove(selectedElement);
     } else {
-      selectedElement = getElementByHashing(varKey);
+      selectedElement = getElementByHashing();
     }
     return selectedElement;
   }
 
-  private ServerGroupElementInterface getElementByHashing(String varKey) {
+  private ServerGroupElementInterface getElementByHashing() {
     ServerGroupElementInterface selectedElement = null;
-    String hashKey = (varKey != null) ? varKey : key;
+    String hashKey = key;
 
     int index = HashAlgorithm.selectIndex(hashKey, lbList.size());
     if (index != -1) {
@@ -123,11 +110,6 @@ public class LBHashBasedMsid extends LBBase {
       domainsToTry.remove(selectedElement);
     }
     return selectedElement;
-  }
-
-  @Override
-  protected ServerGroupElementInterface selectElement() {
-    return selectElement(null);
   }
 
   @Override

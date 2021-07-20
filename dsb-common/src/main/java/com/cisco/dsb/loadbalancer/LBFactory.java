@@ -173,7 +173,7 @@ public abstract class LBFactory {
    *
    * @return the fully qualified class name of the load balancing type.
    */
-  public static String getDefaultLBStrType() {
+  public static synchronized String getDefaultLBStrType() {
     return DEFAULT_LB_STR_TYPE;
   }
 

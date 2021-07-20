@@ -13,6 +13,8 @@ import gov.nist.javax.sip.stack.TLSMessageChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -199,5 +201,24 @@ public final class SipUtils {
    */
   public static boolean isInetAddress(String value) {
     return InetAddresses.isInetAddress(value);
+  }
+
+  /* Determines User portion from requestURi */
+  public static String getUserPortion(String reqUri) {
+
+    Pattern pattern = Pattern.compile("((sip:)(.+)@(.+))");
+    Matcher matcher = pattern.matcher(reqUri);
+    if (!matcher.find()) return null;
+    String user = matcher.group(3);
+    return user;
+  }
+  /* Determines Host portion from requestURi */
+
+  public static String getHostPortion(String reqUri) {
+    Pattern pattern = Pattern.compile("((sip:)(.+)@(.+))");
+    Matcher matcher = pattern.matcher(reqUri);
+    if (!matcher.find()) return null;
+    String host = matcher.group(4);
+    return host.split(";")[0];
   }
 }

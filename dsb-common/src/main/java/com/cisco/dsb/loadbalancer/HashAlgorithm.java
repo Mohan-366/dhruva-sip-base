@@ -23,9 +23,7 @@ public class HashAlgorithm {
 
     if (listSize <= 0) return -1;
 
-    int hashValue = Math.abs(key.hashCode());
-
-    int index = hashValue % listSize;
+    int index = Math.abs(key.hashCode() % listSize);
 
     return index;
   }

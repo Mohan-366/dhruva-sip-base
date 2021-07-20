@@ -33,12 +33,6 @@ public interface LBInterface {
   ServerInterface getServer();
 
   /**
-   * This method performs the appropriate load balancing algorithm to determine the next hop, using
-   * the passed in key (varKey), to perform the hashing.
-   */
-  ServerInterface getServer(String varKey);
-
-  /**
    * Gets the last server that was tried.
    *
    * @return the last server tried.
