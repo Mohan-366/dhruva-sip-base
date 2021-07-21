@@ -3,6 +3,7 @@ package com.cisco.dhruva.sip.proxy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dhruva.sip.proxy.errors.DestinationUnreachableException;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
@@ -43,7 +44,7 @@ public class ProxyTransactionTest {
 
   @BeforeMethod
   public void setup() throws InternalProxyErrorException {
-    reset(sipResponse, proxyClientTransaction, controllerInterface);
+    reset(sipResponse, proxyClientTransaction, controllerInterface, proxyServerTransaction);
     when(getMockProxyServerTransaction.apply(any(), any(), any()))
         .thenReturn(proxyServerTransaction);
     when(proxyFactory.proxyServerTransaction()).thenReturn(getMockProxyServerTransaction);
@@ -181,10 +182,91 @@ public class ProxyTransactionTest {
     verify(proxyTransaction, Mockito.times(1)).respond(sipResponse);
   }
 
-  @Test(description = "test to send out SIPResponse", enabled = false)
-  public void testRespond() {
-    // As of now ProxyResponseGenerator is using this api, i.e
-    // ProxyTransaction::respond(SIPResponse)
+  @Test(description = "test to send out SIPResponse for NOT_STRAY request")
+  public void testRespondNotStray() throws DestinationUnreachableException {
+    // setup
+    when(sipResponse.getStatusCode()).thenReturn(200);
+    proxyTransaction.setStrayRequest(ProxyStatelessTransaction.NOT_STRAY);
+    // call
+    proxyTransaction.respond(sipResponse);
+    // verify
+    verify(proxyServerTransaction, Mockito.times(1)).respond(sipResponse);
+  }
 
+  @Test(description = "test to send out SIPResponse for STRAY_CANCEL request")
+  public void testRespondStray() throws DestinationUnreachableException {
+    // setup
+    when(sipResponse.getStatusCode()).thenReturn(200);
+    proxyTransaction.setStrayRequest(ProxyStatelessTransaction.STRAY_CANCEL);
+    // call
+    proxyTransaction.respond(sipResponse);
+    // verify
+    verify(proxyServerTransaction, Mockito.times(0)).respond(sipResponse);
+  }
+
+  @Test(description = "test to handle response when ProxyTransaction is in invalid state")
+  public void testRespondInvalidState() {
+    // setup
+    when(sipResponse.getStatusCode()).thenReturn(404);
+    proxyTransaction.setCurrentServerState(ProxyTransaction.PROXY_FINISHED_200);
+
+    // call
+    proxyTransaction.respond(sipResponse);
+
+    // verify
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseFailure(
+            eq(proxyTransaction),
+            eq(proxyServerTransaction),
+            eq(ControllerInterface.INVALID_STATE),
+            eq(
+                "Cannot send "
+                    + 4
+                    + "xx response in "
+                    + ProxyTransaction.PROXY_FINISHED_200
+                    + " state"),
+            eq(null));
+  }
+
+  @Test(description = "test to handle DestinationUnreachableException while sending out response")
+  public void testRespondDestinationUnException() throws DestinationUnreachableException {
+    // setup
+    when(sipResponse.getStatusCode()).thenReturn(200);
+    proxyTransaction.setStrayRequest(ProxyStatelessTransaction.NOT_STRAY);
+    DestinationUnreachableException due = mock(DestinationUnreachableException.class);
+    when(due.getMessage()).thenReturn("Destination Unreachable");
+    doThrow(due).when(proxyServerTransaction).respond(sipResponse);
+
+    // call
+    proxyTransaction.respond(sipResponse);
+    // verify
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseFailure(
+            eq(proxyTransaction),
+            eq(proxyServerTransaction),
+            eq(ControllerInterface.DESTINATION_UNREACHABLE),
+            eq("Destination Unreachable"),
+            eq(due));
+  }
+
+  @Test
+  public void testResponseUnhandledException() throws DestinationUnreachableException {
+    // setup
+    when(sipResponse.getStatusCode()).thenReturn(200);
+    proxyTransaction.setStrayRequest(ProxyStatelessTransaction.NOT_STRAY);
+    Throwable due = mock(RuntimeException.class);
+    when(due.getMessage()).thenReturn("Unexpected Exception");
+    doThrow(due).when(proxyServerTransaction).respond(sipResponse);
+
+    // call
+    proxyTransaction.respond(sipResponse);
+    // verify
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseFailure(
+            eq(proxyTransaction),
+            eq(proxyServerTransaction),
+            eq(ControllerInterface.UNKNOWN_ERROR),
+            eq("Unexpected Exception"),
+            eq(due));
   }
 }

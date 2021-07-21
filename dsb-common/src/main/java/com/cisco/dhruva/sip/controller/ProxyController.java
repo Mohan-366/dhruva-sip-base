@@ -104,8 +104,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         if (stateMode != ControllerConfig.STATEFUL) {
           overwriteStatelessMode(req);
         }
-        ProxyResponseGenerator.sendResponse(
-            proxySIPResponse.getResponse(), (ProxyTransaction) proxyTransaction);
+        if (proxyTransaction != null) {
+          SIPResponse response = proxySIPResponse.getResponse();
+          ((ProxyTransaction) proxyTransaction).respond(response);
+          logger.debug("Sent response:\n" + response);
+        } else {
+          logger.error("ProxyTransaction was null!");
+        }
       } else {
         logger.warn("in respond() - not forwarding response because request method was ACK");
       }
@@ -607,7 +612,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     SIPRequest request = proxySIPRequest.getRequest();
 
-
     proxySIPRequest =
         incomingProxyRequestFixLr
             .andThen(
@@ -725,9 +729,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return Optional.ofNullable(serverTransaction);
   }
 
-  /*
-   * Overwrites a stateful DsProxyTransaction with a DsStatelessProxy transaction.
-   */
+  /** Overwrites a stateful ProxyStatelessTransaction with a ProxyTransaction(Statefull). */
   public boolean overwriteStatelessMode(SIPRequest request) {
 
     // Set it to null if it is stateless

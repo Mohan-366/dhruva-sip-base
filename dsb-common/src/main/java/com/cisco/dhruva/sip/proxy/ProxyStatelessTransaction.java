@@ -23,6 +23,7 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import lombok.Setter;
 import reactor.core.publisher.Mono;
 
 /**
@@ -51,7 +52,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   protected static final int STRAY_ACK = 1;
   protected static final int STRAY_CANCEL = 2;
 
-  private int strayRequest = NOT_STRAY;
+  @Setter private int strayRequest = NOT_STRAY;
 
   /** the request received from the initial server transaction */
   private SIPRequest originalRequest;

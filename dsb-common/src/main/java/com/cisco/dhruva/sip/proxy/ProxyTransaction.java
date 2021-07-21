@@ -63,7 +63,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   /** the current state of this ProxyTransaction */
   private int currentClientState = PROXY_INITIAL;
 
-  private int currentServerState = PROXY_INITIAL;
+  @Getter @Setter private int currentServerState = PROXY_INITIAL;
 
   private boolean serverTimerSet = false;
 
@@ -487,7 +487,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         getServerTransaction().respond(response);
 
         assert response != null;
-        Log.debug("Response sent for");
+        Log.debug("Response sent");
       } else {
         Log.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
       }

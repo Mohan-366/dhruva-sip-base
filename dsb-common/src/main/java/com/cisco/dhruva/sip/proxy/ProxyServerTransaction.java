@@ -126,7 +126,7 @@ public class ProxyServerTransaction {
         int numResponseVias = vias != null ? vias.size() : 0;
 
         Log.debug("numResponseVias=" + numResponseVias + ", numVias=" + numVias);
-
+        // TODO on Akshay, what happens if numResponsevia < numVia??
         for (int x = numResponseVias; x > numVias; x--) {
           assert vias != null;
           vias.removeFirst();
