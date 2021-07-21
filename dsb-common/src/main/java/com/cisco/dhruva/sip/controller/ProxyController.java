@@ -235,7 +235,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         // For middialog requests , dhruva removes the top route header if it matches proxy
         // At that point it would have set the outgoing network based on matching route header.
         if (network != null) {
-          if (proxySIPRequest.getOutgoingNetwork() != null) {
+          if (proxySIPRequest.getOutgoingNetwork() == null) {
             logger.info("setting outgoing network to ", network.getName());
             proxySIPRequest.setOutgoingNetwork(network.getName());
           }
@@ -413,8 +413,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         }
       }
       // If still network is null, get from top most route header if available
-      Optional<DhruvaNetwork> optRouteNetwork = getNetworkFromMyRoute();
-      if (optRouteNetwork.isPresent()) return optRouteNetwork.get();
+      if(network == null ) {
+        Optional<DhruvaNetwork> optRouteNetwork = getNetworkFromMyRoute();
+        if (optRouteNetwork.isPresent()) return optRouteNetwork.get();
+      }
     }
 
     return network;
