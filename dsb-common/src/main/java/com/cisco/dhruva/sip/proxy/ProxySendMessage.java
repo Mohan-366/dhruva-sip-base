@@ -34,21 +34,6 @@ public class ProxySendMessage {
         .subscribeOn(Schedulers.boundedElastic());
   }
 
-  public static Mono<Void> sendResponseAsync(
-      ServerTransaction serverTransaction, SIPResponse response) {
-    Objects.requireNonNull(response);
-    Objects.requireNonNull(serverTransaction);
-    return Mono.<Void>fromRunnable(
-            () -> {
-              try {
-                serverTransaction.sendResponse(response);
-              } catch (Exception e) {
-                throw new RuntimeException(e.getCause());
-              }
-            })
-        .subscribeOn(Schedulers.boundedElastic());
-  }
-
   public static void sendResponse(
       int responseID,
       SipProvider sipProvider,
