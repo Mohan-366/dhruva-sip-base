@@ -36,6 +36,10 @@ public class ProxySIPRequest extends AbstractSipRequest {
     super(executionContext, provider, transaction, request);
   }
 
+  //  public void proxy(ProxySIPRequest proxySIPRequest, Location location) {
+  //    (ProxyTransaction)this.proxyStatelessTransaction.getController().
+  //  }
+
   @Override
   public void sendSuccessResponse() throws IOException, ServletException {}
 
