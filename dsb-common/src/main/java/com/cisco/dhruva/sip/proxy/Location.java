@@ -1,7 +1,8 @@
 package com.cisco.dhruva.sip.proxy;
 
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.util.log.Trace;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.RouteList;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -29,25 +30,25 @@ public final class Location implements Cloneable, Comparable {
   @Getter @Setter protected URI uri;
   @Getter @Setter protected String serverGroupName;
   @Getter @Setter protected RouteList routeHeaders;
-  protected float qValue = DEFAULT_QVALUE;
-  protected long lastUpdate = 0;
-  protected boolean useDestInfo = USE_DEST_INFO_DEFAULT;
-  protected boolean processRoute = PROCESS_ROUTE_DEFAULT;
-  protected boolean removeExistingRoutes = false;
-  protected boolean removeExistingRoutesOnRedirect = false;
-  protected boolean copiedURIHeadersToRequest = false;
+  @Getter @Setter protected float qValue = DEFAULT_QVALUE;
+  @Getter @Setter protected long lastUpdate = 0;
+  @Getter @Setter protected boolean useDestInfo = USE_DEST_INFO_DEFAULT;
+  @Getter @Setter protected boolean processRoute = PROCESS_ROUTE_DEFAULT;
+  @Getter @Setter protected boolean removeExistingRoutes = false;
+  @Getter @Setter protected boolean removeExistingRoutesOnRedirect = false;
+  @Getter @Setter protected boolean copiedURIHeadersToRequest = false;
 
   @Getter @Setter protected DhruvaNetwork network = null;
 
   @Getter @Setter protected DhruvaNetwork defaultNetwork = null;
-  protected int hashCode = -1;
+  @Getter @Setter protected int hashCode = -1;
 
-  protected LBInterface lb;
+  @Getter @Setter protected LBInterface loadBalancer;
 
   public static float DEFAULT_QVALUE = (float) 1.0;
 
   /** our log object * */
-  private static final Trace Log = Trace.getTrace(Location.class.getName());
+  private static final Logger Log = DhruvaLoggerFactory.getLogger(Location.class);
 
   /**
    * Create a Location with the given URI, and all parameters set to their default.
@@ -82,7 +83,7 @@ public final class Location implements Cloneable, Comparable {
   public Object clone() {
     URI clonedURI = (URI) uri.clone();
     Location location = new Location(clonedURI, routeHeaders, serverGroupName, qValue, lastUpdate);
-    location.setLoadBalancer(lb);
+    location.setLoadBalancer(loadBalancer);
     location.setProcessRoute(processRoute);
     location.setUseDestInfo(useDestInfo);
     location.setNetwork(network);
@@ -94,25 +95,25 @@ public final class Location implements Cloneable, Comparable {
     return location;
   }
 
-  public LBInterface getLoadBalancer() {
-    return this.lb;
-  }
+  //  public LBInterface getLoadBalancer() {
+  //    return this.lb;
+  //  }
+  //
+  //  public void setLoadBalancer(LBInterface lb) {
+  //    this.lb = lb;
+  //  }
 
-  public void setLoadBalancer(LBInterface lb) {
-    this.lb = lb;
-  }
+  //  public void setUseDestInfo(boolean b) {
+  //    this.useDestInfo = b;
+  //  }
+  //
+  //  public boolean useDestInfo() {
+  //    return useDestInfo;
+  //  }
 
-  public void setUseDestInfo(boolean b) {
-    this.useDestInfo = b;
-  }
-
-  public boolean useDestInfo() {
-    return useDestInfo;
-  }
-
-  public long getLastUpdate() {
-    return lastUpdate;
-  }
+  //  public long getLastUpdate() {
+  //    return lastUpdate;
+  //  }
 
   public boolean equals(Object obj) {
     if (obj == null) return false;
@@ -128,10 +129,8 @@ public final class Location implements Cloneable, Comparable {
    */
   public boolean equals(Location lbURI) {
 
-    if (Log.on && Log.isTraceEnabled()) {
-      Log.debug("Entering equals() for contact = " + lbURI);
-      Log.debug("Current location is: " + this);
-    }
+    Log.debug("Entering equals() for contact = " + lbURI);
+    Log.debug("Current location is: " + this);
 
     // See if the URIs in the contact header match
     boolean equals = false;
@@ -149,7 +148,7 @@ public final class Location implements Cloneable, Comparable {
       //        else equals = connectionID == null && lbURI.getConnectionID() == null;
       //      }
     }
-    if (Log.on && Log.isTraceEnabled()) Log.trace("Leaving equals(), returning " + equals);
+    Log.debug("Leaving equals(), returning " + equals);
     return equals;
   }
 
@@ -220,47 +219,47 @@ public final class Location implements Cloneable, Comparable {
     return returnVal;
   }
 
-  public float getQValue() {
-    return this.qValue;
-  }
-
-  public void setQValue(float qValue) {
-    this.qValue = qValue;
-  }
-
-  public void setURI(SipURI newURI) {
-    this.uri = newURI;
-  }
-
-  public boolean processRoute() {
-    return processRoute;
-  }
-
-  public void setProcessRoute(boolean processRoute) {
-    this.processRoute = processRoute;
-  }
-
-  public void setRemoveExistingRoutes(boolean flag) {
-    removeExistingRoutes = flag;
-  }
-
-  public boolean getRemoveExistingRoutes() {
-    return removeExistingRoutes;
-  }
-
-  public void setRemoveExistingRoutesOnRedirect(boolean flag) {
-    removeExistingRoutesOnRedirect = flag;
-  }
-
-  public boolean getRemoveExistingRoutesOnRedirect() {
-    return removeExistingRoutesOnRedirect;
-  }
-
-  public void setCopiedURIHeadersToRequest(boolean flag) {
-    copiedURIHeadersToRequest = flag;
-  }
-
-  public boolean getCopiedURIHeadersToRequest() {
-    return copiedURIHeadersToRequest;
-  }
+  //  public float getQValue() {
+  //    return this.qValue;
+  //  }
+  //
+  //  public void setQValue(float qValue) {
+  //    this.qValue = qValue;
+  //  }
+  //
+  //  public void setURI(SipURI newURI) {
+  //    this.uri = newURI;
+  //  }
+  //
+  //  public boolean processRoute() {
+  //    return processRoute;
+  //  }
+  //
+  //  public void setProcessRoute(boolean processRoute) {
+  //    this.processRoute = processRoute;
+  //  }
+  //
+  //  public void setRemoveExistingRoutes(boolean flag) {
+  //    removeExistingRoutes = flag;
+  //  }
+  //
+  //  public boolean getRemoveExistingRoutes() {
+  //    return removeExistingRoutes;
+  //  }
+  //
+  //  public void setRemoveExistingRoutesOnRedirect(boolean flag) {
+  //    removeExistingRoutesOnRedirect = flag;
+  //  }
+  //
+  //  public boolean getRemoveExistingRoutesOnRedirect() {
+  //    return removeExistingRoutesOnRedirect;
+  //  }
+  //
+  //  public void setCopiedURIHeadersToRequest(boolean flag) {
+  //    copiedURIHeadersToRequest = flag;
+  //  }
+  //
+  //  public boolean getCopiedURIHeadersToRequest() {
+  //    return copiedURIHeadersToRequest;
+  //  }
 }

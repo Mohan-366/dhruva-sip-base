@@ -254,24 +254,29 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private Function<ProxySIPRequest, ProxySIPRequest> proxyTransactionProcessRequest =
       proxySIPRequest -> {
-        ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
-        proxySIPRequest.setParams(pp);
         try {
+          ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
+          proxySIPRequest.setParams(pp);
           proxyTransaction.addProxyRecordRoute(proxySIPRequest);
           return proxyTransaction.proxyTo(proxySIPRequest);
-        } catch (SipException | ParseException e) {
-          logger.error("exception while adding record route" + e.getMessage());
+        } catch (SipException | ParseException | DhruvaException e) {
+          logger.error("exception while doing proxy transaction processing" + e.getMessage());
           return null;
         }
       };
 
-  public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest) {
+  public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest)
+      throws DhruvaException {
     SIPRequest request = proxySIPRequest.getClonedRequest();
 
     Location location = proxySIPRequest.getLocation();
 
-    String networkStr = proxySIPRequest.getOutgoingNetwork();
-    DhruvaNetwork network = DhruvaNetwork.getNetwork(networkStr).get();
+    Optional<DhruvaNetwork> optionalDhruvaNetwork =
+        DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
+    DhruvaNetwork outgoingNetwork;
+    outgoingNetwork =
+        optionalDhruvaNetwork.orElseThrow(
+            () -> new DhruvaException("unable to find outgoing network"));
 
     SipURI uri = location.getUri().isSipURI() ? (SipURI) location.getUri().clone() : null;
     if (uri != null) {
@@ -285,9 +290,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     // proper way to check if (routes != null && routes.getFirst () != null) {
 
-    if (timeToTry > 0 || (!location.processRoute()) || rlist == null) {
+    if (timeToTry > 0 || (!location.isProcessRoute()) || rlist == null) {
       // create a new DsProxyParms object
-      pp = new ProxyParams(controllerConfig, network.getName());
+      pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
 
       ProxyParams dpp = (ProxyParams) pp;
 
@@ -297,7 +302,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       // that to the proxyToLogical method
       if (timeToTry > 0) dpp.setRequestTimeout(timeToTry);
 
-      if (!location.processRoute() || rlist == null) {
+      if (!location.isProcessRoute() || rlist == null) {
         logger.debug("processRoute was not set, setting binding info for location");
 
         URI locUri = location.getUri();
@@ -333,10 +338,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
              */
             boolean interfaceSet = false;
             for (Transport transport : Transports) {
-              if (controllerConfig.getInterface(
-                      transport,
-                      DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork()).get())
-                  != null) {
+              if (controllerConfig.getInterface(transport, outgoingNetwork) != null) {
                 dpp.setProxyToProtocol(transport);
                 interfaceSet = true;
                 break;
@@ -363,7 +365,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       ((ProxyParams) pp).setRecordRouteUserParams(getRecordRouteParams(proxySIPRequest, true));
     } else {
       // creating a new DsProxyParams from the ppIface and set recordrouting params to it.
-      pp = new ProxyParams(controllerConfig, network.getName());
+      pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
       ((ProxyParams) pp).setRecordRouteUserParams(getRecordRouteParams(proxySIPRequest, true));
       logger.debug(
           "DsProxyParamsInterface is not of type DsProxyParams so not setting the record-route user params");
