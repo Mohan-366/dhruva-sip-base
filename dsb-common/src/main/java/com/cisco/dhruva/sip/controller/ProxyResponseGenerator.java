@@ -20,6 +20,7 @@ import javax.sip.address.URI;
 import javax.sip.header.ContactHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
+import lombok.NonNull;
 
 /*
  * This class enapsulates the funtionality of several commonly sent responses.
@@ -43,16 +44,17 @@ public abstract class ProxyResponseGenerator {
       if (size == 1) {
         Location location = (Location) locations.get(0);
         URI uri = location.getUri();
-        ContactHeader contactHeader =
-            JainSipHelper.getHeaderFactory().createContactHeader((Address) uri);
+        Address address = JainSipHelper.getAddressFactory().createAddress(uri.toString());
+        ContactHeader contactHeader = JainSipHelper.getHeaderFactory().createContactHeader(address);
         contactHeader.setQValue(location.getQValue());
         contactHeaders.add((Contact) contactHeader);
       } else {
         for (Object o : locations) {
           Location location = (Location) o;
           URI uri = location.getUri();
+          Address address = JainSipHelper.getAddressFactory().createAddress(uri.toString());
           ContactHeader contactHeader =
-              JainSipHelper.getHeaderFactory().createContactHeader((Address) uri);
+              JainSipHelper.getHeaderFactory().createContactHeader(address);
           contactHeader.setQValue(location.getQValue());
           contactHeaders.add((Contact) contactHeader);
         }
@@ -93,7 +95,7 @@ public abstract class ProxyResponseGenerator {
     Log.debug("Entering createRedirectResponse()");
     SIPResponse response = null;
     // added by BJ
-    ContactList contactHeader = (ContactList) contactHeaders.getFirst();
+    ContactHeader contactHeader = (ContactHeader) contactHeaders.getFirst();
     // check to see if the contactHeader contains more than
     // one element. If yes create redirect header with
     // response code-MULTIPLE_CHOICES ( # 300 )
@@ -187,16 +189,6 @@ public abstract class ProxyResponseGenerator {
     Log.debug("Leaving sendNotFoundResponse()");
   }
 
-  /**
-   * This is the utility method that sends trying response
-   *
-   * @param trans The proxy transaction that will be used to send the response.
-   */
-  public static void sendByteBasedTryingResponse(ProxyTransaction trans) {
-    Log.debug("Entering sendByteBasedTryingResponse()");
-    trans.respond(null);
-  }
-
   public static void sendTryingResponse(SIPRequest request, ProxyTransaction trans)
       throws ParseException {
     Log.debug("Entering sendTryingResponse()");
@@ -206,14 +198,14 @@ public abstract class ProxyResponseGenerator {
     trans.respond(response);
   }
 
-  public static void sendResponse(SIPResponse response, ProxyTransaction trans) {
+  public static void sendResponse(@NonNull SIPResponse response, @NonNull ProxyTransaction trans) {
     Log.debug("Entering sendResponse()");
 
     if (trans != null) {
       trans.respond(response);
       Log.debug("Sent response:" + NL + response);
     } else {
-      Log.warn("DsProxyTransaction was null!");
+      Log.warn("ProxyTransaction was null!");
     }
   }
 
