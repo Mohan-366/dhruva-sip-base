@@ -40,7 +40,7 @@
     <properties>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.failOnError>true</spotbugs.failOnError>
-        <jacoco.version>0.8.2</jacoco.version>
+        <jacoco.version>0.8.4</jacoco.version>
     </properties>
 
     <distributionManagement>
