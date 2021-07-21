@@ -1,6 +1,5 @@
 package com.cisco.dsb.sip.jain;
 
-import com.cisco.dsb.util.log.DhruvaStackLogger;
 import com.google.common.base.Preconditions;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -175,41 +174,5 @@ public class JainStackInitializer {
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);
     sipProvider.addSipListener(listener);
     return sipStack;
-  }
-
-  /**
-   * @param
-   * @return
-   */
-  public static Properties createProxyStackProperties(String stackName) {
-
-    Properties properties = new Properties();
-    properties.setProperty("gov.nist.javax.sip.LOG_MESSAGE_CONTENT", "true");
-    properties.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
-
-    // For Externally listening points, we need to log the entire SIP message content.
-    // L2SipServerLogger will log the entire content by default.
-    properties.setProperty("gov.nist.javax.sip.SERVER_LOGGER", JainStackLogger.class.getName());
-
-    properties.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
-    properties.setProperty("gov.nist.javax.sip.PASS_INVITE_NON_2XX_ACK_TO_LISTENER", "true");
-
-    // threading related
-    properties.setProperty("gov.nist.javax.sip.REENTRANT_LISTENER", "true");
-    properties.setProperty("gov.nist.javax.sip.THREAD_POOL_SIZE", "64");
-    properties.setProperty("gov.nist.javax.sip.TCP_POST_PARSING_THREAD_POOL_SIZE", "30");
-
-    // this is the default
-    properties.setProperty("gov.nist.javax.sip.MAX_FORK_TIME_SECONDS", "0");
-
-    // seems useful
-    properties.setProperty("gov.nist.javax.sip.MAX_MESSAGE_SIZE", "32000");
-    properties.setProperty("gov.nist.javax.sip.MAX_LISTENER_RESPONSE_TIME", "120");
-
-    // Disable dialog support for proxy
-    properties.setProperty("javax.sip.AUTOMATIC_DIALOG_SUPPORT", "off");
-    properties.setProperty("javax.sip.STACK_NAME", stackName);
-
-    return properties;
   }
 }

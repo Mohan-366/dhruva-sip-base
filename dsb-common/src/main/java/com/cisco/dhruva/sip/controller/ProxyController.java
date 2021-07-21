@@ -12,8 +12,12 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import javax.sip.*;
+import javax.sip.ClientTransaction;
+import javax.sip.ServerTransaction;
+import javax.sip.SipException;
+import javax.sip.SipProvider;
 import javax.sip.message.Request;
+import javax.sip.message.Response;
 
 public class ProxyController implements ProxyInterface {
 
@@ -51,12 +55,21 @@ public class ProxyController implements ProxyInterface {
   }
 
   public void respond(int responseCode, ProxySIPRequest proxySIPRequest) {
-
     ProxySendMessage.sendResponse(
             responseCode,
             proxySIPRequest.getProvider(),
             proxySIPRequest.getServerTransaction(),
             proxySIPRequest.getRequest())
+        .subscribe(
+            req -> {},
+            err -> {
+              // Handle exception
+            });
+  }
+
+  public void respond(
+      Response response, SipProvider sipProvider, ServerTransaction serverTransaction) {
+    ProxySendMessage.sendResponse(response, sipProvider, serverTransaction)
         .subscribe(
             req -> {},
             err -> {

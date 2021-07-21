@@ -30,7 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.sip.*;
+import javax.sip.RequestEvent;
+import javax.sip.ResponseEvent;
+import javax.sip.SipStack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -146,9 +148,9 @@ public class ProxyService {
   public Consumer<Mono<RequestEvent>> proxyRequestHandler =
       requestEventMono ->
           requestEventMono
-              .mapNotNull(sipProxyManager.validate)
               .mapNotNull(sipProxyManager.createProxySipRequest)
               .mapNotNull(sipProxyManager.createProxyController)
+              .mapNotNull(sipProxyManager.validateRequest)
               // .onErrorResume()
               // .subscribeOn(Schedulers.fromExecutorService(StripedExecutorService))
               .subscribe(requestConsumer);

@@ -31,6 +31,20 @@ public class ProxySendMessage {
         .subscribeOn(Schedulers.boundedElastic());
   }
 
+  public static Mono<Void> sendResponse(
+      Response response, SipProvider sipProvider, ServerTransaction serverTransaction) {
+    return Mono.<Void>fromRunnable(
+            () -> {
+              try {
+                if (serverTransaction != null) serverTransaction.sendResponse(response);
+                else sipProvider.sendResponse(response);
+              } catch (Exception e) {
+                throw new DhruvaException(e.getCause());
+              }
+            })
+        .subscribeOn(Schedulers.boundedElastic());
+  }
+
   public static Mono<Void> sendRequest(
       SipProvider provider, SIPClientTransaction transaction, SIPRequest request) {
 
