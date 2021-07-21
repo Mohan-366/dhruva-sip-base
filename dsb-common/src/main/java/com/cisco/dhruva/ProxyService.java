@@ -176,24 +176,25 @@ public class ProxyService {
   }
 
   /** placeholder for processing the RequestEvent from Stack */
-  public Consumer<Mono<RequestEvent>> proxyRequestHandler =
-      requestEventMono ->
-          requestEventMono
-              .mapNotNull(sipProxyManager.validate)
-              .mapNotNull(sipProxyManager.createProxySipRequest)
-              .mapNotNull(sipProxyManager.createProxyController)
-              // .onErrorResume()
-              // .subscribeOn(Schedulers.fromExecutorService(StripedExecutorService))
-              .subscribe(requestConsumer);
+  public Consumer<Mono<RequestEvent>> proxyRequestHandler() {
+    return requestEventMono -> requestPipeline(requestEventMono).subscribe(requestConsumer);
+  }
+
+  public Mono<ProxySIPRequest> requestPipeline(Mono<RequestEvent> requestEventMono) {
+    return requestEventMono
+        .mapNotNull(sipProxyManager.validate)
+        .mapNotNull(sipProxyManager.createProxySipRequest())
+        .mapNotNull(sipProxyManager.createProxyController());
+  }
   // flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
   /** placeholder for processing the ResponseEvent from Stack */
-  public Consumer<Mono<ResponseEvent>> proxyResponseHandler =
-      responsEventMono ->
-          responsEventMono
-              .mapNotNull(sipProxyManager.findProxyTransaction)
-              .mapNotNull(
-                  sipProxyManager
-                      .processProxyTransaction) // findTransaction function with stray response
-              // handling, part of SPManager
-              .subscribe(responseConsumer);
+  public Consumer<Mono<ResponseEvent>> proxyResponseHandler() {
+    return responsEventMono -> responsePipeline(responsEventMono).subscribe(responseConsumer);
+  }
+
+  public Mono<ProxySIPResponse> responsePipeline(Mono<ResponseEvent> responseEventMono) {
+    return responseEventMono
+        .mapNotNull(sipProxyManager.findProxyTransaction())
+        .mapNotNull(sipProxyManager.processProxyTransaction());
+  }
 }

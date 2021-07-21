@@ -16,7 +16,6 @@ import gov.nist.javax.sip.header.ims.PathHeader;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.ListIterator;
 import java.util.StringTokenizer;
@@ -160,9 +159,7 @@ public class ProxyServerTransaction {
   }
 
   /** This is used to handle the special case with INVITE 200OK retransmissions */
-  protected void retransmit200()
-      throws InvalidStateException, DestinationUnreachableException, DhruvaException, IOException,
-          SipException, InvalidArgumentException {
+  protected void retransmit200() throws DhruvaException, SipException, InvalidArgumentException {
 
     if (response != null && ProxyUtils.getResponseClass(response) == 2) {
       // respond(response);

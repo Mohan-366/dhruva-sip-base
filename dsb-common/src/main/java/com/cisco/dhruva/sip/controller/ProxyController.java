@@ -579,11 +579,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     SIPRequest request = proxySIPRequest.getRequest();
 
+
     proxySIPRequest =
         incomingProxyRequestFixLr
             .andThen(
-                (proxyRequest) ->
-                    ourRequest = proxyRequest) // Set the controller ourRequest after lrfix
+                (proxyRequest) -> ourRequest = proxyRequest) // Set the controller ourRequest after lrfix
             .andThen(processIncomingProxyRequestMAddr)
             .andThen(processIncomingProxyRequestRoute)
             .apply(proxySIPRequest);
@@ -976,6 +976,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // TODO what to do here???
     /*response.setNormalizationState(
     DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
+  }
+
+  @Override
+  public ProxyFactoryInterface getProxyFactory() {
+    return proxyFactory;
   }
 
   //  @Override

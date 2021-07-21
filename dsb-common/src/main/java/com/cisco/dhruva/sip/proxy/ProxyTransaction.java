@@ -26,7 +26,9 @@ import javax.sip.address.URI;
 import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Response;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import reactor.core.publisher.Mono;
 
 /**
@@ -40,17 +42,17 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   public static final String NL = System.getProperty("line.separator");
 
   /** the vector of branches for proxied requests */
-  private Map branches = null;
+  @Setter @Getter private Map branches = null;
 
-  private boolean m_isForked = false;
+  @Getter @Setter private boolean m_isForked = false;
   private ClientTransaction m_originalClientTrans = null;
-  private ProxyClientTransaction m_originalProxyClientTrans = null;
+  @Getter @Setter private ProxyClientTransaction m_originalProxyClientTrans = null;
 
   /** the original transaction that initialized this proxy */
   private ProxyServerTransaction serverTransaction = null;
 
   /** best response received so far */
-  private ProxySIPResponse bestResponse = null;
+  @Setter private ProxySIPResponse bestResponse = null;
 
   /**
    * this indicates whether all branches have completed with a final response or timeout. More
@@ -276,7 +278,8 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    */
   protected ProxyServerTransaction createProxyServerTransaction(
       ServerTransaction serverTrans, SIPRequest request) {
-    return new ProxyServerTransaction(this, serverTrans, request);
+    return controller.getProxyFactory().proxyServerTransaction().apply(this, serverTrans, request);
+    // return new ProxyServerTransaction(this, serverTrans, request);
   }
 
   /**
@@ -851,7 +854,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       if (processVia()) {
         response.removeFirst(ViaHeader.NAME);
       }
-
+      // TODO if no more via left then drop the message
       proxyClientTransaction.gotResponse(proxySIPResponse);
 
       if (!proxyClientTransaction.isTimedOut())

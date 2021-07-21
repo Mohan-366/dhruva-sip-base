@@ -15,7 +15,7 @@ public class SipResponseHandler extends ResponseEventHandler {
   public void executeRun() {
     SpringApplicationContext.getAppContext()
         .getBean(ProxyService.class)
-        .proxyResponseHandler
+        .proxyResponseHandler()
         .accept(Mono.just(responseEvent));
   }
 }

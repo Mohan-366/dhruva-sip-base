@@ -1,15 +1,19 @@
 package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
+import com.cisco.dsb.util.QuadFunction;
+import com.cisco.dsb.util.TriFunction;
 import gov.nist.javax.sip.message.SIPRequest;
 import javax.sip.ServerTransaction;
 
-@FunctionalInterface
 public interface ProxyFactoryInterface {
-  ProxyStatelessTransaction createProxyTransaction(
-      ControllerInterface controller,
-      ProxyParamsInterface config,
-      ServerTransaction server,
-      SIPRequest request)
-      throws InternalProxyErrorException;
+  QuadFunction<
+          ControllerInterface,
+          ProxyParamsInterface,
+          ServerTransaction,
+          SIPRequest,
+          ProxyStatelessTransaction>
+      proxyTransaction();
+
+  TriFunction<ProxyTransaction, ServerTransaction, SIPRequest, ProxyServerTransaction>
+      proxyServerTransaction();
 }
