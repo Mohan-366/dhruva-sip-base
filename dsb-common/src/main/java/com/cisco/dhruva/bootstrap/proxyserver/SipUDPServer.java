@@ -5,9 +5,13 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.jain.JainStackInitializer;
+import com.cisco.dsb.sip.jain.JainStackLogger;
+import com.cisco.dsb.sip.proxy.ProxyStackFactory;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.util.log.DhruvaStackLogger;
 import java.net.InetAddress;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
@@ -41,13 +45,13 @@ public class SipUDPServer implements Server {
       CompletableFuture<SipStack> serverStartFuture) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
+
     try {
       SipStack sipStack =
           JainStackInitializer.getSimpleStack(
               sipFactory,
               sipFactory.getPathName(),
-              JainStackInitializer.createProxyStackProperties(
-                  RandomStringUtils.randomAlphanumeric(5)),
+              getStackProperties(),
               address.getHostAddress(),
               port,
               transportType.toString(),
@@ -56,5 +60,14 @@ public class SipUDPServer implements Server {
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e.getCause());
     }
+  }
+
+  private Properties getStackProperties() {
+
+    Properties stackProps =
+        ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
+    stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
+    stackProps.setProperty("gov.nist.javax.sip.SERVER_LOGGER", JainStackLogger.class.getName());
+    return stackProps;
   }
 }

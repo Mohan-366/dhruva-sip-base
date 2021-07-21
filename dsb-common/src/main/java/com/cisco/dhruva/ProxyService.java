@@ -69,6 +69,7 @@ public class ProxyService {
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
     DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
+
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
@@ -182,9 +183,9 @@ public class ProxyService {
 
   public Mono<ProxySIPRequest> requestPipeline(Mono<RequestEvent> requestEventMono) {
     return requestEventMono
-        .mapNotNull(sipProxyManager.validate)
         .mapNotNull(sipProxyManager.createProxySipRequest())
-        .mapNotNull(sipProxyManager.createProxyController());
+        .mapNotNull(sipProxyManager.createProxyController())
+        .mapNotNull(sipProxyManager.validateRequest);
   }
   // flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
   /** placeholder for processing the ResponseEvent from Stack */
