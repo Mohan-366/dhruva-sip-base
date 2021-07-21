@@ -1,16 +1,32 @@
 package com.cisco.dsb.common.messaging;
 
+import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
+import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
 import javax.sip.message.Request;
+import lombok.Getter;
+import lombok.Setter;
 
 public class ProxySIPRequest extends AbstractSipRequest {
+  @Getter @Setter private ProxyStatelessTransaction proxyStatelessTransaction;
+  @Getter @Setter private String network;
+  @Getter @Setter private SIPRequest clonedRequest;
+  @Getter @Setter private Location location;
+  @Getter @Setter private String outgoingNetwork = null;
+  @Getter @Setter private ProxyCookie cookie;
+  @Getter @Setter private ProxyParamsInterface params;
+  @Getter @Setter private boolean statefulClientTransaction;
+  @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
+  @Getter @Setter private URI lrFixUri = null;
+
   public ProxySIPRequest(
       ExecutionContext executionContext,
       SipProvider provider,
@@ -19,6 +35,10 @@ public class ProxySIPRequest extends AbstractSipRequest {
       throws IOException {
     super(executionContext, provider, transaction, request);
   }
+
+  //  public void proxy(ProxySIPRequest proxySIPRequest, Location location) {
+  //    (ProxyTransaction)this.proxyStatelessTransaction.getController().
+  //  }
 
   @Override
   public void sendSuccessResponse() throws IOException, ServletException {}

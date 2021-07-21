@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2020  by Cisco Systems, Inc.All Rights Reserved.
- * @author graivitt
  */
 
 package com.cisco.dhruva;
@@ -10,29 +9,26 @@ import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
 import com.cisco.dhruva.sip.proxy.ProxyPacketProcessor;
 import com.cisco.dhruva.sip.proxy.SipProxyManager;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
-import com.cisco.dsb.eventsink.RequestEventSink;
-import com.cisco.dsb.eventsink.ResponseEventSink;
 import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.util.SpringApplicationContext;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.sip.RequestEvent;
-import javax.sip.ResponseEvent;
-import javax.sip.SipStack;
+import javax.sip.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -54,22 +50,24 @@ public class ProxyService {
 
   @Autowired private ProxyPacketProcessor proxyPacketProcessor;
 
-  @Autowired RequestEventSink requestEventSink;
-
-  @Autowired ResponseEventSink responseEventSink;
-
   @Autowired ProxyControllerFactory proxyControllerFactory;
 
   @Autowired SipProxyManager sipProxyManager;
+
+  @Autowired DhruvaExecutorService dhruvaExecutorService;
+
   private static Consumer<ProxySIPRequest> requestConsumer;
   private static Consumer<ProxySIPResponse> responseConsumer;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
+  // Map of network and provider
+  private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
 
   @PostConstruct
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = dhruvaSIPConfigProperties.getListeningPoints();
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
 
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
@@ -88,6 +86,18 @@ public class ProxyService {
           (sipStack, throwable) -> {
             if (throwable == null) {
               proxyStackMap.putIfAbsent(sipListenPoint.getName(), sipStack);
+
+              SipProvider sipProvider = null;
+              Optional<SipProvider> optionalSipProvider = getSipProvider(sipStack, sipListenPoint);
+              if (optionalSipProvider.isPresent()) {
+                sipProvider = optionalSipProvider.get();
+              } else {
+                logger.error("sip provider is not set !!!");
+                throw new RuntimeException(
+                    "Unable to initialize stack properly, provider is not initialized!!");
+              }
+              sipProvidertoNetworkMap.put(sipProvider, networkConfig.getName());
+              DhruvaNetwork.setSipProvider(networkConfig.getName(), sipProvider);
               try {
                 logger.info("Server socket created for {}", sipStack);
                 controllerConfig.addListenInterface(
@@ -122,10 +132,32 @@ public class ProxyService {
     }
 
     listenPointFutures.forEach(CompletableFuture::join);
+
+    dhruvaExecutorService =
+        SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 2);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
     return Optional.ofNullable(proxyStackMap.get(sipListenPointName));
+  }
+
+  /*
+   This is with the assumption that per network has single stack and provider associated with it.
+  */
+  private Optional<SipProvider> getSipProvider(SipStack sipStack, SIPListenPoint sipListenPoint) {
+    Iterator sipProviders = sipStack.getSipProviders();
+    while (sipProviders.hasNext()) {
+      SipProvider sipProvider = (SipProvider) sipProviders.next();
+      ListeningPoint[] lps = sipProvider.getListeningPoints();
+      for (ListeningPoint lp : lps) {
+        if (sipListenPoint.getHostIPAddress().equals(lp.getIPAddress())
+            && sipListenPoint.getPort() == lp.getPort()) {
+          return Optional.of(sipProvider);
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   @PreDestroy
@@ -140,26 +172,30 @@ public class ProxyService {
    */
   public void register(
       Consumer<ProxySIPRequest> requestConsumer, Consumer<ProxySIPResponse> responseConsumer) {
-    this.requestConsumer = requestConsumer;
-    this.responseConsumer = responseConsumer;
+    ProxyService.requestConsumer = requestConsumer;
+    ProxyService.responseConsumer = responseConsumer;
   }
 
   /** placeholder for processing the RequestEvent from Stack */
-  public Consumer<Mono<RequestEvent>> proxyRequestHandler =
-      requestEventMono ->
-          requestEventMono
-              .mapNotNull(sipProxyManager.createProxySipRequest)
-              .mapNotNull(sipProxyManager.createProxyController)
-              .mapNotNull(sipProxyManager.validateRequest)
-              // .onErrorResume()
-              // .subscribeOn(Schedulers.fromExecutorService(StripedExecutorService))
-              .subscribe(requestConsumer);
+  public Consumer<Mono<RequestEvent>> proxyRequestHandler() {
+    return requestEventMono -> requestPipeline(requestEventMono).subscribe(requestConsumer);
+  }
+
+  public Mono<ProxySIPRequest> requestPipeline(Mono<RequestEvent> requestEventMono) {
+    return requestEventMono
+        .mapNotNull(sipProxyManager.createProxySipRequest())
+        .mapNotNull(sipProxyManager.createProxyController())
+        .mapNotNull(sipProxyManager.validateRequest);
+  }
   // flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
   /** placeholder for processing the ResponseEvent from Stack */
-  public Consumer<Mono<ResponseEvent>> proxyResponseHandler =
-      responsEventMono ->
-          responsEventMono
-              .mapNotNull(sipProxyManager.createProxySipResponse)
-              .mapNotNull(sipProxyManager.toProxyController)
-              .subscribe(responseConsumer);
+  public Consumer<Mono<ResponseEvent>> proxyResponseHandler() {
+    return responsEventMono -> responsePipeline(responsEventMono).subscribe(responseConsumer);
+  }
+
+  public Mono<ProxySIPResponse> responsePipeline(Mono<ResponseEvent> responseEventMono) {
+    return responseEventMono
+        .mapNotNull(sipProxyManager.findProxyTransaction())
+        .mapNotNull(sipProxyManager.processProxyTransaction());
+  }
 }

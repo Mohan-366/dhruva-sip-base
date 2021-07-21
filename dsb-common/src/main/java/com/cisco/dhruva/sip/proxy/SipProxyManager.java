@@ -1,5 +1,6 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
 import com.cisco.dsb.common.CommonContext;
@@ -21,17 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.sip.*;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
-import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.address.URI;
 import javax.sip.header.MaxForwardsHeader;
-import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,69 +40,134 @@ import org.springframework.stereotype.Service;
 @Service
 public class SipProxyManager {
 
-  @Autowired ProxyControllerFactory proxyControllerFactory;
+  private final Logger logger = DhruvaLoggerFactory.getLogger(SipProxyManager.class);
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(SipProxyManager.class);
+  @Autowired ProxyControllerFactory proxyControllerFactory;
+  @Autowired ControllerConfig config;
 
   /** Utility Function to Convert RequestEvent from JAIN Stack to ProxySIPRequest */
-  public Function<RequestEvent, ProxySIPRequest> createProxySipRequest =
-      (fluxRequestEvent) -> {
-        try {
-          return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
-              fluxRequestEvent.getRequest(),
-              (SipProvider) fluxRequestEvent.getSource(),
-              fluxRequestEvent.getServerTransaction(),
-              new ExecutionContext());
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-        return null;
-      };
+  public Function<RequestEvent, ProxySIPRequest> createProxySipRequest() {
+    return (fluxRequestEvent) -> {
+      try {
+        return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
+            fluxRequestEvent.getRequest(),
+            (SipProvider) fluxRequestEvent.getSource(),
+            fluxRequestEvent.getServerTransaction(),
+            new ExecutionContext());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return null;
+    };
+  }
 
   /** Utility Function to Convert RequestEvent from JAIN Stack to ProxySIPResponse */
-  public Function<ResponseEvent, ProxySIPResponse> createProxySipResponse =
-      (responseEvent) -> {
-        try {
-          return MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
-              responseEvent.getResponse(),
-              (SipProvider) responseEvent.getSource(),
-              responseEvent.getClientTransaction(),
-              new ExecutionContext());
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      };
+  public Function<ResponseEvent, ProxySIPResponse> createProxySipResponse() {
+    return (responseEvent) -> {
+      try {
+        return MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
+            responseEvent.getResponse(),
+            (SipProvider) responseEvent.getSource(),
+            responseEvent.getClientTransaction(),
+            new ExecutionContext());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
+
+  /**
+   * Process stray response based on IP:PORT present in Via header. Sends out using the network
+   * through which the corresponding request came in if found, else send out via default network
+   */
+  public Consumer<ProxySIPResponse> processStrayResponse() {
+    return proxySIPResponse -> {
+
+      /*if (config.doRecordRoute()) {
+
+          try {
+              setRecordRouteInterface(response);
+          } catch (DsException e) {
+              e.printStackTrace(); // To change body of catch statement use File | Settings | File
+              // Templates.
+          }
+      }
+
+      // check the top Via;
+      ViaHeader myVia;
+      myVia = proxySIPResponse.getResponse().getTopmostViaHeader();
+      if (myVia == null)
+          return;
+
+      // check the the top Via matches our proxy
+      if (myVia.getBranch() == null) { // we always insert branch
+          logger.info("Dropped stray response with bad Via");
+          return;
+      }
+
+      //TODO add condition to check if we are listening on a given host and port and transport
+
+      //ProxyUtils.removeTopVia(response);
+        proxySIPResponse.getResponse().removeFirst(ViaHeader.NAME);
+
+      ViaHeader via;
+      via = proxySIPResponse.getResponse().getTopmostViaHeader();
+      if (via == null) {
+          logger.error("Top via header is null. Return");
+          return;
+      }*/
+
+      // TODO need to maintain some table similar to connection table so that via can be processed
+      // and sent out on
+      // on that network.
+
+    };
+  }
 
   /**
    * PlaceHolder for creating ProxyController for New Requests or getting existing ProxyController
    * for that transaction
    */
-  public Function<ProxySIPRequest, ProxySIPRequest> createProxyController =
-      proxySIPRequest -> {
-        ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
-        if (serverTransaction == null
-            && !((SIPRequest) proxySIPRequest.getSIPMessage()).getMethod().equals(Request.ACK)) {
-          try {
-            serverTransaction =
-                proxySIPRequest.getProvider().getNewServerTransaction(proxySIPRequest.getRequest());
-            Response response =
-                JainSipHelper.getMessageFactory()
-                    .createResponse(Response.TRYING, proxySIPRequest.getRequest());
-            serverTransaction.sendResponse(response);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
-        ProxyController controller =
-            proxyControllerFactory
-                .proxyController()
-                .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
+  public Function<ProxySIPRequest, ProxySIPRequest> createProxyController() {
+    return proxySIPRequest -> {
+      ProxyController controller =
+          proxyControllerFactory
+              .proxyController()
+              .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
+      // TODO on RamG, add 100 Trying logic
+      proxySIPRequest = controller.onNewRequest(proxySIPRequest);
+      controller.setController(proxySIPRequest);
+      // find the request type and call appropriate method of controller???
+      return proxySIPRequest;
+    };
+  }
 
-        assert serverTransaction != null;
-        serverTransaction.setApplicationData(controller);
-        controller.setController(proxySIPRequest);
-        return proxySIPRequest;
-      };
+  public Function<ProxySIPRequest, ProxySIPRequest> processRequest() {
+    return proxySIPRequest -> {
+      // find the right method call of proxyController
+      ProxyController proxyController =
+          (ProxyController) proxySIPRequest.getProxyStatelessTransaction().getController();
+      return proxySIPRequest;
+    };
+  }
+
+  public Function<ResponseEvent, ProxySIPResponse> findProxyTransaction() {
+    return responseEvent -> {
+      // transaction will be provided by stack
+      ClientTransaction clientTransaction = responseEvent.getClientTransaction();
+
+      if (clientTransaction != null) {
+        ProxySIPResponse proxySIPResponse = createProxySipResponse().apply(responseEvent);
+        proxySIPResponse.setProxyTransaction(
+            (ProxyTransaction) clientTransaction.getApplicationData());
+        return proxySIPResponse;
+      } else {
+        // TODO stray response handling
+        // processStrayResponse().accept(proxySIPResponse);
+        return null;
+      }
+    };
+  }
 
   /** URI Scheme validation */
   private Predicate<String> unSupportedUriScheme =
@@ -182,15 +248,14 @@ public class SipProxyManager {
             try {
               logger.info(
                   "Received request has proxy unsupported features in Proxy-Require header: "
-                      + unsupportedHeaders.toString());
+                      + unsupportedHeaders);
               Response sipResponse =
                   JainSipHelper.getMessageFactory()
                       .createResponse(Response.BAD_EXTENSION, sipRequest);
               unsupportedHeaders.forEach(sipResponse::addHeader);
-              ((ProxyController) request.getContext().get(CommonContext.PROXY_CONTROLLER))
-                  .respond(sipResponse, request.getProvider(), request.getServerTransaction());
+              request.getProvider().sendResponse(sipResponse);
               return null;
-            } catch (ParseException e) {
+            } catch (ParseException | SipException e) {
               e.printStackTrace();
             }
           }
@@ -198,16 +263,30 @@ public class SipProxyManager {
         return request;
       };
 
-  /** placeholder for getting ProxyController for SIPResponse */
-  public Function<ProxySIPResponse, ProxySIPResponse> toProxyController =
-      proxySIPResponse -> {
-        // some proxy controller operations
-        ProxyController proxyController =
-            (ProxyController) proxySIPResponse.getClientTransaction().getApplicationData();
-        proxySIPResponse.getContext().set(CommonContext.PROXY_CONTROLLER, proxyController);
-        // we can access proxycontroller using clientTransaction, just to make it uniform across
-        // request and response
-        // keeping it in context
-        return proxySIPResponse;
-      };
+  /**
+   * This method calls appropriate ProxyTransaction methods to handle the response. Throws
+   * NullPointerException if the ProxySIPResponse is a stray Response, i.e without ClientTransaction
+   */
+  public Function<ProxySIPResponse, ProxySIPResponse> processProxyTransaction() {
+    return proxySIPResponse -> {
+      ProxyTransaction proxyTransaction = proxySIPResponse.getProxyTransaction();
+      // Is this check for null needed because if it's null this function will/should not be
+      // called
+      if (proxyTransaction != null) {
+        switch (proxySIPResponse.getResponseClass()) {
+          case 1:
+            proxyTransaction.provisionalResponse(proxySIPResponse);
+            break;
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+            proxyTransaction.finalResponse(proxySIPResponse);
+            break;
+        }
+      }
+      return proxySIPResponse.isToApplication() ? proxySIPResponse : null;
+    };
+  }
 }

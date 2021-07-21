@@ -21,7 +21,7 @@ public class TrunkService {
 
   SipServerLocatorService resolver;
 
-  public TrunkService(SipServerLocatorService resolver){
+  public TrunkService(SipServerLocatorService resolver) {
     this.resolver = resolver;
   }
 

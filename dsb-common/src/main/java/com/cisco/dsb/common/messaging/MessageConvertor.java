@@ -30,8 +30,8 @@ public class MessageConvertor {
     requireNonNull(context);
     String reqURI = null;
     String network = null;
-
     LogContext logContext = LogContext.newLogContext();
+
     return DhruvaSipRequestMessage.newBuilder()
         .withContext(context)
         .withPayload(message)

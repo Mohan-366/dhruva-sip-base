@@ -203,6 +203,40 @@ public final class SipUtils {
     return InetAddresses.isInetAddress(value);
   }
 
+  public static boolean isHostIPAddr(String host) {
+    if (host == null) {
+      return false;
+    }
+    char firstChar = host.charAt(0);
+    if (firstChar > '9' || firstChar < '0') {
+      return false;
+    }
+
+    int len = host.length();
+    int dotCount = 0;
+    for (int i = 1; i < len; i++) {
+      switch (host.charAt(i)) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          break;
+        case '.':
+          dotCount++;
+          break;
+        default:
+          return false;
+      }
+    }
+    return dotCount == 3;
+  }
+
   /* Determines User portion from requestURi */
   public static String getUserPortion(String reqUri) {
 

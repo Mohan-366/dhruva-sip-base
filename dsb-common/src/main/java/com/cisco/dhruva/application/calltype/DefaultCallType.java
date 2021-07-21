@@ -1,9 +1,11 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.sip.controller.ProxyController;
+import com.cisco.dhruva.sip.proxy.Location;
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.security.SecureRandom;
@@ -12,7 +14,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
-import javax.sip.SipException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -44,10 +45,14 @@ public class DefaultCallType implements CallType {
               proxySIPRequest -> {
                 logger.info("Sending to APP from leaf ,callid: " + proxySIPRequest.getCallId());
                 try {
-                  ((ProxyController)
-                          proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
-                      .proxyRequest(proxySIPRequest, null);
-                } catch (SipException exception) {
+                  ProxyController controller =
+                      (ProxyController)
+                          proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER);
+                  Location loc = new Location(proxySIPRequest.getRequest().getRequestURI());
+                  loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                  loc.setProcessRoute(true);
+                  controller.proxyRequest(proxySIPRequest, loc);
+                } catch (Exception exception) {
                   exception.printStackTrace();
                 }
               });
@@ -58,11 +63,7 @@ public class DefaultCallType implements CallType {
   public Consumer<Mono<ProxySIPResponse>> processResponse() {
     // pipeline for response
     return proxySIPResponseMono ->
-        proxySIPResponseMono.subscribe(
-            proxySIPResponse -> {
-              ((ProxyController) proxySIPResponse.getContext().get(CommonContext.PROXY_CONTROLLER))
-                  .proxyResponse(proxySIPResponse);
-            });
+        proxySIPResponseMono.subscribe(proxySIPResponse -> proxySIPResponse.proxy());
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> addHeaders =
@@ -80,8 +81,10 @@ public class DefaultCallType implements CallType {
                   p -> {
                     try {
                       logger.info("MRS lookup started, callID" + proxySIPRequest.getCallId());
-                      Thread.sleep(500);
-                      if (booleanRandom.nextBoolean()) {
+                      Thread.sleep(10);
+                      boolean succeed = true;
+                      // if (booleanRandom.nextBoolean()) {
+                      if (succeed) {
                         logger.info("MRS lookup succeeded, callID" + proxySIPRequest.getCallId());
                         return p;
                       } else {
@@ -89,7 +92,7 @@ public class DefaultCallType implements CallType {
                             "MRS lookup failed, callID" + proxySIPRequest.getCallId(),
                             " Rejecting the call");
                         ((ProxyController)
-                                proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER))
+                                proxySIPRequest.getProxyStatelessTransaction().getController())
                             .respond(404, proxySIPRequest);
                         return null;
                       }

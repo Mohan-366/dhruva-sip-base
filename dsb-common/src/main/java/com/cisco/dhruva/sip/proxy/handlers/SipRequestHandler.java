@@ -16,7 +16,7 @@ public class SipRequestHandler extends RequestEventHandler {
 
     SpringApplicationContext.getAppContext()
         .getBean(ProxyService.class)
-        .proxyRequestHandler
+        .proxyRequestHandler()
         .accept(Mono.just(requestEvent));
   }
 }

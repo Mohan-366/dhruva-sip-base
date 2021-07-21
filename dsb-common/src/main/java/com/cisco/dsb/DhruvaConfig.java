@@ -24,10 +24,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @ConditionalOnWebApplication
 @EnableAsync
+@EnableScheduling
 @DependsOn("dhruvaSIPConfigProperties")
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
@@ -75,7 +77,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     // copying?
     // Do not manage lifecycle here, ProxyEventSink does it
     return (StripedExecutorService)
-        monitoredExecutorProvider().newStripedExecutorService("call-event-executor");
+        monitoredExecutorProvider().newStripedExecutorService("proxy-event-executor");
   }
 
   @Bean

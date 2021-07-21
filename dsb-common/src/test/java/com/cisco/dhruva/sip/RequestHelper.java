@@ -1,9 +1,8 @@
 package com.cisco.dhruva.sip;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
-
-import javax.sip.message.Request;
 import java.text.ParseException;
+import javax.sip.message.Request;
 
 public class RequestHelper {
 
