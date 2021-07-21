@@ -297,13 +297,18 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
       // if 'attachExternalIP' toggle is enabled, pass hostIp
       // else pass actual Ip address
+      Optional<Transport> optionalTransport = Transport.getTypeFromInt(viaTransport);
+      Transport viaHeaderTransport = Transport.UDP;
+      if (optionalTransport.isPresent()) {
+        viaHeaderTransport = optionalTransport.get();
+      }
 
       via =
           JainSipHelper.getHeaderFactory()
               .createViaHeader(
                   com.cisco.dsb.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(listenIf),
                   listenIf.getPort(),
-                  Transport.getTypeFromInt(viaTransport).get().name(),
+                  viaHeaderTransport.name(),
                   branch);
 
       forceRequestSource(request, listenIf.getSourcePort(), listenIf.getSourceAddress());

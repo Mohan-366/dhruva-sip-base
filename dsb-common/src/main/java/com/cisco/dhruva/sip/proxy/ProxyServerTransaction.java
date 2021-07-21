@@ -137,8 +137,8 @@ public class ProxyServerTransaction {
       }
 
       // TODO DSB
-      serverTransaction.sendResponse(response);
-      // ProxySendMessage.sendResponse(serverTransaction, response);
+      // serverTransaction.sendResponse(response);
+      ProxySendMessage.sendResponse(serverTransaction, response);
 
       this.response = response;
 

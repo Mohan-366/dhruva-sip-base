@@ -204,22 +204,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .mapNotNull(fetchOutboundNetwork)
         .mapNotNull(proxyTransactionProcessRequest)
         .flatMap((proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest)));
-    //        .subscribe(
-    //            sentRequest -> {
-    //              this.onProxySuccess(
-    //                  this.proxyTransaction,
-    //                  sentRequest.getCookie(),
-    //                  sentRequest.getProxyClientTransaction());
-    //            },
-    //            err -> {
-    //              //TODO on Akshay, we need to send failure to other leg, via app?
-    //              this.onProxyFailure(
-    //                  this.proxyTransaction,
-    //                  proxySIPRequest.getCookie(),
-    //                  ControllerInterface.DESTINATION_UNREACHABLE,
-    //                  err.getMessage(),
-    //                  err);
-    //            });
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> processLocation =
@@ -251,14 +235,17 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         // For middialog requests , dhruva removes the top route header if it matches proxy
         // At that point it would have set the outgoing network based on matching route header.
         if (network != null) {
-          if (proxySIPRequest.getOutgoingNetwork() != null)
+          if (proxySIPRequest.getOutgoingNetwork() != null) {
             logger.info("setting outgoing network to ", network.getName());
-          proxySIPRequest.setOutgoingNetwork(network.getName());
+            proxySIPRequest.setOutgoingNetwork(network.getName());
+          }
         } else {
-          logger.warn("Could not find the network to set to the request");
-          // until then we need to fail the call.
-          sendFailureResponse(proxySIPRequest.getClonedRequest(), Response.SERVER_INTERNAL_ERROR);
-          return null;
+          if (proxySIPRequest.getOutgoingNetwork() == null) {
+            logger.warn("Could not find the network to set to the request");
+            // until then we need to fail the call.
+            sendFailureResponse(proxySIPRequest.getClonedRequest(), Response.SERVER_INTERNAL_ERROR);
+            return null;
+          }
         }
         return proxySIPRequest;
       };
@@ -327,18 +314,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               logger.error("Cannot set destination address in request", e);
             }
           }
-
-          // TODO DSB
-          //          String host = url.getMAddrParam() != null ? url.getMAddrParam() :
-          // url.getHost();
-          //          if (SipUtils.isHostIPAddr(host)) {
-          //            try {
-          //              bInfo.setRemoteAddress(host);
-          //              logger.info("Set Binding Info remote address to " + host);
-          //            } catch (Exception e) {
-          //              logger.error("Cannot set destination address in bindingInfo!", e);
-          //            }
-          //          }
 
           // added the if check for correct DNS SRV
           if (url.getPort() >= 0) {
@@ -427,7 +402,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         logger.info("Dhruva getting network from location");
         network = getNetworkFromLocation(location);
       }
-
       if (network == null) {
         logger.debug("Network not set on the location");
         network = location.getDefaultNetwork();
@@ -436,9 +410,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           logger.debug("No default network specified for this request");
         }
       }
-
       // If still network is null, get from top most route header if available
-
       Optional<DhruvaNetwork> optRouteNetwork = getNetworkFromMyRoute();
       if (optRouteNetwork.isPresent()) return optRouteNetwork.get();
     }
