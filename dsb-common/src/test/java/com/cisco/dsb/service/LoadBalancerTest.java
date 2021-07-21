@@ -68,7 +68,6 @@ public class LoadBalancerTest {
     callBased.setDomainsToTry(set);
 
     assertEquals(callBased.getServer(), list.get(result));
-
   }
 
   @Test(

@@ -17,11 +17,9 @@
 package com.cisco.dsb.loadbalancer;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.servergroups.DnsServerGroupUtil;
 import com.cisco.dsb.servergroups.ServerGroupElement;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -60,7 +58,6 @@ public abstract class LBBase implements RepositoryReceiverInterface {
     return lastTried;
   }
 
-
   /**
    * Gets the last server that was tried.
    *
@@ -93,7 +90,7 @@ public abstract class LBBase implements RepositoryReceiverInterface {
 
     if (domainsToTry == null) initializeDomains();
     if (domainsToTry.size() == 0) {
-           log.warn("No more routes remain");
+      log.warn("No more routes remain");
       return null;
     }
 
@@ -153,6 +150,4 @@ public abstract class LBBase implements RepositoryReceiverInterface {
    * @return a server group element
    */
   protected abstract ServerGroupElementInterface selectElement();
-
-
 }

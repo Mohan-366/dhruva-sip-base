@@ -413,7 +413,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         }
       }
       // If still network is null, get from top most route header if available
-      if(network == null ) {
+      if (network == null) {
         Optional<DhruvaNetwork> optRouteNetwork = getNetworkFromMyRoute();
         if (optRouteNetwork.isPresent()) return optRouteNetwork.get();
       }

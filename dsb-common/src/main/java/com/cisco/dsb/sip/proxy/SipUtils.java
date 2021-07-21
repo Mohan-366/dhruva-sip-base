@@ -202,7 +202,7 @@ public final class SipUtils {
   public static boolean isInetAddress(String value) {
     return InetAddresses.isInetAddress(value);
   }
-  
+
   public static boolean isHostIPAddr(String host) {
     if (host == null) {
       return false;
