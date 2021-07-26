@@ -23,8 +23,13 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
 
 public class DnsServerGroupUtilTest {
 
@@ -45,42 +50,50 @@ public class DnsServerGroupUtilTest {
     when(network.getName()).thenReturn("default");
 
     LocateSIPServersResponse locateSIPServersResponse =
-        new LocateSIPServersResponse(
-            Collections.singletonList(
-                new Hop(
-                    "webex.example.com", "2.2.2.2", Transport.TLS, 5061, 1, DNSRecordSource.DNS)),
-            null,
-            null,
-            null,
-            LocateSIPServersResponse.Type.HOSTNAME,
-            null);
+            new LocateSIPServersResponse(
+                    Collections.singletonList(
+                            new Hop(
+                                    "webex.example.com", "2.2.2.2", Transport.TLS, 5061, 1, DNSRecordSource.DNS)),
+                    null,
+                    null,
+                    null,
+                    LocateSIPServersResponse.Type.HOSTNAME,
+                    null);
     when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
+            .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(sipServerLocatorService);
-    Optional<ServerGroupInterface> group =
-        dnsServerGroupUtil.createDNSServerGroup(
-            "webex.example.com", network.toString(), Transport.TLS, SG.index_sgSgLbType_call_id);
-
-    Assert.assertTrue(group.isPresent());
-    ServerGroupInterface dnsServerGroup = group.get();
-
-    TreeSet<ServerGroupElementInterface> actualElementList = dnsServerGroup.getElements();
 
     TreeSet<ServerGroupElementInterface> expectedElementList = new TreeSet<>();
     DnsNextHop hop =
-        new DnsNextHop(
-            network.getName(),
-            "2.2.2.2",
-            5061,
-            Transport.TLS,
-            (maxDnsQValue - 1) / maxDnsPriority,
-            "webex.example.com");
-    expectedElementList.add(hop);
-    Assert.assertEquals(actualElementList, expectedElementList);
-  }
+            new DnsNextHop(
+                    network.getName(),
+                    "2.2.2.2",
+                    5061,
+                    Transport.TLS,
+                    (maxDnsQValue - 1) / maxDnsPriority,
+                    "webex.example.com");
 
-  DnsInjectionService dnsInjectionService = DnsInjectionService.memoryBackedCache();
-  protected static final Logger logger =
-      DhruvaLoggerFactory.getLogger(DnsServerGroupUtilTest.class);
+
+    expectedElementList.add(hop);
+
+
+    DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(sipServerLocatorService);
+    Mono<ServerGroupInterface> group =
+            dnsServerGroupUtil.createDNSServerGroup(
+                    "webex.example.com", network.toString(), Transport.TLS, SG.index_sgSgLbType_call_id);
+    group.subscribeOn(Schedulers.boundedElastic());
+
+
+
+    StepVerifier.create(group).assertNext(group1 -> {
+
+      assert group1 != null;
+
+      Assert.assertEquals(group1.getElements(), expectedElementList);
+
+    }).verifyComplete();
+
+
+
+  }
 }

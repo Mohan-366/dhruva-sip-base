@@ -108,31 +108,6 @@ public abstract class LBFactory {
       case VARKEY:
         lb = new LBHashBasedVariableKey();
         break;
-      case CUSTOM:
-        String lbStrType = null;
-        if (useDefaultCustom) lbStrType = getDefaultLBStrType();
-        else lbStrType = serverGroup.getStrLBType();
-        if (lbStrType == null)
-          throw new LBException("Cannot create custom load balancer.  Class name is null.");
-        if (customClasses == null) customClasses = new HashMap();
-        Class c = (Class) customClasses.get(lbStrType);
-        if (c == null) {
-          try {
-            // cache class so you don't have do to forName() every time
-            c = Class.forName(lbStrType);
-            customClasses.put(lbStrType, c);
-          } catch (Throwable e) {
-            throw new LBException(e.getMessage(), e);
-          }
-        }
-        try {
-          lb = (RepositoryReceiverInterface) c.newInstance();
-        } catch (Throwable e) {
-          throw new LBException(
-              "Unable to create load balancer from class '" + lbStrType + "': " + e.getMessage(),
-              e);
-        }
-        break;
       default:
         throw new LBException("Unknown lbtype: " + lbtype);
     }

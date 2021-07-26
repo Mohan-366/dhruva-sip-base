@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 public class DnsServerGroupUtil {
@@ -35,7 +37,7 @@ public class DnsServerGroupUtil {
 
   public DnsServerGroupUtil() {}
 
-  public Optional<ServerGroupInterface> createDNSServerGroup(
+  public Mono<ServerGroupInterface> createDNSServerGroup(
       String host, String network, Transport protocol, int lbType)
       throws ExecutionException, InterruptedException {
     // create DNS ServerGroup from from SRV, if SRV lookup fails then do A records lookup
@@ -58,18 +60,26 @@ public class DnsServerGroupUtil {
     DnsDestination dnsDestination = new DnsDestination(host, 0, transportType);
     CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse =
         locatorService.locateDestinationAsync(null, dnsDestination, null);
-    LocateSIPServersResponse response = locateSIPServersResponse.join();
 
-    List<Hop> hops = response.getHops();
-    if (hops == null || hops.isEmpty()) {
-      log.warn("dns resolution failed for host {}", host);
-      return Optional.empty();
-    }
+    Mono<LocateSIPServersResponse> locateSIPServersResponseMono =
+        Mono.fromFuture(locateSIPServersResponse);
 
-    Optional<Exception> ex = response.getDnsException();
-    if (ex.isPresent()) return Optional.empty();
+    Mono<ServerGroupInterface> serverGroupInterfaceMono = locateSIPServersResponseMono.
+            mapNotNull( response -> {
+                Optional<Exception> ex = response.getDnsException();
+                if (ex.isPresent()){
+                 return Mono.empty();
+                }
+              List<Hop> hops = response.getHops();
+              if (hops == null || hops.isEmpty()) {
+                log.warn("dns resolution failed for host {}", host);
+                return Mono.empty();
+              }
+                return  (response.getHops());
 
-    return Optional.ofNullable(getServerGroupFromHops(hops, network, host, protocol, lbType));
+    }).mapNotNull((hops) -> getServerGroupFromHops((List<Hop>) hops, network, host, protocol, lbType));
+
+    return serverGroupInterfaceMono;
   }
 
   private ServerGroupInterface getServerGroupFromHops(
