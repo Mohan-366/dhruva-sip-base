@@ -1,5 +1,6 @@
 package com.cisco.dsb.servergroups;
 
+import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.loadbalancer.ServerGroupInterface;
 import com.cisco.dsb.service.SipServerLocatorService;
@@ -11,7 +12,6 @@ import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.util.List;
-import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 public class DnsServerGroupUtil {
@@ -61,25 +60,26 @@ public class DnsServerGroupUtil {
     CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse =
         locatorService.locateDestinationAsync(null, dnsDestination, null);
 
-    Mono<LocateSIPServersResponse> locateSIPServersResponseMono =
-        Mono.fromFuture(locateSIPServersResponse);
+    return serverGroupInterfaceMono(locateSIPServersResponse, network, host, protocol, lbType);
+  }
 
-    Mono<ServerGroupInterface> serverGroupInterfaceMono = locateSIPServersResponseMono.
-            mapNotNull( response -> {
-                Optional<Exception> ex = response.getDnsException();
-                if (ex.isPresent()){
-                 return Mono.empty();
-                }
-              List<Hop> hops = response.getHops();
-              if (hops == null || hops.isEmpty()) {
-                log.warn("dns resolution failed for host {}", host);
-                return Mono.empty();
-              }
-                return  (response.getHops());
-
-    }).mapNotNull((hops) -> getServerGroupFromHops((List<Hop>) hops, network, host, protocol, lbType));
-
-    return serverGroupInterfaceMono;
+  private Mono<ServerGroupInterface> serverGroupInterfaceMono(
+      CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse,
+      String network,
+      String host,
+      Transport protocol,
+      int lbType) {
+    return Mono.fromFuture(locateSIPServersResponse)
+        .doOnError(err -> System.out.println(err))
+        .handle(
+            (response1, synchronousSink) -> {
+              if (response1.getDnsException().isPresent()) {
+                synchronousSink.error((response1.getDnsException().get()));
+              } else if (response1.getHops() == null) {
+                synchronousSink.error(new DhruvaException("Null / Empty hops"));
+              } else synchronousSink.next(response1.getHops());
+            })
+        .map((hops) -> getServerGroupFromHops((List<Hop>) hops, network, host, protocol, lbType));
   }
 
   private ServerGroupInterface getServerGroupFromHops(

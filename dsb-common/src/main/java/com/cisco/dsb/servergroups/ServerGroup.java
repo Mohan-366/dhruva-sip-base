@@ -36,12 +36,17 @@ public class ServerGroup extends DefaultServerGroup {
   // some private strings
   private static final String colon = ":";
 
+  //  public ServerGroup(String name, String network, TreeSet elements, int lbType, boolean pingOn)
+  // {
+  //    super(name, network, elements, lbType, pingOn);
+  //    this.wasAvailable = true;
+  //    this.toString();
+  //  }
   public ServerGroup(String name, String network, TreeSet elements, int lbType, boolean pingOn) {
     super(name, network, elements, lbType, pingOn);
     this.wasAvailable = true;
     this.toString();
   }
-
   /**
    * Overrides Object
    *

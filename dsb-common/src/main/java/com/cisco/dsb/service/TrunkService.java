@@ -10,9 +10,7 @@ import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -20,13 +18,15 @@ import reactor.core.publisher.Mono;
 public class TrunkService {
 
   SipServerLocatorService resolver;
+  LBFactory lbFactory;
 
-  public TrunkService(SipServerLocatorService resolver) {
+  @Autowired
+  public TrunkService(SipServerLocatorService resolver, LBFactory lbFactory) {
     this.resolver = resolver;
+    this.lbFactory = lbFactory;
   }
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
-
 
   public Mono<EndPoint> getElementMono(AbstractSipRequest request) {
 
@@ -35,33 +35,28 @@ public class TrunkService {
     logger.info("Dynamic Server Group to be created for  {} ", uri);
 
     try {
-
       DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(resolver);
-      Mono<ServerGroupInterface> serverGroupInterfaceOptional =
-              dnsServerGroupUtil.createDNSServerGroup(
-                      uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
+      Mono<ServerGroupInterface> serverGroupInterfaceMono =
+          dnsServerGroupUtil.createDNSServerGroup(
+              uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
 
-
-      return serverGroupInterfaceOptional.
-              mapNotNull(sg -> ( TrunkService.getLoadBalancer(uri, sg, request))).
-              mapNotNull(x -> x.getServer().getEndPoint());
-    }
-     catch (Exception e) {
-      e.printStackTrace();
+      return serverGroupInterfaceMono
+          .map(sg -> (getLoadBalancer(uri, sg, request)))
+          .map(x -> x.getServer().getEndPoint());
+    } catch (Exception e) {
+      logger.error("Exception in creating a server group " + e.getMessage());
     }
     return Mono.empty();
   }
 
-
-  public static LBInterface getLoadBalancer(String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
-
+  private  LBInterface getLoadBalancer(
+      String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
     try {
-       return LBFactory.createLoadBalancer(uri, sgi, request);
+      return lbFactory.createLoadBalancer(uri, sgi, request);
 
-    }catch(LBException ex) {
-      logger.error("exception while creating loadbalancer " + ex.getMessage());
+    } catch (LBException ex) {
+      logger.error("Exception while creating loadbalancer " + ex.getMessage());
     }
-      return null;
+    return null;
   }
-
 }

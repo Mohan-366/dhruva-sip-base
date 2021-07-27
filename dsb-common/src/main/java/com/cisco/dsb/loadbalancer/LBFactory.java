@@ -20,22 +20,18 @@ import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.servergroups.SG;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import java.util.HashMap;
+import org.springframework.stereotype.Component;
 
 /**
  * This factory creates a load balancer based on settings in the configuration or by loading a
  * specific named class.
  */
-public abstract class LBFactory {
+
+@Component
+public class LBFactory {
 
   private static final Logger log = DhruvaLoggerFactory.getLogger(LBFactory.class);
 
-  public static final String DEFAULT_TOKEN = SG.sgSgLbType_global;
-  public static final String REQUEST_URI_TOKEN = SG.sgSgLbType_request_uri;
-  public static final String HIGHESTQ_TOKEN = SG.sgSgLbType_highest_q;
-  public static final String CALLID_TOKEN = SG.sgSgLbType_call_id;
-  public static final String TO_TOKEN = SG.sgSgLbType_to_uri;
-  public static final String WEIGHT_TOKEN = SG.sgSgLbType_weight;
 
   public static final int GLOBAL = SG.index_sgSgLbType_global;
   public static final int REQUEST_URI = SG.index_sgSgLbType_request_uri;
@@ -47,14 +43,10 @@ public abstract class LBFactory {
   public static final int VARKEY = 999; /* internal lb type */
 
   public static final int CUSTOM = -1;
-  public static int DEFAULT_TRIES = SG.sgSgElementRetriesDefault;
-  public static int SGE_UDP_TRIES = DEFAULT_TRIES;
-  public static int SGE_TCP_TRIES = 1;
-  public static int SGE_TLS_TRIES = 1;
+
   private static int DEFAULT_LB_TYPE =
       SG.getValidValueAsInt(SG.sgSgLbType, SG.dsSgGlobalSelectionTypeDefault);
-  private static String DEFAULT_LB_STR_TYPE = null;
-  private static HashMap customClasses = null;
+
 
   /**
    * <p>Creates a <code>LBInterface</code> based on settings in the
@@ -70,7 +62,7 @@ public abstract class LBFactory {
    * @throws LBException
    * @throws NonExistantServerGroupException
    */
-  public static LBInterface createLoadBalancer(
+  public  LBInterface createLoadBalancer(
       String serverGroupName, ServerGroupInterface serverGroup, AbstractSipRequest request)
       throws LBException {
 
@@ -78,13 +70,11 @@ public abstract class LBFactory {
       throw new LBException(
           "Cannot create load balancer.  Server group " + serverGroupName + " not found.");
     RepositoryReceiverInterface lb = null;
-    boolean useDefaultCustom = false;
     int lbtype = serverGroup.getLBType();
 
     if (lbtype == GLOBAL) {
       lbtype = getDefaultLBType();
       log.info("Default lbtype is " + lbtype + "(" + getLBTypeAsString(lbtype) + ")");
-      useDefaultCustom = (lbtype == CUSTOM);
     }
     switch (lbtype) {
       case REQUEST_URI:
@@ -108,6 +98,7 @@ public abstract class LBFactory {
       case VARKEY:
         lb = new LBHashBasedVariableKey();
         break;
+
       default:
         throw new LBException("Unknown lbtype: " + lbtype);
     }
@@ -115,24 +106,6 @@ public abstract class LBFactory {
     return lb;
   }
 
-  /**
-   * Sets the global load balancing type.
-   *
-   * @param lbtype the load balancing type.
-   */
-  public static synchronized void setDefaultLBType(int lbtype) {
-    DEFAULT_LB_TYPE = lbtype;
-  }
-
-  /**
-   * Sets the global load balancing type.
-   *
-   * @param lbtype fully qualified class name of the load balancing type.
-   */
-  public static synchronized void setDefaultLBType(String lbtype) {
-    DEFAULT_LB_STR_TYPE = lbtype;
-    DEFAULT_LB_TYPE = CUSTOM;
-  }
 
   /**
    * Gets the global load balancing type.
@@ -143,20 +116,7 @@ public abstract class LBFactory {
     return DEFAULT_LB_TYPE;
   }
 
-  /**
-   * Gets the global load balancing type.
-   *
-   * @return the fully qualified class name of the load balancing type.
-   */
-  public static synchronized String getDefaultLBStrType() {
-    return DEFAULT_LB_STR_TYPE;
-  }
 
-  public static int getLBTypeAsInt(String lbtype) {
-    int i = SG.getValidValueAsInt(SG.sgSgLbType, lbtype);
-    if (i == -1) i = CUSTOM;
-    return i;
-  }
 
   public static String getLBTypeAsString(int index) {
     return SG.getValidValueAsString(SG.sgSgLbType, index);
