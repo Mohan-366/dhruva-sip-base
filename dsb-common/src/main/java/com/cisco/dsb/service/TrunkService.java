@@ -49,7 +49,7 @@ public class TrunkService {
     return Mono.empty();
   }
 
-  private  LBInterface getLoadBalancer(
+  private LBInterface getLoadBalancer(
       String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
     try {
       return lbFactory.createLoadBalancer(uri, sgi, request);

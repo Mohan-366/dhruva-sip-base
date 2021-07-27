@@ -26,12 +26,10 @@ import org.springframework.stereotype.Component;
  * This factory creates a load balancer based on settings in the configuration or by loading a
  * specific named class.
  */
-
 @Component
 public class LBFactory {
 
   private static final Logger log = DhruvaLoggerFactory.getLogger(LBFactory.class);
-
 
   public static final int GLOBAL = SG.index_sgSgLbType_global;
   public static final int REQUEST_URI = SG.index_sgSgLbType_request_uri;
@@ -47,7 +45,6 @@ public class LBFactory {
   private static int DEFAULT_LB_TYPE =
       SG.getValidValueAsInt(SG.sgSgLbType, SG.dsSgGlobalSelectionTypeDefault);
 
-
   /**
    * <p>Creates a <code>LBInterface</code> based on settings in the
    * <code>LoadBalancerConfigInterface</code>. Applications should maintain a
@@ -62,7 +59,7 @@ public class LBFactory {
    * @throws LBException
    * @throws NonExistantServerGroupException
    */
-  public  LBInterface createLoadBalancer(
+  public LBInterface createLoadBalancer(
       String serverGroupName, ServerGroupInterface serverGroup, AbstractSipRequest request)
       throws LBException {
 
@@ -106,7 +103,6 @@ public class LBFactory {
     return lb;
   }
 
-
   /**
    * Gets the global load balancing type.
    *
@@ -115,8 +111,6 @@ public class LBFactory {
   public static synchronized int getDefaultLBType() {
     return DEFAULT_LB_TYPE;
   }
-
-
 
   public static String getLBTypeAsString(int index) {
     return SG.getValidValueAsString(SG.sgSgLbType, index);
