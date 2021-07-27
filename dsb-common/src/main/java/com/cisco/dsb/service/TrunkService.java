@@ -41,8 +41,8 @@ public class TrunkService {
               uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
 
       return serverGroupInterfaceMono
-          .map(sg -> (getLoadBalancer(uri, sg, request)))
-          .map(x -> x.getServer().getEndPoint());
+          .mapNotNull(sg -> (getLoadBalancer(uri, sg, request)))
+          .mapNotNull(x -> x.getServer().getEndPoint());
     } catch (Exception e) {
       logger.error("Exception in creating a server group " + e.getMessage());
     }
