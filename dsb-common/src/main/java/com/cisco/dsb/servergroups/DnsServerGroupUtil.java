@@ -70,16 +70,15 @@ public class DnsServerGroupUtil {
       Transport protocol,
       int lbType) {
     return Mono.fromFuture(locateSIPServersResponse)
-        .doOnError(err -> System.out.println(err))
         .handle(
-            (response1, synchronousSink) -> {
-              if (response1.getDnsException().isPresent()) {
-                synchronousSink.error((response1.getDnsException().get()));
-              } else if (response1.getHops() == null) {
+            (response, synchronousSink) -> {
+              if (response.getDnsException().isPresent()) {
+                synchronousSink.error((response.getDnsException().get()));
+              } else if (response.getHops() == null  && response.getHops().isEmpty()) {
                 synchronousSink.error(new DhruvaException("Null / Empty hops"));
-              } else synchronousSink.next(response1.getHops());
+              } else synchronousSink.next(response.getHops());
             })
-        .map((hops) -> getServerGroupFromHops((List<Hop>) hops, network, host, protocol, lbType));
+        .mapNotNull((hops) -> getServerGroupFromHops((List<Hop>) hops, network, host, protocol, lbType));
   }
 
   private ServerGroupInterface getServerGroupFromHops(
