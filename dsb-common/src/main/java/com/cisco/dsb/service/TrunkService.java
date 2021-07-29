@@ -17,8 +17,9 @@ import reactor.core.publisher.Mono;
 @Service
 public class TrunkService {
 
-  SipServerLocatorService resolver;
-  LBFactory lbFactory;
+  private SipServerLocatorService resolver;
+  private LBFactory lbFactory;
+  DnsServerGroupUtil dnsServerGroupUtil;
 
   @Autowired
   public TrunkService(SipServerLocatorService resolver, LBFactory lbFactory) {
@@ -34,29 +35,27 @@ public class TrunkService {
     String uri = SipUtils.getHostPortion(reqUri);
     logger.info("Dynamic Server Group to be created for  {} ", uri);
 
-    try {
-      DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(resolver);
-      Mono<ServerGroupInterface> serverGroupInterfaceMono =
-          dnsServerGroupUtil.createDNSServerGroup(
-              uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
+    return serverGroupInterfaceMono(request)
+        .mapNotNull(sg -> (getLoadBalancer(uri, sg, request)))
+        .switchIfEmpty(Mono.error(new LBException("Not able to load balance")))
+        .mapNotNull(x -> x.getServer().getEndPoint());
+  }
 
-      return serverGroupInterfaceMono
-          .mapNotNull(sg -> (getLoadBalancer(uri, sg, request)))
-          .mapNotNull(x -> x.getServer().getEndPoint());
-    } catch (Exception e) {
-      logger.error("Exception in creating a server group " + e.getMessage());
-    }
-    return Mono.empty();
+  public Mono<ServerGroupInterface> serverGroupInterfaceMono(AbstractSipRequest request) {
+    String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
+    String uri = SipUtils.getHostPortion(reqUri);
+    dnsServerGroupUtil = new DnsServerGroupUtil(resolver);
+    return dnsServerGroupUtil.createDNSServerGroup(
+        uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
   }
 
   private LBInterface getLoadBalancer(
       String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
     try {
       return lbFactory.createLoadBalancer(uri, sgi, request);
-
     } catch (LBException ex) {
       logger.error("Exception while creating loadbalancer " + ex.getMessage());
+      return null;
     }
-    return null;
   }
 }

@@ -21,11 +21,10 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import javax.sip.address.URI;
 import org.mockito.Mockito;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -40,8 +39,8 @@ public class TrunkServiceTest {
   private SipServerLocatorService sipServerLocatorService;
   private LocateSIPServersResponse locateSIPServersResponse;
 
-  @BeforeClass
-  void initSetUp() throws ExecutionException, InterruptedException {
+  @BeforeTest
+  void initSetUp() {
     network = mock(DhruvaNetwork.class);
     sipListenPoint = mock(SIPListenPoint.class);
     when(sipListenPoint.getHostIPAddress()).thenReturn("1.2.3.4");
@@ -67,7 +66,7 @@ public class TrunkServiceTest {
   }
 
   @Test
-  public void testCreateDnsServerGroup() throws ExecutionException, InterruptedException {
+  public void testCreateDnsServerGroup() {
 
     when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
@@ -100,7 +99,10 @@ public class TrunkServiceTest {
   }
 
   @Test
-  public void testCreateDnsErrorHandling() throws ExecutionException, InterruptedException {
+  public void testCreateDnsErrorHandling() {
+
+    when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     LocateSIPServersResponse locateSIPServersResponseMock = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponseMock.getDnsException())
@@ -120,6 +122,9 @@ public class TrunkServiceTest {
 
   @Test
   public void getElementMonoTest() {
+
+    when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     AbstractSipRequest message = mock(AbstractSipRequest.class);
     SIPRequest request = mock(SIPRequest.class);
@@ -143,5 +148,56 @@ public class TrunkServiceTest {
               assert group1.getProtocol().getValue() == Transport.TLS.getValue();
             })
         .verifyComplete();
+  }
+
+  @Test
+  public void getElementMonoOnErrorLBTest() throws LBException {
+    when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
+
+    AbstractSipRequest message = mock(AbstractSipRequest.class);
+    SIPRequest request = mock(SIPRequest.class);
+    URI uri = mock(URI.class);
+    Mockito.when(message.getCallId()).thenReturn("1-123456@127.0.0.1");
+
+    Mockito.when(message.getSIPMessage()).thenReturn(request);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI()).thenReturn(uri);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI().toString())
+        .thenReturn("sip:hello@webex.example.com");
+    LBFactory lbf = mock(LBFactory.class);
+
+    when(lbf.createLoadBalancer(any(), any(), any())).thenThrow(new LBException(""));
+
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf);
+
+    StepVerifier.create(ts.getElementMono(message))
+        .expectErrorMatches(throwable -> throwable instanceof LBException)
+        .verify();
+  }
+
+  @Test
+  public void getElementMonoOnError() {
+    LocateSIPServersResponse locateSIPServersResponseMock = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponseMock.getDnsException())
+        .thenReturn(Optional.of(new DnsException("DNS Exception")));
+    when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponseMock));
+
+    AbstractSipRequest message = mock(AbstractSipRequest.class);
+    SIPRequest request = mock(SIPRequest.class);
+    URI uri = mock(URI.class);
+    Mockito.when(message.getCallId()).thenReturn("1-123456@127.0.0.1");
+
+    Mockito.when(message.getSIPMessage()).thenReturn(request);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI()).thenReturn(uri);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI().toString())
+        .thenReturn("sip:hello@webex.example.com");
+
+    LBFactory lbf = mock(LBFactory.class);
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf);
+
+    StepVerifier.create(ts.getElementMono(message))
+        .expectErrorMatches(throwable -> throwable instanceof DnsException)
+        .verify();
   }
 }

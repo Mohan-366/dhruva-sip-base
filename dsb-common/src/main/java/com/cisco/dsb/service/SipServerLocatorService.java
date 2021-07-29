@@ -53,8 +53,7 @@ public class SipServerLocatorService {
   }
 
   public CompletableFuture<LocateSIPServersResponse> locateDestinationAsync(
-      User user, SipDestination sipDestination, String callId)
-      throws ExecutionException, InterruptedException {
+      User user, SipDestination sipDestination, String callId) {
     final String name = sipDestination.getAddress();
     final LocateSIPServerTransportType transportLookupType =
         sipDestination.getTransportLookupType();
