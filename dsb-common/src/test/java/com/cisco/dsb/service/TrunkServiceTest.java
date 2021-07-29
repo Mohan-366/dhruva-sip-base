@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.sip.address.URI;
 import org.mockito.Mockito;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -39,7 +39,7 @@ public class TrunkServiceTest {
   private SipServerLocatorService sipServerLocatorService;
   private LocateSIPServersResponse locateSIPServersResponse;
 
-  @BeforeTest
+  @BeforeClass
   void initSetUp() {
     network = mock(DhruvaNetwork.class);
     sipListenPoint = mock(SIPListenPoint.class);
