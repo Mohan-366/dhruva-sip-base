@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 /** An interface that can be used by any class which wants to store a server group repository. */
 @FunctionalInterface
-public interface LBRepositoryHolder {
+public interface StaticServersRepositoryHolder {
 
   /** Retrieve a hashmap containing the current server group repository. */
   HashMap<String, AbstractServerGroup> getServerGroups();
