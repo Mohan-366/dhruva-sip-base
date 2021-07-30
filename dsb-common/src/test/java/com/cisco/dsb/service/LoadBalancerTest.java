@@ -17,11 +17,6 @@ import org.testng.annotations.Test;
 
 public class LoadBalancerTest {
   protected static final Logger logger = DhruvaLoggerFactory.getLogger(LoadBalancerTest.class);
-  static List[] names = new ArrayList[300];
-  static String[] arr = new String[674];
-  static String[] loc = new String[201];
-
-  static int i = 0;
 
   @DataProvider(name = "dataProvider")
   public Object[][] dataProviders() {
