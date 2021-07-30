@@ -9,7 +9,6 @@
  */
 package com.cisco.dsb.servergroups;
 
-import com.cisco.dsb.loadbalancer.LBFactory;
 import java.util.*;
 
 /**
@@ -87,7 +86,7 @@ public class DefaultServerGroup extends AbstractServerGroup {
     String value = null;
     HashMap elementMap = new HashMap();
     elementMap.put(SG.sgSgName, name);
-    elementMap.put(SG.sgSgLbType, LBFactory.getLBTypeAsString(lbType));
+    // elementMap.put(SG.sgSgLbType, LBFactory.getLBTypeAsString(lbType));
     // MIGRATION
     value = elementMap.toString();
 
