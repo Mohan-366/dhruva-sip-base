@@ -1,25 +1,7 @@
 package com.cisco.dsb.servergroups;
 
-/*
- * Copyright (c) 2001-2002, 2003-2005 by cisco Systems, Inc.
- * All rights reserved.
- */
-// FILENAME: $RCSfile: ServerGroup.java,v $
-//
-// MODULE:  lb
-//
-// COPYRIGHT:
-// ============== copyright 2000 dynamicsoft Inc. =================
-// ==================== all rights reserved =======================
-//
-// MODIFICATIONS:
-//
-//
-//////////////////////////////////////////////////////////////////////////////
-
-// import com.cisco.dhruva.config.sip.RE;
-
-import com.cisco.dsb.util.log.Trace;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import java.util.HashMap;
 import java.util.TreeSet;
 
@@ -32,18 +14,25 @@ import java.util.TreeSet;
  */
 public class ServerGroup extends DefaultServerGroup {
 
-  private static final Trace Log = Trace.getTrace(ServerGroup.class.getName());
+  private static final Logger logger = DhruvaLoggerFactory.getLogger(ServerGroup.class);
   // some private strings
   private static final String colon = ":";
 
-  //  public ServerGroup(String name, String network, TreeSet elements, int lbType, boolean pingOn)
-  // {
-  //    super(name, network, elements, lbType, pingOn);
-  //    this.wasAvailable = true;
-  //    this.toString();
-  //  }
   public ServerGroup(String name, String network, TreeSet elements, int lbType, boolean pingOn) {
     super(name, network, elements, lbType, pingOn);
+    this.wasAvailable = true;
+    // this.isAvailable()
+    this.toString();
+  }
+
+  public ServerGroup(String name, String network, TreeSet elements, String lbType, boolean pingOn) {
+    super(name, network, elements, lbType, pingOn);
+    this.wasAvailable = true;
+    this.toString();
+  }
+
+  public ServerGroup(String name, String network, String lbType, boolean pingOn) {
+    super(name, network, lbType, pingOn);
     this.wasAvailable = true;
     this.toString();
   }

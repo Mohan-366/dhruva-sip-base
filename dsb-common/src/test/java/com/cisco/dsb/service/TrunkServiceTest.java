@@ -3,13 +3,12 @@ package com.cisco.dsb.service;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertNotEquals;
 
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.loadbalancer.*;
-import com.cisco.dsb.servergroups.DnsNextHop;
-import com.cisco.dsb.servergroups.DnsServerGroupUtil;
-import com.cisco.dsb.servergroups.SG;
+import com.cisco.dsb.servergroups.*;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.dto.Hop;
 import com.cisco.dsb.sip.enums.DNSRecordSource;
@@ -17,11 +16,10 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.message.SIPRequest;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.address.URI;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -32,6 +30,7 @@ import reactor.test.StepVerifier;
 
 public class TrunkServiceTest {
 
+  private @Mock StaticServerGroupUtil staticServerGroupUtil;
   private float maxDnsPriority = 65535f;
   private int maxDnsQValue = 65536;
   private DhruvaNetwork network;
@@ -137,7 +136,9 @@ public class TrunkServiceTest {
         .thenReturn("sip:hello@webex.example.com");
     LBFactory lbf = new LBFactory();
 
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf);
+    staticServerGroupUtil = mock(StaticServerGroupUtil.class);
+    when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
     StepVerifier.create(ts.getElementMono(message))
         .assertNext(
@@ -168,7 +169,9 @@ public class TrunkServiceTest {
 
     when(lbf.createLoadBalancer(any(), any(), any())).thenThrow(new LBException(""));
 
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf);
+    staticServerGroupUtil = mock(StaticServerGroupUtil.class);
+    when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
     StepVerifier.create(ts.getElementMono(message))
         .expectErrorMatches(throwable -> throwable instanceof LBException)
@@ -194,10 +197,87 @@ public class TrunkServiceTest {
         .thenReturn("sip:hello@webex.example.com");
 
     LBFactory lbf = mock(LBFactory.class);
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf);
+    staticServerGroupUtil = mock(StaticServerGroupUtil.class);
+    when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
+
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
     StepVerifier.create(ts.getElementMono(message))
         .expectErrorMatches(throwable -> throwable instanceof DnsException)
         .verify();
+  }
+
+  @Test
+  public void getElementStaticMonoTest() {
+
+    AbstractSipRequest message = mock(AbstractSipRequest.class);
+    SIPRequest request = mock(SIPRequest.class);
+    URI uri = mock(URI.class);
+    Mockito.when(message.getCallId()).thenReturn("1-123456@127.0.0.1");
+
+    Mockito.when(message.getSIPMessage()).thenReturn(request);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI()).thenReturn(uri);
+    Mockito.when(((SIPRequest) message.getSIPMessage()).getRequestURI().toString())
+        .thenReturn("sip:hello@testSG1");
+    LBFactory lbf = new LBFactory();
+
+    // static server Mocking
+    AbstractNextHop anh1 =
+        new DefaultNextHop("testNw", "1.1.1.1", 0001, Transport.UDP, 0.9f, "testSG1");
+
+    TreeSet<ServerGroupElementInterface> set = new TreeSet<>();
+    set.add(anh1);
+    ServerGroupInterface serverGroup = mock(ServerGroupInterface.class);
+    Mockito.when(serverGroup.getElements()).thenReturn(set);
+
+    staticServerGroupUtil = mock(StaticServerGroupUtil.class);
+    when(staticServerGroupUtil.getServerGroup(any())).thenReturn(serverGroup);
+
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+
+    StepVerifier.create(ts.getElementMono(message))
+        .assertNext(
+            group1 -> {
+              assert group1 != null;
+              assert group1.getHost() == "1.1.1.1";
+              assert group1.getPort() == 0001;
+              assert group1.getProtocol().getValue() == Transport.UDP.getValue();
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  void getNextElementTest() throws LBException {
+
+    LBCallID callBased;
+    callBased = new LBCallID();
+
+    // create multiple Server Group Elements
+    AbstractNextHop anh1 =
+        new DefaultNextHop("testNw", "testHost", 0001, Transport.UDP, 0.9f, "testSG1");
+    AbstractNextHop anh2 =
+        new DefaultNextHop("testNw", "testHost", 0002, Transport.UDP, 0.9f, "testSG2");
+
+    TreeSet<ServerGroupElementInterface> set = new TreeSet<ServerGroupElementInterface>();
+    set.add(anh1);
+    set.add(anh2);
+
+    List<ServerGroupElementInterface> list = new ArrayList<ServerGroupElementInterface>();
+    list.addAll(set);
+
+    ServerGroupInterface serverGroup = mock(ServerGroupInterface.class);
+    Mockito.when(serverGroup.getElements()).thenReturn(set);
+
+    AbstractSipRequest message = mock(AbstractSipRequest.class);
+    Mockito.when(message.getCallId()).thenReturn("1-123456@127.0.0.1");
+
+    callBased.setServerInfo("SG2", serverGroup, message);
+    callBased.setDomainsToTry(set);
+
+    LBFactory lbf = mock(LBFactory.class);
+
+    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+
+    assertNotEquals(ts.getNextElement(callBased), ts.getNextElement(callBased));
   }
 }

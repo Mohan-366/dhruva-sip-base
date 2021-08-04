@@ -4,14 +4,15 @@ import com.cisco.dsb.sip.enums.DNSRecordSource;
 import com.cisco.dsb.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
 public class Hop {
-  private String hostname;
-  private final String host;
-  private int port = -1;
-  private final Transport transport;
-  private final Integer priority;
-  private DNSRecordSource source;
+  @Getter private String hostname;
+  @Getter private final String host;
+  @Getter private int port = -1;
+  @Getter private final Transport transport;
+  @Getter private final Integer priority;
+  @Getter private DNSRecordSource source;
 
   @JsonCreator
   public Hop(
@@ -27,36 +28,6 @@ public class Hop {
     this.port = port;
     this.priority = priority;
     this.source = source;
-  }
-
-  /** Returns the host name. */
-  public String getHostname() {
-    return hostname;
-  }
-
-  /** Returns the host IP address. */
-  public String getHost() {
-    return host;
-  }
-
-  /** Returns the transport for this hop. */
-  public Transport getTransport() {
-    return transport;
-  }
-
-  /** Returns the port for this hop. */
-  public int getPort() {
-    return port;
-  }
-
-  /** Returns the priority for this hop */
-  public Integer getPriority() {
-    return priority;
-  }
-
-  /** Returns the source for this DNS record (real DNS or injected). */
-  public DNSRecordSource getSource() {
-    return source;
   }
 
   @Override

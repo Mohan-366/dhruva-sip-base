@@ -2,6 +2,7 @@ package com.cisco.dsb.config.sip;
 
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.bean.SIPProxy;
+import com.cisco.dsb.sip.stack.dto.StaticServer;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.JsonUtilFactory;
@@ -20,6 +21,8 @@ import org.springframework.core.env.Environment;
 public class DhruvaSIPConfigProperties {
 
   public static final String SIP_LISTEN_POINTS = "sipListenPoints";
+
+  public static final String SIP_SERVER_GROUPS = "sipServerGroups";
 
   public static final String SIP_PROXY = "sipProxy";
 
@@ -144,6 +147,43 @@ public class DhruvaSIPConfigProperties {
     listenPoints.add(udpListenPoint);
 
     return listenPoints;
+  }
+
+  public List<StaticServer> getServerGroups() {
+
+    String configuredServerGroups = env.getProperty(SIP_SERVER_GROUPS);
+
+    List<StaticServer> sipServerGroups;
+
+    if (configuredServerGroups != null) {
+      try {
+        sipServerGroups =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredServerGroups, StaticServer[].class));
+      } catch (Exception e) {
+        // TODO should we generate an Alarm
+        logger.error(
+            "Error converting JSON ServerGroup configuration provided in the environment", e);
+        return getDefaultServerGroups();
+      }
+    } else {
+      sipServerGroups = getDefaultServerGroups();
+    }
+    logger.info("Sip ServerGroup from the {} configuration {}", SIP_SERVER_GROUPS, sipServerGroups);
+
+    return sipServerGroups;
+  }
+
+  private List<StaticServer> getDefaultServerGroups() {
+
+    List<StaticServer> serverArrayList = new ArrayList<>();
+
+    StaticServer serverGroup = StaticServer.builder().build();
+
+    serverArrayList.add(serverGroup);
+
+    return serverArrayList;
   }
 
   private SIPProxy getSIPProxy() {

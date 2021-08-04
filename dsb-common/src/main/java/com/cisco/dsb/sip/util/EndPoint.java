@@ -10,6 +10,7 @@ import lombok.*;
  */
 @Getter
 @NoArgsConstructor
+@ToString
 public class EndPoint implements Cloneable {
 
   private static final Trace Log = Trace.getTrace(EndPoint.class.getName());
@@ -26,9 +27,9 @@ public class EndPoint implements Cloneable {
   /* The protocol for this end point */
   protected Transport protocol = Transport.UDP;
 
-  @ToString.Include private String key = null;
-  private String _intern = null;
-  private int hashCode = -1;
+  @ToString.Exclude private String key = null;
+  @ToString.Exclude private String _intern = null;
+  @ToString.Exclude private int hashCode = -1;
 
   /**
    * Creates an EndPoint object from the specified network, host, protocol, port number. Note that

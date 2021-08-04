@@ -10,6 +10,7 @@
 package com.cisco.dsb.servergroups;
 
 import java.util.*;
+import org.springframework.stereotype.Component;
 
 /**
  * This class servers as a superclass for all types of server group repositories. Because it is a
@@ -17,15 +18,13 @@ import java.util.*;
  * members, adding and removing Server Groups, and creating a copy of an instance while preserving
  * the internal reference to some data members.
  */
-public abstract class AbstractServerGroupRepository {
+@Component
+public class AbstractServerGroupRepository {
 
-  private HashMap serverGroups;
-
-  private HashMap serverElementMap;
+  private HashMap<String, AbstractServerGroup> serverGroups;
 
   protected AbstractServerGroupRepository() {
     serverGroups = new HashMap();
-    serverElementMap = new HashMap();
   }
 
   /**
@@ -230,6 +229,6 @@ public abstract class AbstractServerGroupRepository {
    * @return the AbstractServerGroup with the given name, or <code>null</code> if it doesn't exist.
    */
   public final AbstractServerGroup getServerGroup(String sg_name) {
-    return (AbstractServerGroup) serverGroups.get(sg_name);
+    return serverGroups.get(sg_name);
   }
 }

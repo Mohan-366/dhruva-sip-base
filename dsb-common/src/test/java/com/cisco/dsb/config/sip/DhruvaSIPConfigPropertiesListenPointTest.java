@@ -16,7 +16,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-public class DhruvaSIPConfigPropertiesTest {
+public class DhruvaSIPConfigPropertiesListenPointTest {
 
   @InjectMocks DhruvaSIPConfigProperties sipConfigProperties;
 
@@ -119,13 +119,11 @@ public class DhruvaSIPConfigPropertiesTest {
 
   @Test
   void getListenPointsFromJSONConfigListForTLS() {
-
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
             "[{\"name\":\"TLSNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TLS\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false, \"tlsAuthType\": \"MTLS\", \"enableCertService\": true}]");
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tlsListenPoint);
-    System.out.println(sipConfigProperties.getListeningPoints());
     Assert.assertEquals(sipConfigProperties.getListeningPoints(), expectedListenPointList);
   }
 }
