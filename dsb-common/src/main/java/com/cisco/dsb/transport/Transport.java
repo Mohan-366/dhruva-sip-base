@@ -1,7 +1,6 @@
 package com.cisco.dsb.transport;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
@@ -86,7 +85,6 @@ public enum Transport {
    * @return {@code Optional} with/without TransportType
    */
   public static Optional<Transport> getTypeFromString(@Nonnull String transport) {
-    Objects.requireNonNull(transport, "transport for which to get TransportType is null");
     try {
       return Optional.of(Transport.valueOf(transport.toUpperCase()));
     } catch (IllegalArgumentException e) {

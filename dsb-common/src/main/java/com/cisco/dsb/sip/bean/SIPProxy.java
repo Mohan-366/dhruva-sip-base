@@ -2,40 +2,33 @@ package com.cisco.dsb.sip.bean;
 
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class SIPProxy {
 
-  private boolean errorAggregrator;
-  private boolean createDNSServerGroup;
-  private boolean processRouteHeader;
+  @Getter private boolean errorAggregator;
+  @Getter private boolean createDNSServerGroup;
+  @Getter private boolean processRouteHeader;
+  @Getter private boolean processRegisterRequest;
 
   private SIPProxy(SIPProxyBuilder proxyBuilder) {
-    this.errorAggregrator = proxyBuilder.errorAggregrator;
+    this.errorAggregator = proxyBuilder.errorAggregator;
     this.createDNSServerGroup = proxyBuilder.createDNSServerGroup;
     this.processRouteHeader = proxyBuilder.processRouteHeader;
-  }
-
-  public boolean isErrorAggregratorEnabled() {
-    return errorAggregrator;
-  }
-
-  public boolean isCreateDNSServergroupEnabled() {
-    return createDNSServerGroup;
-  }
-
-  public boolean isprocessRouteHeaderEnabled() {
-    return processRouteHeader;
+    this.processRegisterRequest = proxyBuilder.processRegisterRequest;
   }
 
   public String toString() {
-    return new StringBuilder("SIPProxy isErrorAggregratorEnabled = ")
-        .append(errorAggregrator)
+    return new StringBuilder("SIPProxy isErrorAggregatorEnabled = ")
+        .append(errorAggregator)
         .append(" isCreateDNSServergroupEnabled = ")
         .append(createDNSServerGroup)
-        .append("isprocessRouteHeaderEnabled")
+        .append(" isProcessRouteHeaderEnabled = ")
         .append(processRouteHeader)
+        .append(" isProcessRegisterRequest = ")
+        .append(processRegisterRequest)
         .toString();
   }
 
@@ -47,34 +40,44 @@ public class SIPProxy {
 
     SIPProxy otherProxy = (SIPProxy) other;
     return new EqualsBuilder()
-        .append(errorAggregrator, otherProxy.isErrorAggregratorEnabled())
-        .append(createDNSServerGroup, otherProxy.isCreateDNSServergroupEnabled())
-        .append(processRouteHeader, otherProxy.isprocessRouteHeaderEnabled())
+        .append(errorAggregator, otherProxy.isErrorAggregator())
+        .append(createDNSServerGroup, otherProxy.isCreateDNSServerGroup())
+        .append(processRouteHeader, otherProxy.isProcessRouteHeader())
+        .append(processRegisterRequest, otherProxy.isProcessRegisterRequest())
         .isEquals();
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder().append(errorAggregrator).append(createDNSServerGroup).toHashCode();
+    return new HashCodeBuilder()
+        .append(errorAggregator)
+        .append(createDNSServerGroup)
+        .append(processRouteHeader)
+        .append(processRegisterRequest)
+        .toHashCode();
   }
 
   public static class SIPProxyBuilder {
-    @JsonProperty private boolean errorAggregrator;
+    @JsonProperty private boolean errorAggregator;
 
     @JsonProperty private boolean createDNSServerGroup;
 
     @JsonProperty private boolean processRouteHeader;
 
+    @JsonProperty private boolean processRegisterRequest;
+
     public SIPProxyBuilder() {
-      this.errorAggregrator = DhruvaSIPConfigProperties.DEFAULT_PROXY_ERROR_AGGREGATOR_ENABLED;
+      this.errorAggregator = DhruvaSIPConfigProperties.DEFAULT_PROXY_ERROR_AGGREGATOR_ENABLED;
       this.createDNSServerGroup =
           DhruvaSIPConfigProperties.DEFAULT_PROXY_CREATE_DNSSERVERGROUP_ENABLED;
       this.processRouteHeader =
           DhruvaSIPConfigProperties.DEFAULT_PROXY_PROCESS_ROUTE_HEADER_ENABLED;
+      this.processRegisterRequest =
+          DhruvaSIPConfigProperties.DEFAULT_PROXY_PROCESS_REGISTER_REQUEST;
     }
 
-    public SIPProxyBuilder setErrorAggregrator(boolean errorAggregrator) {
-      this.errorAggregrator = errorAggregrator;
+    public SIPProxyBuilder setErrorAggregator(boolean errorAggregator) {
+      this.errorAggregator = errorAggregator;
       return this;
     }
 
@@ -85,6 +88,11 @@ public class SIPProxy {
 
     public SIPProxyBuilder setProcessRouteHeader(boolean processRouteHeader) {
       this.processRouteHeader = processRouteHeader;
+      return this;
+    }
+
+    public SIPProxyBuilder setProcessRegisterRequest(boolean processRegisterRequest) {
+      this.processRegisterRequest = processRegisterRequest;
       return this;
     }
 

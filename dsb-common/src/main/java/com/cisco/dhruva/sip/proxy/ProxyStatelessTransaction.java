@@ -11,7 +11,9 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.util.Optional;
@@ -23,6 +25,7 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import lombok.Getter;
 import lombok.Setter;
 import reactor.core.publisher.Mono;
 
@@ -54,8 +57,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
   @Setter private int strayRequest = NOT_STRAY;
 
+  @Getter private boolean processVia = true;
   /** the request received from the initial server transaction */
-  private SIPRequest originalRequest;
+  @Setter private SIPRequest originalRequest;
 
   // private DsProxyCookieInterface cookie;
 
@@ -130,7 +134,6 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         strayRequest = NOT_STRAY;
         break;
     }
-
     n_branch = 0;
 
     Log.info("ProxyStatelessTransaction created");
@@ -251,12 +254,13 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
     destTransport = setRequestDestination(request, params);
 
-    if (processVia()) {
+    if (processVia) {
       // invoke branch constructor with the URL and
       // add a Via field with this branch
       // stateful and stateless beahvior is different in cloudproxy, getBranchID
       // verify this
-      String branch = SipUtils.generateBranchId();
+
+      String branch = SipUtils.generateBranchId(request, true);
 
       DhruvaNetwork network;
       Optional<DhruvaNetwork> optionalDhruvaNetwork =
@@ -401,9 +405,28 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       destTransport = params.getProxyToProtocol();
     }
 
+    if (destAddress != null) {
+      try {
+        request.setRemoteAddress(InetAddress.getByName(destAddress));
+        Log.info("Request destination address is set to " + destAddress);
+      } catch (UnknownHostException e) {
+        Log.error("Cannot set destination address!", e);
+      }
+    }
+
+    if (destPort > 0) {
+      request.setRemotePort(destPort);
+      Log.info("Request destination port is set to " + destPort);
+    }
+
     if (destTransport == Transport.NONE) {
       destTransport = getDefaultParams().getDefaultProtocol(); // for Via!!!
     }
+    //    else {
+    //      request.se(destTransport);
+    //      if (Log.on && Log.isInfoEnabled()) Log.info("Request destination transport is set to " +
+    // destTransport);
+    //    }
 
     Log.debug("Leaving setRequestDestination()");
     return destTransport;
@@ -509,7 +532,19 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     return url;
   }
 
-  public boolean processVia() {
+  /**
+   * If <CODE>{@link com.cisco.dsb.config.sip.DhruvaSIPConfigProperties}</CODE> has processVia set,
+   * remove the top via header, if no more Via is found return false, else return true.
+   *
+   * @return
+   */
+  public boolean processVia(SIPResponse response) {
+    if (processVia) {
+      response.removeFirst(ViaHeader.NAME);
+      if (response.getViaHeaders() == null) {
+        return false;
+      }
+    }
     return true;
   }
 

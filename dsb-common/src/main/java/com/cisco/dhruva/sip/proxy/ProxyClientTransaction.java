@@ -1,8 +1,6 @@
 package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.executor.ExecutorType;
+import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -11,18 +9,16 @@ import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.Optional;
-import java.util.concurrent.*;
 import javax.sip.ClientTransaction;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
-import javax.sip.header.CSeqHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 /**
  * This is a wrapper class for the ClientTransaction, which adds some additional data members needed
@@ -45,59 +41,59 @@ public class ProxyClientTransaction {
   /** The client transaction */
   private ClientTransaction branch;
 
-  private SIPRequest request;
+  @Getter @Setter private SIPRequest request;
 
-  private SIPResponse response;
+  @Getter @Setter private SIPResponse response;
 
   private Via topVia;
 
-  private String connId;
-
-  private int state;
+  @Getter @Setter private int state;
 
   /** Holds a cookie used in asynchronous callbacks */
-  private ProxyCookie cookie;
+  @Getter @Setter private ProxyCookie cookie;
 
   protected DhruvaNetwork network;
 
-  // holds the (max-request-timeout)timer inserted into the DsScheduler
-  // Once it fires, we send CANCEL if the transaction is not terminated yet
-  // We also need to remove this timer if the transaction completes in some
-  // other way so that we don't hold the references unnecessarily (this
-  // will enable garbage collection)
-  private ScheduledFuture timeoutTimer = null;
+  protected SipProvider sipProvider;
 
-  private boolean isTimedOut = false;
+  @Getter @Setter private boolean isTimedOut = false;
 
   private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyClientTransaction.class);
-
-  private ScheduledThreadPoolExecutor scheduledExecutor;
-  private DhruvaExecutorService dhruvaExecutorService;
 
   protected ProxyClientTransaction(
       @NonNull ProxyTransaction proxy,
       @NonNull ClientTransaction branch,
       @NonNull ProxyCookie cookie,
-      @NonNull SIPRequest request,
-      @NonNull DhruvaExecutorService dhruvaExecutorService) {
+      @NonNull ProxySIPRequest proxySIPRequest) {
 
+    SIPRequest request = proxySIPRequest.getClonedRequest();
     this.proxy = proxy;
     this.branch = branch;
     this.request = request;
     state = STATE_REQUEST_SENT;
     this.cookie = cookie;
-    this.dhruvaExecutorService = dhruvaExecutorService;
 
-    this.scheduledExecutor =
-        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
-
-    Log.debug("ProxyClientTransaction for " + request.getMethod() + " : connid=" + connId);
+    Log.debug("ProxyClientTransaction for " + request.getMethod());
     // end
-    if (proxy.processVia()) {
+    if (proxy.isProcessVia()) {
       topVia = (Via) request.getTopmostVia().clone();
     }
 
-    network = (DhruvaNetwork) request.getApplicationData();
+    Optional<DhruvaNetwork> optionalDhruvaNetwork =
+        DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
+    // TODO DSB Akshay, handle all Runtime exceptions in pipeline
+    network =
+        optionalDhruvaNetwork.orElseThrow(
+            () -> new RuntimeException("network for client transaction not set"));
+
+    Optional<SipProvider> optionalSipProvider =
+        DhruvaNetwork.getProviderFromNetwork(this.network.getName());
+    if (optionalSipProvider.isPresent()) {
+      sipProvider = optionalSipProvider.get();
+    } else {
+      Log.error("sip provider not set for client transaction, unable to send cancel");
+      throw new RuntimeException("unable to fetch sip provider not set");
+    }
 
     Log.debug("ProxyClientTransaction created to " + request.getRequestURI());
   }
@@ -106,7 +102,7 @@ public class ProxyClientTransaction {
   public void cancel() {
     Log.debug("Entering cancel()");
     if ((getState() == STATE_REQUEST_SENT || getState() == STATE_PROV_RECVD)
-        && (getRequest().getMethod() == Request.INVITE)) {
+        && (getRequest().getMethod().equals(Request.INVITE))) {
       try {
 
         Log.debug("Canceling branch to " + getRequest().getRequestURI());
@@ -120,15 +116,11 @@ public class ProxyClientTransaction {
             cancelRequest.addFirst(topVia);
           }
 
-          // TODO DSB, should via Mono
-
-          Optional<SipProvider> sipProvider =
-              DhruvaNetwork.getProviderFromNetwork(this.network.getName());
-          ClientTransaction cancelTransaction =
-              sipProvider.get().getNewClientTransaction(cancelRequest);
+          ClientTransaction cancelTransaction = sipProvider.getNewClientTransaction(cancelRequest);
 
           // ProxySendMessage.sendRequest(sipProvider.get(), cancelTransaction, (SIPRequest)
           // cancelRequest);
+          // TODO DSB
           cancelTransaction.sendRequest();
 
           state = STATE_CANCEL_SENT;
@@ -147,50 +139,54 @@ public class ProxyClientTransaction {
   }
 
   /** sends an ACK */
-  protected void ack()
-      throws DhruvaException, IOException, UnknownHostException, InvalidStateException,
-          SipException, InvalidArgumentException {
-
-    CSeqHeader cseq = (CSeqHeader) response.getHeader(CSeqHeader.NAME);
-    SIPRequest ack = (SIPRequest) branch.getDialog().createAck(cseq.getSeqNumber());
-    ack(ack);
-  }
-
-  /**
-   * sends an ACK
-   *
-   * @param ack the ACK message to send
-   */
-  protected void ack(SIPRequest ack)
-      throws DhruvaException, IOException, UnknownHostException, InvalidStateException {
-    Log.debug("Entering ack()");
-    if (response == null || (ProxyUtils.getResponseClass(response) == 1))
-      throw new InvalidStateException("Cannot ACK before the final response is received");
-
-    if (topVia != null) ack.addHeader(topVia);
-
-    // reset local BindingInfo to work with new UA NAt traversal code
-    // 06/07/05: The following three lines were commented as there is no
-    //           special handling required for the ACK as JUA was fixed.
-    // ack.setBindingInfo(new DsBindingInfo());
-
-    // added new
-    Log.debug("setting connection id for the ACK message :" + connId);
-
-    // ack.getBindingInfo().setConnectionId(connId);
-    // end
-
-    // TODO DSB.get the provider via Network
-    // dialog.sendAck(ackRequest);
-    // ProxySendMessage.sendRequest();
-
-    Log.debug("ACK just before forwarding:" + NL + ack);
-
-    //        branch.ack(ack);
+  protected void ack() throws DhruvaException, SipException, InvalidArgumentException {
 
     state = STATE_ACK_SENT;
-    Log.debug("Leaving ack()");
+    // CSeqHeader cseq = (CSeqHeader) response.getHeader(CSeqHeader.NAME);
+    // update blindly
+    // DSB
+    // GetDialog returns null, ACK is sent by Jain transaction layer
+    // https://stackoverflow.com/questions/29808060/sip-ack-dialog-is-null
+    // SIPRequest ack = (SIPRequest) branch.getDialog().createAck(cseq.getSeqNumber());
+    // ack(ack);
   }
+
+  //  /**
+  //   * sends an ACK
+  //   *
+  //   * @param ack the ACK message to send
+  //   */
+  //  protected void ack(SIPRequest ack)
+  //          throws DhruvaException, SipException {
+  //    Log.debug("Entering ack()");
+  //    if (response == null || (ProxyUtils.getResponseClass(response) == 1))
+  //      throw new InvalidStateException("Cannot ACK before the final response is received");
+  //
+  //    //addHeader adds at top for via and RR
+  //    //if (topVia != null) ack.addHeader(topVia);
+  //
+  //    // reset local BindingInfo to work with new UA NAt traversal code
+  //    // 06/07/05: The following three lines were commented as there is no
+  //    //           special handling required for the ACK as JUA was fixed.
+  //    // ack.setBindingInfo(new DsBindingInfo());
+  //
+  //    // ack.getBindingInfo().setConnectionId(connId);
+  //    // end
+  //
+  //    // TODO DSB.get the provider via Network
+  //    // dialog.sendAck(ackRequest);
+  //    // ProxySendMessage.sendRequest();
+  //
+  //    //Log.debug("ACK just before forwarding:" + NL + ack);
+  //
+  ////    branch.ack(ack);
+  ////    ProxySendMessage.sendProxyRequestAsync(sipProvider, branch, ack);
+  //
+  //    //branch.getDialog().sendAck(ack);
+  ////
+  ////    state = STATE_ACK_SENT;
+  ////    Log.debug("Leaving ack()");
+  //  }
 
   /** Saves the last response received */
   protected void gotResponse(ProxySIPResponse proxySIPResponse) {
@@ -205,11 +201,6 @@ public class ProxyClientTransaction {
         Log.debug("In STATE_PROV_RECVD");
       } else {
         state = STATE_FINAL_RECVD;
-        // we've just received a final response so there is no point
-        // holding up the references until the max-timeout timer
-        if (!removeTimeout()) {
-          Log.info("Cannot remove the user-defined timer for client transaction");
-        }
         Log.debug("In STATE_FINAL_RECVD");
       }
     } else if (getState() == STATE_FINAL_RECVD) {
@@ -218,53 +209,6 @@ public class ProxyClientTransaction {
       Log.debug("In STATE_FINAL_RETRANSMISSION_RECVD");
     }
     Log.debug("Leaving gotResponse()");
-  }
-
-  /** @return The cookie that the user code associated with this branch */
-  protected ProxyCookie getCookie() {
-    return cookie;
-  }
-
-  protected int getState() {
-    return state;
-  }
-
-  protected SIPRequest getRequest() {
-    return request;
-  }
-
-  protected void setTimeout(long milliSec) {
-    // TODO DSB, check support from CSB, else metrics will not be collected
-    // ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
-    Runnable task =
-        () -> {
-          this.proxy.timeOut(this.branch);
-        };
-    timeoutTimer = scheduledExecutor.schedule(task, milliSec, TimeUnit.MILLISECONDS);
-    Log.debug("Set user timer for " + milliSec + " milliseconds");
-  }
-
-  protected boolean removeTimeout() {
-    Log.debug("Entering removeTimeout()");
-    boolean success = false;
-    if (timeoutTimer != null) {
-      timeoutTimer.cancel(false);
-      timeoutTimer = null;
-      success = true;
-    }
-    Log.debug("Leaving removeTimeout(), returning " + success);
-    return success;
-  }
-
-  public void timedOut() {
-    isTimedOut = true;
-    if (!removeTimeout()) {
-      Log.info("Cannot remove the user-defined timer for client transaction");
-    }
-  }
-
-  protected boolean isTimedOut() {
-    return isTimedOut;
   }
 
   /**

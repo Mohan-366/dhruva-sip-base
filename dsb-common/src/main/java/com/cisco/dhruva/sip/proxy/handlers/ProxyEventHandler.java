@@ -2,13 +2,11 @@ package com.cisco.dhruva.sip.proxy.handlers;
 
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dsb.common.executor.BaseHandler;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import javax.sip.ListeningPoint;
 import javax.sip.SipProvider;
+import org.springframework.lang.Nullable;
 
 public abstract class ProxyEventHandler extends BaseHandler {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(ProxyEventHandler.class);
 
   protected final String callId;
 
@@ -27,6 +25,7 @@ public abstract class ProxyEventHandler extends BaseHandler {
     this.sourceListeningPoint = eventSource.getListeningPoints()[0];
   }
 
+  @Nullable
   public String getCallId() {
     return callId;
   }

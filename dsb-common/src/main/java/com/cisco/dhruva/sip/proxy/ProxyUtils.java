@@ -159,4 +159,10 @@ public class ProxyUtils {
     // If there is a To Tag, then this is a mid dialog request.
     return (tag != null) && (tag.length() > 0);
   }
+
+  public static boolean checkSipUriMatches(SipURI uri1, SipURI uri2) {
+    return uri1.getHost().equalsIgnoreCase(uri2.getHost())
+        && uri1.getPort() == uri2.getPort()
+        && uri1.getUser().equalsIgnoreCase(uri2.getUser());
+  }
 }

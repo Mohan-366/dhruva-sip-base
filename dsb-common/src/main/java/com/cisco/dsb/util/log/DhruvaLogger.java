@@ -23,7 +23,6 @@ public class DhruvaLogger implements Logger {
 
   @Override
   public void error(String message, Throwable throwable) {
-
     logger.error(message, throwable);
   }
 

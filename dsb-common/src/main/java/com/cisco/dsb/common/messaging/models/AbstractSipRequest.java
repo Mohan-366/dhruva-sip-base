@@ -140,8 +140,4 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   public Dialog getDialog() {
     return st.getDialog();
   }
-
-  public ServerTransaction getTransaction() {
-    return st;
-  }
 }

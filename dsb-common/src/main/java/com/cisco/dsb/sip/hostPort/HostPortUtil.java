@@ -116,10 +116,7 @@ public class HostPortUtil {
     String transportStr = uri.getTransportParam();
 
     Optional<Transport> optionalTransport = Transport.getTypeFromString(transportStr);
-    Transport transport = Transport.NONE;
-    if (optionalTransport.isPresent()) {
-      transport = optionalTransport.get();
-    }
+    Transport transport = optionalTransport.orElse(Transport.NONE);
 
     ListenIf listenIf = (ListenIf) controllerConfig.getInterface(uri.getPort(), transport);
 

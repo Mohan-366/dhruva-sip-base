@@ -1,5 +1,7 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import javax.sip.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -8,27 +10,42 @@ import org.springframework.stereotype.Component;
 public class ProxyPacketProcessor implements SipListener {
 
   @Autowired ProxyEventListener proxyEventListener;
+  Logger logger = DhruvaLoggerFactory.getLogger(ProxyPacketProcessor.class);
 
   @Override
   public void processRequest(RequestEvent requestEvent) {
+    logger.debug("received request event from sip stack");
     proxyEventListener.request(requestEvent);
   }
 
   @Override
   public void processResponse(ResponseEvent responseEvent) {
+    logger.debug("received response event from sip stack");
     proxyEventListener.response(responseEvent);
   }
 
-  // TODO DSB, have different pipeline
   @Override
-  public void processTimeout(TimeoutEvent timeoutEvent) {}
+  public void processTimeout(TimeoutEvent timeoutEvent) {
+    logger.info("received timeout event from sip stack");
+    proxyEventListener.timeOut(timeoutEvent);
+  }
 
   @Override
-  public void processIOException(IOExceptionEvent ioExceptionEvent) {}
+  public void processIOException(IOExceptionEvent ioExceptionEvent) {
+    logger.info(
+        "received IO exception event from sip stack for host {} port {} transport {}",
+        ioExceptionEvent.getHost(),
+        ioExceptionEvent.getPort(),
+        ioExceptionEvent.getTransport());
+  }
 
   @Override
-  public void processTransactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {}
+  public void processTransactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
+    logger.info("received transaction terminated event from sip stack");
+  }
 
   @Override
-  public void processDialogTerminated(DialogTerminatedEvent dialogTerminatedEvent) {}
+  public void processDialogTerminated(DialogTerminatedEvent dialogTerminatedEvent) {
+    logger.info("received dialog terminated event from sip stack");
+  }
 }

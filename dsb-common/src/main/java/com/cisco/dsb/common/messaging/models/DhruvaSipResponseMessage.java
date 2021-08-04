@@ -103,7 +103,7 @@ public final class DhruvaSipResponseMessage {
     }
 
     public DhruvaSipResponseMessageBuilder withProvider(SipProvider provider) {
-      Assert.notNull(provider, "Payload must not be null");
+      Assert.notNull(provider, "provider must not be null");
       this.sipProvider = provider;
       return this;
     }

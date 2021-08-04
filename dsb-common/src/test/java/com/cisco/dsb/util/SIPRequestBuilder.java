@@ -78,7 +78,8 @@ public class SIPRequestBuilder {
     BYE,
     CANCEL,
     PRACK,
-    NOTIFY
+    NOTIFY,
+    REGISTER
   }
 
   public enum RequestHeader {

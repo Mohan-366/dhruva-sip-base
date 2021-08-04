@@ -1,7 +1,8 @@
 package com.cisco.dsb.sip.util;
 
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.log.Trace;
+import com.cisco.dsb.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.util.log.Logger;
 import lombok.*;
 
 /**
@@ -13,7 +14,7 @@ import lombok.*;
 @ToString
 public class EndPoint implements Cloneable {
 
-  private static final Trace Log = Trace.getTrace(EndPoint.class.getName());
+  private static final Logger Log = DhruvaLoggerFactory.getLogger(EndPoint.class);
 
   /* The logical network for this end point */
   protected String network;

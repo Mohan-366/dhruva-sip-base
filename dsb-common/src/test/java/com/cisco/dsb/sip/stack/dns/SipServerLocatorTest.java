@@ -15,20 +15,19 @@ import com.cisco.dsb.sip.enums.DNSRecordSource;
 import com.cisco.dsb.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.util.JsonUtil;
 import com.cisco.wx2.util.Token;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import lombok.CustomLog;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test
+@CustomLog
 public class SipServerLocatorTest {
-  protected static final Logger logger = DhruvaLoggerFactory.getLogger(SipServerLocatorTest.class);
 
   // Configure immediate eviction of {SRV, A} records in cache. Per Guava's CacheBuilder
   // documentation, if maximum

@@ -11,7 +11,7 @@ import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
-import org.jetbrains.annotations.NotNull;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -74,7 +74,7 @@ public class TrunkService {
     }
   }
 
-  public EndPoint getNextElement(@NotNull LBInterface lb) {
+  public EndPoint getNextElement(@NonNull LBInterface lb) {
     return lb.getServer().getEndPoint();
   }
 }

@@ -1,8 +1,6 @@
-package com.cisco.dhruva.sip.controller;
+package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dhruva.sip.proxy.ListenInterface;
-import com.cisco.dhruva.sip.proxy.ProxyParamsInterface;
-import com.cisco.dhruva.sip.proxy.ViaListenInterface;
+import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.header.ims.PathHeader;

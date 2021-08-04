@@ -2,7 +2,6 @@ package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.proxy.Location;
-import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -45,13 +44,17 @@ public class DefaultCallType implements CallType {
               proxySIPRequest -> {
                 logger.info("Sending to APP from leaf ,callid: " + proxySIPRequest.getCallId());
                 try {
-                  ProxyController controller =
-                      (ProxyController)
-                          proxySIPRequest.getContext().get(CommonContext.PROXY_CONTROLLER);
                   Location loc = new Location(proxySIPRequest.getRequest().getRequestURI());
-                  loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                  // Ideally location object should hold the outgoing network based on config
+                  // This is temp solution
+                  if (DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).isPresent()) {
+                    loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                  }
+                  // loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                  // processRoute is set to true only in case , app inserts Route Header pointing to
+                  // new destination
                   loc.setProcessRoute(true);
-                  controller.proxyRequest(proxySIPRequest, loc);
+                  proxySIPRequest.proxy(proxySIPRequest, loc);
                 } catch (Exception exception) {
                   exception.printStackTrace();
                 }
@@ -62,8 +65,7 @@ public class DefaultCallType implements CallType {
   @Override
   public Consumer<Mono<ProxySIPResponse>> processResponse() {
     // pipeline for response
-    return proxySIPResponseMono ->
-        proxySIPResponseMono.subscribe(proxySIPResponse -> proxySIPResponse.proxy());
+    return proxySIPResponseMono -> proxySIPResponseMono.subscribe(ProxySIPResponse::proxy);
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> addHeaders =

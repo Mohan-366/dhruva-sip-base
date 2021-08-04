@@ -7,6 +7,7 @@ import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.sip.proxy.handlers.ProxyEventHandler;
 import com.cisco.dhruva.sip.proxy.handlers.SipRequestHandler;
 import com.cisco.dhruva.sip.proxy.handlers.SipResponseHandler;
+import com.cisco.dhruva.sip.proxy.handlers.SipTimeOutHandler;
 import com.cisco.dsb.util.ResponseHelper;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
@@ -122,5 +123,31 @@ public class ProxyEventManagerTest {
 
     Assert.assertNotNull(sipResponseHandler);
     Assert.assertEquals(sipResponseHandler.getCallId(), response.getCallId().getCallId());
+  }
+
+  @Test(description = "test timeout handler for proxy")
+  public void testTimeoutEventHandler() throws Exception {
+    Future f = mock(Future.class);
+    when(executor.submit(any(ProxyEventHandler.class))).thenReturn(f);
+    SipProvider sipProvider = mock(SipProvider.class);
+    ListeningPoint[] lps = new ListeningPoint[1];
+    lps[0] = getTestListeningPoint();
+
+    when(sipProvider.getListeningPoints()).thenReturn(lps);
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    Timeout timeout = Timeout.TRANSACTION;
+
+    TimeoutEvent timeoutEvent = new TimeoutEvent(sipProvider, serverTransaction, timeout);
+
+    ArgumentCaptor<SipTimeOutHandler> argumentCaptor =
+        ArgumentCaptor.forClass(SipTimeOutHandler.class);
+    proxyEventManager.timeOut(timeoutEvent);
+
+    verify(executor).submit(argumentCaptor.capture());
+
+    SipTimeOutHandler sipTimeOutHandler = argumentCaptor.getValue();
+
+    Assert.assertNotNull(sipTimeOutHandler);
+    Assert.assertNull(sipTimeOutHandler.getCallId());
   }
 }

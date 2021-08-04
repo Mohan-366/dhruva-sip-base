@@ -7,6 +7,7 @@ import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.proxy.ListenInterface;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -17,11 +18,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import javax.sip.address.SipURI;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
 public class HostPortUtilTest {
   ControllerConfig controllerConfig;
+  @Mock SipServerLocatorService sipServerLocatorService;
+
+  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   DhruvaNetwork dsNetwork, externalIpEnabledNetwork;
   SipURI privateNetworkInfo,
@@ -38,7 +44,8 @@ public class HostPortUtilTest {
 
   @BeforeClass
   void init() throws Exception {
-    controllerConfig = new ControllerConfig();
+    MockitoAnnotations.initMocks(this);
+    controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
 
     SIPListenPoint sipListenPointInternal = createInternalSipListenPoint();
     SIPListenPoint sipListenPointExternal = createExternalSipListenPoint();

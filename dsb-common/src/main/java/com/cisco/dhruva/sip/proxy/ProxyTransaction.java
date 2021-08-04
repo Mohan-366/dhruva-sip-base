@@ -4,28 +4,25 @@ import com.cisco.dhruva.sip.controller.ProxyResponseGenerator;
 import com.cisco.dhruva.sip.proxy.errors.DestinationUnreachableException;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dhruva.sip.proxy.errors.InvalidStateException;
+import com.cisco.dsb.common.context.ExecutionContext;
+import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
-import javax.sip.address.URI;
-import javax.sip.header.RouteHeader;
-import javax.sip.header.ViaHeader;
 import javax.sip.message.Response;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -37,6 +34,7 @@ import reactor.core.publisher.Mono;
  * like forking and knows when it has gotten the best response for a request. However, it leaves the
  * decision about sending responses to the controller, which is passed to the SIP proxy.
  */
+@CustomLog
 public class ProxyTransaction extends ProxyStatelessTransaction {
 
   public static final String NL = System.getProperty("line.separator");
@@ -66,8 +64,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   @Getter @Setter private int currentServerState = PROXY_INITIAL;
 
   private boolean serverTimerSet = false;
-
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyTransaction.class);
 
   //   ProxyStates
   //   /** defines the states for the proxy */
@@ -208,18 +204,16 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * this method
    */
   public synchronized void init(
-      @lombok.NonNull ControllerInterface controller,
+      @NonNull ControllerInterface controller,
       @NonNull ProxyParamsInterface config,
-      @NonNull ServerTransaction server,
+      ServerTransaction server,
       @NonNull SIPRequest request)
       throws InternalProxyErrorException {
-    Log.debug("Entering init()");
+    logger.debug("Entering init()");
 
     super.init(controller, config, request);
 
     ServerTransaction llServer = server;
-    // Set the proxytransaction for future reference
-    server.setApplicationData(this);
 
     if (controller != null) {
       this.controller = controller;
@@ -231,7 +225,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     if (branches != null) {
       branches.clear();
     } else {
-      Log.debug("No need to clear branches.  They're null!");
+      logger.debug("No need to clear branches.  They're null!");
     }
 
     serverTransaction = null;
@@ -247,13 +241,16 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       // stray ACKs and CANCELs
       if (getStrayStatus() == NOT_STRAY) {
         serverTransaction = createProxyServerTransaction(llServer, request);
+        logger.info("Created a proxy server transaction for " + request.getMethod());
+      } else {
+        logger.info("No proxy server transaction created for " + request.getMethod());
       }
     } catch (Throwable e) {
-      Log.error("Error creating proxy server transaction", e);
+      logger.error("Error creating proxy server transaction", e);
       throw new InternalProxyErrorException(e.getMessage());
     }
 
-    Log.debug("Leaving init()");
+    logger.debug("Leaving init()");
   }
 
   /**
@@ -264,9 +261,8 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * @return DsProxyClientTransaction or a derived class
    */
   protected ProxyClientTransaction createProxyClientTransaction(
-      ClientTransaction clientTrans, ProxyCookie cookie, SIPRequest request) {
-    return new ProxyClientTransaction(
-        this, clientTrans, cookie, request, this.getController().getDhruvaExecutorService());
+      ClientTransaction clientTrans, ProxyCookie cookie, ProxySIPRequest request) {
+    return new ProxyClientTransaction(this, clientTrans, cookie, request);
   }
 
   /**
@@ -316,17 +312,17 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     SIPRequest request = proxySIPRequest.getClonedRequest();
 
     try {
-      Log.debug("Entering DsProxyTransaction proxyTo()");
+      logger.debug("Entering DsProxyTransaction proxyTo()");
 
       // if a stray ACK or CANCEL, proxy statelessly.
       if (getStrayStatus() == STRAY_ACK || getStrayStatus() == STRAY_CANCEL) {
-        Log.debug("Leaving DsProxyTransaction proxyTo()");
+        logger.debug("Leaving DsProxyTransaction proxyTo()");
         proxySIPRequest.setStatefulClientTransaction(false);
         return super.proxyTo(proxySIPRequest);
       }
 
       if (currentServerState == PROXY_SENT_200 || currentServerState == PROXY_SENT_NON200) {
-        Log.debug("Leaving DsProxyTransaction proxyTo()");
+        logger.debug("Leaving DsProxyTransaction proxyTo()");
         throw new InvalidStateException("Cannot fork once a final response has been sent!");
       }
 
@@ -335,7 +331,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         case PROXY_FINISHED_200:
         case PROXY_GOT_600:
         case PROXY_FINISHED_600:
-          Log.debug("Leaving DsProxyTransaction proxyTo()");
+          logger.debug("Leaving DsProxyTransaction proxyTo()");
           throw new InvalidStateException(
               "Cannot fork once a 200 or 600 response has been received!");
         default:
@@ -346,11 +342,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         proxySIPRequest.setStatefulClientTransaction(true);
         prepareRequest(proxySIPRequest);
 
-        Log.debug("proxying request");
-        Log.debug("Creating SIP client transaction with request:" + NL + request.toString());
+        logger.debug("proxying request");
+        logger.debug("Creating SIP client transaction with request:" + NL + request.toString());
 
       } catch (Exception e) {
-        Log.error("Got exception in proxyTo()!", e);
+        logger.error("Got exception in proxyTo()!", e);
         // This exception looks like it will be caught immediately by the series
         // of catch blocks below.  Can we do this in a less expensive way? - JPS
         DestinationUnreachableException exception =
@@ -405,7 +401,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         clientTrans = sipProvider.getNewClientTransaction(request);
 
         ProxyClientTransaction proxyClientTrans =
-            createProxyClientTransaction(clientTrans, cookie, request);
+            createProxyClientTransaction(clientTrans, cookie, proxySIPRequest);
 
         if ((!m_isForked) && (m_originalClientTrans == null)) {
           m_originalProxyClientTrans = proxyClientTrans;
@@ -422,17 +418,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           }
         }
         branchesOutstanding++;
-
-        // set the user provided timer if necessary
-        long timeout;
-        ProxyBranchParamsInterface params = proxySIPRequest.getParams();
-        if (params != null) timeout = params.getRequestTimeout();
-        else timeout = 0;
-
-        if (timeout > 0) {
-          proxyClientTrans.setTimeout(timeout);
-        }
-
         // DSB
         // for response matching
         proxySIPRequest.setProxyClientTransaction(proxyClientTrans);
@@ -464,7 +449,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    *     be extra careful when using it.
    */
   public synchronized void respond(SIPResponse response) {
-    Log.debug("Entering respond()");
+    logger.debug("Entering respond()");
 
     try {
 
@@ -487,9 +472,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         getServerTransaction().respond(response);
 
         assert response != null;
-        Log.debug("Response sent");
+        logger.debug("Response sent");
       } else {
-        Log.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
+        logger.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
       }
     } catch (DestinationUnreachableException e) {
       controller.onResponseFailure(
@@ -517,6 +502,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     } else respond(bestResponse.getResponse());
   }
 
+  /** this should only be called when ack is for non-200 OK response */
+  public void ack() {
+    logger.info("Do not forward the ACK. Just consume it");
+  }
+
   /**
    * This method allows the controller to cancel all pending requests. Only requests for which no
    * response is yet received will be cancelled. Once this method is invoked, subsequent invocations
@@ -524,7 +514,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * controller calls cancel?
    */
   public synchronized void cancel() {
-    Log.debug("Entering cancel()");
+    logger.debug("Entering cancel()");
 
     if (!m_isForked) {
       if (m_originalProxyClientTrans != null) {
@@ -538,7 +528,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           trans = (ProxyClientTransaction) o;
           trans.cancel();
         } catch (Exception e) {
-          Log.error("Error canceling request", e);
+          logger.error("Error canceling request", e);
         }
       }
     }
@@ -554,121 +544,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   }
 
   /**
-   * Handles ACK message for a branch we cannot match (i.e., with an unknown To tag). Currently just
-   * treats it as a stray ACK but may be overwritten in derived classes
-   */
-  // TODO DSB
-  //    //protected void handleAckForUnknownBranch(SIPRequest ack) {
-  //        DsSipProxyManager.getInstance().strayAck(ack);
-  //    }
-
-  /**
-   * this should only be called when ack is for a 200 OK, we should probably overload the server
-   * transaction to do this. we will need to anyway, since we need a send200 method or something
-   * like that which doesn't retransmit anyway, the only action to take here is to invoke the ack
-   * callback this is invoked in any state (I think)
-   *
-   * @param trans
-   * @param ack
-   */
-  protected synchronized void ackCallBack(ServerTransaction trans, SIPRequest ack) {
-
-    Log.debug("Entering ackCallBack()");
-
-    SIPResponse response = getServerTransaction().getResponse();
-
-    if (response != null && ProxyUtils.getResponseClass(response) == 2) {
-
-      // we actually need to handle the case of ACKs to multiple
-      // 200 OKs here - I know this sucks but Low Level doesn't
-      // give me a choice right now
-      String toTag;
-      try {
-        toTag = response.getToHeader().getTag();
-      } catch (Exception e) {
-        toTag = null;
-        Log.error("Error getting To header", e);
-      }
-      boolean branchFound = false;
-
-      if (!m_isForked) {
-        try {
-          branchFound = checkAckOnBranch(m_originalProxyClientTrans, ack, toTag);
-        } catch (Exception e) {
-          Log.error("Exception propagating ACK to 200OK!!", e);
-        }
-      } else {
-        Iterator iter = branches.values().iterator();
-        ProxyClientTransaction branch;
-
-        while (iter.hasNext()) {
-          try {
-            branch = (ProxyClientTransaction) iter.next();
-
-            if (checkAckOnBranch(branch, ack, toTag)) {
-              branchFound = true;
-              break;
-            }
-          } catch (Exception e) {
-            Log.error("Exception propagating ACK to 200OK!!", e);
-          }
-        }
-      }
-
-      if (!branchFound) {
-        Log.info("Couldn't find the branch to propagate ACK to 200OK, process it statelessly");
-        // TODO DSB
-        // handleAckForUnknownBranch(ack);
-      }
-    }
-
-    controller.onAck(this, getServerTransaction(), ack);
-  }
-
-  private boolean checkAckOnBranch(ProxyClientTransaction branch, SIPRequest ack, String toTag)
-      throws Exception {
-
-    SIPResponse branchResponse = branch.getResponse();
-
-    if (branchResponse != null && branchResponse.getStatusCode() == Response.OK) {
-
-      String branchToTag = branchResponse.getToHeader().getTag();
-
-      if ((toTag == null && branchToTag == null) || (toTag != null && toTag.equals(branchToTag))) {
-
-        try {
-          Log.debug("propagating ACK to 200OK downstream...");
-
-          if (branch.getState() != ProxyClientTransaction.STATE_ACK_SENT) {
-            // getHeader Gets the first header
-            RouteHeader route = (RouteHeader) ack.getHeader(RouteHeader.NAME);
-            if (route != null
-                && this.getController()
-                    .getControllerConfig()
-                    .recognize((URI) route.getAddress(), false)) {
-              ack.removeFirst(RouteHeader.NAME);
-            }
-            // REDDY how to solve when servergroup is used
-            branch.ack(ack);
-            Log.debug("propagated ACK to 200OK downstream");
-          } else {
-            // if a retransmission of the ACK, forward it statelessly
-            // to work around bug #2562
-            // TODO DSB Shri Harini
-            // handleAckForUnknownBranch(ack);
-            Log.debug("propagated retransmitted ACK to 200OK downstream");
-          }
-
-          return true;
-        } catch (Exception e) {
-          Log.error("Exception propagating ACK to 200OK!!", e);
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
    * if the cancel is for the primary transaction, invoke the cancel method of the controller.
    * Otherwise, do nothing. This happens in any state (note we can't get cancel once we've sent a
    * response)
@@ -680,13 +555,13 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
    * @param cancel
    */
   protected synchronized void cancelCallBack(ServerTransaction trans, SIPRequest cancel) {
-    Log.debug("Entering cancelCallBack()");
+    logger.debug("Entering cancelCallBack()");
     try {
       controller.onCancel(this, getServerTransaction(), cancel);
     } catch (DhruvaException e) {
-      Log.warn("Exception at cancel CallBack", e);
+      logger.warn("Exception at cancel CallBack", e);
     }
-    Log.debug("Leaving cancelCallBack()");
+    logger.debug("Leaving cancelCallBack()");
   }
 
   protected synchronized void timeOut(ServerTransaction trans) {
@@ -695,13 +570,13 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         && serverTrans != null
         && serverTrans.getResponse() != null
         && ProxyUtils.getResponseClass(serverTrans.getResponse()) != 2) {
-      Log.debug("Calling controller.onResponseTimeout()");
+      logger.debug("Calling controller.onResponseTimeout()");
       controller.onResponseTimeOut(this, serverTrans);
     }
   }
 
-  protected synchronized void timeOut(ClientTransaction trans) {
-    Log.debug("Entering timeOut()");
+  protected synchronized ProxySIPResponse timeOut(ClientTransaction trans, SipProvider provider) {
+    logger.debug("Entering timeOut()");
     ProxyClientTransaction proxyClientTrans;
 
     if (m_isForked) {
@@ -711,46 +586,54 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
 
     if (proxyClientTrans == null) {
-      Log.warn("timeOut(ClientTrans) callback called for transaction we don't know!");
-      return;
+      logger.warn("timeOut(ClientTrans) callback called for transaction we don't know!");
+      return null;
     }
 
     int clientState = proxyClientTrans.getState();
     if (proxyClientTrans.isTimedOut()
         || (clientState != ProxyClientTransaction.STATE_REQUEST_SENT
             && clientState != ProxyClientTransaction.STATE_PROV_RECVD)) {
-      Log.debug("timeOut(ClientTrans) called in no_action state");
-      return;
+      logger.debug("timeOut(ClientTrans) called in no_action state");
+      return null;
     }
 
     branchDone();
 
     if (clientState == ProxyClientTransaction.STATE_PROV_RECVD) {
-      Log.debug("cancelling ProxyClientTrans");
+      logger.debug("cancelling ProxyClientTrans");
       proxyClientTrans.cancel();
     }
 
-    // ignore future responses except 200 OKs
-    proxyClientTrans.timedOut();
-
     // invoke the cancel method on the transaction??
     // construct a timeout response
+    // ignore future responses except 200 OKs
+    proxyClientTrans.setTimedOut(true);
 
     try {
       SIPResponse response =
           ProxyResponseGenerator.createResponse(Response.REQUEST_TIMEOUT, getOriginalRequest());
+
+      ProxySIPResponse proxySIPResponse =
+          MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
+              response, provider, trans, new ExecutionContext());
+
       // TODO this method will change besed on TimedOutEvent provided from stack
-      ProxySIPResponse proxySIPResponse = new ProxySIPResponse(null, null, response, trans);
+      // ProxySIPResponse proxySIPResponse = new ProxySIPResponse(null, null, response, trans);
       updateBestResponse(proxySIPResponse);
+
+      // invoke the finalresponse method above
+      controller.onRequestTimeOut(this, proxyClientTrans.getCookie(), proxyClientTrans);
+
+      if (areAllBranchesDone()) {
+        controller.onBestResponse(this, getBestResponse());
+      }
+
+      return getBestResponse();
+
     } catch (DhruvaException | ParseException | IOException e) {
-      Log.error("Exception thrown creating response for timeout", e);
-    }
-
-    // invoke the finalresponse method above
-    controller.onRequestTimeOut(this, proxyClientTrans.getCookie(), proxyClientTrans);
-
-    if (areAllBranchesDone()) {
-      controller.onBestResponse(this, getBestResponse());
+      logger.error("Exception thrown creating response for timeout", e);
+      return null;
     }
   }
 
@@ -770,14 +653,14 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
 
     if (proxyClientTrans == null) {
-      Log.info("Can't find client transaction in ICMP error callback. Probably a CANCEL");
+      logger.info("Can't find client transaction in ICMP error callback. Probably a CANCEL");
       return;
     }
 
     branchDone();
 
     // ignore future responses except 200 OKs
-    proxyClientTrans.timedOut(); // do I really need to call this?
+    proxyClientTrans.setTimedOut(true); // do I really need to call this?
 
     // invoke the cancel method on the transaction??
     // construct a timeout response
@@ -787,7 +670,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       ProxySIPResponse proxySIPResponse = new ProxySIPResponse(null, null, response, trans);
       updateBestResponse(proxySIPResponse);
     } catch (DhruvaException | ParseException | IOException e) {
-      Log.error("Error generating response in ICMP", e);
+      logger.error("Error generating response in ICMP", e);
     }
 
     controller.onICMPError(this, proxyClientTrans.getCookie(), proxyClientTrans);
@@ -821,10 +704,10 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         // TODO close is called using IOExceptionEvent from stack
         // finalResponse(trans, resp);
       } catch (DhruvaException | ParseException e) {
-        Log.error("Error creating response in close", e);
+        logger.error("Error creating response in close", e);
       }
     } else {
-      Log.info("Can't find client transaction in close callback. Probably a CANCEL");
+      logger.info("Can't find client transaction in close callback. Probably a CANCEL");
     }
   }
 
@@ -840,7 +723,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   /** These are the implementations of the client interfaces */
   protected synchronized void provisionalResponse(ProxySIPResponse proxySIPResponse) {
     ClientTransaction clientTransaction = proxySIPResponse.getClientTransaction();
-    Log.debug("Entering provisionalResponse()");
+    logger.debug("Entering provisionalResponse()");
     // look up in action table and do execute
     ProxyClientTransaction proxyClientTransaction;
     SIPResponse response = proxySIPResponse.getResponse();
@@ -851,25 +734,31 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
 
     if (proxyClientTransaction != null) {
-      if (processVia()) {
-        response.removeFirst(ViaHeader.NAME);
+      if (!processVia(response)) {
+        controller.onResponseFailure(
+            this,
+            serverTransaction,
+            ControllerInterface.NO_VIA_LEFT,
+            "Response is meant for proxy, no more Vias left",
+            null);
+        return;
       }
-      // TODO if no more via left then drop the message
-      proxyClientTransaction.gotResponse(proxySIPResponse);
 
+      proxyClientTransaction.gotResponse(proxySIPResponse);
       if (!proxyClientTransaction.isTimedOut())
         controller.onProvisionalResponse(
             this, proxyClientTransaction.getCookie(), proxyClientTransaction, proxySIPResponse);
+
     } else {
-      Log.debug("Couldn't find ClientTrans for a provisional");
-      Log.debug("Possibly got response to a CANCEL");
+      logger.debug("Couldn't find ClientTrans for a provisional");
+      logger.debug("Possibly got response to a CANCEL");
     }
-    Log.debug("Leaving provisionalResponse()");
+    logger.debug("Leaving provisionalResponse()");
   }
 
   protected synchronized void finalResponse(ProxySIPResponse proxySIPResponse) {
     ClientTransaction clientTransaction = proxySIPResponse.getClientTransaction();
-    Log.debug("Entering finalResponse()");
+    logger.debug("Entering finalResponse()");
     SIPResponse response = proxySIPResponse.getResponse();
     controller.onResponse(proxySIPResponse);
 
@@ -883,12 +772,17 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     if (proxyClientTransaction != null) {
 
-      boolean retransmit200 = false;
-
-      if (processVia()) {
-        response.removeFirst(ViaHeader.NAME);
+      if (!processVia(response)) {
+        controller.onResponseFailure(
+            this,
+            serverTransaction,
+            ControllerInterface.NO_VIA_LEFT,
+            "Response is meant for proxy, no more Vias left",
+            null);
+        return;
       }
 
+      boolean retransmit200 = false;
       if (!proxyClientTransaction.isTimedOut()) branchDone(); // otherwise it'd already been done()
 
       updateBestResponse(proxySIPResponse);
@@ -905,7 +799,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
               || proxyClientTransaction.getState() == ProxyClientTransaction.STATE_ACK_SENT) {
             // retransmission of a 200 OK response
             try {
-              Log.info("Proxy received a retransmission of 200OK");
+              logger.info("Proxy received a retransmission of 200OK");
 
               retransmit200 = true;
 
@@ -913,7 +807,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
               getServerTransaction().retransmit200();
 
             } catch (Exception e) {
-              Log.error("Exception retransmitting 200!", e);
+              logger.error("Exception retransmitting 200!", e);
             }
           }
           break;
@@ -925,7 +819,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
             try {
               proxyClientTransaction.ack();
             } catch (Exception e) {
-              Log.error("Exception sending ACK: ", e);
+              logger.error("Exception sending ACK: ", e);
             }
           break;
       }
@@ -966,10 +860,10 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       }
 
     } else {
-      Log.debug("Couldn't find ClientTrans for a final response");
-      Log.debug("Possibly got response to a CANCEL");
+      logger.debug("Couldn't find ClientTrans for a final response");
+      logger.debug("Possibly got response to a CANCEL");
     }
-    Log.debug("Leaving finalResponse()");
+    logger.debug("Leaving finalResponse()");
   }
 
   public ProxySIPResponse getBestResponse() {

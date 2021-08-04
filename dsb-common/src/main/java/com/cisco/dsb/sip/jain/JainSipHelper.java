@@ -286,8 +286,8 @@ public class JainSipHelper {
       String user, @Nonnull String host, int port, String transport) throws ParseException {
     Objects.requireNonNull(host, "Host not provided");
     SipURI hopUri = addressFactory.createSipURI(user, host);
-    hopUri.setPort(port);
-    hopUri.setTransportParam(transport);
+    if (port >= 0) hopUri.setPort(port);
+    if (transport != null) hopUri.setTransportParam(transport);
     hopUri.setLrParam();
     return headerFactory.createRouteHeader(addressFactory.createAddress(hopUri));
   }

@@ -7,34 +7,35 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.nist.javax.sip.stack.ClientAuthType;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public abstract class SipListenPoint {
 
   /** Name of the listen point */
-  private String name;
+  @Getter private String name;
 
   /** Alias name for an endpoint. If not provided, Defaults to {@link #name} */
-  private String alias;
+  @Getter private String alias;
 
   /** Listening IP address */
-  private String ip;
+  @Getter private String ip;
 
   /** Listening Port */
-  private int port;
+  @Getter private int port;
 
   /** transport for which this listening point should be listening for */
-  private Transport transport;
+  @Getter private Transport transport;
 
   /** Type of listen point eg: standard, nat */
-  private Type type;
+  @Getter private Type type;
 
   /**
    * Use this toggle to denote if listenPoint should use public Host(External) IP and not private
    * Pod IP [Host Port feature] *
    */
-  private boolean attachExternalIP;
+  @Getter private boolean attachExternalIP;
 
   /**
    * Contact port for this listenPoint.
@@ -43,7 +44,7 @@ public abstract class SipListenPoint {
    * network configurations, actual endpoint port is hidden from external access. In those cases,
    * 'contact port' will be different from 'port'.
    */
-  private int contactPort;
+  @Getter private int contactPort;
 
   /**
    * TLS SIP Client Authentication type to be used for this listen point Jain's Client auth type :
@@ -60,10 +61,10 @@ public abstract class SipListenPoint {
    *
    * <p>(dhruva tlstype)MTLS/CLIENT -> ClientAuth.REQUIRE(netty)
    */
-  private ClientAuthType clientAuth;
+  @Getter private ClientAuthType clientAuth;
 
   /** Service types supported by this listening point. */
-  private Set<SipServiceType> sipServiceTypes;
+  @Getter private Set<SipServiceType> sipServiceTypes;
 
   @JsonCreator
   public SipListenPoint(
@@ -104,46 +105,6 @@ public abstract class SipListenPoint {
     } else {
       this.sipServiceTypes = new HashSet<>();
     }
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getAlias() {
-    return alias;
-  }
-
-  public String getIpAddress() {
-    return ip;
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public Transport getTransport() {
-    return transport;
-  }
-
-  public Type getType() {
-    return type;
-  }
-
-  public boolean shouldAttachExternalIP() {
-    return attachExternalIP;
-  }
-
-  public int getContactPort() {
-    return contactPort;
-  }
-
-  public ClientAuthType getClientAuth() {
-    return clientAuth;
-  }
-
-  public Set<SipServiceType> getSipServiceTypes() {
-    return sipServiceTypes;
   }
 
   public boolean handlesService(SipServiceType sipServiceType) {
