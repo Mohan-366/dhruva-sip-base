@@ -411,7 +411,10 @@ public class ProxyControllerTest {
     reset(clientTransaction);
   }
 
-  @Test(description = "test proxy client creation for outgoing ACK request - mid-dialog")
+  @Test(
+      description =
+          "test proxy client creation for outgoing ACK request - mid-dialog."
+              + "This covers test for normal lrfix case")
   public void testOutgoingACKRequestProxyTransaction() throws SipException, ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);

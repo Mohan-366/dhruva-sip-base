@@ -56,8 +56,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
 
-  protected ConcurrentHashMap ViaIfMap = new ConcurrentHashMap<>();
-
   protected HashMap ViaListenHash = new HashMap();
   // Adding Getters and Setters for testing
   @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
@@ -317,10 +315,9 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       logger.error("exception getting network {}", direction);
       return null;
     }
-    viaIf = getVia(protocol, net);
-    if (viaIf == null) {
-      viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
-    }
+
+    viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
+
     if (viaIf == null) {
 
       logger.info("No via interface stored for this protocol/direction pair, creating one");
@@ -365,14 +362,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
             + viaIf);
 
     return viaIf;
-  }
-
-  public ViaObj getVia(Transport transport, DhruvaNetwork direction) {
-    HashMap viaDirMap = (HashMap) ViaIfMap.get(direction);
-    if (viaDirMap != null) {
-      return (ViaObj) viaDirMap.get(new Integer(String.valueOf(transport)));
-    }
-    return null;
   }
 
   @Override

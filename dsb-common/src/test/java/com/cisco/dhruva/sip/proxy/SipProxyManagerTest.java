@@ -8,14 +8,18 @@ import com.cisco.dhruva.sip.RequestHelper;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
+import com.cisco.dsb.common.CallType;
+import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.common.messaging.models.DhruvaSipRequestMessage;
 import com.cisco.dsb.service.TrunkService;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.ResponseHelper;
+import com.cisco.dsb.util.SIPRequestBuilder;
 import com.cisco.dsb.util.TriFunction;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.header.Unsupported;
@@ -23,16 +27,15 @@ import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.function.BiFunction;
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import javax.sip.header.MaxForwardsHeader;
-import javax.sip.header.ProxyRequireHeader;
-import javax.sip.header.UnsupportedHeader;
-import javax.sip.header.ViaHeader;
+import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.mockito.*;
@@ -516,7 +519,147 @@ public class SipProxyManagerTest {
 
     ProxySIPResponse proxySIPResponse =
         sipProxyManager.handleProxyTimeoutEvent().apply(timeoutEvent);
+    Assert.assertNull(proxySIPResponse);
 
     verify(pt, Mockito.times(1)).timeOut(st);
+  }
+
+  @Test(
+      description =
+          "test various scenarios for initial and mid dialog messages and control whether to send to app or not")
+  public void processProxyAppControllerTest() throws ParseException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+
+    ProxySIPRequest proxySIPRequest1 =
+        sipProxyManager.proxyAppController(false).apply(proxySIPRequest);
+
+    Assert.assertNotNull(proxySIPRequest1);
+    Assert.assertEquals(proxySIPRequest, proxySIPRequest1);
+
+    ProxySIPRequest proxySIPRequestAck =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    SIPRequest ack = proxySIPRequestAck.getRequest();
+    RouteHeader ownRouteHeader =
+        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+
+    // Add to tag and route to qualify for mid dialog
+    ack.addHeader(ownRouteHeader);
+    ack.setToTag("testackmiddialog");
+
+    // Mock proxy interface
+    ProxyInterface proxyInterface = mock(ProxyInterface.class);
+    proxySIPRequestAck.setProxyInterface(proxyInterface);
+    doNothing().when(proxyInterface).proxyRequest(any(ProxySIPRequest.class), any(Location.class));
+    doNothing().when(proxyInterface).sendMidDialogMessagesToApp(any(boolean.class));
+
+    ProxySIPRequest proxySIPRequestAckRetVal =
+        sipProxyManager.proxyAppController(false).apply(proxySIPRequestAck);
+
+    // For mid dialog messages, proxy client is invoked directly, hence return null to drop from
+    // pipeline
+    Assert.assertNull(proxySIPRequestAckRetVal);
+
+    // App is interested in mid dialog messages
+    ProxySIPRequest proxySIPRequestAckRetVal1 =
+        sipProxyManager.proxyAppController(true).apply(proxySIPRequestAck);
+
+    Assert.assertNotNull(proxySIPRequestAckRetVal1);
+    Assert.assertEquals(proxySIPRequestAckRetVal1, proxySIPRequestAck);
+  }
+
+  @Test(
+      description =
+          "test LMA stage in both request and response handling pipeline.This will change, "
+              + "now just to increase coverage :)")
+  public void logAndMetricsPipelineTest() throws UnknownHostException {
+
+    // Request path tests
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+
+    SIPRequest request = proxySIPRequest.getRequest();
+    request.setLocalAddress(InetAddress.getByName("127.0.0.1"));
+    request.setRemoteAddress(InetAddress.getByName("127.0.0.1"));
+
+    request.setLocalPort(9000);
+    request.setRemotePort(8000);
+    SipProvider sipProvider = mock(SipProvider.class);
+
+    ListeningPoint[] lps = new ListeningPoint[1];
+    lps[0] = getTestListeningPoint();
+
+    when(sipProvider.getListeningPoints()).thenReturn(lps);
+
+    RequestEvent requestEvent =
+        new RequestEvent(sipProvider, serverTransaction, mock(Dialog.class), request);
+
+    sipProxyManager.manageLogAndMetricsForRequest.accept(requestEvent);
+
+    // Response path tests
+    SIPResponse sipResponse = ResponseHelper.getSipResponse();
+    sipResponse.setLocalAddress(InetAddress.getByName("127.0.0.1"));
+    sipResponse.setRemoteAddress(InetAddress.getByName("127.0.0.1"));
+    sipResponse.setLocalPort(9000);
+    sipResponse.setRemotePort(40000);
+    ResponseEvent responseEvent =
+        new ResponseEvent(
+            sipProvider, mock(ClientTransaction.class), mock(Dialog.class), sipResponse);
+    sipProxyManager.manageLogAndMetricsForResponse.accept(responseEvent);
+  }
+
+  public ProxySIPRequest getProxySipRequest(
+      SIPRequestBuilder.RequestMethod method, ServerTransaction serverTransaction) {
+    try {
+      ExecutionContext context = new ExecutionContext();
+      SIPRequest request =
+          SIPRequestBuilder.createRequest(new SIPRequestBuilder().getRequestAsString(method));
+
+      return DhruvaSipRequestMessage.newBuilder()
+          .withContext(context)
+          .withPayload(request)
+          .withTransaction(serverTransaction)
+          .callType(CallType.SIP)
+          .correlationId("ABCD")
+          .reqURI("sip:test@webex.com")
+          .sessionId("testSession")
+          .network("default")
+          .withProvider(mock(SipProvider.class))
+          .build();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return null;
+    }
+  }
+
+  private ListeningPoint getTestListeningPoint() {
+    return new ListeningPoint() {
+      @Override
+      public int getPort() {
+        return 5060;
+      }
+
+      @Override
+      public String getTransport() {
+        return "udp";
+      }
+
+      @Override
+      public String getIPAddress() {
+        return "1.1.1.1";
+      }
+
+      @Override
+      public void setSentBy(String s) throws ParseException {}
+
+      @Override
+      public String getSentBy() {
+        return null;
+      }
+    };
   }
 }
