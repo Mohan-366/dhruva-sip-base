@@ -133,7 +133,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .cacheSize(dhruvaSIPConfigProperties.getDhruvaDnsCacheMaxSize())
         .dnsLookupTimeoutMillis(dhruvaSIPConfigProperties.dnsCacheRetentionTimeMillis())
         .retentionDurationMillis(dhruvaSIPConfigProperties.dnsCacheRetentionTimeMillis())
-        .metered(getApplicationContext().getBean(DnsMetricsReporter.class))
+        .metered(dnsMetricsReporter())
         .build();
   }
 

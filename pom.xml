@@ -33,8 +33,8 @@
         <relativePath></relativePath>
     </parent>
     <modules>
-        <module>stub-app</module>
         <module>dsb-common</module>
+        <module>dhruva-app</module>
     </modules>
 
     <properties>
