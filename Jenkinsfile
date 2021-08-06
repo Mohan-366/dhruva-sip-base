@@ -79,6 +79,7 @@ node() {
         } else {
             message = "DSB: Build finished."
         }
+        junit '**/target/surefire-reports/**/TEST-*.xml'
         if (env.CHANGE_ID == null) {
             notifyPipelineRoom("$message $details", roomId: notifySparkRoomId)
         } else {
