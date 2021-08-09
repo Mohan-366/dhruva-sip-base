@@ -6,6 +6,7 @@ node() {
         // ***** CREDENTIALS USED IN IT-JENKINS *****
         // Bot to talk to Teams rooms
         env.PIPELINE_SPARK_BOT_API_TOKEN = "BeechNotifyBot"
+        REGISTRY_CREDENTIALS = 'dhruva_ccc_bot'
 
         // ***** END CREDENTIALS *****
 
