@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.env.Environment;
+import reactor.core.scheduler.Schedulers;
 
 public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
@@ -36,6 +37,8 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         applicationInstanceIndex,
         isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD);
     this.servername = servername;
+    // Project reactor MDC context switching using Schedulars onHook
+    Schedulers.onScheduleHook("mdc", CustomThreadPoolExecutor::wrapWithMdcContext);
   }
 
   public void startExecutorService(final ExecutorType type, final int maxThreads) {
@@ -72,6 +75,34 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         name,
         minThreads,
         maxThreads);
+  }
+
+  /**
+   * provide the thread name type that you want to assign for stripped executor service Starts
+   * cached stripped executor pool that grows dynamically
+   *
+   * @param type Name of thread
+   */
+  public void startStripedExecutorService(final ExecutorType type) {
+    String name = type.getExecutorName(this.servername);
+    if (isExecutorServiceRunning(name)) {
+      LOG.info("Executor service {} already running on {}", this, this.servername);
+      return;
+    }
+
+    ExecutorService e =
+        this.executorMap.compute(
+            name,
+            (key, value) -> {
+              if (value != null) {
+                throw new RuntimeException(
+                    "An executor service with the name " + key + " is already running!");
+              }
+              // Pick from CSB
+              return this.newStripedExecutorService(key);
+            });
+
+    LOG.info("Starting cached stripped executor service name={}", name);
   }
 
   public void startScheduledExecutorService(final ExecutorType type, final int maxThreads) {

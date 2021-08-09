@@ -7,33 +7,46 @@ package com.cisco.dhruva.sip.controller;
 import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.service.SipServerLocatorService;
+import com.cisco.dsb.sip.dto.Hop;
+import com.cisco.dsb.sip.enums.LocateSIPServerTransportType;
+import com.cisco.dsb.sip.hostPort.HostPortUtil;
 import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.sip.stack.dto.DnsDestination;
+import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
+import com.cisco.dsb.sip.stack.util.IPValidator;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.sip.util.ReConstants;
 import com.cisco.dsb.sip.util.ViaListenIf;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import gov.nist.javax.sip.header.RecordRouteList;
+import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.RecordRouteHeader;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@CustomLog
 public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterface, Cloneable {
 
+  protected SipServerLocatorService sipLocator;
+  DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   public static final byte UDP = (byte) Transport.UDP.getValue();
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
@@ -41,21 +54,23 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   // TODO DSB confirm this
   public static final byte STATEFUL = (byte) 1;
 
-  Logger logger = DhruvaLoggerFactory.getLogger(ControllerConfig.class);
-
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
 
-  protected ConcurrentHashMap ViaIfMap = new ConcurrentHashMap<>();
-
   protected HashMap ViaListenHash = new HashMap();
-
-  protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
+  // Adding Getters and Setters for testing
+  @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
   private Transport defaultProtocol = Transport.UDP;
   // TODO DSB Adding by default
   protected boolean doRecordRoute = true;
+
+  @Autowired
+  public ControllerConfig(
+      SipServerLocatorService sipServerLocatorService,
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
+    this.sipLocator = sipServerLocatorService;
+    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+  }
 
   /**
    * Returns the interface stored by the config that has the port and protocol passed in. If no
@@ -188,6 +203,8 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
     if (null != checkRecordRoutes(user, host, port, transport.toString())) return true;
     return recognize(host, port, transport);
+
+    // checking pop-ids and path are additional checks in CP
   }
 
   public boolean recognize(String host, int port, Transport transport) {
@@ -201,6 +218,16 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   public static boolean isMyRoute(
       String routeHost, int routePort, Transport routeTransport, ListenIf myIF) {
+    logger.debug(
+        "Entering isMyRoute("
+            + routeHost
+            + ", "
+            + routePort
+            + ", "
+            + routeTransport
+            + ", "
+            + myIF
+            + ')');
     boolean match = false;
     if (myIF != null) {
       if (routeHost.equals(myIF.getAddress())) {
@@ -256,7 +283,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   public RecordRouteHeader getRecordRouteInterface(String direction, boolean clone) {
     logger.debug("recordRoutesMap contains :\n" + recordRoutesMap.toString() + '\n');
-    RecordRouteHeader rrHeader = (RecordRouteHeader) recordRoutesMap.get(direction);
+    RecordRouteHeader rrHeader = recordRoutesMap.get(direction);
     if (rrHeader != null && clone) {
       rrHeader = (RecordRouteHeader) rrHeader.clone();
     }
@@ -288,10 +315,9 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       logger.error("exception getting network {}", direction);
       return null;
     }
-    viaIf = getVia(protocol, net);
-    if (viaIf == null) {
-      viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
-    }
+
+    viaIf = (ViaListenInterface) ViaListenHash.get(protocol.getValue());
+
     if (viaIf == null) {
 
       logger.info("No via interface stored for this protocol/direction pair, creating one");
@@ -336,14 +362,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
             + viaIf);
 
     return viaIf;
-  }
-
-  public ViaObj getVia(Transport transport, DhruvaNetwork direction) {
-    HashMap viaDirMap = (HashMap) ViaIfMap.get(direction);
-    if (viaDirMap != null) {
-      return (ViaObj) viaDirMap.get(new Integer(String.valueOf(transport)));
-    }
-    return null;
   }
 
   @Override
@@ -438,10 +456,177 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       } else {
         host = url.getMAddrParam();
         if (host == null) host = url.getHost();
-        b = recognize(user, host, port, transport);
+        b = recognizeWithDns(user, host, port, transport);
       }
     }
     logger.debug("Leaving recognize(), returning " + b);
     return b;
+  }
+
+  public boolean recognizeWithDns(String user, String host, int port, Transport transport) {
+    // check for IP and cases where host matches aliases.
+    if (recognize(user, host, port, transport)) return true;
+
+    if (!IPValidator.hostIsIPAddr(host)) {
+      try {
+        LocateSIPServerTransportType transportType = LocateSIPServerTransportType.TLS;
+        if (transport == Transport.TCP) transportType = LocateSIPServerTransportType.TCP;
+        if (transport == Transport.UDP) transportType = LocateSIPServerTransportType.UDP;
+
+        DnsDestination destination = new DnsDestination(host, port, transportType);
+        LocateSIPServersResponse locateSIPServersResponse =
+            sipLocator.locateDestination(null, destination, null);
+
+        List<Hop> hops = locateSIPServersResponse.getHops();
+
+        if (hops == null || hops.isEmpty()) {
+          throw new UnknownHostException("unable to locate destination");
+        }
+
+        List<BindingInfo> bInfos =
+            sipLocator.getBindingInfoMapFromHops(
+                null, null, 0, host, port, transport, locateSIPServersResponse);
+
+        BindingInfo bInfo =
+            bInfos.stream()
+                .filter(
+                    b ->
+                        recognize(
+                            user, b.getRemoteAddressStr(), b.getRemotePort(), b.getTransport()))
+                .findFirst()
+                .orElse(null);
+        if (bInfo != null) {
+          logger.info("found matching host after dns resolution", host);
+          return true;
+        }
+
+      } catch (UnknownHostException | InterruptedException | ExecutionException e) {
+        logger.error("Exception in resolving " + host, e);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Modify the record route to reflect mutli homed network in the RR. Set the outbound network of
+   * the top most RR that matches listenIf into application data of msg.
+   *
+   * @param msg
+   * @throws ParseException
+   */
+  public void setRecordRouteInterface(
+      @NonNull SIPMessage msg, boolean stateless, int rrIndexFromEnd) throws ParseException {
+    logger.debug("Entering setRecordRouteInterface()");
+
+    if (msg.getHeaders(RecordRouteHeader.NAME).hasNext())
+      if (stateless) setRecordRouteInterfaceStateless(msg);
+      else setRecordRouteInterfaceStateful(msg, rrIndexFromEnd);
+  }
+
+  private void setRecordRouteInterfaceStateful(SIPMessage msg, int rrIndexFromEnd)
+      throws ParseException {
+
+    RecordRouteList rrList = msg.getRecordRouteHeaders();
+
+    if (rrList == null) {
+      logger.info("route header list is null in incoming message, not processing record route");
+      return;
+    }
+    int routeIndex = rrList.size() - rrIndexFromEnd - 1;
+
+    if ((routeIndex >= 0) && (routeIndex < rrList.size())) {
+      RecordRouteHeader rrHeader = rrList.get(routeIndex);
+      SipURI currentRRURL = (SipURI) rrHeader.getAddress().getURI();
+      if (currentRRURL == null) {
+        logger.info(
+            "route header for routeIndex added by proxy has null SipURI,not modifying Record-Route");
+        return;
+      }
+      setRRHelper(msg, currentRRURL);
+    }
+  }
+
+  private void setRecordRouteInterfaceStateless(SIPMessage msg) throws ParseException {
+    logger.info("Clearing application data of sip message, to store outbound network");
+    msg.setApplicationData(null);
+    RecordRouteList rrHeaders = msg.getRecordRouteHeaders();
+    // Lists.reverse(rrHeaders);
+    if (rrHeaders != null && rrHeaders.size() > 0) {
+      for (Object rrHeader : rrHeaders) {
+        RecordRouteHeader recordRouteHeader = (RecordRouteHeader) rrHeader;
+        setRRHelper(msg, (SipURI) recordRouteHeader.getAddress().getURI());
+      }
+    }
+  }
+
+  private void setRRHelper(@NonNull SIPMessage msg, @NonNull SipURI currentRRURL)
+      throws ParseException {
+    String currentRRURLHost = null;
+
+    // get the network corresponding to the host portion in RR. If host contains externalIP,
+    // get the localIP to know the network accordingly
+    currentRRURLHost = HostPortUtil.reverseHostInfoToLocalIp(this, currentRRURL);
+
+    String network = null;
+    // get name of network(listen point) matching currentRRURL
+    String name =
+        checkRecordRoutes(
+            currentRRURL.getUser(),
+            currentRRURLHost,
+            currentRRURL.getPort(),
+            currentRRURL.getTransportParam());
+
+    if (name != null) {
+      // todo optimize when get a chance
+      logger.debug("Record Route URL to be modified : " + currentRRURL);
+      String user = currentRRURL.getUser();
+      StringTokenizer st = new StringTokenizer(user, ReConstants.DELIMITER_STR);
+      String t = st.nextToken();
+      while (t != null) {
+        if (t.startsWith(ReConstants.NETWORK_TOKEN)) {
+          network = t.substring(ReConstants.NETWORK_TOKEN.length());
+          user = user.replaceFirst(t, ReConstants.NETWORK_TOKEN + name);
+          logger.debug("Replace Record-route user from {} to {}", t, name);
+          break;
+        }
+        t = st.nextToken(ReConstants.DELIMITER_STR);
+      }
+      if (network == null) {
+        logger.warn("Unable to replace Record-Route, host portion does not contain network name");
+        return;
+      }
+      currentRRURL.setUser(user);
+
+      logger.debug(
+          "Outgoing network of the message for which record route has to be modified : " + network);
+      RecordRouteHeader recordRouteInterfaceHeader = getRecordRouteInterface(network, false);
+
+      if (recordRouteInterfaceHeader == null) {
+        logger.debug("Did not find the Record Routing Interface!");
+        return;
+      }
+      // set the outbound network into sipmessage application data if not set
+      if (Objects.isNull(msg.getApplicationData())) {
+        logger.info("Setting outbound network in sipmessage application data");
+        msg.setApplicationData(network);
+      }
+      SipURI RRUrl = (SipURI) recordRouteInterfaceHeader.getAddress().getURI();
+
+      // replace local IP with External IP for public network when modifying user portion of RR
+      currentRRURL.setHost(HostPortUtil.convertLocalIpToHostInfo(this, RRUrl));
+
+      if (RRUrl.getPort() >= 0) {
+        currentRRURL.setPort(RRUrl.getPort());
+      } else {
+        currentRRURL.removePort();
+      }
+
+      if (RRUrl.getTransportParam() != null) {
+        currentRRURL.setTransportParam(RRUrl.getTransportParam());
+      } else {
+        currentRRURL.removeParameter("transport");
+      }
+      logger.debug("Modified Record route URL to : " + currentRRURL);
+    }
   }
 }

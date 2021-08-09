@@ -24,11 +24,11 @@ public class SipListenPointTest {
     SipListenPoint slp = new ObjectMapper().readerFor(SampleListenPoint.class).readValue(json);
     Assert.assertEquals(slp.getName(), "jsonDefault");
     Assert.assertEquals(slp.getAlias(), "aliasDefault");
-    Assert.assertEquals(slp.getIpAddress(), "1.1.1.1");
+    Assert.assertEquals(slp.getIp(), "1.1.1.1");
     Assert.assertEquals(slp.getPort(), 5061);
     Assert.assertEquals(slp.getTransport(), Transport.TCP);
     Assert.assertEquals(slp.getType(), SipListenPoint.Type.STANDARD);
-    Assert.assertFalse(slp.shouldAttachExternalIP());
+    Assert.assertFalse(slp.isAttachExternalIP());
     Assert.assertEquals(slp.getContactPort(), 5060);
     Assert.assertEquals(slp.getClientAuth(), ClientAuthType.Default);
     Set<SipServiceType> expectedServiceTypes = new HashSet<>();
@@ -55,11 +55,11 @@ public class SipListenPointTest {
     SipListenPoint slp = new ObjectMapper().readerFor(SampleListenPoint.class).readValue(json);
     Assert.assertNull(slp.getName());
     Assert.assertNull(slp.getAlias());
-    Assert.assertEquals(slp.getIpAddress(), "1.1.1.2");
+    Assert.assertEquals(slp.getIp(), "1.1.1.2");
     Assert.assertEquals(slp.getPort(), 5062);
     Assert.assertNull(slp.getTransport());
     Assert.assertNull(slp.getType());
-    Assert.assertFalse(slp.shouldAttachExternalIP());
+    Assert.assertFalse(slp.isAttachExternalIP());
     Assert.assertEquals(slp.getContactPort(), 5062);
     Assert.assertEquals(slp.getClientAuth(), ClientAuthType.Default);
     Assert.assertEquals(slp.getSipServiceTypes(), Collections.emptySet());

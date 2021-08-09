@@ -13,6 +13,7 @@ import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.text.ParseException;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sip.address.SipURI;
@@ -25,6 +26,7 @@ public class LogUtils {
 
   private static Logger logger = DhruvaLoggerFactory.getLogger(LogUtils.class);
   private static boolean obfuscateLog = true;
+  private static final String COLON = ":";
 
   public static void setObfuscateLog(boolean obfuscateLog) {
     LogUtils.obfuscateLog = obfuscateLog;
@@ -351,4 +353,14 @@ public class LogUtils {
         && ((name.startsWith("x-cisco") && !name.startsWith(SipConstants.X_Cisco_Tenant))
             || name.equalsIgnoreCase("icid-value"));
   }
+
+  public static Function<SIPMessage, String> getConnectionSignature =
+      (sipMessage) ->
+          sipMessage.getLocalAddress().getHostAddress()
+              + COLON
+              + sipMessage.getLocalPort()
+              + COLON
+              + sipMessage.getRemoteAddress().getHostAddress()
+              + COLON
+              + sipMessage.getRemotePort();
 }

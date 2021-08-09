@@ -5,7 +5,9 @@ import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.util.Token;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.HandshakeCompletedListenerImpl;
 import gov.nist.javax.sip.stack.MessageChannel;
 import gov.nist.javax.sip.stack.NioTlsMessageChannel;
@@ -18,7 +20,7 @@ import java.util.regex.Pattern;
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
-import javax.sip.header.ViaHeader;
+import javax.sip.header.*;
 
 public final class SipUtils {
   private static Logger logger = DhruvaLoggerFactory.getLogger(SipUtils.class);
@@ -36,25 +38,56 @@ public final class SipUtils {
   @SuppressFBWarnings(
       value = {"PREDICTABLE_RANDOM", "WEAK_MESSAGE_DIGEST_MD5"},
       justification = "baseline suppression")
-  public static String generateBranchId() {
-    StringBuffer ret = new StringBuffer();
-    StringBuffer b = new StringBuffer();
-    String hex;
+  public static String generateBranchId(@NonNull SIPRequest request, boolean stateful) {
+    if (stateful) {
+      StringBuffer ret = new StringBuffer();
+      StringBuffer b = new StringBuffer();
+      String hex;
 
-    b.append((new Random()).nextInt(10000));
-    b.append(System.currentTimeMillis());
+      b.append((new Random()).nextInt(10000));
+      b.append(System.currentTimeMillis());
 
-    try {
-      MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-      byte[] bytes = messageDigest.digest(b.toString().getBytes());
-      hex = toHexString(bytes);
-    } catch (NoSuchAlgorithmException ex) {
-      hex = "NoSuchAlgorithmExceptionMD5";
+      try {
+        MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+        byte[] bytes = messageDigest.digest(b.toString().getBytes());
+        hex = toHexString(bytes);
+      } catch (NoSuchAlgorithmException ex) {
+        hex = "NoSuchAlgorithmExceptionMD5";
+      }
+      ret.append(BRANCH_MAGIC_COOKIE).append(hex);
+      return ret.toString();
+    } else {
+      try {
+        String branchId = null;
+        ViaHeader topmostViaHeader = (ViaHeader) request.getHeader(ViaHeader.NAME);
+        if (topmostViaHeader != null) {
+          MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+          String branch = topmostViaHeader.getBranch();
+
+          if (branch.startsWith(SipUtils.BRANCH_MAGIC_COOKIE)) {
+            byte[] bytes = messageDigest.digest(Integer.toString(branch.hashCode()).getBytes());
+            branchId = SipUtils.toHexString(bytes);
+          } else {
+            String via = topmostViaHeader.toString().trim();
+            String toTag = ((ToHeader) request.getHeader(ToHeader.NAME)).getTag();
+            String fromTag = ((FromHeader) request.getHeader(FromHeader.NAME)).getTag();
+            String callid = ((CallIdHeader) request.getHeader(CallIdHeader.NAME)).getCallId();
+            long cseq = ((CSeqHeader) request.getHeader(CSeqHeader.NAME)).getSeqNumber();
+            String requestUri = request.getRequestURI().toString().trim();
+
+            byte[] bytes =
+                messageDigest.digest(
+                    (via + toTag + fromTag + callid + cseq + requestUri).getBytes());
+            branchId = SipUtils.toHexString(bytes);
+          }
+        }
+        return branchId;
+
+      } catch (NoSuchAlgorithmException e) {
+        logger.error("failed to create branch id for stateless transaction {}", e);
+        return null;
+      }
     }
-
-    ret.append(BRANCH_MAGIC_COOKIE + hex);
-
-    return ret.toString();
   }
 
   /**

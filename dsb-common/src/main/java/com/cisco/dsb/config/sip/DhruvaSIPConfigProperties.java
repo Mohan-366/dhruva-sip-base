@@ -2,14 +2,15 @@ package com.cisco.dsb.config.sip;
 
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.bean.SIPProxy;
+import com.cisco.dsb.sip.stack.dto.StaticServer;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.JsonUtilFactory;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.dto.BuildInfo;
 import java.security.KeyStore;
 import java.util.*;
+import javax.sip.message.Request;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +18,12 @@ import org.springframework.core.env.Environment;
 
 @Configuration
 @Qualifier("dhruvaSIPConfigProperties")
+@CustomLog
 public class DhruvaSIPConfigProperties {
 
   public static final String SIP_LISTEN_POINTS = "sipListenPoints";
+
+  public static final String SIP_SERVER_GROUPS = "sipServerGroups";
 
   public static final String SIP_PROXY = "sipProxy";
 
@@ -35,11 +39,11 @@ public class DhruvaSIPConfigProperties {
 
   public static final boolean DEFAULT_PROXY_PROCESS_ROUTE_HEADER_ENABLED = false;
 
+  public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
+
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
 
   private static final String USE_REDIS_AS_CACHE = "useRedis";
-
-  private Logger logger = DhruvaLoggerFactory.getLogger(DhruvaSIPConfigProperties.class);
 
   public static final TLSAuthenticationType DEFAULT_TRANSPORT_AUTH = TLSAuthenticationType.MTLS;
 
@@ -106,6 +110,33 @@ public class DhruvaSIPConfigProperties {
 
   private String[] tlsProtocols = new String[] {"TLSv1.2"};
 
+  public String getAllowedMethods() {
+    // TODO:  can this be a configuration ?
+    return getDefaultAllowedMethods();
+  }
+
+  private String getDefaultAllowedMethods() {
+
+    String allow =
+        Request.INVITE
+            .concat(",")
+            .concat(Request.ACK)
+            .concat(",")
+            .concat(Request.BYE)
+            .concat(",")
+            .concat(Request.CANCEL)
+            .concat(",")
+            .concat(Request.OPTIONS)
+            .concat(",")
+            .concat(Request.INFO)
+            .concat(",")
+            .concat(Request.SUBSCRIBE);
+    if (getSIPProxy().isProcessRegisterRequest()) {
+      allow.concat(",").concat(Request.REGISTER);
+    }
+    return allow;
+  }
+
   public List<SIPListenPoint> getListeningPoints() {
 
     String configuredListeningPoints = env.getProperty(SIP_LISTEN_POINTS);
@@ -146,7 +177,44 @@ public class DhruvaSIPConfigProperties {
     return listenPoints;
   }
 
-  private SIPProxy getSIPProxy() {
+  public List<StaticServer> getServerGroups() {
+
+    String configuredServerGroups = env.getProperty(SIP_SERVER_GROUPS);
+
+    List<StaticServer> sipServerGroups;
+
+    if (configuredServerGroups != null) {
+      try {
+        sipServerGroups =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredServerGroups, StaticServer[].class));
+      } catch (Exception e) {
+        // TODO should we generate an Alarm
+        logger.error(
+            "Error converting JSON ServerGroup configuration provided in the environment", e);
+        return getDefaultServerGroups();
+      }
+    } else {
+      sipServerGroups = getDefaultServerGroups();
+    }
+    logger.info("Sip ServerGroup from the {} configuration {}", SIP_SERVER_GROUPS, sipServerGroups);
+
+    return sipServerGroups;
+  }
+
+  private List<StaticServer> getDefaultServerGroups() {
+
+    List<StaticServer> serverArrayList = new ArrayList<>();
+
+    StaticServer serverGroup = StaticServer.builder().build();
+
+    serverArrayList.add(serverGroup);
+
+    return serverArrayList;
+  }
+
+  public SIPProxy getSIPProxy() {
 
     String configuredSipProxy = env.getProperty(SIP_PROXY);
 

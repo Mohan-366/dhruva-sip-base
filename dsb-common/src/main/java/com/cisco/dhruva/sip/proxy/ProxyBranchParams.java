@@ -1,6 +1,5 @@
-package com.cisco.dhruva.sip.controller;
+package com.cisco.dhruva.sip.proxy;
 
-import com.cisco.dhruva.sip.proxy.ProxyBranchParamsInterface;
 import com.cisco.dsb.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.transport.Transport;
 import java.net.InetAddress;

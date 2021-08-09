@@ -4,9 +4,12 @@ package com.cisco.dsb.common.executor;
 public enum ExecutorType {
   METRIC_SERVICE(6),
   DNS_LOCATOR_SERVICE(8),
-  PROXY_CLIENT_TIMEOUT(2);
+  PROXY_CLIENT_TIMEOUT(2),
+  PROXY_PROCESSOR();
 
   ExecutorType(int val) {}
+
+  ExecutorType() {}
 
   /**
    * @param serverName

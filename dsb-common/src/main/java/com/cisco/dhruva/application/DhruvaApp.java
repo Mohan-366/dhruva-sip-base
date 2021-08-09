@@ -49,7 +49,7 @@ public class DhruvaApp {
   @PostConstruct
   public void init() {
     // TODO change to single method register(res,req)
-    proxyService.register(requestConsumer, responseConsumer);
+    proxyService.register(requestConsumer, responseConsumer, false);
 
     // register for interested CallTypes
     callTypes = new ArrayList<>();

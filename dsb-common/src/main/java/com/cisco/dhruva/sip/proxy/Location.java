@@ -1,5 +1,6 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dsb.loadbalancer.LBInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
@@ -18,10 +19,6 @@ import lombok.Setter;
  *
  * @author Mitch Rappard
  */
-
-// DSB TODO
-interface LBInterface {}
-
 public final class Location implements Cloneable, Comparable {
 
   public static final boolean USE_DEST_INFO_DEFAULT = false;
@@ -45,7 +42,14 @@ public final class Location implements Cloneable, Comparable {
 
   @Getter @Setter protected LBInterface loadBalancer;
 
+  @Getter @Setter RouteType routeType;
+
   public static float DEFAULT_QVALUE = (float) 1.0;
+
+  public enum RouteType {
+    DEFAULT_ROUTING,
+    TRUNK_ROUTING,
+  };
 
   /** our log object * */
   private static final Logger Log = DhruvaLoggerFactory.getLogger(Location.class);
@@ -94,26 +98,6 @@ public final class Location implements Cloneable, Comparable {
 
     return location;
   }
-
-  //  public LBInterface getLoadBalancer() {
-  //    return this.lb;
-  //  }
-  //
-  //  public void setLoadBalancer(LBInterface lb) {
-  //    this.lb = lb;
-  //  }
-
-  //  public void setUseDestInfo(boolean b) {
-  //    this.useDestInfo = b;
-  //  }
-  //
-  //  public boolean useDestInfo() {
-  //    return useDestInfo;
-  //  }
-
-  //  public long getLastUpdate() {
-  //    return lastUpdate;
-  //  }
 
   public boolean equals(Object obj) {
     if (obj == null) return false;
@@ -218,48 +202,4 @@ public final class Location implements Cloneable, Comparable {
     }
     return returnVal;
   }
-
-  //  public float getQValue() {
-  //    return this.qValue;
-  //  }
-  //
-  //  public void setQValue(float qValue) {
-  //    this.qValue = qValue;
-  //  }
-  //
-  //  public void setURI(SipURI newURI) {
-  //    this.uri = newURI;
-  //  }
-  //
-  //  public boolean processRoute() {
-  //    return processRoute;
-  //  }
-  //
-  //  public void setProcessRoute(boolean processRoute) {
-  //    this.processRoute = processRoute;
-  //  }
-  //
-  //  public void setRemoveExistingRoutes(boolean flag) {
-  //    removeExistingRoutes = flag;
-  //  }
-  //
-  //  public boolean getRemoveExistingRoutes() {
-  //    return removeExistingRoutes;
-  //  }
-  //
-  //  public void setRemoveExistingRoutesOnRedirect(boolean flag) {
-  //    removeExistingRoutesOnRedirect = flag;
-  //  }
-  //
-  //  public boolean getRemoveExistingRoutesOnRedirect() {
-  //    return removeExistingRoutesOnRedirect;
-  //  }
-  //
-  //  public void setCopiedURIHeadersToRequest(boolean flag) {
-  //    copiedURIHeadersToRequest = flag;
-  //  }
-  //
-  //  public boolean getCopiedURIHeadersToRequest() {
-  //    return copiedURIHeadersToRequest;
-  //  }
 }

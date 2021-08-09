@@ -14,10 +14,6 @@
 // /////////////////////////////////////////////////////////////////
 package com.cisco.dsb.servergroups;
 
-// import com.cisco.dhruva.sip.DsPings.PingObject;
-// import com.cisco.dhruva.sip.stack.DsLibs.DsSipObject.DsSipRetryAfterHeader;
-// import com.cisco.dhruva.sip.stack.DsLibs.DsUtil.UsageLimitInterface;
-
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.Trace;
 import java.util.LinkedList;

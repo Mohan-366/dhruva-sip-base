@@ -11,4 +11,6 @@ public interface ProxyInterface {
   public void respond(int responseCode, ProxySIPRequest proxySIPRequest);
 
   public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location);
+
+  public void sendMidDialogMessagesToApp(boolean send);
 }

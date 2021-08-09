@@ -21,6 +21,7 @@ public class ProxySIPResponse extends AbstractSipResponse {
   @Getter private final int responseClass;
   @Getter private final int statusCode;
   @Getter @Setter private boolean toApplication;
+  @Getter @Setter private String network;
 
   public ProxySIPResponse(
       ExecutionContext executionContext,

@@ -31,10 +31,11 @@ public interface ControllerInterface {
    * New asynchronous callbacks
    */
 
-  public static final int INVALID_STATE = 1;
-  public static final int INVALID_PARAM = 2;
-  public static final int DESTINATION_UNREACHABLE = 3;
-  public static final int UNKNOWN_ERROR = 4;
+  int INVALID_STATE = 1;
+  int INVALID_PARAM = 2;
+  int DESTINATION_UNREACHABLE = 3;
+  int UNKNOWN_ERROR = 4;
+  int NO_VIA_LEFT = 5;
 
   /**
    * This callback is invoked if a request was forwarded successfully, i.e., without any synchronous
@@ -225,10 +226,8 @@ public interface ControllerInterface {
    * This is invoked whenever an ACK is received for the response we sent back.
    *
    * @param proxy the ProxyTransaction object
-   * @param transaction the ServerTransaction being ACKed
-   * @param ack the ACK request
    */
-  void onAck(ProxyTransaction proxy, ProxyServerTransaction transaction, SIPRequest ack);
+  void onAck(ProxyTransaction proxy);
 
   /**
    * this is called when a CANCEL is received for the original Transaction

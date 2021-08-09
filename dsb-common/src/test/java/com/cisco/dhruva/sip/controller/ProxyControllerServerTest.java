@@ -8,21 +8,19 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.service.TrunkService;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Request;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-@RunWith(MockitoJUnitRunner.class)
 public class ProxyControllerServerTest {
   public ProxyController proxyController;
   @Mock ServerTransaction serverTransaction;
@@ -36,6 +34,7 @@ public class ProxyControllerServerTest {
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock ProxySIPResponse proxySIPResponse;
   @Mock SIPResponse sipResponse;
+  @Mock TrunkService trunkService;
 
   @BeforeTest
   public void init() {
@@ -47,7 +46,8 @@ public class ProxyControllerServerTest {
             dhruvaSIPConfigProperties,
             proxyFactory,
             controllerConfig,
-            dhruvaExecutorService);
+            dhruvaExecutorService,
+            trunkService);
   }
 
   @BeforeMethod

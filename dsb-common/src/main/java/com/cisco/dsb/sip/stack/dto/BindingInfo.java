@@ -422,22 +422,6 @@ public class BindingInfo implements Cloneable, Serializable {
         .toString();
   }
 
-  /**
-   * TODO:DHRUVA , commenting for now have to take care if needed.
-   *
-   * <p>public void updateBindingInfo(DsSocket socketInfo) {
-   *
-   * <p>if (this.isBindingInfoValid || socketInfo == null ) { return; } if
-   * (this.getLocalEphemeralPort() != socketInfo.getLocalPort()) {
-   * this.setLocalEphemeralPort(socketInfo.getLocalPort()); } if (this.getRemotePort() !=
-   * socketInfo.getRemotePort()) { this.setRemotePort(socketInfo.getRemotePort()); } if (
-   * (socketInfo.getLocalAddress() != null ) && ( this.getLocalAddress() == null ||
-   * !this.getLocalAddress().equals(socketInfo.getLocalAddress()))) {
-   * this.setLocalAddress(socketInfo.getLocalAddress()); } if ((socketInfo.getRemoteInetAddress() !=
-   * null) && ( this.getRemoteAddress() == null ||
-   * !this.getRemoteAddress().equals(socketInfo.getRemoteInetAddress()))) {
-   * this.setRemoteAddress(socketInfo.getRemoteInetAddress()); } this.isBindingInfoValid = true; }
-   */
   public static class BindingInfoBuilder {
 
     private boolean m_IsTrying;

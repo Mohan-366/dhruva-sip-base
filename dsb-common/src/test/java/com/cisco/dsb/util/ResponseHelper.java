@@ -2,6 +2,8 @@ package com.cisco.dsb.util;
 
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.text.ParseException;
+import javax.sip.message.Request;
 
 public class ResponseHelper {
 
@@ -34,5 +36,15 @@ public class ResponseHelper {
       ex.printStackTrace();
     }
     return null;
+  }
+
+  public static SIPResponse getSipResponse(int responseCode, Request sipRequest) {
+    try {
+
+      return (SIPResponse)
+          JainSipHelper.getMessageFactory().createResponse(responseCode, sipRequest);
+    } catch (ParseException e) {
+      return null;
+    }
   }
 }

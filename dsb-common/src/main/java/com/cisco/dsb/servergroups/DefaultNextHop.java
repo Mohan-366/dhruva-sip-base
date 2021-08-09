@@ -44,7 +44,7 @@ public class DefaultNextHop extends AbstractNextHop {
 
   @Override
   public boolean isAvailable() {
-    return false;
+    return true;
   }
 
   /**

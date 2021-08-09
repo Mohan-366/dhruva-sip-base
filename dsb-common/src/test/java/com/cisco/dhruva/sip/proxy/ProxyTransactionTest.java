@@ -7,18 +7,19 @@ import com.cisco.dhruva.sip.proxy.errors.DestinationUnreachableException;
 import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.util.SIPRequestBuilder;
 import com.cisco.dsb.util.TriFunction;
+import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
-import javax.sip.InvalidArgumentException;
-import javax.sip.ServerTransaction;
-import javax.sip.SipException;
+import javax.sip.*;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -44,6 +45,7 @@ public class ProxyTransactionTest {
 
   @BeforeMethod
   public void setup() throws InternalProxyErrorException {
+
     reset(sipResponse, proxyClientTransaction, controllerInterface, proxyServerTransaction);
     when(getMockProxyServerTransaction.apply(any(), any(), any()))
         .thenReturn(proxyServerTransaction);
@@ -51,6 +53,8 @@ public class ProxyTransactionTest {
     when(controllerInterface.getProxyFactory()).thenReturn(proxyFactory);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     when(proxySIPResponse.getResponse()).thenReturn(sipResponse);
+    ViaList viaList = new ViaList();
+    when(sipResponse.getViaHeaders()).thenReturn(viaList);
     proxyTransaction =
         new ProxyTransaction(
             controllerInterface, proxyParamsInterface, serverTransaction, sipRequest);
@@ -58,11 +62,17 @@ public class ProxyTransactionTest {
 
   @Test(description = "Handling provisional Response in ProxyTransaction")
   public void testProvisionalResponse() {
-
-    // proxyTransaction = spy(proxyTransaction);
     proxyTransaction.setM_isForked(false);
-    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    // test behaviour when proxyClientTransaction is null
+    proxyTransaction.setM_originalProxyClientTrans(null);
+    proxyTransaction.provisionalResponse(proxySIPResponse);
+
+    verify(sipResponse, Mockito.times(0)).removeFirst(ViaHeader.NAME);
+    verify(proxyClientTransaction, Mockito.times(0)).gotResponse(proxySIPResponse);
+    verify(controllerInterface, Mockito.times(0)).onProvisionalResponse(any(), any(), any(), any());
+
     // Test for proxyTransaction with ProxyClientTransaction
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     proxyTransaction.provisionalResponse(proxySIPResponse);
 
     verify(sipResponse, Mockito.times(1)).removeFirst(ViaHeader.NAME);
@@ -71,13 +81,41 @@ public class ProxyTransactionTest {
 
     reset(sipResponse, proxyClientTransaction, controllerInterface);
 
-    // test behaviour when proxyClientTransaction is null
-    proxyTransaction.setM_originalProxyClientTrans(null);
+    // test when no via left after removing top via
+    reset(sipResponse, proxyClientTransaction, controllerInterface);
+    when(sipResponse.getViaHeaders()).thenReturn(null);
+
     proxyTransaction.provisionalResponse(proxySIPResponse);
 
-    verify(sipResponse, Mockito.times(0)).removeFirst(ViaHeader.NAME);
+    verify(sipResponse, Mockito.times(1)).removeFirst(ViaHeader.NAME);
     verify(proxyClientTransaction, Mockito.times(0)).gotResponse(proxySIPResponse);
     verify(controllerInterface, Mockito.times(0)).onProvisionalResponse(any(), any(), any(), any());
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseFailure(
+            any(),
+            any(),
+            eq(ControllerInterface.NO_VIA_LEFT),
+            eq("Response is meant for proxy, no more Vias left"),
+            eq(null));
+  }
+
+  @Test(description = "Handling Response which has no or single Via")
+  public void testFinalResponseNoVia() {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(sipResponse.getViaHeaders()).thenReturn(null);
+    // call
+    proxyTransaction.provisionalResponse(proxySIPResponse);
+    // verify
+    verify(sipResponse, Mockito.times(1)).removeFirst(ViaHeader.NAME);
+    verify(proxyClientTransaction, Mockito.times(0)).gotResponse(proxySIPResponse);
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseFailure(
+            any(),
+            any(),
+            eq(ControllerInterface.NO_VIA_LEFT),
+            eq("Response is meant for proxy, no more Vias left"),
+            eq(null));
   }
 
   @Test(description = "Handling 2xx Response in ProxyTransaction")
@@ -98,6 +136,8 @@ public class ProxyTransactionTest {
             eq(proxyTransaction), any(), eq(proxyClientTransaction), eq(proxySIPResponse));
     verify(controllerInterface, Mockito.times(1))
         .onBestResponse(eq(proxyTransaction), eq(proxySIPResponse));
+
+    //
   }
 
   @Test(description = "Handling 2xx Response Retransmission in ProxyTransaction")
@@ -268,5 +308,100 @@ public class ProxyTransactionTest {
             eq(ControllerInterface.UNKNOWN_ERROR),
             eq("Unexpected Exception"),
             eq(due));
+  }
+
+  @Test(description = "Handling time out event for client transaction")
+  public void testClientTransactionTimeout() throws Exception {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    SipProvider sipProvider = mock(SipProvider.class);
+
+    SIPRequest request =
+        SIPRequestBuilder.createRequest(
+            new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
+    proxyTransaction.setOriginalRequest(request);
+    // call
+    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
+    Assert.assertNotNull(proxySIPResponse);
+    Assert.assertEquals(proxySIPResponse.getProvider(), sipProvider);
+    Assert.assertEquals(proxySIPResponse.getResponse().getStatusCode(), 408);
+
+    verify(controllerInterface, Mockito.times(1))
+        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
+
+    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
+    Assert.assertEquals(bestReponse, proxySIPResponse);
+  }
+
+  @Test(
+      description = "Handling time out event for client transaction when timeout was already fired")
+  public void testClientTransactionTimeoutEventAlreadyTimedout() throws Exception {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    SipProvider sipProvider = mock(SipProvider.class);
+
+    SIPRequest request =
+        SIPRequestBuilder.createRequest(
+            new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
+    proxyTransaction.setOriginalRequest(request);
+    // call
+    when(proxyClientTransaction.isTimedOut()).thenReturn(true);
+    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
+    Assert.assertNull(proxySIPResponse);
+
+    verify(controllerInterface, Mockito.times(0))
+        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
+
+    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
+    Assert.assertNull(bestReponse);
+  }
+
+  @Test(
+      description =
+          "Handling time out event for client transaction and cancel needs to be sent based on local state")
+  public void testClientTransactionTimeoutCancelFlow() throws Exception {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    SipProvider sipProvider = mock(SipProvider.class);
+    when(proxyClientTransaction.getState()).thenReturn(ProxyClientTransaction.STATE_PROV_RECVD);
+
+    SIPRequest request =
+        SIPRequestBuilder.createRequest(
+            new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
+    proxyTransaction.setOriginalRequest(request);
+    // call
+    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
+    Assert.assertNotNull(proxySIPResponse);
+
+    verify(controllerInterface, Mockito.times(1))
+        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
+
+    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
+    Assert.assertEquals(bestReponse, proxySIPResponse);
+
+    // Verify cancel is invoked
+    verify(proxyClientTransaction, Mockito.times(1)).cancel();
+  }
+
+  @Test(description = "Handling time out event for server transaction")
+  public void testServerTransactionTimeout() throws Exception {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    SIPResponse sipResponse = mock(SIPResponse.class);
+    when(sipResponse.getStatusCode()).thenReturn(404);
+    when(proxyServerTransaction.getResponse()).thenReturn(sipResponse);
+
+    // call
+    proxyTransaction.timeOut(serverTransaction);
+
+    verify(controllerInterface, Mockito.times(1))
+        .onResponseTimeOut(eq(proxyTransaction), eq(proxyServerTransaction));
   }
 }

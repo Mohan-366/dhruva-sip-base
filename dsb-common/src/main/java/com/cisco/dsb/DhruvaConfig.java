@@ -6,6 +6,7 @@ import com.cisco.dsb.common.dns.DnsMetricsReporter;
 import com.cisco.dsb.common.dns.DnsResolvers;
 import com.cisco.dsb.common.dns.metrics.DnsReporter;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
@@ -71,13 +72,21 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     }
   }
 
+  //  @Bean
+  //  public StripedExecutorService executor() {
+  //    // TODO: Can we switch to monitoredTrackingPreservedExecutorProvider and remove some MDC
+  //    // copying?
+  //    // Do not manage lifecycle here, ProxyEventSink does it
+  //    return (StripedExecutorService)
+  //        monitoredExecutorProvider().newStripedExecutorService("proxy-event-executor");
+  //  }
+
   @Bean
-  public StripedExecutorService executor() {
-    // TODO: Can we switch to monitoredTrackingPreservedExecutorProvider and remove some MDC
-    // copying?
-    // Do not manage lifecycle here, ProxyEventSink does it
+  @DependsOn("dhruvaExecutorService")
+  public StripedExecutorService stripedExecutor() {
+    dhruvaExecutorService().startStripedExecutorService(ExecutorType.PROXY_PROCESSOR);
     return (StripedExecutorService)
-        monitoredExecutorProvider().newStripedExecutorService("proxy-event-executor");
+        dhruvaExecutorService().getExecutorThreadPool(ExecutorType.PROXY_PROCESSOR);
   }
 
   @Bean

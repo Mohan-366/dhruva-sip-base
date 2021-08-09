@@ -148,4 +148,8 @@ public class DhruvaNetwork implements Cloneable {
   public static void removeSipProvider(@NonNull String name) {
     networkToProviderMap.remove(name);
   }
+
+  public static void clearSipProviderMap() {
+    networkToProviderMap.clear();
+  }
 }
