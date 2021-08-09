@@ -105,8 +105,8 @@ fedramp:
 
 wbx3:
   files:
-    - docker/dhruva-app.Dockerfile
+    - dhruva-app/docker/dhruva-app.Dockerfile
   artifacts:
     containers.cisco.com/edge_group/dhruva-app:
       dockerRegistry: https://containers.cisco.com
-      dockerFile: docker/dhruva-app.Dockerfile
+      dockerFile: dhruva-app/docker/dhruva-app.Dockerfile
