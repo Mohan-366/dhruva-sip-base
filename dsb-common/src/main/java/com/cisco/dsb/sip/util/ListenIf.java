@@ -4,7 +4,7 @@
 
 package com.cisco.dsb.sip.util;
 
-import com.cisco.dhruva.sip.proxy.ListenInterface;
+import com.cisco.dsb.sip.proxy.ListenInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;

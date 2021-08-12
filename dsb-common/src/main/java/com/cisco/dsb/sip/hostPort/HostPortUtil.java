@@ -1,7 +1,7 @@
 package com.cisco.dsb.sip.hostPort;
 
-import com.cisco.dhruva.sip.proxy.ListenInterface;
-import com.cisco.dhruva.sip.proxy.ProxyParamsInterface;
+import com.cisco.dsb.sip.proxy.ListenInterface;
+import com.cisco.dsb.sip.proxy.ProxyParamsInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.transport.Transport;

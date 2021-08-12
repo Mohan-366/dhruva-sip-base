@@ -3,13 +3,13 @@ package com.cisco.dsb.sip.hostPort;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-import com.cisco.dhruva.sip.controller.ControllerConfig;
-import com.cisco.dhruva.sip.proxy.ListenInterface;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
+import com.cisco.dsb.sip.controller.ControllerConfig;
 import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.sip.proxy.ListenInterface;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenIf;
 import com.cisco.dsb.transport.Transport;

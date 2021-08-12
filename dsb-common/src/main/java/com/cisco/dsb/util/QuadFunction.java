@@ -1,6 +1,6 @@
 package com.cisco.dsb.util;
 
-import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
+import com.cisco.dsb.sip.proxy.errors.InternalProxyErrorException;
 import java.util.Objects;
 import java.util.function.Function;
 

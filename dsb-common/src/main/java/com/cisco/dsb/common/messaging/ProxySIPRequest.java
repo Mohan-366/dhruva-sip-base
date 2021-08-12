@@ -1,9 +1,14 @@
 package com.cisco.dsb.common.messaging;
 
-import com.cisco.dhruva.sip.proxy.*;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.sip.proxy.Location;
+import com.cisco.dsb.sip.proxy.ProxyClientTransaction;
+import com.cisco.dsb.sip.proxy.ProxyCookie;
+import com.cisco.dsb.sip.proxy.ProxyInterface;
+import com.cisco.dsb.sip.proxy.ProxyParamsInterface;
+import com.cisco.dsb.sip.proxy.ProxyStatelessTransaction;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPMessage;

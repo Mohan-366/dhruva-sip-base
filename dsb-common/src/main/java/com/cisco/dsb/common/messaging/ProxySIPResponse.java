@@ -1,10 +1,10 @@
 package com.cisco.dsb.common.messaging;
 
-import com.cisco.dhruva.sip.controller.ProxyController;
-import com.cisco.dhruva.sip.proxy.ProxyCookie;
-import com.cisco.dhruva.sip.proxy.ProxyTransaction;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipResponse;
+import com.cisco.dsb.sip.controller.ProxyController;
+import com.cisco.dsb.sip.proxy.ProxyCookie;
+import com.cisco.dsb.sip.proxy.ProxyTransaction;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import javax.servlet.ServletException;
