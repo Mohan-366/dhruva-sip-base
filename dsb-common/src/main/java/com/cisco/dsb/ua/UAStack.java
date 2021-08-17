@@ -1,7 +1,7 @@
 package com.cisco.dsb.ua;
 
-import com.cisco.dsb.SipProperties;
 import com.cisco.dsb.common.dns.DnsLookup;
+import com.cisco.dsb.config.SipProperties;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.jain.JainStackInitializer;
 import com.cisco.dsb.sip.util.SipConstants;

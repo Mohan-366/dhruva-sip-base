@@ -63,9 +63,9 @@ node() {
             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
         }
         stage('archive') {
-            archiveArtifacts artifacts: 'dhruva-app/microservice-itjenkins.yml', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dhruva-app/docker/*', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dhruva-app/target/dhruva-app-1.0-SNAPSHOT.war', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/microservice-itjenkins.yml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/docker/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/target/dsb-calling-app-1.0-SNAPSHOT.war', allowEmptyArchive: true
         }
         stage('build and publish wbx3 images') {
             try {
@@ -80,15 +80,15 @@ node() {
                     // pass a file called microservice-itjenkins.yml in this case (which lets us handle
                     // both requirements for now).
 
-                    buildAndPushWbx3DockerImages("dhruva-app/microservice-itjenkins.yml", env.BUILD_NUMBER, REGISTRY_CREDENTIALS)
+                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", env.BUILD_NUMBER, REGISTRY_CREDENTIALS)
                 }
                 if (env.CHANGE_ID != null) {
                     def PULL_REQUEST = env.CHANGE_ID+'-pr'
-                    buildAndPushWbx3DockerImages("dhruva-app/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
+                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
                 }
 
             } catch (Exception ex) {
-                echo "ERROR: Could not trigger the build and publish of dhruva-app docker image."
+                echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
                 throw ex
             }
         }

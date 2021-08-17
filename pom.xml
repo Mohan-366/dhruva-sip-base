@@ -34,7 +34,8 @@
     </parent>
     <modules>
         <module>dsb-common</module>
-        <module>dhruva-app</module>
+        <module>dsb-calling-app</module>
+        <module>dsb-proxy-service</module>
     </modules>
 
     <properties>
@@ -64,12 +65,6 @@
                     <groupId>com.ciscospark</groupId>
                     <artifactId>cisco-spark-data-cassandra-migration</artifactId>
                 </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.ciscospark</groupId>
-            <artifactId>cisco-spark-starter-server</artifactId>
-            <exclusions>
                 <exclusion>
                     <groupId>com.ciscospark</groupId>
                     <artifactId>cisco-spark-starter-cassandra</artifactId>
