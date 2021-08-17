@@ -5,7 +5,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.proxy.service.MetricService;
+import com.cisco.dsb.service.MetricService;
 import java.io.IOException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;

@@ -2,7 +2,7 @@ package com.cisco.dsb.common.dns;
 
 import com.cisco.dsb.common.dns.metrics.DnsReporter;
 import com.cisco.dsb.common.dns.metrics.DnsTimingContext;
-import com.cisco.dsb.proxy.service.MetricService;
+import com.cisco.dsb.service.MetricService;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

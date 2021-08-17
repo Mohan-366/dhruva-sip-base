@@ -10,7 +10,7 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
-import com.cisco.dsb.proxy.service.SipServerLocatorService;
+import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.dto.IdentityMachineAccount;

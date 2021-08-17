@@ -3,7 +3,7 @@ package com.cisco.dsb.servergroups;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.loadbalancer.ServerGroupInterface;
-import com.cisco.dsb.proxy.service.SipServerLocatorService;
+import com.cisco.dsb.service.SipServerLocatorService;
 import com.cisco.dsb.sip.dto.Hop;
 import com.cisco.dsb.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.sip.stack.dto.DnsDestination;

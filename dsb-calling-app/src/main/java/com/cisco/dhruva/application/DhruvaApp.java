@@ -4,7 +4,7 @@ import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.DefaultCallType;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.proxy.service.ProxyService;
+import com.cisco.dsb.service.ProxyService;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import java.util.ArrayList;

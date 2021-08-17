@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.service;
+package com.cisco.dsb.service;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

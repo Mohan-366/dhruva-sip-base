@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.service;
+package com.cisco.dsb.service;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;

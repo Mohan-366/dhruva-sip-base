@@ -2,7 +2,7 @@
  * Copyright (c) 2020  by Cisco Systems, Inc.All Rights Reserved.
  */
 
-package com.cisco.dsb.proxy.service;
+package com.cisco.dsb.service;
 
 import static com.cisco.dsb.util.log.event.Event.DIRECTION.OUT;
 import static com.cisco.dsb.util.log.event.Event.MESSAGE_TYPE.REQUEST;

@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.service;
+package com.cisco.dsb.service;
 
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;

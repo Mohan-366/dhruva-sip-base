@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.service;
+package com.cisco.dsb.service;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.loadbalancer.*;
