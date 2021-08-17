@@ -3,7 +3,6 @@ package com.cisco.dsb.service;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertNotEquals;
 
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
@@ -247,20 +246,32 @@ public class TrunkServiceTest {
   }
 
   @Test
-  void getNextElementTest() throws LBException {
+  void getNextElementErrorCodeTest() {
 
     LBCallID callBased;
     callBased = new LBCallID();
 
     // create multiple Server Group Elements
     AbstractNextHop anh1 =
-        new DefaultNextHop("testNw", "testHost", 0001, Transport.UDP, 0.9f, "testSG1");
+        new DefaultNextHop("testNw", "127.0.0.1", 0001, Transport.UDP, 0.9f, "SG1");
     AbstractNextHop anh2 =
-        new DefaultNextHop("testNw", "testHost", 0002, Transport.UDP, 0.9f, "testSG2");
+        new DefaultNextHop("testNw", "127.0.0.2", 0002, Transport.UDP, 0.9f, "SG1");
+
+    AbstractNextHop anh3 =
+        new DefaultNextHop("testNw", "127.0.0.3", 0002, Transport.UDP, 0.9f, "SG1");
+
+    AbstractNextHop anh4 =
+        new DefaultNextHop("testNw", "127.0.0.4", 0002, Transport.UDP, 0.9f, "SG1");
+
+    AbstractNextHop anh5 =
+        new DefaultNextHop("testNw", "127.0.0.5", 0002, Transport.UDP, 0.9f, "SG1");
 
     TreeSet<ServerGroupElementInterface> set = new TreeSet<ServerGroupElementInterface>();
     set.add(anh1);
     set.add(anh2);
+    set.add(anh3);
+    set.add(anh4);
+    set.add(anh5);
 
     List<ServerGroupElementInterface> list = new ArrayList<ServerGroupElementInterface>();
     list.addAll(set);
@@ -269,15 +280,23 @@ public class TrunkServiceTest {
     Mockito.when(serverGroup.getElements()).thenReturn(set);
 
     AbstractSipRequest message = mock(AbstractSipRequest.class);
-    Mockito.when(message.getCallId()).thenReturn("1-123456@127.0.0.1");
+    Mockito.when(message.getCallId()).thenReturn("1-11111@127.0.0.1");
 
-    callBased.setServerInfo("SG2", serverGroup, message);
+    callBased.setServerInfo("SG1", serverGroup, message);
     callBased.setDomainsToTry(set);
 
     LBFactory lbf = mock(LBFactory.class);
+    staticServerGroupUtil = mock(StaticServerGroupUtil.class);
 
     TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    Assert.assertNotEquals(ts.getNextElement(callBased), ts.getNextElement(callBased));
+    // test with error response
+    String serverGroupName = callBased.getLastServerTried().getEndPoint().getServerGroupName();
 
-    assertNotEquals(ts.getNextElement(callBased), ts.getNextElement(callBased));
+    when(staticServerGroupUtil.isCodeInFailoverCodeSet(serverGroupName, 503)).thenReturn(true);
+    when(staticServerGroupUtil.isCodeInFailoverCodeSet(serverGroupName, 502)).thenReturn(false);
+
+    Assert.assertNotNull(ts.getNextElement(callBased, 503));
+    Assert.assertNull(ts.getNextElement(callBased, 502));
   }
 }

@@ -36,3 +36,48 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 	  </server>
 	</servers>
 
+#### ENV variables to be configured
+   - Provide listen points for Dhruva SIP Base. Since we are running DSB in Tomcat in IntelliJ (more details in 'Running in Tomcat in Intellij IDE'),
+   pass the required config as environment variables.
+       - For this, go to 'Services' in IDE. You will find the tomcat that you have configured earlier. Right click on that tomcat server
+       and choose 'Edit Configuration'.
+       - Choose 'Startup/Connection' section.
+       - Enable checkbox '_Pass environment variables_'
+       - Provide listen points as below
+           - In 'Name' -> `sipListenPoints`
+           - In 'Value' -> `[{`
+                           	`"name": "<networkName>",`
+                           	`"hostIPAddress": "<IP of machine where DSB runs",`
+                           	`"transport": "<UDP>",`
+                           	`"port": <port>,`
+                           	`"recordRoute": true`
+                           `}] `
+       - Provide Server Groups as below
+            - In 'Name' -> `sipServerGroups`
+            - In 'Value' ->`[{`
+                            `"serverGroupName": "<networkName>",`
+                            `"networkName": "<IP of machine where DSB runs",`
+                            `"elements": [{"ipAddress": "<SG IP address>", "port": "<SG port>", "transport": "UDP", "qValue": <qValue>, "weight": <weight>}],` 
+                            `"sgPolicy": <"PolicyName">,`   	
+                            `}] `
+                                  
+       - Provide Server Groups as below
+            - In 'Name' -> `sgPolicies`
+            - In 'Value' -> `[{`
+                                    `"name": "<networkName>",`
+                                    `"lbType": "<IP of machine where DSB runs",`
+                                    `"failoverResponseCodes": [{"ipAddress": [List of Error Codes]`  	
+                                         `}] `
+
+```yaml 
+Reference
+  sipServerGroups:
+[{"serverGroupName": "SG1", "networkName": "UDPNetwork", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.1", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}], "sgPolicy": "sgPolicy"},{"serverGroupName": "SG2", "networkName": "net_me_tcp", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.2", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}]}]
+  sgPolicies:
+[{"name": "policy1", "lbType": "call-type", "failoverResponseCodes": [501,502]},
+{"name": "global", "lbType": "call-type", "failoverResponseCodes": [503,504]}]
+```
+**NOTE**
+
+* For DynamicSG/ Static SG without any SGPolicy configured, default SGPolicy would be ```global```. 
+* Make sure while configuring ```sipServerGroups```, ```networkName``` should be one of the ```sipListenPoints``` network name. 

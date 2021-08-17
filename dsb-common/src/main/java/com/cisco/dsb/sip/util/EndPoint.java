@@ -22,6 +22,8 @@ public class EndPoint implements Cloneable {
   /* The host name of the end point */
   protected String host;
 
+  protected String serverGroupName;
+
   /* The port number of the end point */
   protected int port = 5060;
 
@@ -40,16 +42,16 @@ public class EndPoint implements Cloneable {
    * @param host The Host name of this end point/address.
    * @param port The port number.
    * @param protocol The int representing the protocol.
+   * @param serverGroup SG Name
    */
-  public EndPoint(String network, String host, int port, Transport protocol) {
+  public EndPoint(String network, String host, int port, Transport protocol, String serverGroup) {
     Log.debug("Entering EndPoint()");
     this.network = network;
     this.host = host;
+    this.serverGroupName = serverGroup;
     if (port > 0) this.port = port;
-
     if (protocol != null) this.protocol = protocol;
     createKey();
-    Log.debug("Leaving EndPoint()");
   }
 
   /** our equals implementation */

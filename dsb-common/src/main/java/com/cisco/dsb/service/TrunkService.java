@@ -37,6 +37,7 @@ public class TrunkService {
   private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
 
   public Mono<EndPoint> getElementMono(AbstractSipRequest request) {
+
     String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
     String uri = SipUtils.getHostPortion(reqUri);
 
@@ -64,7 +65,7 @@ public class TrunkService {
         uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
   }
 
-  private LBInterface getLoadBalancer(
+  public LBInterface getLoadBalancer(
       String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
     try {
       return lbFactory.createLoadBalancer(uri, sgi, request);
@@ -75,6 +76,16 @@ public class TrunkService {
   }
 
   public EndPoint getNextElement(@NonNull LBInterface lb) {
+
     return lb.getServer().getEndPoint();
+  }
+
+  public EndPoint getNextElement(@NonNull LBInterface lb, @NonNull Integer errorCode) {
+
+    if (staticServerGroupUtil.isCodeInFailoverCodeSet(
+        lb.getLastServerTried().getEndPoint().getServerGroupName(), errorCode)) {
+      return lb.getServer().getEndPoint();
+    }
+    return null;
   }
 }

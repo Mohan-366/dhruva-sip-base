@@ -2,6 +2,7 @@ package com.cisco.dsb.config.sip;
 
 import com.cisco.dsb.sip.bean.SIPListenPoint;
 import com.cisco.dsb.sip.bean.SIPProxy;
+import com.cisco.dsb.sip.stack.dto.SGPolicy;
 import com.cisco.dsb.sip.stack.dto.StaticServer;
 import com.cisco.dsb.transport.TLSAuthenticationType;
 import com.cisco.dsb.transport.Transport;
@@ -13,6 +14,7 @@ import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
@@ -24,6 +26,8 @@ public class DhruvaSIPConfigProperties {
   public static final String SIP_LISTEN_POINTS = "sipListenPoints";
 
   public static final String SIP_SERVER_GROUPS = "sipServerGroups";
+
+  public static final String SIP_SG_POLICY = "sgPolicies";
 
   public static final String SIP_PROXY = "sipProxy";
 
@@ -177,6 +181,7 @@ public class DhruvaSIPConfigProperties {
     return listenPoints;
   }
 
+  @Bean(name = "staticServers")
   public List<StaticServer> getServerGroups() {
 
     String configuredServerGroups = env.getProperty(SIP_SERVER_GROUPS);
@@ -212,6 +217,44 @@ public class DhruvaSIPConfigProperties {
     serverArrayList.add(serverGroup);
 
     return serverArrayList;
+  }
+
+  @Bean(name = "sgPolicies")
+  public List<SGPolicy> getSGPolicies() {
+
+    String configuredSgPolicies = env.getProperty(SIP_SG_POLICY);
+
+    List<SGPolicy> sgPolicies;
+
+    if (configuredSgPolicies != null) {
+      try {
+        sgPolicies =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredSgPolicies, SGPolicy[].class));
+      } catch (Exception e) {
+        // TODO should we generate an Alarm
+        logger.error("Error converting JSON SGPolicy configuration provided in the environment", e);
+        return getDefaultSGPolicy();
+      }
+    } else {
+
+      return getDefaultSGPolicy();
+    }
+    logger.info("Sip SG Policies from the {} configuration {}", SIP_SG_POLICY, sgPolicies);
+
+    return sgPolicies;
+  }
+
+  private List<SGPolicy> getDefaultSGPolicy() {
+
+    List<SGPolicy> sgPolicyList = new ArrayList<>();
+
+    SGPolicy sgPolicy = SGPolicy.builder().build();
+
+    sgPolicyList.add(sgPolicy);
+
+    return sgPolicyList;
   }
 
   public SIPProxy getSIPProxy() {
