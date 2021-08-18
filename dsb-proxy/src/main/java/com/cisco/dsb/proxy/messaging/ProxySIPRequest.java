@@ -2,15 +2,14 @@ package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
+import com.cisco.dsb.dto.Destination;
 import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
 import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.util.Location;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.sip.util.EndPoint;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
@@ -23,16 +22,18 @@ import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+@CustomLog
 public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private ProxyStatelessTransaction proxyStatelessTransaction;
   @Getter @Setter private ProxyInterface proxyInterface;
   @Getter @Setter private String network;
   @Getter @Setter private SIPRequest clonedRequest;
-  @Getter @Setter private Location location;
+  @Getter @Setter private Destination destination;
   @Getter @Setter private String outgoingNetwork = null;
   @Getter @Setter private ProxyCookie cookie;
   @Getter @Setter private ProxyParamsInterface params;
@@ -41,8 +42,7 @@ public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private URI lrFixUri = null;
   @Getter @Setter private URI m_routeTo = null;
   @Getter @Setter private boolean m_escaped = false;
-
-  Logger logger = DhruvaLoggerFactory.getLogger(ProxySIPRequest.class);
+  @Getter @Setter private EndPoint downstreamElement;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,
@@ -53,11 +53,11 @@ public class ProxySIPRequest extends AbstractSipRequest {
     super(executionContext, provider, transaction, request);
   }
 
-  public void proxy(@NonNull ProxySIPRequest proxySIPRequest, @NonNull Location location) {
+  public void proxy(@NonNull ProxySIPRequest proxySIPRequest, @NonNull Destination destination) {
     if (this.proxyInterface == null) {
       throw new RuntimeException("proxy does not right interface set to forward the request");
     }
-    this.proxyInterface.proxyRequest(proxySIPRequest, location);
+    this.proxyInterface.proxyRequest(proxySIPRequest, destination);
   }
 
   @Override

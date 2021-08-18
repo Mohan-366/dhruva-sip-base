@@ -5,20 +5,16 @@ import com.cisco.dsb.proxy.handlers.SipRequestHandler;
 import com.cisco.dsb.proxy.handlers.SipResponseHandler;
 import com.cisco.dsb.proxy.handlers.SipTimeOutHandler;
 import com.cisco.dsb.service.ProxyService;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import javax.inject.Inject;
-import javax.sip.RequestEvent;
-import javax.sip.ResponseEvent;
-import javax.sip.TimeoutEvent;
+import javax.sip.*;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@CustomLog
 public class ProxyEventManager implements ProxyEventListener {
-
-  private final Logger logger = DhruvaLoggerFactory.getLogger(ProxyEventManager.class);
 
   /**
    * Thread pool executor for executing the request/response events. By processing in a thread, jain
@@ -46,6 +42,16 @@ public class ProxyEventManager implements ProxyEventListener {
   public void timeOut(TimeoutEvent timeoutEvent) {
     logger.debug("received time out event, start processing the request in stripped executor");
     startProcessing(new SipTimeOutHandler(proxyService, timeoutEvent));
+  }
+
+  @Override
+  public void transactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
+    /*if (!transactionTerminatedEvent.isServerTransaction()) {
+      ClientTransaction clientTx = transactionTerminatedEvent.getClientTransaction();
+
+      String method = clientTx.getRequest().getMethod();
+      logger.info("Server Tx : " + method + " terminated ");
+    }*/
   }
 
   private void startProcessing(ProxyEventHandler proxyEventHandler) {

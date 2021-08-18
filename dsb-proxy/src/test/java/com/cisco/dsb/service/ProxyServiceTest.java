@@ -10,6 +10,7 @@ import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServerImpl;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
+import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.DhruvaSipRequestMessage;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -135,7 +136,11 @@ public class ProxyServiceTest {
           new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));
       socket.close();
     }
-    proxyService.register(requestConsumer, responseConsumer, false);
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
   }
 
   @Test(description = "test the request pipeline in proxy service all the way up to app")
@@ -187,7 +192,11 @@ public class ProxyServiceTest {
     request.setRemotePort(8000);
 
     RequestEvent requestEvent1 = new RequestEvent(sipProvider1, serverTransaction, dialog, request);
-    proxyService.register(requestConsumer, responseConsumer, false);
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
 
     Consumer<RequestEvent> consumer = mock(Consumer.class);
     doAnswer(ans -> null).when(consumer).accept(requestEvent1);
@@ -200,7 +209,7 @@ public class ProxyServiceTest {
 
     Function<ProxySIPRequest, ProxySIPRequest> function2 = mock(Function.class);
     when(function2.apply(any(ProxySIPRequest.class))).thenReturn(proxySIPRequest);
-    when(sipProxyManager.getProxyController()).thenReturn(function2);
+    when(sipProxyManager.getProxyController(any(ProxyAppConfig.class))).thenReturn(function2);
 
     Function<ProxySIPRequest, ProxySIPRequest> function3 = mock(Function.class);
     when(function3.apply(any(ProxySIPRequest.class))).thenReturn(proxySIPRequest);
@@ -240,7 +249,12 @@ public class ProxyServiceTest {
     ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
     ResponseEvent responseEvent = mock(ResponseEvent.class);
 
-    proxyService.register(requestConsumer, responseConsumer, false);
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            ._2xx(true)
+            .build());
 
     Consumer<ResponseEvent> consumer = mock(Consumer.class);
     doAnswer(ans -> null).when(consumer).accept(responseEvent);
@@ -254,8 +268,42 @@ public class ProxyServiceTest {
     Function<ProxySIPResponse, ProxySIPResponse> function2 = mock(Function.class);
     when(function2.apply(any(ProxySIPResponse.class))).thenReturn(proxySIPResponse);
     when(sipProxyManager.processProxyTransaction()).thenReturn(function2);
-
+    when(sipProxyManager.processToApp(proxySIPResponse, true)).thenReturn(proxySIPResponse);
+    when(proxySIPResponse.getResponseClass()).thenReturn(2);
     StepVerifier.create(proxyService.responsePipeline(Mono.just(responseEvent)))
+        .assertNext(
+            proxyResponse -> {
+              Assert.assertEquals(proxyResponse, proxySIPResponse);
+            })
+        .verifyComplete();
+  }
+
+  @Test(description = "test timeout pipeline of proxy service until app")
+  public void testTimeoutPipeline() {
+
+    Consumer<ProxySIPRequest> requestConsumer =
+        proxySIPRequest -> {
+          System.out.println("got request from proxy layer");
+        };
+    Consumer<ProxySIPResponse> responseConsumer =
+        proxySIPResponse -> {
+          System.out.println("got response from proxy layer");
+        };
+
+    ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
+    TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
+
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
+
+    Function<TimeoutEvent, ProxySIPResponse> function1 = mock(Function.class);
+    when(function1.apply(any(TimeoutEvent.class))).thenReturn(proxySIPResponse);
+    when(sipProxyManager.handleProxyTimeoutEvent()).thenReturn(function1);
+
+    StepVerifier.create(proxyService.timeOutPipeline(Mono.just(timeoutEvent)))
         .assertNext(
             proxyResponse -> {
               Assert.assertEquals(proxyResponse, proxySIPResponse);

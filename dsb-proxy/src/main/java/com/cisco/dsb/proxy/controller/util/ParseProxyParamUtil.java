@@ -1,7 +1,6 @@
 package com.cisco.dsb.proxy.controller.util;
 
 import com.cisco.dsb.exception.DhruvaException;
-import com.cisco.dsb.proxy.controller.AppParamsInterface;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
@@ -26,18 +25,6 @@ public class ParseProxyParamUtil {
   protected static final Logger logger = DhruvaLoggerFactory.getLogger(ParseProxyParamUtil.class);
 
   private ParseProxyParamUtil() {}
-
-  public static AppParamsInterface getAppParamsInterface(ProxySIPRequest request) {
-
-    return () -> {
-      try {
-        return getParsedProxyParams(request, ReConstants.MY_URI, false, ReConstants.DELIMITER_STR);
-      } catch (DhruvaException e) {
-        logger.error("Unable to get parsed proxy params for MY_URI.", e);
-      }
-      return null;
-    };
-  }
 
   public static Map<String, String> getParsedProxyParams(
       ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter)

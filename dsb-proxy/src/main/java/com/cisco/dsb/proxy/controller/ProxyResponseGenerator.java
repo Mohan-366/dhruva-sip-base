@@ -1,10 +1,10 @@
 package com.cisco.dsb.proxy.controller;
 
+import com.cisco.dsb.dto.Destination;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.util.SipTag;
-import com.cisco.dsb.sip.util.Location;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.Utils;
@@ -42,20 +42,20 @@ public abstract class ProxyResponseGenerator {
 
     if (size > 0) {
       if (size == 1) {
-        Location location = (Location) locations.get(0);
-        URI uri = location.getUri();
+        Destination destination = (Destination) locations.get(0);
+        URI uri = destination.getUri();
         Address address = JainSipHelper.getAddressFactory().createAddress(uri.toString());
         ContactHeader contactHeader = JainSipHelper.getHeaderFactory().createContactHeader(address);
-        contactHeader.setQValue(location.getQValue());
+        contactHeader.setQValue(destination.getQValue());
         contactHeaders.add((Contact) contactHeader);
       } else {
         for (Object o : locations) {
-          Location location = (Location) o;
-          URI uri = location.getUri();
+          Destination destination = (Destination) o;
+          URI uri = destination.getUri();
           Address address = JainSipHelper.getAddressFactory().createAddress(uri.toString());
           ContactHeader contactHeader =
               JainSipHelper.getHeaderFactory().createContactHeader(address);
-          contactHeader.setQValue(location.getQValue());
+          contactHeader.setQValue(destination.getQValue());
           contactHeaders.add((Contact) contactHeader);
         }
       }

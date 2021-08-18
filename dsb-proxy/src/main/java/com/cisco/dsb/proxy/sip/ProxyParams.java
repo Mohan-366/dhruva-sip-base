@@ -5,7 +5,6 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.ListenInterface;
 import com.cisco.dsb.sip.util.ViaListenInterface;
 import com.cisco.dsb.transport.Transport;
-import gov.nist.javax.sip.header.ims.PathHeader;
 import java.net.InetAddress;
 import javax.sip.header.RecordRouteHeader;
 
@@ -18,9 +17,7 @@ public class ProxyParams extends ProxyBranchParams implements ProxyParamsInterfa
   protected int defaultPort;
   protected Transport defaultProtocol;
   protected ListenInterface reInterface = null;
-  protected ViaListenInterface reViaInterface = null;
   protected RecordRouteHeader recordRouteInterface = null;
-  protected PathHeader pathInterface = null;
   protected ProxyParamsInterface storedIface;
 
   // Took out direction

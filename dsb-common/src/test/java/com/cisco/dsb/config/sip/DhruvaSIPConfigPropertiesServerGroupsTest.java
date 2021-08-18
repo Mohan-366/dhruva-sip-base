@@ -48,7 +48,7 @@ public class DhruvaSIPConfigPropertiesServerGroupsTest {
   }
 
   @Test
-  public void getListenPointsFromJSONConfig() {
+  public void getServerGroupFromJSONConfig() {
 
     when(env.getProperty("sipServerGroups"))
         .thenReturn(

@@ -140,7 +140,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   public DnsLookup dnsLookup() {
     return DnsResolvers.newBuilder()
         .cacheSize(dhruvaSIPConfigProperties.getDhruvaDnsCacheMaxSize())
-        .dnsLookupTimeoutMillis(dhruvaSIPConfigProperties.dnsCacheRetentionTimeMillis())
+        .dnsLookupTimeoutMillis(dhruvaSIPConfigProperties.dnsLookupTimeoutMillis())
         .retentionDurationMillis(dhruvaSIPConfigProperties.dnsCacheRetentionTimeMillis())
         .metered(dnsMetricsReporter())
         .build();

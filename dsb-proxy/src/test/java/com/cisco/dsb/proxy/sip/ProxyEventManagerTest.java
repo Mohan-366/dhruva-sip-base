@@ -126,7 +126,7 @@ public class ProxyEventManagerTest {
   }
 
   @Test(description = "test timeout handler for proxy")
-  public void testTimeoutEventHandler() throws Exception {
+  public void testTimeoutEventHandler() {
     Future f = mock(Future.class);
     when(executor.submit(any(ProxyEventHandler.class))).thenReturn(f);
     SipProvider sipProvider = mock(SipProvider.class);

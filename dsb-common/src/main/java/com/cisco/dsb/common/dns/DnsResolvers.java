@@ -5,8 +5,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.cisco.dsb.common.dns.metrics.DnsReporter;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.xbill.DNS.ExtendedResolver;
 import org.xbill.DNS.Resolver;
 
@@ -65,8 +65,9 @@ public final class DnsResolvers {
                   ? new ExtendedResolver()
                   : new ExtendedResolver(servers.toArray(new String[servers.size()]));
 
-          final Duration timeoutDuration = Duration.ofMillis(dnsLookupTimeoutMillis);
-          resolver.setTimeout(timeoutDuration.getNano());
+          // in 3.x version of dnsjava this is deprecated
+          resolver.setTimeout(
+              Math.toIntExact(TimeUnit.MILLISECONDS.toSeconds(dnsLookupTimeoutMillis)));
 
           simpleLookupFactory = new SimpleLookupFactory(resolver);
         } catch (UnknownHostException e) {

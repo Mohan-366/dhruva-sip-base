@@ -27,7 +27,7 @@ public class MessageConvertorTest {
   private SIPListenPoint defaultListenPoint;
 
   @BeforeClass
-  void init() throws Exception {
+  void init() {
     defaultListenPoint =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("Default")
@@ -164,8 +164,14 @@ public class MessageConvertorTest {
   }
 
   @AfterClass
-  public void stopSipStack() throws ObjectInUseException {
-    sipStack.deleteSipProvider(sipProvider);
-    sipStack.stop();
+  public void stopSipStack() {
+    if (sipStack != null) {
+      try {
+        sipStack.deleteSipProvider(sipProvider);
+        sipStack.stop();
+      } catch (ObjectInUseException ignored) {
+
+      }
+    }
   }
 }

@@ -23,28 +23,6 @@ public class DefaultServerGroup extends AbstractServerGroup {
   protected HashSet listeners = null;
   private int unreachable = 0;
   private int overloaded = 0;
-  protected boolean wasAvailable = false;
-
-  /**
-   * Constructs a new <code>AbstractServerGroup</code> with the given name.
-   *
-   * @param name the name of this <code>AbstractServerGroup</code>
-   * @param lbType the type of load balancing for this server group.
-   */
-  public DefaultServerGroup(String name, String network, int lbType, boolean pingOn) {
-    this(name, network, null, lbType, pingOn);
-  }
-
-  /**
-   * Constructs a new <code>AbstractServerGroup</code> with the given name.
-   *
-   * @param name the name of this <code>AbstractServerGroup</code>
-   * @param lbType the fully qualified class name of the type of load balancing for this server
-   *     group.
-   */
-  public DefaultServerGroup(String name, String network, String lbType, boolean pingOn) {
-    this(name, network, null, lbType, pingOn);
-  }
 
   /**
    * Constructs a new <code>AbstractServerGroup</code> with the given name and the given <code>
@@ -57,19 +35,6 @@ public class DefaultServerGroup extends AbstractServerGroup {
   protected DefaultServerGroup(
       String name, String network, TreeSet elements, int lbType, boolean pingOn) {
 
-    super(name, network, elements, lbType, pingOn);
-  }
-
-  /**
-   * Constructs a new <code>AbstractServerGroup</code> with the given name and the given <code>
-   * TreeSet</code> full of <code>ServerGroupElement</code> objects.
-   *
-   * @param name the name of this <code>AbstractServerGroup</code>
-   * @param elements a <code>ArrayList</code> of <code>ServerGroupElement</code>s.
-   * @param lbType fully qualified class name of the type of load balancing for this server group.
-   */
-  protected DefaultServerGroup(
-      String name, String network, TreeSet elements, String lbType, boolean pingOn) {
     super(name, network, elements, lbType, pingOn);
   }
 

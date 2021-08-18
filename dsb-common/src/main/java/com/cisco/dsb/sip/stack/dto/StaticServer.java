@@ -16,6 +16,7 @@ public class StaticServer {
   private String networkName = "DefaultNetwork";
   private String lbType = "call-id";
   private List<ServerGroupElement> elements = Arrays.asList(ServerGroupElement.builder().build());
+  private String sgPolicy = "global";
 
   @JsonPOJOBuilder(withPrefix = "")
   public static class StaticServerBuilder {
@@ -23,5 +24,6 @@ public class StaticServer {
     private String networkName = "DefaultNetwork";
     private String lbType = "call-id";
     private List<ServerGroupElement> elements = Arrays.asList(ServerGroupElement.builder().build());
+    private String sgPolicy = "global";
   }
 }

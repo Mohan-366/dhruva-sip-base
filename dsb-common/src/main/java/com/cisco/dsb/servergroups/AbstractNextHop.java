@@ -56,7 +56,7 @@ public abstract class AbstractNextHop extends ServerGroupElement
       String serverGroup,
       Boolean dnsServerGroup) {
     this.isNextHop = true;
-    endpoint = new EndPoint(network, host, port, protocol);
+    endpoint = new EndPoint(network, host, port, protocol, serverGroup);
 
     this.setQValue(qValue);
     setParent(serverGroup);

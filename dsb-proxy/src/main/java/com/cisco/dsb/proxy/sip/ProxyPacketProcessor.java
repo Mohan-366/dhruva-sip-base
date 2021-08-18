@@ -42,6 +42,7 @@ public class ProxyPacketProcessor implements SipListener {
   @Override
   public void processTransactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
     logger.info("received transaction terminated event from sip stack");
+    /*proxyEventListener.transactionTerminated(transactionTerminatedEvent);*/
   }
 
   @Override

@@ -53,6 +53,7 @@ public class ControllerConfigTest {
     recordRouteMap.put("test_network_in", rr_in);
     recordRouteMap.put("test_network_out", recordRoute);
     controllerConfig.setRecordRoutesMap(recordRouteMap);
+    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
     // call
     controllerConfig.setRecordRouteInterface(sipResponse, false, 1);
 
@@ -106,6 +107,7 @@ public class ControllerConfigTest {
             })
         .when(sipResponse)
         .setApplicationData(eq("test_network_in"));
+    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
     // call
     controllerConfig.setRecordRouteInterface(sipResponse, true, -1);
 

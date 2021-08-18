@@ -9,8 +9,6 @@ import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.util.SipUtils;
 import com.cisco.dsb.sip.util.ViaListenInterface;
 import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -27,6 +25,7 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
 import reactor.core.publisher.Mono;
@@ -38,6 +37,7 @@ import reactor.core.publisher.Mono;
  * request DsProxyTransaction inherits from from StatelessTransaction and defines lots of additional
  * operations
  */
+@CustomLog
 public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
   // internal state constants
@@ -97,8 +97,6 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    */
   protected int n_branch = 0;
 
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyStatelessTransaction.class);
-
   //  private static final boolean m_simpleResolver =
   // DsConfigManager.getProperty(DsConfigManager.PROP_SIMPLE_RESOLVER,
   //                DsConfigManager.PROP_SIMPLE_RESOLVER_DEFAULT);
@@ -137,8 +135,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         break;
     }
     n_branch = 0;
-
-    Log.info("ProxyStatelessTransaction created");
+    logger.info("New ProxyStatelessTransaction created");
   }
 
   /**
@@ -155,7 +152,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     ProxyCookie cookie = proxySIPRequest.getCookie();
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
 
-    Log.debug("Entering DsProxyStatelessTransaction proxyTo()");
+    logger.debug("Entering proxyTo()");
 
     if (state != PROXY_INITIAL && strayRequest == NOT_STRAY) {
       controller.onProxyFailure(
@@ -169,21 +166,17 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
     try {
       prepareRequest(proxySIPRequest);
-
-      Log.debug("proxying request");
-
       state = PROXY_DONE;
-      Log.debug("Leaving DsProxyStatelessTransaction  proxyTo()");
+
+      controller.onProxySuccess(this, cookie, null);
+      logger.debug("Leaving ProxyStatelessTransaction  proxyTo()");
       return proxySIPRequest;
 
     } catch (ParseException | InvalidArgumentException | SipException e) {
-      Log.error("Got DsException in proxyTo()!", e);
+      logger.error("Got DsException in proxyTo()!", e);
       controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
       return null;
     }
-
-    // controller.onProxySuccess(this, cookie, null);
-
   }
 
   /**
@@ -210,6 +203,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
 
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     if (!params.doRecordRoute()) {
+      logger.info("Proxy not adding self in Record-route");
       return;
     }
 
@@ -232,7 +226,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   protected synchronized void prepareRequest(ProxySIPRequest proxySIPRequest)
       throws InvalidParameterException, ParseException, SipException, InvalidArgumentException {
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
-    Log.debug("Entering prepareRequest()");
+    logger.debug("Entering prepareRequest()");
     // Always get cloned request
     SIPRequest request = proxySIPRequest.getClonedRequest();
     RouteHeader route;
@@ -270,7 +264,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       network = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
 
       // DhruvaNetwork network = (DhruvaNetwork) request.getApplicationData();
-      Log.debug("branch=" + branch);
+      logger.debug("branch = {}", branch);
 
       // The following block fixes up Via protocol in case Route is used
       ViaHeader via; // !!!!!!!!!!!!!!! double check this is correct
@@ -296,7 +290,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       // Note that it doesn't really matter what we put in there
       // since the Low Level will try to update it when doing SRV
       ViaListenInterface listenIf = getPreferredListenIf(viaTransport, network.getName());
-      Log.debug("Got interface " + listenIf + " for transport protocol " + viaTransport);
+      logger.debug("Got interface {} for transport protocol {}", listenIf, viaTransport);
 
       if (listenIf != null) viaTransport = listenIf.getProtocol().getValue();
 
@@ -338,14 +332,13 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       // tokDic.getName());
       //            }
       request.addFirst(via);
-      Log.info("Via field added: " + via);
+      logger.info("Via field added: {}", via);
     }
-
-    Log.debug("Leaving prepareRequest()");
+    logger.debug("Leaving prepareRequest()");
   }
 
   protected ViaListenInterface getPreferredListenIf(int protocol, String direction) {
-    Log.debug("Entering getPreferredListenIf()");
+    logger.debug("Entering getPreferredListenIf()");
     int[] transports;
     Optional<Transport> transportOptional = Transport.getTypeFromInt(protocol);
     Transport transport = Transport.UDP;
@@ -364,7 +357,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         break;
       default:
         transports = Transports_UDP;
-        Log.warn("Unknown transport requested for Via: " + protocol);
+        logger.warn("Unknown transport requested for Via: " + protocol);
         break;
     }
 
@@ -376,7 +369,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
       listenIf = getDefaultParams().getViaInterface(transport, direction);
       if (listenIf != null) break;
     }
-    Log.debug("Leaving getPreferredListenIf(), returning " + listenIf);
+    logger.debug("Leaving getPreferredListenIf(), returning " + listenIf);
     return listenIf;
   }
 
@@ -389,7 +382,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    * @return transport protocol (UDP or TCP) to be tried
    */
   protected Transport setRequestDestination(SIPRequest request, ProxyBranchParamsInterface params) {
-    Log.debug("Entering setRequestDestination()");
+    logger.debug("Entering setRequestDestination()");
     Transport destTransport = Transport.NONE;
     String destAddress = null;
     int destPort = -1; // , destTransport = DsSipTransportType.NONE;
@@ -410,15 +403,15 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     if (destAddress != null) {
       try {
         request.setRemoteAddress(InetAddress.getByName(destAddress));
-        Log.info("Request destination address is set to " + destAddress);
+        logger.info("Request destination address is set to {}", destAddress);
       } catch (UnknownHostException e) {
-        Log.error("Cannot set destination address!", e);
+        logger.error("Cannot set destination address!", e);
       }
     }
 
     if (destPort > 0) {
       request.setRemotePort(destPort);
-      Log.info("Request destination port is set to " + destPort);
+      logger.info("Request destination port is set to {}", destPort);
     }
 
     if (destTransport == Transport.NONE) {
@@ -430,7 +423,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     // destTransport);
     //    }
 
-    Log.debug("Leaving setRequestDestination()");
+    logger.debug("Leaving setRequestDestination()");
     return destTransport;
   }
 
@@ -465,7 +458,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   // Insert itself in Record-Route if required
   protected void addRecordRoute(ProxySIPRequest proxySIPRequest, URI _requestURI)
       throws SipException, ParseException {
-    Log.debug("Entering addRecordRoute()");
+    logger.debug("Entering addRecordRoute()");
     SIPRequest request = proxySIPRequest.getClonedRequest();
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     if (request.getMethod().equals(Request.INVITE)
@@ -506,10 +499,11 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
             com.cisco.dsb.proxy.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(
                 getDefaultParams(), uri));
 
-        Log.info("Adding " + rr);
+        logger.info("Adding " + rr);
         request.addFirst(rr);
       }
     }
+    logger.debug("Leaving addRecordRoute()");
   }
 
   /**
@@ -568,7 +562,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    * @return The rport cookie formatted as <code>&lt;ip&gt;:&lt;port&gt;</code>
    */
   public static String getRPORTCookie(String branch) {
-    Log.debug("Entering getRPORTCookie(" + branch + ")");
+    logger.debug("Entering getRPORTCookie(" + branch + ")");
     String rportCookie = null;
     if (branch != null) {
       if (branch.endsWith(RPORT_COOKIE_END)) {
@@ -583,7 +577,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
                 branch.length() - RPORT_COOKIE_END.length());
       }
     }
-    Log.debug("Leaving getRPORTCookie(), returning " + rportCookie);
+    logger.debug("Leaving getRPORTCookie(), returning " + rportCookie);
     return rportCookie;
   }
 
@@ -600,20 +594,20 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    *     RPORT_COOKIE_START</code>&lt;ip&gt;:&lt;port&gt;<code>RPORT_COOKIE_END</code>
    */
   public static String setRPORTCookie(SIPRequest bindingInfo, String branch) {
-    Log.debug("Entering setRPORTCookie(" + bindingInfo + ", " + branch + ")");
+    logger.debug("Entering setRPORTCookie(" + bindingInfo + ", " + branch + ")");
     StringBuilder newBranch = new StringBuilder(branch);
     String localAddress = bindingInfo.getLocalAddress().getHostAddress();
     int port = bindingInfo.getLocalPort();
     StringBuffer rportCookie = new StringBuffer(localAddress);
     rportCookie.append(colon).append(port);
     String rportCookieBS = new String(rportCookie);
-    Log.debug("Adding the rport cookie " + rportCookie + " to the branch id for NAT traversal");
+    logger.debug("Adding the rport cookie " + rportCookie + " to the branch id for NAT traversal");
 
     newBranch.append(RPORT_COOKIE_START);
     newBranch.append(rportCookieBS);
     newBranch.append(RPORT_COOKIE_END);
 
-    Log.debug("Leaving setRPORTCookie(), returning " + newBranch);
+    logger.debug("Leaving setRPORTCookie(), returning " + newBranch);
     return newBranch.toString();
   }
 }

@@ -7,7 +7,6 @@ import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.LogContext;
 import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import javax.sip.ClientTransaction;
 import javax.sip.Dialog;
 import javax.sip.SipProvider;
@@ -30,8 +29,7 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
       ExecutionContext executionContext,
       SipProvider sipProvider,
       ClientTransaction ct,
-      Response response)
-      throws IOException {
+      Response response) {
     super(JainSipHelper.getCallId(response), JainSipHelper.getCSeq(response));
     this.response = response;
     this.ct = ct;

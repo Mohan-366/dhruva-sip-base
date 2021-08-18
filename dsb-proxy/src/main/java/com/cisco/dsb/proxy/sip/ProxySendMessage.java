@@ -10,6 +10,7 @@ import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.SipStack;
 import javax.sip.address.Hop;
+import javax.sip.message.Request;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import lombok.NonNull;
@@ -75,11 +76,20 @@ public class ProxySendMessage {
     }
   }
 
+  public static void sendRequest(
+      Request request, ClientTransaction clientTransaction, SipProvider sipProvider)
+      throws DhruvaException {
+    try {
+      if (clientTransaction != null) clientTransaction.sendRequest();
+      else sipProvider.sendRequest(request);
+    } catch (Exception e) {
+      throw new DhruvaException(e);
+    }
+  }
+
   public static Mono<ProxySIPRequest> sendProxyRequestAsync(
       SipProvider provider, ClientTransaction transaction, ProxySIPRequest proxySIPRequest) {
-    // SIPTransactionStack stack = (SIPTransactionStack) provider.getSipStack();
     SipStack stack = provider.getSipStack();
-
     return Mono.<ProxySIPRequest>fromCallable(
             () -> {
               Hop hop =

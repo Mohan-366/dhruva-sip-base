@@ -1,26 +1,25 @@
 package com.cisco.dhruva.application.calltype;
 
+import com.cisco.dsb.dto.Destination;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.sip.util.Location;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
+import lombok.CustomLog;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 // TODO can this be static type??? whole class???
 @Component
+@CustomLog
 public class DefaultCallType implements CallType {
-  Logger logger = DhruvaLoggerFactory.getLogger(DefaultCallType.class);
   Random booleanRandom = new SecureRandom();
 
   @PostConstruct
@@ -42,19 +41,23 @@ public class DefaultCallType implements CallType {
           .name("defaultType")
           .subscribe(
               proxySIPRequest -> {
-                logger.info("Sending to APP from leaf ,callid: " + proxySIPRequest.getCallId());
+                logger.info("Sending to APP from leaf for callid: {}", proxySIPRequest.getCallId());
                 try {
-                  Location loc = new Location(proxySIPRequest.getRequest().getRequestURI());
+                  Destination destination =
+                      Destination.builder()
+                          .uri(proxySIPRequest.getRequest().getRequestURI())
+                          .build();
                   // Ideally location object should hold the outgoing network based on config
                   // This is temp solution
+                  // TODO: Use Optional.ifPresent() instead
                   if (DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).isPresent()) {
-                    loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+                    destination.setNetwork(
+                        DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
                   }
                   // loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
                   // processRoute is set to true only in case , app inserts Route Header pointing to
                   // new destination
-                  loc.setProcessRoute(true);
-                  proxySIPRequest.proxy(proxySIPRequest, loc);
+                  proxySIPRequest.proxy(proxySIPRequest, destination);
                 } catch (Exception exception) {
                   exception.printStackTrace();
                 }
@@ -70,7 +73,7 @@ public class DefaultCallType implements CallType {
 
   private Function<ProxySIPRequest, ProxySIPRequest> addHeaders =
       proxySIPRequest -> {
-        logger.info("Adding headers , callID:" + proxySIPRequest.getCallId());
+        logger.info("Adding headers, callID: {}", proxySIPRequest.getCallId());
         return proxySIPRequest;
       };
 
@@ -82,17 +85,19 @@ public class DefaultCallType implements CallType {
               .mapNotNull(
                   p -> {
                     try {
-                      logger.info("MRS lookup started, callID" + proxySIPRequest.getCallId());
+                      logger.debug(
+                          "MRS lookup started for callID: {}", proxySIPRequest.getCallId());
                       Thread.sleep(10);
                       boolean succeed = true;
                       // if (booleanRandom.nextBoolean()) {
                       if (succeed) {
-                        logger.info("MRS lookup succeeded, callID" + proxySIPRequest.getCallId());
+                        logger.info(
+                            "MRS lookup succeeded for callID: {}", proxySIPRequest.getCallId());
                         return p;
                       } else {
                         logger.info(
-                            "MRS lookup failed, callID" + proxySIPRequest.getCallId(),
-                            " Rejecting the call");
+                            "MRS lookup failed for callID: {}. Rejecting the call",
+                            proxySIPRequest.getCallId());
                         ((ProxyController)
                                 proxySIPRequest.getProxyStatelessTransaction().getController())
                             .respond(404, proxySIPRequest);

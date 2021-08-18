@@ -9,7 +9,6 @@
  */
 package com.cisco.dsb.servergroups;
 
-import com.cisco.dsb.sip.util.EndPoint;
 import com.cisco.dsb.transport.Transport;
 import java.util.HashMap;
 
@@ -32,16 +31,6 @@ public class DefaultNextHop extends AbstractNextHop {
     super(network, hostname, port, transport, qValue, serverGroup, false);
   }
 
-  public DefaultNextHop(String network, EndPoint endPoint, float qValue, String serverGroup) {
-    this(
-        network,
-        endPoint.getHost(),
-        endPoint.getPort(),
-        endPoint.getProtocol(),
-        qValue,
-        serverGroup);
-  }
-
   @Override
   public boolean isAvailable() {
     return true;
@@ -57,9 +46,8 @@ public class DefaultNextHop extends AbstractNextHop {
     HashMap elementMap = new HashMap();
     elementMap.put(SG.sgSgElementSgName, parent);
     elementMap.put(SG.sgSgElementHost, getDomainName());
-    elementMap.put(SG.sgSgElementPort, new Integer(getPort()));
-    // MEETPASS
-    // elementMap.put(SG.sgSgElementTransport, DsSipTransportType.getTypeAsString(0));
+    elementMap.put(SG.sgSgElementPort, getPort());
+    elementMap.put(SG.sgSgElementTransport, getProtocol());
     elementMap.put(SG.sgSgElementQValue, String.valueOf(getQValue()));
     elementMap.put(SG.sgSgElementWeight, String.valueOf(getWeight()));
 

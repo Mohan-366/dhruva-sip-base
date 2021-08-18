@@ -3,7 +3,6 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
@@ -13,10 +12,11 @@ import com.cisco.dsb.util.TriFunction;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
+import java.util.*;
 import javax.sip.*;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
+import javax.sip.message.Response;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -24,6 +24,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class ProxyTransactionTest {
@@ -134,38 +135,13 @@ public class ProxyTransactionTest {
     assert proxyTransaction.getBestResponse() == proxySIPResponse;
     verify(proxyClientTransaction, Mockito.times(1)).gotResponse(proxySIPResponse);
     verify(controllerInterface, Mockito.times(1))
-        .onSuccessResponse(
-            eq(proxyTransaction), any(), eq(proxyClientTransaction), eq(proxySIPResponse));
-    verify(controllerInterface, Mockito.times(1))
-        .onBestResponse(eq(proxyTransaction), eq(proxySIPResponse));
+        .onSuccessResponse(eq(proxyTransaction), eq(proxySIPResponse));
 
     //
   }
 
-  @Test(description = "Handling 2xx Response Retransmission in ProxyTransaction")
-  public void testFinalResponse2xxRetransmit()
-      throws InvalidArgumentException, DhruvaException, SipException {
-    // setup
-    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
-    when(proxySIPResponse.getResponseClass()).thenReturn(2);
-    when(proxyClientTransaction.getState())
-        .thenReturn(ProxyClientTransaction.STATE_FINAL_RETRANSMISSION_RECVD);
-
-    // call
-    proxyTransaction.finalResponse(proxySIPResponse);
-    // verify
-    verify(controllerInterface, Mockito.times(1)).onResponse(proxySIPResponse);
-    verify(sipResponse, Mockito.times(1)).removeFirst(ViaHeader.NAME);
-    verify(proxyClientTransaction, Mockito.times(1)).gotResponse(proxySIPResponse);
-    assert proxyTransaction.getBestResponse() == proxySIPResponse;
-    verify(proxyServerTransaction, Mockito.times(1)).retransmit200();
-    verify(controllerInterface, Mockito.times(0)).onSuccessResponse(any(), any(), any(), any());
-    verify(controllerInterface, Mockito.times(0)).onBestResponse(any(), any());
-  }
-
   @Test(description = "Handling 4xx,5xx Response in ProxyTransaction")
-  public void testFinalResponse4xx5xx()
-      throws InvalidArgumentException, DhruvaException, IOException, SipException {
+  public void testFinalResponse4xx5xx() {
     // setup
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxySIPResponse.getResponseClass()).thenReturn(4);
@@ -175,15 +151,14 @@ public class ProxyTransactionTest {
     proxyTransaction.finalResponse(proxySIPResponse);
 
     // verify
-    verify(proxyClientTransaction, Mockito.times(1)).ack();
+    // ACK is sent by JAIN stack
     verify(controllerInterface, Mockito.times(1))
         .onFailureResponse(
             eq(proxyTransaction), any(), eq(proxyClientTransaction), eq(proxySIPResponse));
   }
 
   @Test(description = "Handling 6xx Response in ProxyTransaction")
-  public void testFinalResponse6xx()
-      throws InvalidArgumentException, DhruvaException, IOException, SipException {
+  public void testFinalResponse6xx() {
     // setup
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxySIPResponse.getResponseClass()).thenReturn(6);
@@ -193,10 +168,8 @@ public class ProxyTransactionTest {
     proxyTransaction.finalResponse(proxySIPResponse);
 
     // verify
-    verify(proxyClientTransaction, Mockito.times(1)).ack();
-    verify(controllerInterface, Mockito.times(1))
-        .onGlobalFailureResponse(
-            eq(proxyTransaction), any(), eq(proxyClientTransaction), eq(proxySIPResponse));
+    // ACK is sent by JAIN stack
+    verify(controllerInterface, Mockito.times(1)).onGlobalFailureResponse(eq(proxyTransaction));
   }
 
   @Test(description = "test to send out best response received so far")
@@ -312,11 +285,13 @@ public class ProxyTransactionTest {
             eq(due));
   }
 
-  @Test(description = "Handling time out event for client transaction")
-  public void testClientTransactionTimeout() throws Exception {
+  @Test(
+      description =
+          "Handling timeout event for an invalid client transaction. "
+              + "No 408 (Request timeout) response is generated in this case")
+  public void testClientTransactionTimeoutEventOnInvalidTransaction() throws Exception {
     // setup
-    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
-    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    proxyTransaction.setM_originalProxyClientTrans(null);
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
     SipProvider sipProvider = mock(SipProvider.class);
 
@@ -324,21 +299,21 @@ public class ProxyTransactionTest {
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     proxyTransaction.setOriginalRequest(request);
-    // call
-    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
-    Assert.assertNotNull(proxySIPResponse);
-    Assert.assertEquals(proxySIPResponse.getProvider(), sipProvider);
-    Assert.assertEquals(proxySIPResponse.getResponse().getStatusCode(), 408);
 
-    verify(controllerInterface, Mockito.times(1))
+    // call
+    proxyTransaction.timeOut(clientTransaction, sipProvider);
+
+    verify(controllerInterface, Mockito.times(0))
         .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
 
-    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
-    Assert.assertEquals(bestReponse, proxySIPResponse);
+    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
+    Assert.assertNull(bestResponse);
   }
 
   @Test(
-      description = "Handling time out event for client transaction when timeout was already fired")
+      description =
+          "Handling timeout event for client transaction when timeout was already fired. "
+              + "No 408 (Request timeout) response is generated in this case")
   public void testClientTransactionTimeoutEventAlreadyTimedout() throws Exception {
     // setup
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
@@ -352,52 +327,89 @@ public class ProxyTransactionTest {
     proxyTransaction.setOriginalRequest(request);
     // call
     when(proxyClientTransaction.isTimedOut()).thenReturn(true);
-    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
-    Assert.assertNull(proxySIPResponse);
+    proxyTransaction.timeOut(clientTransaction, sipProvider);
 
     verify(controllerInterface, Mockito.times(0))
         .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
 
-    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
-    Assert.assertNull(bestReponse);
+    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
+    Assert.assertNull(bestResponse);
   }
 
   @Test(
       description =
-          "Handling time out event for client transaction and cancel needs to be sent based on local state")
-  public void testClientTransactionTimeoutCancelFlow() throws Exception {
+          "Handling timeout event for client transaction when the transaction is in state other than REQUEST_SENT (or) PROV_RECVD. "
+              + "No 408 (Request timeout) response is generated in this case")
+  public void testClientTransactionTimeoutEventInNoActionState() throws Exception {
     // setup
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
     SipProvider sipProvider = mock(SipProvider.class);
-    when(proxyClientTransaction.getState()).thenReturn(ProxyClientTransaction.STATE_PROV_RECVD);
 
     SIPRequest request =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     proxyTransaction.setOriginalRequest(request);
     // call
-    ProxySIPResponse proxySIPResponse = proxyTransaction.timeOut(clientTransaction, sipProvider);
-    Assert.assertNotNull(proxySIPResponse);
+    when(proxyClientTransaction.getState()).thenReturn(ProxyClientTransaction.STATE_FINAL_RECVD);
+    proxyTransaction.timeOut(clientTransaction, sipProvider);
+
+    verify(controllerInterface, Mockito.times(0))
+        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
+
+    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
+    Assert.assertNull(bestResponse);
+  }
+
+  @DataProvider
+  public Object[] getClientTransactionState() {
+    return new Integer[][] {
+      {ProxyClientTransaction.STATE_PROV_RECVD}, {ProxyClientTransaction.STATE_REQUEST_SENT}
+    };
+  }
+
+  @Test(
+      dataProvider = "getClientTransactionState",
+      description =
+          "Handling timeout event for client transaction. "
+              + "a) If ProxyClientTransaction is in 'STATE_PROV_RECVD' & got timeout event, then 408 (Request timeout) response is sent on server transaction & CANCEL is sent to this client transaction. "
+              + "b) If ProxyClientTransaction is 'not in STATE_PROV_RECVD' & got timeout event, only 408 (Request timeout) response is sent on server transaction. CANCEL should not be sent on this client transaction in this scenario")
+  public void testClientTransactionTimeoutCancelFlow(int state) throws Exception {
+    // setup
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    SipProvider sipProvider = mock(SipProvider.class);
+    when(proxyClientTransaction.getState()).thenReturn(state);
+
+    SIPRequest request =
+        SIPRequestBuilder.createRequest(
+            new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
+    proxyTransaction.setOriginalRequest(request);
+    // call
+    proxyTransaction.timeOut(clientTransaction, sipProvider);
+
+    // Only if transaction is in 'Provisional response received state' -> then send a cancel out
+    if (state == ProxyClientTransaction.STATE_PROV_RECVD) {
+      // Verify cancel is invoked on client transaction
+      verify(proxyClientTransaction, Mockito.times(1)).cancel();
+    }
 
     verify(controllerInterface, Mockito.times(1))
         .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
 
-    ProxySIPResponse bestReponse = proxyTransaction.getBestResponse();
-    Assert.assertEquals(bestReponse, proxySIPResponse);
-
-    // Verify cancel is invoked
-    verify(proxyClientTransaction, Mockito.times(1)).cancel();
+    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
+    Assert.assertEquals(bestResponse.getStatusCode(), Response.REQUEST_TIMEOUT);
   }
 
   @Test(description = "Handling time out event for server transaction")
-  public void testServerTransactionTimeout() throws Exception {
+  public void testServerTransactionTimeout() {
     // setup
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     SIPResponse sipResponse = mock(SIPResponse.class);
-    when(sipResponse.getStatusCode()).thenReturn(404);
+    when(sipResponse.getStatusCode()).thenReturn(Response.NOT_FOUND);
     when(proxyServerTransaction.getResponse()).thenReturn(sipResponse);
 
     // call
@@ -405,5 +417,42 @@ public class ProxyTransactionTest {
 
     verify(controllerInterface, Mockito.times(1))
         .onResponseTimeOut(eq(proxyTransaction), eq(proxyServerTransaction));
+  }
+
+  @Test(
+      description =
+          "If transaction is not forked, then test invocation of cancel() on the original client transaction alone")
+  public void testCancelClientTransactionWhenNotForked() {
+
+    proxyTransaction.setM_isForked(false);
+    proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
+
+    proxyTransaction.cancel();
+
+    verify(proxyClientTransaction, times(1)).cancel();
+  }
+
+  @Test(
+      description =
+          "If transaction is forked, then test invocation of cancel() on all client transactions")
+  public void testCancelClientTransactionWhenForked() {
+
+    ClientTransaction ct1 = mock(ClientTransaction.class);
+    ClientTransaction ct2 = mock(ClientTransaction.class);
+
+    ProxyClientTransaction pct1 = mock(ProxyClientTransaction.class);
+    ProxyClientTransaction pct2 = mock(ProxyClientTransaction.class);
+
+    Map<ClientTransaction, ProxyClientTransaction> branches = new HashMap<>(2);
+    branches.put(ct1, pct1);
+    branches.put(ct2, pct2);
+
+    proxyTransaction.setBranches(branches);
+    proxyTransaction.setM_isForked(true);
+
+    proxyTransaction.cancel();
+
+    verify(pct1, times(1)).cancel();
+    verify(pct2, times(1)).cancel();
   }
 }

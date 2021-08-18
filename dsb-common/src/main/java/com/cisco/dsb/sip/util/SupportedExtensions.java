@@ -1,6 +1,8 @@
 package com.cisco.dsb.sip.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Predicate;
 
 public class SupportedExtensions {
@@ -20,5 +22,9 @@ public class SupportedExtensions {
   public static synchronized void removeExtension(String extension) {
     if (!isSupported.test(extension)) return;
     extensions.remove(extension);
+  }
+
+  public static List<String> getExtensions() {
+    return new ArrayList<>(extensions.keySet());
   }
 }

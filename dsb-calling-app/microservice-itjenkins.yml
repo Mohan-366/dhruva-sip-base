@@ -107,6 +107,6 @@ wbx3:
   files:
     - dsb-calling-app/docker/dsb-calling-app.Dockerfile
   artifacts:
-    containers.cisco.com/edge_group/dsb-calling-app:
+    containers.cisco.com/edge_group/dhruva:
       dockerRegistry: https://containers.cisco.com
       dockerFile: dsb-calling-app/docker/dsb-calling-app.Dockerfile

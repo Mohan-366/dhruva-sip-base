@@ -9,6 +9,7 @@ import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
+import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
@@ -24,7 +25,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.sip.*;
 import lombok.CustomLog;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -51,16 +51,13 @@ public class ProxyService {
 
   @Autowired DhruvaExecutorService dhruvaExecutorService;
 
-  private static Consumer<ProxySIPRequest> requestConsumer;
-  private static Consumer<ProxySIPResponse> responseConsumer;
-
-  @Getter private boolean puntMidDialogMessages = false;
-
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
   private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
 
   private List<String> allowedHeaders = new ArrayList<>();
+  // Default ProxyConfig
+  private ProxyAppConfig proxyAppConfig = ProxyAppConfig.builder().build();
 
   @PostConstruct
   public void init() throws Exception {
@@ -167,49 +164,60 @@ public class ProxyService {
   /**
    * Applications should use register to get callback for ProxySIPRequest and ProxySIPResponse
    *
-   * @param requestConsumer application should provide the behaviour to process the ProxySIPRequest
-   * @param responseConsumer application should provide the behaviour to process the
-   *     ProxySIPResponse
+   * @param appConfig application should provide the behaviours and interests
    */
-  public void register(
-      Consumer<ProxySIPRequest> requestConsumer,
-      Consumer<ProxySIPResponse> responseConsumer,
-      boolean puntMidDialogMessages) {
-    ProxyService.requestConsumer = requestConsumer;
-    ProxyService.responseConsumer = responseConsumer;
-    this.puntMidDialogMessages = puntMidDialogMessages;
+  public void register(ProxyAppConfig appConfig) {
+    this.proxyAppConfig = appConfig;
   }
 
   /** placeholder for processing the RequestEvent from Stack */
   public Consumer<Mono<RequestEvent>> proxyRequestHandler() {
-    return requestEventMono -> requestPipeline(requestEventMono).subscribe(requestConsumer);
+    return requestEventMono ->
+        requestPipeline(requestEventMono).subscribe(this.proxyAppConfig.getRequestConsumer());
   }
 
   public Mono<ProxySIPRequest> requestPipeline(Mono<RequestEvent> requestEventMono) {
     return requestEventMono
+        .name("proxyRequest")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
         .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
-        .mapNotNull(sipProxyManager.getProxyController())
+        .mapNotNull(sipProxyManager.getProxyController(this.proxyAppConfig))
         .mapNotNull(sipProxyManager.validateRequest())
-        .mapNotNull(sipProxyManager.proxyAppController(this.puntMidDialogMessages));
+        .mapNotNull(sipProxyManager.proxyAppController(this.proxyAppConfig.isMidDialog()));
   }
 
   // flux.parallel().runOn(Schedulers.fromExecutorService(StripEx)).ops
   /** placeholder for processing the ResponseEvent from Stack */
   public Consumer<Mono<ResponseEvent>> proxyResponseHandler() {
-    return responsEventMono -> responsePipeline(responsEventMono).subscribe(responseConsumer);
+    return responsEventMono ->
+        responsePipeline(responsEventMono)
+            .subscribe(
+                proxySIPResponse ->
+                    logger.error("ProxyResponseHandler(): This code should never hit!!!"));
   }
 
   public Mono<ProxySIPResponse> responsePipeline(Mono<ResponseEvent> responseEventMono) {
     return responseEventMono
+        .name("proxyResponse")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForResponse())
         .mapNotNull(sipProxyManager.findProxyTransaction())
         .mapNotNull(sipProxyManager.processProxyTransaction());
+    //        .mapNotNull(
+    //            proxySIPResponse ->
+    //                sipProxyManager.processToApp(
+    //                    proxySIPResponse,
+    //                    this.appConfig.getInterest(proxySIPResponse.getResponseClass())));
+
+    // .subscribe()
   }
 
   /** placeholder for processing the timeoutEvent from Stack */
   public Consumer<Mono<TimeoutEvent>> proxyTimeOutHandler() {
-    return timeoutEventMono -> timeOutPipeline(timeoutEventMono).subscribe(responseConsumer);
+    return timeoutEventMono ->
+        timeOutPipeline(timeoutEventMono)
+            .subscribe(
+                proxySIPResponse ->
+                    logger.error("proxyTimeOutHandler(): This code should never hit!!!"));
   }
 
   public Mono<ProxySIPResponse> timeOutPipeline(Mono<TimeoutEvent> timeoutEventMono) {
