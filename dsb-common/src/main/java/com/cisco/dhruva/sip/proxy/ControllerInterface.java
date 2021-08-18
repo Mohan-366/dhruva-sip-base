@@ -36,7 +36,7 @@ public interface ControllerInterface {
   int DESTINATION_UNREACHABLE = 3;
   int UNKNOWN_ERROR = 4;
   int NO_VIA_LEFT = 5;
-
+  int SEND_REQUEST_ERROR = 6;
   /**
    * This callback is invoked if a request was forwarded successfully, i.e., without any synchronous
    * exceptions and a DsProxyClientTransaction is created NOTE: It is possible to receive
@@ -114,43 +114,23 @@ public interface ControllerInterface {
    * good opportunity to perform recursion if needed.
    *
    * @param response The redirect response that was received.
-   * @param proxy The ProxyTransaction object.
-   * @param cookie cookie object passed to proxyTo()
-   * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  void onRedirectResponse(
-      ProxyTransaction proxy,
-      ProxyCookie cookie,
-      ProxyClientTransaction trans,
-      ProxySIPResponse response);
+  void onRedirectResponse(ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 2xx response to a proxied request is received.
    *
    * @param response The response that was received.
    * @param proxy The ProxyTransaction object.
-   * @param cookie cookie object passed to proxyTo()
-   * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  void onSuccessResponse(
-      ProxyTransaction proxy,
-      ProxyCookie cookie,
-      ProxyClientTransaction trans,
-      ProxySIPResponse response);
+  void onSuccessResponse(ProxyTransaction proxy, ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 6xx response to a proxied request is received.
    *
-   * @param response The response that was received.
    * @param proxy The ProxyTransaction object.
-   * @param cookie cookie object passed to proxyTo()
-   * @param trans DsProxyClientTransaction representing the branch that the response was received on
    */
-  void onGlobalFailureResponse(
-      ProxyTransaction proxy,
-      ProxyCookie cookie,
-      ProxyClientTransaction trans,
-      ProxySIPResponse response);
+  void onGlobalFailureResponse(ProxyTransaction proxy);
 
   /**
    * This method is invoked by the proxy when a 1xx response to a proxied request is received.
@@ -169,7 +149,6 @@ public interface ControllerInterface {
   /**
    * This method is invoked when the proxy receives a response it would like to send.
    *
-   * @param proxySIPResponse The response the proxy believes is the best and would like to send.
    * @param proxy The proxy object Note: this interface will need to be changed to handle multiple
    *     200 OKs. My understanding is that Low Level API currently drops all 200 OKs after the first
    *     one so I didn't bother to define a controller API for this as well
@@ -179,10 +158,7 @@ public interface ControllerInterface {
   //   * needs to be sent. This is only relevant for multiple 200 OK
   //   * responses.
 
-  void onBestResponse(
-      ProxyTransaction proxy,
-      /*DsProxyServerTransaction trans,*/
-      ProxySIPResponse proxySIPResponse);
+  void onBestResponse(ProxyTransaction proxy);
 
   /**
    * This method is invoked whenever a ClientTransaction times out before receiving a response

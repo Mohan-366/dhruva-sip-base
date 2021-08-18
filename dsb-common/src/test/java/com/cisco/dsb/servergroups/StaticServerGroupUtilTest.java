@@ -180,6 +180,7 @@ public class StaticServerGroupUtilTest {
     Mockito.when(dhruvaSIPConfigProperties.getServerGroups()).thenReturn(null);
     Mockito.when(dhruvaSIPConfigProperties.getSGPolicies()).thenReturn(null);
     abstractServerGroupRepository = new AbstractServerGroupRepository();
+
     //    staticServer = null;
     //    sgPolicyList = null;
     StaticServerGroupUtil ss = new StaticServerGroupUtil(abstractServerGroupRepository, null, null);

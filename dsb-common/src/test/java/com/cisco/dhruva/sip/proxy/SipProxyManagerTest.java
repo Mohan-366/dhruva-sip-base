@@ -8,6 +8,8 @@ import com.cisco.dhruva.sip.RequestHelper;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
+import com.cisco.dhruva.sip.proxy.dto.Destination;
+import com.cisco.dhruva.sip.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -31,7 +33,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.List;
-import java.util.function.BiFunction;
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -306,12 +307,13 @@ public class SipProxyManagerTest {
     ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
     ProxyController proxyController = mock(ProxyController.class);
 
-    BiFunction<ServerTransaction, SipProvider, ProxyController> mockProxyController =
-        (stx, spd) -> proxyController;
+    TriFunction<ServerTransaction, SipProvider, ProxyAppConfig, ProxyController>
+        mockProxyController = (stx, spd, pc) -> proxyController;
     when(proxyControllerFactory.proxyController()).thenReturn(mockProxyController);
 
     Assert.assertEquals(
-        sipProxyManager.createNewProxyController().apply(proxySIPRequest), proxyController);
+        sipProxyManager.createNewProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest),
+        proxyController);
     verify(proxySIPRequest, times(1)).setProxyInterface(proxyController);
   }
 
@@ -485,23 +487,18 @@ public class SipProxyManagerTest {
   public void processProxyTransactionClientTimeoutTest() {
     TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
     SipProvider sipProvider = mock(SipProvider.class);
-    when(timeoutEvent.isServerTransaction()).thenReturn(false);
-    when(timeoutEvent.getSource()).thenReturn(sipProvider);
     ClientTransaction ct = mock(ClientTransaction.class);
     ProxyTransaction pt = mock(ProxyTransaction.class);
+    ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
+
+    when(timeoutEvent.isServerTransaction()).thenReturn(false);
+    when(timeoutEvent.getSource()).thenReturn(sipProvider);
     when(timeoutEvent.getClientTransaction()).thenReturn(ct);
     when(ct.getApplicationData()).thenReturn(pt);
-
-    ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
     when(proxySIPResponse.isToApplication()).thenReturn(true);
-
-    when(pt.timeOut(any(ClientTransaction.class), any(SipProvider.class)))
-        .thenReturn(proxySIPResponse);
-
     ProxySIPResponse response = sipProxyManager.handleProxyTimeoutEvent().apply(timeoutEvent);
 
-    Assert.assertNotNull(response);
-    Assert.assertEquals(response, proxySIPResponse);
+    Assert.assertNull(response);
     verify(pt, Mockito.times(1)).timeOut(ct, sipProvider);
   }
 
@@ -509,11 +506,10 @@ public class SipProxyManagerTest {
       description = "test to process the proxyTransaction for timeout event in server transaction")
   public void processProxyTransactionServerTimeoutTest() {
     TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
-    SipProvider sipProvider = mock(SipProvider.class);
-    when(timeoutEvent.isServerTransaction()).thenReturn(true);
-    when(timeoutEvent.getSource()).thenReturn(sipProvider);
     ServerTransaction st = mock(ServerTransaction.class);
     ProxyTransaction pt = mock(ProxyTransaction.class);
+
+    when(timeoutEvent.isServerTransaction()).thenReturn(true);
     when(timeoutEvent.getServerTransaction()).thenReturn(st);
     when(st.getApplicationData()).thenReturn(pt);
 
@@ -553,8 +549,10 @@ public class SipProxyManagerTest {
     // Mock proxy interface
     ProxyInterface proxyInterface = mock(ProxyInterface.class);
     proxySIPRequestAck.setProxyInterface(proxyInterface);
-    doNothing().when(proxyInterface).proxyRequest(any(ProxySIPRequest.class), any(Location.class));
-    doNothing().when(proxyInterface).sendMidDialogMessagesToApp(any(boolean.class));
+    doNothing()
+        .when(proxyInterface)
+        .proxyRequest(any(ProxySIPRequest.class), any(Destination.class));
+    doNothing().when(proxyInterface).sendRequestToApp(any(boolean.class));
 
     ProxySIPRequest proxySIPRequestAckRetVal =
         sipProxyManager.proxyAppController(false).apply(proxySIPRequestAck);

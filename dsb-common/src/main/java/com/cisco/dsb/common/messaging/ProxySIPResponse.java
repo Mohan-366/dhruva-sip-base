@@ -1,7 +1,7 @@
 package com.cisco.dsb.common.messaging;
 
-import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.proxy.ProxyCookie;
+import com.cisco.dhruva.sip.proxy.ProxyInterface;
 import com.cisco.dhruva.sip.proxy.ProxyTransaction;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipResponse;
@@ -22,13 +22,13 @@ public class ProxySIPResponse extends AbstractSipResponse {
   @Getter private final int statusCode;
   @Getter @Setter private boolean toApplication;
   @Getter @Setter private String network;
+  @Getter @Setter private ProxyInterface proxyInterface;
 
   public ProxySIPResponse(
       ExecutionContext executionContext,
       SipProvider provider,
       Response message,
-      ClientTransaction transaction)
-      throws IOException {
+      ClientTransaction transaction) {
     super(executionContext, provider, transaction, message);
     this.responseClass = message.getStatusCode() / 100;
     this.statusCode = message.getStatusCode();
@@ -71,6 +71,10 @@ public class ProxySIPResponse extends AbstractSipResponse {
 
   @Override
   public void proxy() {
-    ((ProxyController) proxyTransaction.getController()).proxyResponse(this);
+    if (this.proxyInterface == null) {
+      throw new RuntimeException(
+          "ProxyInterface not set in the response, Unable to forward the response to proxy layer");
+    }
+    proxyInterface.proxyResponse(this);
   }
 }

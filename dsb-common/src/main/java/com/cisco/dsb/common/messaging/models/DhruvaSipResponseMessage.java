@@ -4,7 +4,6 @@ import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.LogContext;
-import java.io.IOException;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
@@ -59,7 +58,7 @@ public final class DhruvaSipResponseMessage {
       this.network = network;
     }
 
-    public ProxySIPResponse build() throws IOException {
+    public ProxySIPResponse build() {
       ProxySIPResponse message =
           new ProxySIPResponse(this.context, this.sipProvider, this.payload, this.transaction);
       if (callType != null) {

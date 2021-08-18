@@ -134,7 +134,9 @@ public class DhruvaSIPConfigProperties {
             .concat(",")
             .concat(Request.INFO)
             .concat(",")
-            .concat(Request.SUBSCRIBE);
+            .concat(Request.SUBSCRIBE)
+            .concat(",")
+            .concat(Request.REFER);
     if (getSIPProxy().isProcessRegisterRequest()) {
       allow.concat(",").concat(Request.REGISTER);
     }
@@ -299,8 +301,14 @@ public class DhruvaSIPConfigProperties {
   }
 
   public long dnsCacheRetentionTimeMillis() {
-    long defaultTime = 3200L;
+    long defaultTime = 32000L;
     long retTime = env.getProperty("DhruvaDnsRetentionTimeMillis", Long.class, defaultTime);
+    return retTime > 0L ? retTime : defaultTime;
+  }
+
+  public long dnsLookupTimeoutMillis() {
+    long defaultTime = 10000L;
+    long retTime = env.getProperty("DhruvaDnsTimeoutTimeMillis", Long.class, defaultTime);
     return retTime > 0L ? retTime : defaultTime;
   }
 

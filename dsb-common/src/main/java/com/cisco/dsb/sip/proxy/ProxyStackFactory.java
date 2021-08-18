@@ -72,6 +72,19 @@ public final class ProxyStackFactory {
     // properties.setProperty("gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
     // L2SipJainSipMessageProcessorFactory.class.getName());
 
+    // Check the performance, jain claims to improve performance by 50 %
+    // For proxy this should be fine since we do not maintain dialog level info
+    properties.setProperty("gov.nist.javax.sip.AGGRESSIVE_CLEANUP", "true");
+
+    //     * <li><b>gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS = integer</b> Minimum time between
+    // keep alive
+    // * pings (CRLF CRLF) from clients. If pings arrive with less than this frequency they will be
+    // replied
+    //            * with CRLF CRLF if greater they will be rejected. The default is -1 (i.e. do not
+    // respond to CRLF CRLF).
+    // * </li>
+    properties.setProperty("gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS", "360");
+
     return properties;
   }
 

@@ -3,6 +3,7 @@ package com.cisco.dhruva.application;
 import com.cisco.dhruva.ProxyService;
 import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.DefaultCallType;
+import com.cisco.dhruva.sip.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
@@ -49,7 +50,14 @@ public class DhruvaApp {
   @PostConstruct
   public void init() {
     // TODO change to single method register(res,req)
-    proxyService.register(requestConsumer, responseConsumer, false);
+    ProxyAppConfig appConfig =
+        ProxyAppConfig.builder()
+            ._2xx(true)
+            ._4xx(true)
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build();
+    proxyService.register(appConfig);
 
     // register for interested CallTypes
     callTypes = new ArrayList<>();

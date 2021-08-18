@@ -54,6 +54,15 @@ public class EndPoint implements Cloneable {
     createKey();
   }
 
+  public EndPoint(String network, String host, int port, Transport protocol) {
+    Log.debug("Entering EndPoint()");
+    this.network = network;
+    this.host = host;
+    if (port > 0) this.port = port;
+    if (protocol != null) this.protocol = protocol;
+    createKey();
+  }
+
   /** our equals implementation */
   public boolean equals(Object obj) {
     if (obj == null) return false;

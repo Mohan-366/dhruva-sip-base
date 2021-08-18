@@ -138,7 +138,7 @@ public class ProxyBranchParams implements ProxyBranchParamsInterface {
    * Sets the protoco to use when sending a SIP request NOTE: this will automatically disable local
    * proxy settings
    *
-   * @param address protocol to use
+   * @param Transport protocol to use
    */
   public void setProxyToProtocol(Transport protocol) {
     if (protocol != getProxyToProtocol()) {
@@ -181,12 +181,4 @@ public class ProxyBranchParams implements ProxyBranchParamsInterface {
   public String getRequestDirection() {
     return m_RequestDirection;
   }
-
-  /** @return ControllerConfig object at the time this ProxyBranchParams was created */
-  /*
-  protected DsControllerConfig getControllerConfig() {
-   return config;
-  }
-  */
-
 }

@@ -1,16 +1,16 @@
 package com.cisco.dsb.service;
 
+import com.cisco.dhruva.sip.proxy.dto.Destination;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
+import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.loadbalancer.*;
 import com.cisco.dsb.servergroups.DnsServerGroupUtil;
 import com.cisco.dsb.servergroups.SG;
 import com.cisco.dsb.servergroups.StaticServerGroupUtil;
-import com.cisco.dsb.sip.proxy.SipUtils;
 import com.cisco.dsb.sip.util.EndPoint;
-import com.cisco.dsb.transport.Transport;
 import com.cisco.dsb.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.util.log.Logger;
-import gov.nist.javax.sip.message.SIPRequest;
+import java.util.Objects;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,39 +36,55 @@ public class TrunkService {
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
 
-  public Mono<EndPoint> getElementMono(AbstractSipRequest request) {
+  public Mono<EndPoint> getElementAsync(
+      @NonNull AbstractSipRequest request, @NonNull Destination destination) {
+    String destinationAddress = destination.getAddress();
+    if (Objects.isNull(destinationAddress))
+      return Mono.error(new DhruvaException("address not set in destination, cannot proceed!"));
 
-    String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
-    String uri = SipUtils.getHostPortion(reqUri);
+    logger.info(
+        "get element for destination address {} and type {}",
+        destination.getAddress(),
+        destination.destinationType);
 
-    return staticServerGroupInterfaceMono(request)
-        .switchIfEmpty(Mono.defer(() -> serverGroupInterfaceMono(request)))
-        .mapNotNull(sg -> (getLoadBalancer(uri, sg, request)))
+    return fetchStaticServerGroupAysnc(destination)
+        .switchIfEmpty(Mono.defer(() -> fetchDynamicServerGroupAsync(destination)))
+        .mapNotNull(sg -> (fetchSGLoadBalancer(destination, sg, request)))
         .switchIfEmpty(Mono.error(new LBException("Not able to load balance")))
         .mapNotNull(x -> x.getServer().getEndPoint());
   }
 
-  public Mono<ServerGroupInterface> staticServerGroupInterfaceMono(AbstractSipRequest request) {
-    String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
-    String uri = SipUtils.getHostPortion(reqUri);
-    ServerGroupInterface serverGroup = staticServerGroupUtil.getServerGroup(uri);
+  private Mono<ServerGroupInterface> fetchStaticServerGroupAysnc(Destination destination) {
+    ServerGroupInterface serverGroup =
+        staticServerGroupUtil.getServerGroup(destination.getAddress());
     if (serverGroup == null) return Mono.empty();
-    return Mono.just(staticServerGroupUtil.getServerGroup(uri));
+    return Mono.just(staticServerGroupUtil.getServerGroup(destination.getAddress()));
   }
 
-  public Mono<ServerGroupInterface> serverGroupInterfaceMono(AbstractSipRequest request) {
-    String reqUri = ((SIPRequest) request.getSIPMessage()).getRequestURI().toString();
-    String uri = SipUtils.getHostPortion(reqUri);
+  private Mono<ServerGroupInterface> fetchDynamicServerGroupAsync(Destination destination) {
     dnsServerGroupUtil = new DnsServerGroupUtil(resolver);
-    logger.info("Dynamic Server Group to be created for  {} ", uri);
+    logger.info("Dynamic Server Group to be created for  {} ", destination.getAddress());
+    if (Objects.isNull(destination.getNetwork())
+        || Objects.isNull(destination.getNetwork().getTransport()))
+      return Mono.error(
+          new DhruvaException(
+              "network, transport not available to proceed for creating dynamic server group"));
     return dnsServerGroupUtil.createDNSServerGroup(
-        uri, request.getNetwork(), Transport.TLS, SG.index_sgSgLbType_call_id);
+        destination.getAddress(),
+        destination.getNetwork().getName(),
+        destination.getNetwork().getTransport(),
+        SG.index_sgSgLbType_call_id);
   }
 
-  public LBInterface getLoadBalancer(
-      String uri, ServerGroupInterface sgi, AbstractSipRequest request) {
+  private LBInterface fetchSGLoadBalancer(
+      Destination destination, ServerGroupInterface sgi, AbstractSipRequest request) {
+
     try {
-      return lbFactory.createLoadBalancer(uri, sgi, request);
+
+      LBInterface lbInterface =
+          lbFactory.createLoadBalancer(destination.getAddress(), sgi, request);
+      destination.setLoadBalancer(lbInterface);
+      return lbInterface;
     } catch (LBException ex) {
       logger.error("Exception while creating loadbalancer " + ex.getMessage());
       return null;
@@ -76,8 +92,12 @@ public class TrunkService {
   }
 
   public EndPoint getNextElement(@NonNull LBInterface lb) {
-
-    return lb.getServer().getEndPoint();
+    ServerInterface server = lb.getServer();
+    if (Objects.isNull(server)) {
+      logger.error("getNextElement(): no serverInterface in LoadBalancer");
+      return null;
+    }
+    return server.getEndPoint();
   }
 
   public EndPoint getNextElement(@NonNull LBInterface lb, @NonNull Integer errorCode) {

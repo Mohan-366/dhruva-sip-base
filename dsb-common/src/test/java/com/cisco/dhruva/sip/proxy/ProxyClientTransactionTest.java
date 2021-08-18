@@ -10,8 +10,6 @@ import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
 import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.sip.bean.SIPListenPoint;
-import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.proxy.ProxyStackFactory;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.util.ResponseHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,7 +18,6 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.TooManyListenersException;
 import javax.sip.*;
 import javax.sip.message.Request;
 import org.mockito.ArgumentCaptor;
@@ -47,8 +44,6 @@ public class ProxyClientTransactionTest {
   @Mock ExecutionContext executionContext;
 
   @Mock Dialog dialog;
-
-  @Mock ProxyPacketProcessor proxyPacketProcessor;
 
   DhruvaNetwork testNetwork;
 
@@ -106,46 +101,40 @@ public class ProxyClientTransactionTest {
     proxyClientTransaction.gotResponse(proxySIPResponse);
     when(dialog.createAck(any(long.class))).thenReturn(mock(SIPRequest.class));
     doNothing().when(dialog).sendAck(any(SIPRequest.class));
-    proxyClientTransaction.ack();
 
     verify(dialog, times(1)).createAck(any(long.class));
     verify(dialog, times(1)).sendAck(any(Request.class));
   }
 
   @Test()
-  public void testCancel()
-      throws SipException, InvalidArgumentException, TooManyListenersException, ParseException,
-          IOException {
-
-    SipStack sipStack =
-        JainSipHelper.getSipFactory()
-            .createSipStack(ProxyStackFactory.getDefaultProxyStackProperties("testSipServer"));
-    sipStack.start();
-    ListeningPoint lp = sipStack.createListeningPoint("127.0.0.1", 5090, "udp");
-    SipProvider sp = sipStack.createSipProvider(lp);
-    sp.addSipListener(proxyPacketProcessor);
+  public void testCancel() throws SipException, ParseException, IOException {
 
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
 
     ProxySIPRequest proxyRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
-            request, sp, serverTransaction, executionContext);
+            request, sipProvider, serverTransaction, executionContext);
 
     proxyRequest.setClonedRequest((SIPRequest) request.clone());
     proxyRequest.setOutgoingNetwork(testNetwork.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
+
+    // Case 1: state = CANCEL_SENT; no CANCEL is sent again
     proxyClientTransaction.setState(ProxyClientTransaction.STATE_CANCEL_SENT);
     proxyClientTransaction.cancel();
 
     verify(sipProvider, times(0)).getNewClientTransaction(any(Request.class));
 
+    // Case 2: state = REQUEST_SENT; send CANCEL
     proxyClientTransaction.setState(ProxyClientTransaction.STATE_REQUEST_SENT);
 
-    when(sipProvider.getNewClientTransaction(any(Request.class))).thenReturn(clientTransaction);
-    doNothing().when(clientTransaction).sendRequest();
     Request cancelReq = mock(Request.class);
+    ClientTransaction cancelTransaction = mock(ClientTransaction.class);
     when(clientTransaction.createCancel()).thenReturn(cancelReq);
+    when(sipProvider.getNewClientTransaction(cancelReq)).thenReturn(cancelTransaction);
+    doNothing().when(cancelTransaction).sendRequest();
+
     proxyClientTransaction.cancel();
 
     ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
@@ -155,10 +144,8 @@ public class ProxyClientTransactionTest {
     Assert.assertNotNull(req);
     Assert.assertEquals(req, cancelReq);
 
-    verify(clientTransaction).sendRequest();
+    verify(cancelTransaction).sendRequest();
     Assert.assertEquals(
         proxyClientTransaction.getState(), ProxyClientTransaction.STATE_CANCEL_SENT);
-
-    sipStack.stop();
   }
 }

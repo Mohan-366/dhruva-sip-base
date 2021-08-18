@@ -1,16 +1,16 @@
 package com.cisco.dhruva.sip.proxy;
 
+import com.cisco.dhruva.sip.proxy.dto.Destination;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
 import com.cisco.dsb.common.messaging.ProxySIPResponse;
-import com.cisco.dsb.exception.DhruvaException;
 
 public interface ProxyInterface {
 
-  public void proxyResponse(ProxySIPResponse proxySIPResponse) throws DhruvaException;
+  public void proxyResponse(ProxySIPResponse proxySIPResponse);
 
   public void respond(int responseCode, ProxySIPRequest proxySIPRequest);
 
-  public void proxyRequest(ProxySIPRequest proxySIPRequest, Location location);
+  public void proxyRequest(ProxySIPRequest proxySIPRequest, Destination destination);
 
-  public void sendMidDialogMessagesToApp(boolean send);
+  void sendRequestToApp(boolean send);
 }

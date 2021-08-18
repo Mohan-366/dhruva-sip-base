@@ -4,10 +4,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dhruva.sip.proxy.*;
+import com.cisco.dhruva.sip.proxy.dto.Destination;
+import com.cisco.dhruva.sip.proxy.dto.ProxyAppConfig;
+import com.cisco.dhruva.sip.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
+import com.cisco.dsb.common.messaging.ProxySIPResponse;
+import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.messaging.models.DhruvaSipRequestMessage;
 import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.exception.DhruvaException;
@@ -19,6 +24,9 @@ import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.sip.stack.dto.SipDestination;
+import com.cisco.dsb.sip.util.EndPoint;
+import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.util.QuadFunction;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import com.cisco.wx2.dto.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nist.javax.sip.header.Allow;
 import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import java.net.InetAddress;
 import java.text.ParseException;
 import java.util.Collections;
@@ -36,9 +45,7 @@ import javax.sip.address.Hop;
 import javax.sip.address.Router;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import javax.sip.header.AllowHeader;
-import javax.sip.header.RecordRouteHeader;
-import javax.sip.header.RouteHeader;
+import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.mockito.*;
@@ -47,6 +54,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 public class ProxyControllerTest {
@@ -61,6 +69,7 @@ public class ProxyControllerTest {
 
   @Mock TrunkService trunkService;
 
+  @Mock ProxyAppConfig proxyAppConfig;
   DhruvaExecutorService dhruvaExecutorService;
 
   SipStack sipStack;
@@ -152,8 +161,6 @@ public class ProxyControllerTest {
     // Dont add 3rd network
     incomingSipProvider = mock(SipProvider.class);
     outgoingSipProvider = mock(SipProvider.class);
-    DhruvaNetwork.setSipProvider(incomingNetwork.getName(), incomingSipProvider);
-    DhruvaNetwork.setSipProvider(outgoingNetwork.getName(), outgoingSipProvider);
 
     DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
 
@@ -217,7 +224,10 @@ public class ProxyControllerTest {
     ProxyController controller =
         proxyControllerFactory
             .proxyController()
-            .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
+            .apply(
+                proxySIPRequest.getServerTransaction(),
+                proxySIPRequest.getProvider(),
+                proxyAppConfig);
     return controller;
   }
 
@@ -227,10 +237,13 @@ public class ProxyControllerTest {
     reset(incomingSipProvider);
     reset(sipServerLocatorService);
     reset(sipStack);
+    reset(trunkService);
     Router router = mock(Router.class);
     when(outgoingSipProvider.getSipStack()).thenReturn((SipStack) sipStack);
     when(sipStack.getRouter()).thenReturn(router);
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
+    DhruvaNetwork.setSipProvider(incomingNetwork.getName(), incomingSipProvider);
+    DhruvaNetwork.setSipProvider(outgoingNetwork.getName(), outgoingSipProvider);
   }
 
   @Test(description = "test proxy client creation for outgoing invite request")
@@ -260,25 +273,33 @@ public class ProxyControllerTest {
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
 
-    Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
-    location.setProcessRoute(false);
-    location.setNetwork(outgoingNetwork);
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .network(outgoingNetwork)
+            .build();
+
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
-    proxySIPRequest.setLocation(location);
+    proxySIPRequest.setDestination(destination);
     SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxyController.setPreprocessedRequest(preprocessedRequest);
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(any(AbstractSipRequest.class), any(Destination.class)))
+        .thenReturn(Mono.just(endPoint));
+
     StepVerifier.create(
             proxyController.proxyForwardRequest(
-                location, proxySIPRequest, proxyController.timeToTry))
+                destination, proxySIPRequest, proxyController.timeToTry))
         .assertNext(
             request -> {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getLocation().getUri() == request.getRequest().getRequestURI();
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
               assert request.getClonedRequest() != null;
               assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
               assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
@@ -347,22 +368,29 @@ public class ProxyControllerTest {
         .thenReturn(clientTransaction);
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
 
-    Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .network(outgoingNetwork)
+            .build();
     // setProcessRoute: lrescape will be invoked, it will put the top route header to requri and
     // requri to bottom of route list
     // proxyparams will be not be set before that.
     // This is set only  for mid dialog request by passing application
-    location.setProcessRoute(true);
-    location.setNetwork(outgoingNetwork);
 
-    proxySIPRequest.setLocation(location);
+    proxySIPRequest.setDestination(destination);
     SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxyController.setPreprocessedRequest(preprocessedRequest);
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(any(AbstractSipRequest.class), any(Destination.class)))
+        .thenReturn(Mono.just(endPoint));
+
     StepVerifier.create(
             proxyController.proxyForwardRequest(
-                location, proxySIPRequest, proxyController.timeToTry))
+                destination, proxySIPRequest, proxyController.timeToTry))
         .verifyErrorMatches(err -> err instanceof SipException);
 
     verify(clientTransaction, Mockito.times(1)).sendRequest();
@@ -383,7 +411,9 @@ public class ProxyControllerTest {
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
-
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+    DhruvaNetwork.removeSipProvider(outgoingNetwork.getName());
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
@@ -393,18 +423,25 @@ public class ProxyControllerTest {
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
 
-    Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
-    location.setProcessRoute(false);
-    location.setNetwork(testNetwork);
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .network(testNetwork)
+            .build();
 
-    proxySIPRequest.setLocation(location);
+    proxySIPRequest.setDestination(destination);
     SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxyController.setPreprocessedRequest(preprocessedRequest);
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(any(AbstractSipRequest.class), any(Destination.class)))
+        .thenReturn(Mono.just(endPoint));
+
     StepVerifier.create(
             proxyController.proxyForwardRequest(
-                location, proxySIPRequest, proxyController.timeToTry))
+                destination, proxySIPRequest, proxyController.timeToTry))
         .verifyErrorMatches(err -> err instanceof DhruvaException);
 
     verify(clientTransaction, Mockito.times(0)).sendRequest();
@@ -438,6 +475,14 @@ public class ProxyControllerTest {
     //    } else {
     //      this.attachHeader(sh, false, true);
     //    }
+    ListIterator existingRoutes = sipRequest.getHeaders(RouteHeader.NAME);
+    if (existingRoutes != null && existingRoutes.hasNext()) {
+      while (existingRoutes.hasNext()) {
+        sipRequest.removeHeader(RouteHeader.NAME);
+        existingRoutes.next();
+      }
+    }
+
     sipRequest.addHeader(routeHeader1);
     sipRequest.addHeader(routeHeader2);
     sipRequest.addFirst(ownRouteHeader);
@@ -463,20 +508,19 @@ public class ProxyControllerTest {
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
 
-    Location location = new Location(proxySIPRequest.getLrFixUri());
-    location.setProcessRoute(false);
+    Destination destination = Destination.builder().uri(proxySIPRequest.getLrFixUri()).build();
     // Do not set outgoing network, proxy should derive
     // location.setNetwork(outgoingNetwork);
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
-    proxySIPRequest.setLocation(location);
+    proxySIPRequest.setDestination(destination);
     SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxyController.setPreprocessedRequest(preprocessedRequest);
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     StepVerifier.create(
             proxyController.proxyForwardRequest(
-                location, proxySIPRequest, proxyController.timeToTry))
+                destination, proxySIPRequest, proxyController.timeToTry))
         .assertNext(
             request -> {
               assert request.getProxyClientTransaction() == null;
@@ -485,7 +529,7 @@ public class ProxyControllerTest {
 
               assert request.getClonedRequest() != null;
               SipURI reqSipUri = (SipURI) request.getClonedRequest().getRequestURI();
-              SipURI locSipUri = (SipURI) request.getLocation().getUri();
+              SipURI locSipUri = (SipURI) request.getDestination().getUri();
 
               assert locSipUri.getHost().equalsIgnoreCase(reqSipUri.getHost());
               assert locSipUri.getPort() == reqSipUri.getPort();
@@ -550,25 +594,31 @@ public class ProxyControllerTest {
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
 
-    Location location = new Location(proxySIPRequest.getRequest().getRequestURI());
-    location.setProcessRoute(false);
-    location.setNetwork(outgoingNetwork);
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .network(outgoingNetwork)
+            .build();
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
-    proxySIPRequest.setLocation(location);
+    proxySIPRequest.setDestination(destination);
     SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
     proxyController.setPreprocessedRequest(preprocessedRequest);
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(any(AbstractSipRequest.class), any(Destination.class)))
+        .thenReturn(Mono.just(endPoint));
     StepVerifier.create(
             proxyController.proxyForwardRequest(
-                location, proxySIPRequest, proxyController.timeToTry))
+                destination, proxySIPRequest, proxyController.timeToTry))
         .assertNext(
             request -> {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getLocation().getUri() == request.getRequest().getRequestURI();
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
               assert request.getClonedRequest() != null;
               assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
               assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
@@ -827,12 +877,12 @@ public class ProxyControllerTest {
   }
 
   @DataProvider
-  public Object[] shouldProcessRegisterReq() {
+  public Object[] toggleValues() {
     return new Boolean[][] {{true}, {false}};
   }
 
   @Test(
-      dataProvider = "shouldProcessRegisterReq",
+      dataProvider = "toggleValues",
       description =
           "Based on 'processRegisterRequest' toggle, either reject REGISTER request with 405(Method not allowed) response with a Allow-header listing the supported methods by the proxy"
               + "(or) handover to app for processing")
@@ -867,7 +917,9 @@ public class ProxyControllerTest {
               .concat(",")
               .concat(Request.INFO)
               .concat(",")
-              .concat(Request.SUBSCRIBE);
+              .concat(Request.SUBSCRIBE)
+              .concat(",")
+              .concat(Request.REFER);
 
       when(dhruvaSIPConfigProperties.getAllowedMethods()).thenReturn(allowedMethods);
 
@@ -885,5 +937,644 @@ public class ProxyControllerTest {
       Assert.assertEquals(
           ((Allow) response.getHeader(AllowHeader.NAME)).getHeaderValue(), allowedMethods);
     }
+  }
+
+  @Test(
+      description =
+          "An incoming CANCEL request to the proxy must be responded with a 200 OK before being forwarded")
+  public void testCancelHandling() throws SipException, InvalidArgumentException {
+
+    ServerTransaction st = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.CANCEL, st);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
+
+    doNothing().when(st).sendResponse(any(Response.class));
+
+    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), proxySIPRequest);
+
+    verify(st, times(1)).sendResponse(captor.capture());
+    Response response = captor.getValue();
+    System.out.println("Response: " + response);
+    Assert.assertEquals(response.getStatusCode(), 200);
+    Assert.assertEquals(response.getReasonPhrase(), "OK");
+  }
+
+  @Test(
+      dataProvider = "toggleValues",
+      description =
+          "If we want to cancel transactions (based on toggle) upon receiving a success (2xx) response, invoke cancel() on ProxyTransaction. "
+              + "Else, do not.")
+  public void testCancelInvocationForSuccessResponse(boolean cancelBranches) {
+    ServerTransaction st = mock(ServerTransaction.class);
+    SipProvider sp = mock(SipProvider.class);
+    ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
+    ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
+    ProxyTransaction proxyTransaction = mock(ProxyTransaction.class);
+
+    when(proxySIPRequest.getServerTransaction()).thenReturn(st);
+    when(proxySIPRequest.getProvider()).thenReturn(sp);
+
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+    proxyController.setCancelBranchesAutomatically(cancelBranches);
+
+    proxyController.onSuccessResponse(proxyTransaction, proxySIPResponse);
+
+    if (cancelBranches) {
+      verify(proxyTransaction, times(1)).cancel();
+    } else {
+      verify(proxyTransaction, times(0)).cancel();
+    }
+  }
+
+  @Test(
+      dataProvider = "toggleValues",
+      description =
+          "If we want to cancel transactions (based on toggle) upon receiving a global failure (6xx) response, invoke cancel() on ProxyTransaction. "
+              + "Else, do not.")
+  public void testCancelInvocationForGlobalFailureResponse(boolean cancelBranches) {
+    ServerTransaction st = mock(ServerTransaction.class);
+    SipProvider sp = mock(SipProvider.class);
+    ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
+    ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
+    ProxyTransaction proxyTransaction = mock(ProxyTransaction.class);
+
+    when(proxySIPRequest.getServerTransaction()).thenReturn(st);
+    when(proxySIPRequest.getProvider()).thenReturn(sp);
+    when(proxyTransaction.getBestResponse()).thenReturn(proxySIPResponse);
+
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+    proxyController.setCancelBranchesAutomatically(cancelBranches);
+
+    proxyController.onGlobalFailureResponse(proxyTransaction);
+
+    if (cancelBranches) {
+      verify(proxyTransaction, times(1)).cancel();
+    } else {
+      verify(proxyTransaction, times(0)).cancel();
+    }
+  }
+
+  @Test(description = "An incoming OPTIONS request to the proxy must be responded with a 200 OK")
+  public void testOptionsHandling() throws SipException, InvalidArgumentException {
+
+    ServerTransaction st = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.OPTIONS, st);
+    System.out.println("SIP Request :  " + proxySIPRequest.getRequest());
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    String allowedMethods =
+        Request.INVITE
+            .concat(",")
+            .concat(Request.ACK)
+            .concat(",")
+            .concat(Request.BYE)
+            .concat(",")
+            .concat(Request.CANCEL)
+            .concat(",")
+            .concat(Request.OPTIONS)
+            .concat(",")
+            .concat(Request.INFO)
+            .concat(",")
+            .concat(Request.SUBSCRIBE)
+            .concat(",")
+            .concat(Request.REFER);
+
+    SupportedExtensions.addExtension("feature1");
+
+    when(dhruvaSIPConfigProperties.getAllowedMethods()).thenReturn(allowedMethods);
+
+    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
+
+    doNothing().when(st).sendResponse(any(Response.class));
+
+    Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
+
+    verify(st, times(1)).sendResponse(captor.capture());
+    Response response = captor.getValue();
+    System.out.println("Response: " + response);
+    Assert.assertEquals(response.getStatusCode(), 200);
+    Assert.assertEquals(response.getReasonPhrase(), "OK");
+    Assert.assertEquals(
+        ((Allow) response.getHeader(AllowHeader.NAME)).getHeaderValue(), allowedMethods);
+    // TODO: Assert.assertEquals(((Supported)
+    // response.getHeader(SupportedHeader.NAME)).getHeaderValue(),
+    // SupportedExtensions.getExtensions().st);
+    Assert.assertEquals(
+        (response.getHeader(AcceptHeader.NAME)).toString().trim(), "Accept: application/sdp");
+
+    SupportedExtensions.removeExtension("feature1");
+  }
+
+  @Test(description = "test proxy service and trunk service interaction for static server group")
+  public void testTrunkServiceInvocationStaticServerGroupRouting()
+      throws SipException, ExecutionException, InterruptedException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    doNothing().when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .destinationType(Destination.DestinationType.SERVER_GROUP)
+            .address("cisco.webex.com")
+            .network(outgoingNetwork)
+            .build();
+
+    // proxyController.proxyRequest(proxySIPRequest, location);
+    // using stepVerifier
+    proxySIPRequest.setDestination(destination);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "5.5.5.5", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(proxySIPRequest, destination))
+        .thenReturn(Mono.just(endPoint));
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                destination, proxySIPRequest, proxyController.timeToTry))
+        .assertNext(
+            request -> {
+              assert request.getProxyClientTransaction() != null;
+              assert request.getProxyStatelessTransaction() != null;
+              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
+              assert request.getClonedRequest() != null;
+              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+
+              // Outgoing record route header validation
+              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteHeader recordRouteHeader = (RecordRouteHeader) recordRouteList.getFirst();
+              URI uri = recordRouteHeader.getAddress().getURI();
+              assert uri.isSipURI();
+              SipURI routeUri = (SipURI) uri;
+              assert routeUri.getTransportParam().equals("udp");
+              assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
+              assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
+              assert routeUri.hasLrParam();
+              assert routeUri.getUser().equals("rr$n=" + incomingNetwork.getName());
+            })
+        .verifyComplete();
+
+    ArgumentCaptor<Destination> argumentCaptorDestination =
+        ArgumentCaptor.forClass(Destination.class);
+    ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
+        ArgumentCaptor.forClass(AbstractSipRequest.class);
+    verify(trunkService, times(1))
+        .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
+
+    Destination destination1 = argumentCaptorDestination.getValue();
+    Assert.assertEquals(destination, destination1);
+
+    AbstractSipRequest abstractSipRequest = argumentCaptorRequest.getValue();
+    Assert.assertEquals(proxySIPRequest, abstractSipRequest);
+
+    ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
+    verify(outgoingSipProvider, Mockito.times(1)).getNewClientTransaction(argumentCaptor.capture());
+
+    SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
+
+    Assert.assertNotNull(sendRequest);
+    Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
+    Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
+
+    verify(clientTransaction, Mockito.times(1)).sendRequest();
+
+    // Verify that we set the proxy object in applicationData of jain for future response
+    ArgumentCaptor<ProxyTransaction> appArgumentCaptor =
+        ArgumentCaptor.forClass(ProxyTransaction.class);
+    verify(clientTransaction, Mockito.times(1)).setApplicationData(appArgumentCaptor.capture());
+
+    ProxyTransaction proxyTransaction = appArgumentCaptor.getValue();
+
+    Assert.assertNotNull(proxyTransaction);
+    Assert.assertEquals(proxyTransaction, proxySIPRequest.getProxyStatelessTransaction());
+  }
+
+  @Test(
+      description =
+          "test proxy service and trunk service interaction when trunk service returns Mono.error ,"
+              + "proxy should send 502 since its unable to find right SG")
+  public void testTrunkServiceExceptionHandling()
+      throws SipException, ExecutionException, InterruptedException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    doNothing().when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .destinationType(Destination.DestinationType.SERVER_GROUP)
+            .address("webex.com")
+            .network(outgoingNetwork)
+            .build();
+
+    // proxyController.proxyRequest(proxySIPRequest, location);
+    // using stepVerifier
+    proxySIPRequest.setDestination(destination);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    // Mock Trunk Service, return exception
+
+    when(trunkService.getElementAsync(proxySIPRequest, destination))
+        .thenReturn(Mono.error(new DhruvaException("test")));
+
+    // TODO this needs to be enhanced when we support proper error handling
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                destination, proxySIPRequest, proxyController.timeToTry))
+        .expectError()
+        .verify();
+  }
+
+  @Test(description = "test proxy service and trunk service interaction for dynamic server group")
+  public void testTrunkServiceInvocationDynamicServerGroupRouting()
+      throws SipException, ExecutionException, InterruptedException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    doNothing().when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    // REQURI is non IP and we have choosen default SIP routing
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .destinationType(Destination.DestinationType.DEFAULT_SIP)
+            .network(outgoingNetwork)
+            .build();
+
+    // proxyController.proxyRequest(proxySIPRequest, location);
+    // using stepVerifier
+    proxySIPRequest.setDestination(destination);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(proxySIPRequest, destination))
+        .thenReturn(Mono.just(endPoint));
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                destination, proxySIPRequest, proxyController.timeToTry))
+        .assertNext(
+            request -> {
+              assert request.getProxyClientTransaction() != null;
+              assert request.getProxyStatelessTransaction() != null;
+              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
+              assert request.getClonedRequest() != null;
+              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+
+              // Outgoing record route header validation
+              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteHeader recordRouteHeader = (RecordRouteHeader) recordRouteList.getFirst();
+              URI uri = recordRouteHeader.getAddress().getURI();
+              assert uri.isSipURI();
+              SipURI routeUri = (SipURI) uri;
+              assert routeUri.getTransportParam().equals("udp");
+              assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
+              assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
+              assert routeUri.hasLrParam();
+              assert routeUri.getUser().equals("rr$n=" + incomingNetwork.getName());
+            })
+        .verifyComplete();
+
+    ArgumentCaptor<Destination> argumentCaptorDestination =
+        ArgumentCaptor.forClass(Destination.class);
+    ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
+        ArgumentCaptor.forClass(AbstractSipRequest.class);
+    verify(trunkService, times(1))
+        .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
+
+    Destination destination1 = argumentCaptorDestination.getValue();
+    Assert.assertEquals(destination, destination1);
+    Destination.DestinationType destinationType = destination1.getDestinationType();
+    Assert.assertEquals(destinationType, Destination.DestinationType.SRV);
+  }
+
+  @Test(
+      description =
+          "test proxy service and trunk service interaction for dynamic server group in mid dialog case having Route header")
+  public void testTrunkServiceInvocationDynamicServerGroupMidDialogRouting()
+      throws SipException, ExecutionException, InterruptedException, ParseException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+    SIPRequest sipRequest = proxySIPRequest.getRequest();
+
+    ListIterator existingRoutes = sipRequest.getHeaders(RouteHeader.NAME);
+    if (existingRoutes != null && existingRoutes.hasNext()) {
+      while (existingRoutes.hasNext()) {
+        sipRequest.removeHeader(RouteHeader.NAME);
+        existingRoutes.next();
+      }
+    }
+
+    RouteHeader ownRouteHeader =
+        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+    RouteHeader routeHeader1 =
+        JainSipHelper.createRouteHeader("testDhruva", "alpha.xyz.com", 5080, "udp");
+
+    sipRequest.addHeader(routeHeader1);
+    sipRequest.addFirst(ownRouteHeader);
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    doNothing().when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    // Route has non IP uri and we have choosen default SIP routing
+    // Precedence is given to Route URI
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .destinationType(Destination.DestinationType.DEFAULT_SIP)
+            .build();
+
+    // using stepVerifier
+    proxySIPRequest.setDestination(destination);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(proxySIPRequest, destination))
+        .thenReturn(Mono.just(endPoint));
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                destination, proxySIPRequest, proxyController.timeToTry))
+        .assertNext(
+            request -> {
+              assert request.getProxyClientTransaction() != null;
+              assert request.getProxyStatelessTransaction() != null;
+              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
+              assert request.getClonedRequest() != null;
+              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+            })
+        .verifyComplete();
+
+    ArgumentCaptor<Destination> argumentCaptorDestination =
+        ArgumentCaptor.forClass(Destination.class);
+    ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
+        ArgumentCaptor.forClass(AbstractSipRequest.class);
+    verify(trunkService, times(1))
+        .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
+
+    Destination destination1 = argumentCaptorDestination.getValue();
+    Assert.assertEquals(destination, destination1);
+    Destination.DestinationType destinationType = destination1.getDestinationType();
+    Assert.assertEquals(destinationType, Destination.DestinationType.SRV);
+    Assert.assertEquals(destination1.getAddress(), "alpha.xyz.com");
+
+    EndPoint ep = proxySIPRequest.getDownstreamElement();
+    // Route address is set in endpoint
+    Assert.assertEquals(ep.getHost(), "10.1.1.1");
+  }
+
+  @Test(
+      description = "Mid dialog routing with IP address, no trunk service invocation should happen")
+  public void testMidDialogRoutingWithNoTrunkServiceInvocation()
+      throws SipException, ExecutionException, InterruptedException, ParseException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+    SIPRequest sipRequest = proxySIPRequest.getRequest();
+
+    ListIterator existingRoutes = sipRequest.getHeaders(RouteHeader.NAME);
+    if (existingRoutes != null && existingRoutes.hasNext()) {
+      while (existingRoutes.hasNext()) {
+        sipRequest.removeHeader(RouteHeader.NAME);
+        existingRoutes.next();
+      }
+    }
+
+    RouteHeader ownRouteHeader =
+        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+    RouteHeader routeHeader1 =
+        JainSipHelper.createRouteHeader("testDhruva", "11.1.1.1", 5080, "udp");
+
+    sipRequest.addHeader(routeHeader1);
+    sipRequest.addFirst(ownRouteHeader);
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    doNothing().when(clientTransaction).sendRequest();
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+
+    // Route has non IP uri and we have choosen default SIP routing
+    // Precedence is given to Route URI
+    Destination destination =
+        Destination.builder()
+            .uri(proxySIPRequest.getRequest().getRequestURI())
+            .destinationType(Destination.DestinationType.DEFAULT_SIP)
+            .build();
+
+    // using stepVerifier
+    proxySIPRequest.setDestination(destination);
+    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
+    proxyController.setPreprocessedRequest(preprocessedRequest);
+    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
+
+    // Mock Trunk Service
+    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
+    when(trunkService.getElementAsync(proxySIPRequest, destination))
+        .thenReturn(Mono.just(endPoint));
+
+    StepVerifier.create(
+            proxyController.proxyForwardRequest(
+                destination, proxySIPRequest, proxyController.timeToTry))
+        .assertNext(
+            request -> {
+              assert request.getProxyClientTransaction() != null;
+              assert request.getProxyStatelessTransaction() != null;
+              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
+              assert request.getClonedRequest() != null;
+              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+            })
+        .verifyComplete();
+
+    ArgumentCaptor<Destination> argumentCaptorDestination =
+        ArgumentCaptor.forClass(Destination.class);
+    ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
+        ArgumentCaptor.forClass(AbstractSipRequest.class);
+    // No Trunk Service invocation
+    verify(trunkService, times(0))
+        .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
+
+    EndPoint ep = proxySIPRequest.getDownstreamElement();
+    // Route address is set in endpoint
+    Assert.assertEquals(ep.getHost(), "11.1.1.1");
+  }
+
+  @Test(description = "test create proxy transaction exception and return 500 internal failure")
+  public void testCreateProxyTransactionFailure()
+      throws SipException, InvalidArgumentException, ExecutionException, InterruptedException,
+          InternalProxyErrorException {
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+
+    ProxyFactory proxyFactoryMock = mock(ProxyFactory.class);
+
+    // Get our own controller factory with mocked proxy factory
+    ProxyControllerFactory proxyControllerFactoryMock =
+        new ProxyControllerFactory(
+            dhruvaSIPConfigProperties,
+            controllerConfig,
+            proxyFactoryMock,
+            dhruvaExecutorService,
+            trunkService);
+
+    ProxyController proxyController =
+        proxyControllerFactoryMock
+            .proxyController()
+            .apply(
+                proxySIPRequest.getServerTransaction(),
+                proxySIPRequest.getProvider(),
+                proxyAppConfig);
+
+    QuadFunction<
+            ControllerInterface,
+            ProxyParamsInterface,
+            ServerTransaction,
+            SIPRequest,
+            ProxyStatelessTransaction>
+        function1 = mock(QuadFunction.class);
+    when(function1.apply(
+            any(ControllerInterface.class),
+            any(ProxyParamsInterface.class),
+            any(ServerTransaction.class),
+            any(SIPRequest.class)))
+        .thenThrow(new InternalProxyErrorException("test error"));
+    when(proxyFactoryMock.proxyTransaction()).thenReturn(function1);
+
+    doNothing().when(serverTransaction).sendResponse(any(Response.class));
+
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
+
+    when(sipServerLocatorService.locateDestination(
+            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+        .thenReturn(locateSIPServersResponse);
+
+    proxyController.onNewRequest(proxySIPRequest);
+
+    ArgumentCaptor<Response> responseArgumentCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(serverTransaction, times(1)).sendResponse(responseArgumentCaptor.capture());
+
+    SIPResponse response = (SIPResponse) responseArgumentCaptor.getValue();
+
+    // Verify status code is 500 internal server error
+    Assert.assertEquals(response.getStatusCode(), 500);
   }
 }

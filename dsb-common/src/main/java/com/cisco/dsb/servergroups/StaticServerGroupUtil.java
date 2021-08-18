@@ -138,12 +138,11 @@ public class StaticServerGroupUtil {
     }
 
     if (getSgPolicyMap().get(sgPolicy) != null) {
-      logger.info("SGPolicy {} assigned for SG {} is " ,sgPolicy, sgName) ;
+      logger.info("SGPolicy {} assigned for SG {} is ", sgPolicy, sgName);
       return getSgPolicyMap().get(sgPolicy).getFailoverResponseCodes().contains(errorCode);
     }
 
     if (getSgPolicyMap().get("global") == null) return false;
-    return  getSgPolicyMap().get("global").getFailoverResponseCodes().contains(errorCode);
-
+    return getSgPolicyMap().get("global").getFailoverResponseCodes().contains(errorCode);
   }
 }

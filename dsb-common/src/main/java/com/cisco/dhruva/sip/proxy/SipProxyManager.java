@@ -3,6 +3,8 @@ package com.cisco.dhruva.sip.proxy;
 import com.cisco.dhruva.sip.controller.ControllerConfig;
 import com.cisco.dhruva.sip.controller.ProxyController;
 import com.cisco.dhruva.sip.controller.ProxyControllerFactory;
+import com.cisco.dhruva.sip.proxy.dto.Destination;
+import com.cisco.dhruva.sip.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.MessageConvertor;
 import com.cisco.dsb.common.messaging.ProxySIPRequest;
@@ -58,7 +60,10 @@ public class SipProxyManager {
     this.config = controllerConfig;
   }
 
-  /** Create JainSip Server Transaction, if not already exists */
+  /**
+   * Create JainSip Server Transaction (if not already exists) & create Proxy SIP Request out of
+   * Jain SIP Request
+   */
   public Function<RequestEvent, ProxySIPRequest> createServerTransactionAndProxySIPRequest() {
     return fluxRequestEvent -> {
       Request request = fluxRequestEvent.getRequest();
@@ -122,7 +127,8 @@ public class SipProxyManager {
    * for that transaction
    */
   // TODO: tests for this module. Bound to change when adding OPTIONS/CANCEL handling
-  public Function<ProxySIPRequest, ProxySIPRequest> getProxyController() {
+  public Function<ProxySIPRequest, ProxySIPRequest> getProxyController(
+      ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       SIPRequest sipRequest = proxySIPRequest.getRequest();
       ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
@@ -147,23 +153,30 @@ public class SipProxyManager {
           logger.debug("Calling onAck() in proxyController");
           controller.onAck(proxyTransaction);
           return null;
+        } else {
+          logger.info("No Proxy Transaction exists for {}", requestType);
         }
       }
 
-      ProxyController controller = createNewProxyController().apply(proxySIPRequest);
+      ProxyController controller = createNewProxyController(proxyAppConfig).apply(proxySIPRequest);
       return controller.onNewRequest(proxySIPRequest);
     };
   }
 
   /** Creates a new ProxyController and saves appropriate references */
-  public Function<ProxySIPRequest, ProxyController> createNewProxyController() {
+  public Function<ProxySIPRequest, ProxyController> createNewProxyController(
+      ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       logger.debug("Creating a new ProxyController");
       ProxyController controller =
           proxyControllerFactory
               .proxyController()
-              .apply(proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider());
+              .apply(
+                  proxySIPRequest.getServerTransaction(),
+                  proxySIPRequest.getProvider(),
+                  proxyAppConfig);
       proxySIPRequest.setProxyInterface(controller);
+      logger.debug("New ProxyController created");
       return controller;
     };
   }
@@ -281,17 +294,12 @@ public class SipProxyManager {
 
   /** Utility Function to Convert RequestEvent from JAIN Stack to ProxySIPResponse */
   public Function<ResponseEvent, ProxySIPResponse> createProxySipResponse() {
-    return (responseEvent) -> {
-      try {
-        return MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
+    return (responseEvent) ->
+        MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
             responseEvent.getResponse(),
             (SipProvider) responseEvent.getSource(),
             responseEvent.getClientTransaction(),
             new ExecutionContext());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    };
   }
 
   /**
@@ -354,7 +362,6 @@ public class SipProxyManager {
         sipProvider.get().sendResponse(response);
       } catch (SipException exception) {
         logger.error("Unable to send out stray response using sipProvider");
-        return;
       }
     };
   }
@@ -362,29 +369,29 @@ public class SipProxyManager {
   public Function<ProxySIPRequest, ProxySIPRequest> proxyAppController(
       boolean puntMidDialogMessages) {
     return proxySIPRequest -> {
-      Header hasRoute = proxySIPRequest.getRequest().getHeader(RouteHeader.NAME);
-      boolean isMidDialog = ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest());
+      SIPRequest request = proxySIPRequest.getRequest();
+      Header hasRoute = request.getHeader(RouteHeader.NAME);
+      boolean isMidDialog = ProxyUtils.isMidDialogRequest(request);
       if (puntMidDialogMessages || hasRoute == null || !isMidDialog) {
         logger.info(
-            "sending the request to app layer for further processing: "
-                + !ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest())
-                + "; route: "
-                + proxySIPRequest.getRequest().getHeader(RouteHeader.NAME)
-                + "; processRoute: "
-                + puntMidDialogMessages
-                + "; request Network Name "
-                + proxySIPRequest.getNetwork());
+            "sending the request {} to app layer for further processing. \n "
+                + "isMidDialog: {}; hasRoute: {}; puntMidDialogMsgs: {}; request Network Name: {}",
+            request.getMethod(),
+            isMidDialog,
+            hasRoute,
+            puntMidDialogMessages,
+            proxySIPRequest.getNetwork());
         return proxySIPRequest;
       } else {
         logger.info("Route call based on Req-uri (or) route");
-        Location loc = new Location(proxySIPRequest.getRequest().getRequestURI());
+        Destination destination =
+            Destination.builder().uri(proxySIPRequest.getRequest().getRequestURI()).build();
         // To be set in case of mid dialog request and by pass application
-        loc.setProcessRoute(true);
+        destination.setDestinationType(Destination.DestinationType.DEFAULT_SIP);
         ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
-        proxyInterface.sendMidDialogMessagesToApp(puntMidDialogMessages);
-        proxyInterface.proxyRequest(proxySIPRequest, loc);
+        proxyInterface.sendRequestToApp(puntMidDialogMessages);
+        proxyInterface.proxyRequest(proxySIPRequest, destination);
 
-        // this.usingRouteHeader = true;
         return null;
       }
     };
@@ -396,12 +403,17 @@ public class SipProxyManager {
       ClientTransaction clientTransaction = responseEvent.getClientTransaction();
 
       if (clientTransaction != null) {
+        logger.info("Client transaction: {}", clientTransaction);
         ProxySIPResponse proxySIPResponse = createProxySipResponse().apply(responseEvent);
         proxySIPResponse.setProxyTransaction(
             (ProxyTransaction) clientTransaction.getApplicationData());
         return proxySIPResponse;
       } else {
         // TODO stray response handling
+        logger.info(
+            "No Client transaction exist for {} {}",
+            responseEvent.getResponse().getStatusCode(),
+            responseEvent.getResponse().getReasonPhrase());
         processStrayResponse().accept(responseEvent);
         return null;
       }
@@ -418,20 +430,23 @@ public class SipProxyManager {
       // Is this check for null needed because if it's null this function will/should not be
       // called
       if (proxyTransaction != null) {
+        logger.info(
+            "Found proxy transaction for {} response: {}",
+            proxySIPResponse.getStatusCode(),
+            proxyTransaction);
+        proxySIPResponse.setProxyInterface((ProxyInterface) proxyTransaction.getController());
         switch (proxySIPResponse.getResponseClass()) {
           case 1:
             proxyTransaction.provisionalResponse(proxySIPResponse);
-            break;
           case 2:
           case 3:
           case 4:
           case 5:
           case 6:
             proxyTransaction.finalResponse(proxySIPResponse);
-            break;
         }
       }
-      return proxySIPResponse.isToApplication() ? proxySIPResponse : null;
+      return null;
     };
   }
 
@@ -487,7 +502,7 @@ public class SipProxyManager {
             (ProxyTransaction) serverTransaction.getApplicationData();
         if (proxyTransaction == null) {
           logger.warn(
-              "proxy transaction not received from app data in jain time out event for server transaction");
+              "Proxy transaction not available from ServerTransaction's ApplicationData in jain time out event for server transaction");
           return null;
         }
         proxyTransaction.timeOut(serverTransaction);
@@ -500,17 +515,19 @@ public class SipProxyManager {
             (ProxyTransaction) clientTransaction.getApplicationData();
         if (proxyTransaction == null) {
           logger.warn(
-              "proxy transaction not received from app data in jain time out event for client transaction");
+              "Proxy transaction not available from ClientTransaction's ApplicationData in jain time out event for client transaction");
           return null;
         }
-        ProxySIPResponse response =
-            proxyTransaction.timeOut(clientTransaction, (SipProvider) timeoutEvent.getSource());
-        if (response != null && response.isToApplication()) {
-          // Application will require proxyTransaction
-          response.setProxyTransaction(proxyTransaction);
-          return response;
-        } else return null;
+        proxyTransaction.timeOut(clientTransaction, (SipProvider) timeoutEvent.getSource());
       }
+      return null;
     };
+  }
+
+  public ProxySIPResponse processToApp(ProxySIPResponse proxySIPResponse, boolean interest) {
+    if (interest) return proxySIPResponse;
+    logger.info("Application not interested in response class " + proxySIPResponse.getResponse());
+    proxySIPResponse.proxy();
+    return null;
   }
 }

@@ -2,8 +2,8 @@ package com.cisco.dhruva.sip.controller;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dhruva.sip.proxy.Location;
 import com.cisco.dhruva.sip.proxy.ProxyTransaction;
+import com.cisco.dhruva.sip.proxy.dto.Destination;
 import com.cisco.dsb.sip.jain.JainSipHelper;
 import com.cisco.dsb.util.SIPRequestBuilder;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -165,27 +165,27 @@ public class ProxyResponseGeneratorTest {
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
 
-    ArrayList<Location> locations = new ArrayList<>(2);
+    ArrayList<Destination> destinations = new ArrayList<>(2);
     String requestUri1 = "<sip:" + "1.1.1.1" + ":" + 5061 + ">";
     String requestUri2 = "<sip:" + "2.2.2.2" + ":" + 5061 + ">";
 
     Address address1 = JainSipHelper.getAddressFactory().createAddress(requestUri1);
     Address address2 = JainSipHelper.getAddressFactory().createAddress(requestUri2);
 
-    Location location1 = new Location(address1.getURI());
-    Location location2 = new Location(address2.getURI());
+    Destination destination1 = Destination.builder().uri(address1.getURI()).build();
+    Destination destination2 = Destination.builder().uri(address2.getURI()).build();
 
-    locations.add(location1);
-    locations.add(location2);
+    destinations.add(destination1);
+    destinations.add(destination2);
 
     // Test with multiple locations
-    SIPResponse response = ProxyResponseGenerator.createRedirectResponse(locations, request);
+    SIPResponse response = ProxyResponseGenerator.createRedirectResponse(destinations, request);
     Assert.assertNotNull(response);
     Assert.assertEquals(response.getStatusCode(), Response.MULTIPLE_CHOICES);
 
     // Test with single location, response code should be Moved temporarily
-    locations.remove(0);
-    response = ProxyResponseGenerator.createRedirectResponse(locations, request);
+    destinations.remove(0);
+    response = ProxyResponseGenerator.createRedirectResponse(destinations, request);
     Assert.assertNotNull(response);
     Assert.assertEquals(response.getStatusCode(), Response.MOVED_TEMPORARILY);
   }

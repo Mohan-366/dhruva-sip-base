@@ -1,28 +1,29 @@
 package com.cisco.dhruva.sip.proxy;
 
 /*
- * A wrapper class which holds a location and response interface.  Used by the
- * <code>DsProxyController</code> as the cookie object to the proxy core.
+ * A wrapper class which holds a Destination and response interface.  Used by the
+ * <code>ProxyController</code> as the cookie object to the proxy core.
  */
 
+import com.cisco.dhruva.sip.proxy.dto.Destination;
 import gov.nist.javax.sip.message.SIPRequest;
 
 public class ProxyCookieImpl implements ProxyCookie {
 
-  protected Location location;
+  protected Destination destination;
   protected SIPRequest outboundRequest = null;
 
-  public ProxyCookieImpl(Location location) {
-    this.location = location;
+  public ProxyCookieImpl(Destination destination) {
+    this.destination = destination;
   }
 
-  public ProxyCookieImpl(Location location, SIPRequest request) {
-    this.location = location;
+  public ProxyCookieImpl(Destination destination, SIPRequest request) {
+    this.destination = destination;
     outboundRequest = request;
   }
 
-  public Location getLocation() {
-    return location;
+  public Destination getLocation() {
+    return destination;
   }
 
   public SIPRequest getOutboundRequest() {

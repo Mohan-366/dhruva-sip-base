@@ -4,6 +4,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.cisco.dhruva.sip.proxy.dto.Destination;
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.loadbalancer.*;
@@ -48,6 +49,7 @@ public class TrunkServiceTest {
     sipServerLocatorService = mock(SipServerLocatorService.class);
     when(network.getListenPoint()).thenReturn(sipListenPoint);
     when(network.getName()).thenReturn("default");
+    when(network.getTransport()).thenReturn(Transport.TLS);
 
     locateSIPServersResponse =
         new LocateSIPServersResponse(
@@ -119,7 +121,7 @@ public class TrunkServiceTest {
   }
 
   @Test
-  public void getElementMonoTest() {
+  public void getElementAsyncTest() {
 
     when(sipServerLocatorService.locateDestinationAsync(any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
@@ -137,9 +139,13 @@ public class TrunkServiceTest {
 
     staticServerGroupUtil = mock(StaticServerGroupUtil.class);
     when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
+    Destination destination =
+        Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
+    destination.setDestinationType(Destination.DestinationType.SERVER_GROUP);
+    destination.setNetwork(network);
     TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
-    StepVerifier.create(ts.getElementMono(message))
+    StepVerifier.create(ts.getElementAsync(message, destination))
         .assertNext(
             group1 -> {
               assert group1 != null;
@@ -172,7 +178,12 @@ public class TrunkServiceTest {
     when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
     TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
-    StepVerifier.create(ts.getElementMono(message))
+    Destination destination =
+        Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
+    destination.setDestinationType(Destination.DestinationType.SERVER_GROUP);
+    destination.setNetwork(network);
+
+    StepVerifier.create(ts.getElementAsync(message, destination))
         .expectErrorMatches(throwable -> throwable instanceof LBException)
         .verify();
   }
@@ -201,7 +212,12 @@ public class TrunkServiceTest {
 
     TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
-    StepVerifier.create(ts.getElementMono(message))
+    Destination destination =
+        Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
+    destination.setDestinationType(Destination.DestinationType.SERVER_GROUP);
+    destination.setNetwork(network);
+
+    StepVerifier.create(ts.getElementAsync(message, destination))
         .expectErrorMatches(throwable -> throwable instanceof DnsException)
         .verify();
   }
@@ -234,7 +250,12 @@ public class TrunkServiceTest {
 
     TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
 
-    StepVerifier.create(ts.getElementMono(message))
+    Destination destination =
+        Destination.builder().uri(request.getRequestURI()).address("testSG1").build();
+    destination.setDestinationType(Destination.DestinationType.SERVER_GROUP);
+    destination.setNetwork(network);
+
+    StepVerifier.create(ts.getElementAsync(message, destination))
         .assertNext(
             group1 -> {
               assert group1 != null;

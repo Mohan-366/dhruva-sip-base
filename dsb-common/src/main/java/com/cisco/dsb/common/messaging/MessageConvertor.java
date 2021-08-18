@@ -48,8 +48,7 @@ public class MessageConvertor {
       Response message,
       SipProvider sipProvider,
       ClientTransaction transaction,
-      ExecutionContext context)
-      throws IOException {
+      ExecutionContext context) {
 
     requireNonNull(message, "sip message should not be null");
     requireNonNull(context);
