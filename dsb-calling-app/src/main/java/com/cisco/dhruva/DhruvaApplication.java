@@ -8,7 +8,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication(exclude = {WebMvcAutoConfiguration.class})
-@ComponentScan(basePackages = {"com.cisco.dsb", "com.cisco.dhruva", "com.cisco.dhruva"})
+@ComponentScan(basePackages = {"com.cisco.dsb", "com.cisco.dhruva"})
 public class DhruvaApplication extends SpringBootServletInitializer {
 
   @Override

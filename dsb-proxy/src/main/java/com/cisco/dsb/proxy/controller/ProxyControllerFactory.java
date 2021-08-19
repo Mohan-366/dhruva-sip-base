@@ -1,11 +1,11 @@
 package com.cisco.dsb.proxy.controller;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.service.TrunkService;
+import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.sip.ProxyFactory;
-import com.cisco.dsb.service.TrunkService;
-import com.cisco.dsb.util.TriFunction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import org.springframework.beans.factory.annotation.Autowired;

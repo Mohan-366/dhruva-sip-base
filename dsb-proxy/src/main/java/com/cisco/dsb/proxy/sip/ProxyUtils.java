@@ -1,10 +1,10 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.exception.DhruvaException;
-import com.cisco.dsb.sip.stack.util.SipTag;
-import com.cisco.dsb.sip.util.SipUtils;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.sip.stack.util.SipTag;
+import com.cisco.dsb.common.sip.util.SipUtils;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;

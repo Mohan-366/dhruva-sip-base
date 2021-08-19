@@ -1,12 +1,12 @@
 package com.cisco.dsb.proxy.sip.hostPort;
 
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.util.ListenIf;
+import com.cisco.dsb.common.sip.util.ListenInterface;
+import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.sip.util.ListenIf;
-import com.cisco.dsb.sip.util.ListenInterface;
-import com.cisco.dsb.transport.Transport;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;

@@ -1,9 +1,9 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.sip.util.ListenInterface;
-import com.cisco.dsb.sip.util.ViaListenInterface;
-import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.util.ListenInterface;
+import com.cisco.dsb.common.sip.util.ViaListenInterface;
+import com.cisco.dsb.common.transport.Transport;
 import java.net.InetAddress;
 import javax.sip.header.RecordRouteHeader;
 

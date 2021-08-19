@@ -4,14 +4,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
-import com.cisco.dsb.sip.bean.SIPListenPoint;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nist.javax.sip.message.SIPRequest;

@@ -1,9 +1,9 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.config.SipProperties;
 import com.cisco.dsb.common.dns.DnsLookup;
-import com.cisco.dsb.config.SipProperties;
-import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.jain.JainStackInitializer;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.jain.JainStackInitializer;
 import java.util.Properties;
 import javax.net.ssl.KeyManager;
 import javax.sip.SipStack;

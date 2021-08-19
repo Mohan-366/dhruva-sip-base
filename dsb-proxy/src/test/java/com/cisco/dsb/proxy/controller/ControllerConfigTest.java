@@ -2,11 +2,11 @@ package com.cisco.dsb.proxy.controller;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.util.HeaderHelper;
-import com.cisco.dsb.service.SipServerLocatorService;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.RecordRoute;
 import gov.nist.javax.sip.header.RecordRouteList;

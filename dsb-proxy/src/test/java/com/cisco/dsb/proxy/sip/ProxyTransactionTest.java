@@ -3,12 +3,12 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
-import com.cisco.dsb.util.TriFunction;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;

@@ -1,7 +1,7 @@
 package com.cisco.dsb.proxy;
 
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.exception.DhruvaException;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;

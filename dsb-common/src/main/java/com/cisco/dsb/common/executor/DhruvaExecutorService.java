@@ -1,7 +1,7 @@
 package com.cisco.dsb.common.executor;
 
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.util.MonitoredExecutorProvider;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;

@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.util.log.LogContext;
+import com.cisco.dsb.common.util.log.LogContext;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;

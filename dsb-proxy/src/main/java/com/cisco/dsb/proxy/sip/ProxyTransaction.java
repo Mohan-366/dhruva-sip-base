@@ -1,7 +1,8 @@
 package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.controller.ProxyResponseGenerator;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
@@ -10,7 +11,6 @@ import com.cisco.dsb.proxy.errors.InvalidStateException;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.security.InvalidParameterException;

@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.dto.Destination;
+import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 

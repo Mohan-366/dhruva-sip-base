@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.common.transport.Transport;
 
 /**
  * Encapsulates parameters that can be passed to ProxyTransaction API calls (i.e., only proxyTo()

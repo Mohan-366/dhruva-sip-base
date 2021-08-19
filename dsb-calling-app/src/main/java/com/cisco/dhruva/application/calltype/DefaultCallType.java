@@ -1,10 +1,10 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dsb.dto.Destination;
+import com.cisco.dsb.common.dto.Destination;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.Consumer;

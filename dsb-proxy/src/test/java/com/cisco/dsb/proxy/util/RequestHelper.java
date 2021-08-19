@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.util;
 
-import com.cisco.dsb.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import java.text.ParseException;
 import javax.sip.message.Request;
 

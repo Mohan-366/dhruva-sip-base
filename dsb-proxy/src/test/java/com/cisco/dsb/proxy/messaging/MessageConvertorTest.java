@@ -1,11 +1,11 @@
 package com.cisco.dsb.proxy.messaging;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
-import com.cisco.dsb.sip.bean.SIPListenPoint;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;

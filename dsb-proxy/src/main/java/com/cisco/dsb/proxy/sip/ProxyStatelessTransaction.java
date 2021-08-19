@@ -1,14 +1,15 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.util.SipUtils;
+import com.cisco.dsb.common.sip.util.ViaListenInterface;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.controller.util.ParseProxyParamUtil;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
-import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.sip.util.SipUtils;
-import com.cisco.dsb.sip.util.ViaListenInterface;
-import com.cisco.dsb.transport.Transport;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -529,8 +530,8 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   }
 
   /**
-   * If <CODE>{@link com.cisco.dsb.config.sip.DhruvaSIPConfigProperties}</CODE> has processVia set,
-   * remove the top via header, if no more Via is found return false, else return true.
+   * If <CODE>{@link DhruvaSIPConfigProperties}</CODE> has processVia set, remove the top via
+   * header, if no more Via is found return false, else return true.
    *
    * @return
    */

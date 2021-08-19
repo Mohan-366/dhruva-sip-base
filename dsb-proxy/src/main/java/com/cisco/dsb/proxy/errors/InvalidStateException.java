@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.errors;
 
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaException;
 
 /**
  * DsInvalidStateException is thrown when an operation is attempted in a state where it is

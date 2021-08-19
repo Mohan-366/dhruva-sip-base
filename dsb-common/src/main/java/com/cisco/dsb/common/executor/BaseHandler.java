@@ -1,7 +1,7 @@
 package com.cisco.dsb.common.executor;
 
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.util.stripedexecutor.StripedRunnable;
 import java.util.Map;
 import org.apache.commons.collections4.map.AbstractReferenceMap;

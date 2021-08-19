@@ -1,7 +1,7 @@
 package com.cisco.dsb.proxy.handlers;
 
-import com.cisco.dsb.service.ProxyService;
-import com.cisco.dsb.util.SpringApplicationContext;
+import com.cisco.dsb.common.service.ProxyService;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import javax.sip.ResponseEvent;
 import reactor.core.publisher.Mono;
 

@@ -1,12 +1,12 @@
 package com.cisco.dsb.proxy.controller;
 
-import com.cisco.dsb.dto.Destination;
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.dto.Destination;
+import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.stack.util.SipTag;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
-import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.sip.stack.util.SipTag;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import gov.nist.javax.sip.Utils;
 import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.ContactList;

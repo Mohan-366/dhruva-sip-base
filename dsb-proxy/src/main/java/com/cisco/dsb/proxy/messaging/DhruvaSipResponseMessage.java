@@ -2,7 +2,7 @@ package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.util.log.LogContext;
+import com.cisco.dsb.common.util.log.LogContext;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;

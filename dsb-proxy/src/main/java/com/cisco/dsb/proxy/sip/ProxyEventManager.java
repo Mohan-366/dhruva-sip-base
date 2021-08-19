@@ -1,10 +1,10 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.service.ProxyService;
 import com.cisco.dsb.proxy.handlers.ProxyEventHandler;
 import com.cisco.dsb.proxy.handlers.SipRequestHandler;
 import com.cisco.dsb.proxy.handlers.SipResponseHandler;
 import com.cisco.dsb.proxy.handlers.SipTimeOutHandler;
-import com.cisco.dsb.service.ProxyService;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import javax.inject.Inject;
 import javax.sip.*;

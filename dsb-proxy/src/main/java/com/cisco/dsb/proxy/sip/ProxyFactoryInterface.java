@@ -1,8 +1,8 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.util.QuadFunction;
-import com.cisco.dsb.util.TriFunction;
 import gov.nist.javax.sip.message.SIPRequest;
 import javax.sip.ServerTransaction;
 

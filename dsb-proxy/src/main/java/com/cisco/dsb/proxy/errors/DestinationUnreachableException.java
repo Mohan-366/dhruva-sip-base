@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.errors;
 
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaException;
 
 public class DestinationUnreachableException extends DhruvaException {
 

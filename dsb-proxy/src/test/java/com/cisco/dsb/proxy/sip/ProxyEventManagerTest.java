@@ -3,13 +3,13 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.service.ProxyService;
 import com.cisco.dsb.proxy.handlers.ProxyEventHandler;
 import com.cisco.dsb.proxy.handlers.SipRequestHandler;
 import com.cisco.dsb.proxy.handlers.SipResponseHandler;
 import com.cisco.dsb.proxy.handlers.SipTimeOutHandler;
 import com.cisco.dsb.proxy.util.ResponseHelper;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
-import com.cisco.dsb.service.ProxyService;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;

@@ -4,8 +4,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.xbill.DNS.Lookup;

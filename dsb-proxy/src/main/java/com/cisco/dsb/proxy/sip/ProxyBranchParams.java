@@ -1,7 +1,7 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.sip.stack.dto.BindingInfo;
-import com.cisco.dsb.transport.Transport;
+import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
+import com.cisco.dsb.common.transport.Transport;
 import java.net.InetAddress;
 
 /**

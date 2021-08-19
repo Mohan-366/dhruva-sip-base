@@ -1,8 +1,8 @@
 package com.cisco.dsb.proxy.handlers;
 
+import com.cisco.dsb.common.service.ProxyService;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.proxy.sip.ProxyUtils;
-import com.cisco.dsb.service.ProxyService;
-import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ResponseEvent;
 import javax.sip.SipProvider;

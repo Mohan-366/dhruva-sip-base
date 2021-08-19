@@ -1,8 +1,8 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.sip.stack.dto.DhruvaNetwork;
 import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;

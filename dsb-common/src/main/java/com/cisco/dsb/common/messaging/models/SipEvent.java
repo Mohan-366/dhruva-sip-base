@@ -2,7 +2,7 @@ package com.cisco.dsb.common.messaging.models;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.util.log.LogContext;
+import com.cisco.dsb.common.util.log.LogContext;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import java.io.Serializable;

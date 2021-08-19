@@ -2,12 +2,12 @@ package com.cisco.dhruva.application;
 
 import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.DefaultCallType;
+import com.cisco.dsb.common.service.ProxyService;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.service.ProxyService;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;

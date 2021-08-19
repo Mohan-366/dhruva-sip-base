@@ -1,8 +1,8 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
-import com.cisco.dsb.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ClientTransaction;

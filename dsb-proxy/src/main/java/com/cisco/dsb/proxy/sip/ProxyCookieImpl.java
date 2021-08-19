@@ -5,7 +5,7 @@ package com.cisco.dsb.proxy.sip;
  * <code>ProxyController</code> as the cookie object to the proxy core.
  */
 
-import com.cisco.dsb.dto.Destination;
+import com.cisco.dsb.common.dto.Destination;
 import gov.nist.javax.sip.message.SIPRequest;
 
 public class ProxyCookieImpl implements ProxyCookie {
