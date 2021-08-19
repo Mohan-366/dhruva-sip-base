@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.service;
+package com.cisco.dsb.proxy;
 
 import static org.mockito.Mockito.*;
 
@@ -6,6 +6,9 @@ import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.service.TrunkService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;

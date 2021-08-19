@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.handlers;
 
-import com.cisco.dsb.common.service.ProxyService;
+import com.cisco.dsb.proxy.ProxyService;
 import javax.sip.SipProvider;
 import javax.sip.TimeoutEvent;
 
