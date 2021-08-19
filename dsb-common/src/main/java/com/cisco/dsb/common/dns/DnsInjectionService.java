@@ -1,11 +1,11 @@
 package com.cisco.dsb.common.dns;
 
-import static com.cisco.dsb.sip.stack.dns.SipServerLocator.addTrailingPeriod;
+import static com.cisco.dsb.common.sip.stack.dns.SipServerLocator.addTrailingPeriod;
 
-import com.cisco.dsb.sip.dto.InjectedDNSARecord;
-import com.cisco.dsb.sip.dto.InjectedDNSSRVRecord;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.sip.dto.InjectedDNSARecord;
+import com.cisco.dsb.common.sip.dto.InjectedDNSSRVRecord;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

@@ -2,10 +2,10 @@ package com.cisco.dsb.common.messaging.models;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.sip.jain.JainSipHelper;
-import com.cisco.dsb.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.util.log.LogContext;
-import com.cisco.dsb.util.log.Logger;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
+import com.cisco.dsb.common.util.log.LogContext;
+import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
 import java.io.Serializable;

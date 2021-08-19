@@ -33,8 +33,9 @@
         <relativePath></relativePath>
     </parent>
     <modules>
-        <module>stub-app</module>
         <module>dsb-common</module>
+        <module>dsb-calling-app</module>
+        <module>dsb-proxy</module>
     </modules>
 
     <properties>
@@ -55,6 +56,21 @@
             <url>https://engci-maven.cisco.com/artifactory/dhruva-sip-base-snapshot/</url>
         </snapshotRepository>
     </distributionManagement>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>3.4.6</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.20</version>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>com.ciscospark</groupId>
@@ -64,12 +80,6 @@
                     <groupId>com.ciscospark</groupId>
                     <artifactId>cisco-spark-data-cassandra-migration</artifactId>
                 </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.ciscospark</groupId>
-            <artifactId>cisco-spark-starter-server</artifactId>
-            <exclusions>
                 <exclusion>
                     <groupId>com.ciscospark</groupId>
                     <artifactId>cisco-spark-starter-cassandra</artifactId>

@@ -6,6 +6,7 @@ node() {
         // ***** CREDENTIALS USED IN IT-JENKINS *****
         // Bot to talk to Teams rooms
         env.PIPELINE_SPARK_BOT_API_TOKEN = "BeechNotifyBot"
+        REGISTRY_CREDENTIALS = 'dhruva_ccc_bot'
 
         // ***** END CREDENTIALS *****
 
@@ -60,6 +61,36 @@ node() {
             // Report SpotBugs static analysis warnings (also sets build result on failure)
             findbugs pattern: '**/spotbugsXml.xml', failedTotalAll: '0'
             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
+        }
+        stage('archive') {
+            archiveArtifacts artifacts: 'dsb-calling-app/microservice-itjenkins.yml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/docker/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/target/dsb-calling-app-1.0-SNAPSHOT.war', allowEmptyArchive: true
+        }
+        stage('build and publish wbx3 images') {
+            try {
+                if (env.GIT_BRANCH == 'master') {
+                    sh 'ls -lrth'
+                    /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
+                to determine where to build and push (in our case, containers.cisco.com/edge_group)
+                */
+                    // TODO will be nice to have a BUILD_ID+TIMESTAMP+GIT_COMMIT_ID here instead of just BUILD_NUMBER
+                    // Since the existing pipeline currently uses
+                    // dockerhub.cisco.com but the new build pipeline uses containers.cisco.com, we
+                    // pass a file called microservice-itjenkins.yml in this case (which lets us handle
+                    // both requirements for now).
+
+                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", env.BUILD_NUMBER, REGISTRY_CREDENTIALS)
+                }
+                if (env.CHANGE_ID != null) {
+                    def PULL_REQUEST = env.CHANGE_ID+'-pr'
+                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
+                }
+
+            } catch (Exception ex) {
+                echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
+                throw ex
+            }
         }
     }
     catch (Exception ex) {
