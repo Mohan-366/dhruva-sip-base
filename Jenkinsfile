@@ -1,5 +1,5 @@
 #!groovy
-@Library(['kubedPipeline', 'sparkPipeline']) _
+@Library(['kubedPipeline', 'sparkPipeline', 'ciHelper@master']) _
 node() {
 
     try{
@@ -54,7 +54,7 @@ node() {
                 sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
-                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'dsb-common/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+                    step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: 'dsb-common/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
             }
         }
         stage('postBuild') {
@@ -71,6 +71,7 @@ node() {
             try {
                 if (env.GIT_BRANCH == 'master') {
                     sh 'ls -lrth'
+                    def TAG="2."+env.BUILD_NUMBER
                     /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
                 to determine where to build and push (in our case, containers.cisco.com/edge_group)
                 */
@@ -80,7 +81,7 @@ node() {
                     // pass a file called microservice-itjenkins.yml in this case (which lets us handle
                     // both requirements for now).
 
-                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", env.BUILD_NUMBER, REGISTRY_CREDENTIALS)
+                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
                 }
                 if (env.CHANGE_ID != null) {
                     def PULL_REQUEST = env.CHANGE_ID+'-pr'
@@ -90,6 +91,34 @@ node() {
             } catch (Exception ex) {
                 echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
                 throw ex
+            }
+        }
+        if (env.GIT_BRANCH == 'master') {
+            stage('ecr sync') {
+                def tag = "2."+ env.BUILD_NUMBER
+                sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
+                def artifactID = sh(
+                        script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva:${tag} | cut -f 2 -d \':\'",
+                        returnStdout: true
+                ).trim()
+                try {
+                    def metaBody = {
+                        artifact_id = artifactID
+                        description = 'DSB'
+                        image_name = 'dhruva'
+                        operation_type = "Int"
+                        image_tag = tag
+                        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+                        registry_url = 'containers.cisco.com'
+                        service_group = 'WebEx'
+                    }
+                    def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/manifest.yaml", tag: tag, metadata: metaBody]
+                    buildCI(this, buildArgs)
+                    sh "curl https://ecr-sync.int.mccprod.prod.infra.webex.com/api/v1/sync"
+                } catch (Exception e) {
+                    echo "ERROR: An error occurred while syncing image to ECR"
+                    throw e
+                }
             }
         }
     }
