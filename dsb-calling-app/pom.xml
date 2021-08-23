@@ -22,6 +22,63 @@
       <artifactId>reactor-core</artifactId>
     </dependency>
   </dependencies>
-
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/java</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.cisco.maven-archive</groupId>
+        <artifactId>mar-maven-plugin</artifactId>
+        <version>1.2</version>
+        <configuration>
+          <bundledGroups>com.cisco.*, com.webex.*, net.minidev.*</bundledGroups>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build-maven-archive</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- jacoco -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>default-prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>**/integration/*</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-report</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
