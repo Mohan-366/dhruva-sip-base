@@ -88,10 +88,7 @@ public class ProxyServerTransaction {
       this.response = response;
 
       if (ProxyUtils.getResponseClass(response) == 2 && !okResponseSent) {
-        // TODO handle timer in stack? because serverTransaction.sendRespone() starts a timer
-        // ((SIPServerTransactionImpl)serverTransaction).startTransactionTimer();
         okResponseSent = true;
-        Log.debug("Tn timer set for ServerTransaction");
       }
 
     } catch (Exception e) {

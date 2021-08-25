@@ -41,7 +41,6 @@ public class ProxyFactory implements ProxyFactoryInterface {
       SIPRequest request)
       throws InternalProxyErrorException {
 
-    // TODO DSB fix interface
     return new ProxyTransaction(controller, config, server, request);
   }
 }

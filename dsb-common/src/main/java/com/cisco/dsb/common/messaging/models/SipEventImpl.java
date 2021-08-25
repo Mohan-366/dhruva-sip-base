@@ -17,7 +17,7 @@ public abstract class SipEventImpl implements SipEvent {
   }
 
   @Override
-  public Address sipPartyAddress() throws Exception {
+  public Address sipPartyAddress() {
     return null;
   }
 }

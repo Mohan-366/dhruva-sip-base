@@ -72,15 +72,6 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     }
   }
 
-  //  @Bean
-  //  public StripedExecutorService executor() {
-  //    // TODO: Can we switch to monitoredTrackingPreservedExecutorProvider and remove some MDC
-  //    // copying?
-  //    // Do not manage lifecycle here, ProxyEventSink does it
-  //    return (StripedExecutorService)
-  //        monitoredExecutorProvider().newStripedExecutorService("proxy-event-executor");
-  //  }
-
   @Bean
   @DependsOn("dhruvaExecutorService")
   public StripedExecutorService stripedExecutor() {

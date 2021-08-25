@@ -1,5 +1,7 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -77,7 +79,9 @@ public class ProxyClientTransaction {
     // TODO DSB Akshay, handle all Runtime exceptions in pipeline
     network =
         optionalDhruvaNetwork.orElseThrow(
-            () -> new RuntimeException("network for client transaction not set"));
+            () ->
+                new DhruvaRuntimeException(
+                    ErrorCode.NO_OUTGOING_NETWORK, "network for client transaction not set"));
 
     Optional<SipProvider> optionalSipProvider =
         DhruvaNetwork.getProviderFromNetwork(this.network.getName());

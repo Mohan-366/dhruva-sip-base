@@ -55,7 +55,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
   public static final byte TLS = (byte) Transport.TLS.getValue();
-  // TODO DSB confirm this
   public static final byte STATEFUL = (byte) 1;
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
@@ -65,7 +64,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
   private Transport defaultProtocol = Transport.UDP;
-  // TODO DSB Adding by default
   protected boolean doRecordRoute = true;
 
   @Autowired
@@ -581,7 +579,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
             currentRRURL.getTransportParam());
 
     if (name != null) {
-      // todo optimize when get a chance
       logger.debug("Record Route URL to be modified : " + currentRRURL);
       String user = currentRRURL.getUser();
       StringTokenizer st = new StringTokenizer(user, ReConstants.DELIMITER_STR);

@@ -1,7 +1,8 @@
 package com.cisco.dsb.common.service;
 
 import com.cisco.dsb.common.dto.Destination;
-import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBException;
 import com.cisco.dsb.common.loadbalancer.LBFactory;
 import com.cisco.dsb.common.loadbalancer.LBInterface;
@@ -44,7 +45,9 @@ public class TrunkService {
       @NonNull AbstractSipRequest request, @NonNull Destination destination) {
     String destinationAddress = destination.getAddress();
     if (Objects.isNull(destinationAddress))
-      return Mono.error(new DhruvaException("address not set in destination, cannot proceed!"));
+      return Mono.error(
+          new DhruvaRuntimeException(
+              ErrorCode.FETCH_ENDPOINT_ERROR, "Destination Address is null!!!"));
 
     logger.info(
         "get element for destination address {} and type {}",
@@ -54,7 +57,6 @@ public class TrunkService {
     return fetchStaticServerGroupAysnc(destination)
         .switchIfEmpty(Mono.defer(() -> fetchDynamicServerGroupAsync(destination)))
         .mapNotNull(sg -> (fetchSGLoadBalancer(destination, sg, request)))
-        .switchIfEmpty(Mono.error(new LBException("Not able to load balance")))
         .mapNotNull(x -> x.getServer().getEndPoint());
   }
 
@@ -71,8 +73,9 @@ public class TrunkService {
     if (Objects.isNull(destination.getNetwork())
         || Objects.isNull(destination.getNetwork().getTransport()))
       return Mono.error(
-          new DhruvaException(
-              "network, transport not available to proceed for creating dynamic server group"));
+          new DhruvaRuntimeException(
+              ErrorCode.FETCH_ENDPOINT_ERROR,
+              String.format("network, transport not available to create dynamic server group")));
     return dnsServerGroupUtil.createDNSServerGroup(
         destination.getAddress(),
         destination.getNetwork().getName(),
@@ -90,8 +93,8 @@ public class TrunkService {
       destination.setLoadBalancer(lbInterface);
       return lbInterface;
     } catch (LBException ex) {
-      logger.error("Exception while creating loadbalancer " + ex.getMessage());
-      return null;
+      throw new DhruvaRuntimeException(
+          ErrorCode.FETCH_ENDPOINT_ERROR, "Exception while creating loadbalancer", ex);
     }
   }
 

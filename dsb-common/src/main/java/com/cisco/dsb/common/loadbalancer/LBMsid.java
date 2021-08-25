@@ -11,10 +11,8 @@ package com.cisco.dsb.common.loadbalancer;
 public final class LBMsid extends LBHashBasedMsid {
 
   @Override
-  // Todo
   public void setKey() {
     try {
-      // TODO
     } catch (Exception e) {
       //   Log.error(e.getStackTrace());
     }

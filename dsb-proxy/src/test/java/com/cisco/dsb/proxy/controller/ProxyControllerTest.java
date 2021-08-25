@@ -8,6 +8,7 @@ import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -447,7 +448,7 @@ public class ProxyControllerTest {
     StepVerifier.create(
             proxyController.proxyForwardRequest(
                 destination, proxySIPRequest, proxyController.timeToTry))
-        .verifyErrorMatches(err -> err instanceof DhruvaException);
+        .verifyErrorMatches(err -> err instanceof DhruvaRuntimeException);
 
     verify(clientTransaction, Mockito.times(0)).sendRequest();
     reset(clientTransaction);
@@ -1235,7 +1236,7 @@ public class ProxyControllerTest {
     when(trunkService.getElementAsync(proxySIPRequest, destination))
         .thenReturn(Mono.error(new DhruvaException("test")));
 
-    // TODO this needs to be enhanced when we support proper error handling
+    // TODO Akshay this needs to be enhanced when we support proper error handling
     StepVerifier.create(
             proxyController.proxyForwardRequest(
                 destination, proxySIPRequest, proxyController.timeToTry))

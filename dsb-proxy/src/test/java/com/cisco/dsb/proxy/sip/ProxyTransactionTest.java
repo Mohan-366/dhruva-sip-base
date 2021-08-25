@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
@@ -97,7 +98,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             any(),
             any(),
-            ArgumentMatchers.eq(ControllerInterface.NO_VIA_LEFT),
+            ArgumentMatchers.eq(ErrorCode.RESPONSE_NO_VIA),
             eq("Response is meant for proxy, no more Vias left"),
             eq(null));
   }
@@ -116,7 +117,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             any(),
             any(),
-            ArgumentMatchers.eq(ControllerInterface.NO_VIA_LEFT),
+            ArgumentMatchers.eq(ErrorCode.RESPONSE_NO_VIA),
             eq("Response is meant for proxy, no more Vias left"),
             eq(null));
   }
@@ -182,7 +183,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             eq(proxyTransaction),
             eq(proxyServerTransaction),
-            ArgumentMatchers.eq(ControllerInterface.INVALID_STATE),
+            ArgumentMatchers.eq(ErrorCode.INVALID_STATE),
             eq("No final response received so far!"),
             eq(null));
 
@@ -233,7 +234,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             eq(proxyTransaction),
             eq(proxyServerTransaction),
-            ArgumentMatchers.eq(ControllerInterface.INVALID_STATE),
+            ArgumentMatchers.eq(ErrorCode.INVALID_STATE),
             eq(
                 "Cannot send "
                     + 4
@@ -259,7 +260,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             eq(proxyTransaction),
             eq(proxyServerTransaction),
-            ArgumentMatchers.eq(ControllerInterface.DESTINATION_UNREACHABLE),
+            ArgumentMatchers.eq(ErrorCode.DESTINATION_UNREACHABLE),
             eq("Destination Unreachable"),
             eq(due));
   }
@@ -280,7 +281,7 @@ public class ProxyTransactionTest {
         .onResponseFailure(
             eq(proxyTransaction),
             eq(proxyServerTransaction),
-            ArgumentMatchers.eq(ControllerInterface.UNKNOWN_ERROR),
+            ArgumentMatchers.eq(ErrorCode.UNKNOWN_ERROR_RES),
             eq("Unexpected Exception"),
             eq(due));
   }

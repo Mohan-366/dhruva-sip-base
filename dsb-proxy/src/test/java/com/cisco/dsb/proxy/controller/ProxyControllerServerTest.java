@@ -5,11 +5,11 @@ import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.dto.Destination;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.loadbalancer.LBWeight;
 import com.cisco.dsb.common.service.TrunkService;
 import com.cisco.dsb.common.sip.util.EndPoint;
-import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -153,7 +153,7 @@ public class ProxyControllerServerTest {
               + "error code Destination Unreachable")
   public void testOnProxyFailure_1() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
@@ -185,7 +185,7 @@ public class ProxyControllerServerTest {
               + "error code ProxyError")
   public void testOnProxyFailure_2() throws Exception {
     // setup
-    int errCode = ControllerInterface.SEND_REQUEST_ERROR;
+    ErrorCode errCode = ErrorCode.REQUEST_PARSE_ERROR;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
@@ -217,7 +217,7 @@ public class ProxyControllerServerTest {
               + "No more elements")
   public void testOnProxyFailure_3() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -261,7 +261,7 @@ public class ProxyControllerServerTest {
     assert bestResponses.get(0).getResponse().getStatusCode() == Response.BAD_GATEWAY;
     assert bestResponses.get(1).getResponse().getStatusCode() == Response.SERVER_INTERNAL_ERROR;
     assert resp_captor.getValue().getStatusCode() == Response.SERVER_INTERNAL_ERROR;
-    verify(trunkService, Mockito.times(2)).getNextElement(eq(lbWeight), anyInt());
+    verify(trunkService, Mockito.times(1)).getNextElement(eq(lbWeight), anyInt());
   }
 
   @Test(
@@ -271,7 +271,7 @@ public class ProxyControllerServerTest {
               + "No more EndPoints found, send 404 as best response")
   public void testOnProxyFailure_4() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -347,7 +347,7 @@ public class ProxyControllerServerTest {
               + "Don't try any endpoints, send out best response")
   public void testOnProxyFailure_5() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -415,7 +415,7 @@ public class ProxyControllerServerTest {
               + "Don't try any endpoints, send out 200OK response")
   public void testOnProxyFailure_6() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -486,7 +486,7 @@ public class ProxyControllerServerTest {
               + "Don't try any endpoints, send out 180Ringing response")
   public void testOnProxyFailure_7() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -563,7 +563,7 @@ public class ProxyControllerServerTest {
               + "Don't try any endpoints, send out 3xx response")
   public void testOnProxyFailure_8() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);
@@ -636,7 +636,7 @@ public class ProxyControllerServerTest {
               + "No more elements to try, send best response i.e 408")
   public void testOnProxyFailure_9() throws Exception {
     // setup
-    int errCode = ControllerInterface.DESTINATION_UNREACHABLE;
+    ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
     Destination destination = mock(Destination.class);
     LBWeight lbWeight = mock(LBWeight.class);

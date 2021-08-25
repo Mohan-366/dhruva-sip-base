@@ -35,13 +35,6 @@ public final class ProxyStackFactory {
     properties.setProperty("gov.nist.javax.sip.THREAD_POOL_SIZE", "64");
     properties.setProperty("gov.nist.javax.sip.TCP_POST_PARSING_THREAD_POOL_SIZE", "30");
 
-    // Maximum time for which the original transaction for which a forked response is received is
-    // tracked.
-    // This property is only relevant to Dialog Stateful applications ( User Agents or B2BUA).
-    //  0 -  not the default value
-    // TODO: remove if confirmed as not-applicable
-    // properties.setProperty("gov.nist.javax.sip.MAX_FORK_TIME_SECONDS", "0");
-
     // seems useful
     properties.setProperty("gov.nist.javax.sip.MAX_MESSAGE_SIZE", "32000");
     properties.setProperty("gov.nist.javax.sip.MAX_LISTENER_RESPONSE_TIME", "120");

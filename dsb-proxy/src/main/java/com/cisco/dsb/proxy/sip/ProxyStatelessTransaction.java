@@ -1,6 +1,8 @@
 package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipUtils;
@@ -156,27 +158,19 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     logger.debug("Entering proxyTo()");
 
     if (state != PROXY_INITIAL && strayRequest == NOT_STRAY) {
-      controller.onProxyFailure(
-          this,
-          cookie,
-          ControllerInterface.INVALID_PARAM,
-          "Cannot fork stateless transaction!",
-          null);
-      return null;
+      throw new DhruvaRuntimeException(
+          ErrorCode.INVALID_PARAM, "Cannot fork stateless transaction!");
     }
 
     try {
       prepareRequest(proxySIPRequest);
       state = PROXY_DONE;
-
-      controller.onProxySuccess(this, cookie, null);
       logger.debug("Leaving ProxyStatelessTransaction  proxyTo()");
       return proxySIPRequest;
 
     } catch (ParseException | InvalidArgumentException | SipException e) {
       logger.error("Got DsException in proxyTo()!", e);
-      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
-      return null;
+      throw new DhruvaRuntimeException(ErrorCode.INVALID_PARAM, e.getMessage(), e);
     }
   }
 
@@ -466,8 +460,6 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
         || request.getMethod().equals(Request.SUBSCRIBE)
         || request.getMethod().equals(Request.NOTIFY)) {
 
-      // Verify if this has to be outgoing network or incoming network
-      // DSB TODO
       String network = proxySIPRequest.getOutgoingNetwork();
       RecordRouteHeader rr = getDefaultParams().getRecordRouteInterface(network);
 

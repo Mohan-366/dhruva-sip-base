@@ -40,10 +40,7 @@ public enum Transport {
     public boolean isReliable() {
       return true;
     }
-  }
-// TODO: what is the use of UNSUPPORTED?
-/*,
-@JsonEnumDefaultValue UNSUPPORTED(-1)*/ ;
+  };
 
   // NOTE: if more than one method need to be included, mention all the methods in a separate
   // interface

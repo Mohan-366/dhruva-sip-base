@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.dto.Destination;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.loadbalancer.LBCallID;
 import com.cisco.dsb.common.loadbalancer.LBException;
 import com.cisco.dsb.common.loadbalancer.LBFactory;
@@ -193,7 +194,7 @@ public class TrunkServiceTest {
     destination.setNetwork(network);
 
     StepVerifier.create(ts.getElementAsync(message, destination))
-        .expectErrorMatches(throwable -> throwable instanceof LBException)
+        .expectErrorMatches(throwable -> throwable instanceof DhruvaRuntimeException)
         .verify();
   }
 

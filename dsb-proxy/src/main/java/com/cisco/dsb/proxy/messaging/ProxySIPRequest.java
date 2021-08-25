@@ -48,8 +48,7 @@ public class ProxySIPRequest extends AbstractSipRequest {
       ExecutionContext executionContext,
       SipProvider provider,
       Request request,
-      ServerTransaction transaction)
-      throws IOException {
+      ServerTransaction transaction) {
     super(executionContext, provider, transaction, request);
   }
 
