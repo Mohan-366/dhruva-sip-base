@@ -155,15 +155,15 @@ public class ProxyControllerServerTest {
     // setup
     ErrorCode errCode = ErrorCode.DESTINATION_UNREACHABLE;
     ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
+    ProxyClientTransaction proxyClientTransaction = mock(ProxyClientTransaction.class);
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     proxyController.setOriginalRequest(sipRequest);
-    when(proxyTransaction.getClientTransaction()).thenReturn(mock(ProxyClientTransaction.class));
+    when(proxyTransaction.getClientTransaction()).thenReturn(proxyClientTransaction);
     doAnswer(
             invocationOnMock -> {
-              ProxySIPResponse proxySIPResponse =
-                  (ProxySIPResponse) invocationOnMock.getArgument(0);
+              ProxySIPResponse proxySIPResponse = invocationOnMock.getArgument(0);
               when(proxyTransaction.getBestResponse()).thenReturn(proxySIPResponse);
               return null;
             })
@@ -177,6 +177,9 @@ public class ProxyControllerServerTest {
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
     ProxySIPResponse bestResponse = captor.getValue();
     assert bestResponse.getResponse().getStatusCode() == Response.BAD_GATEWAY;
+    // also verify that the ProxyClientTransaction's timer C is removed if there was any proxy
+    // error. This is a cleanup.
+    verify(proxyClientTransaction).removeTimerC();
   }
 
   @Test(

@@ -16,6 +16,7 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.concurrent.Future;
 import javax.sip.*;
+import javax.sip.message.Request;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -149,5 +150,35 @@ public class ProxyEventManagerTest {
 
     Assert.assertNotNull(sipTimeOutHandler);
     Assert.assertNull(sipTimeOutHandler.getCallId());
+  }
+
+  @Test(description = "test transaction termination on server transaction")
+  public void testTransactionTerminatedForServerTransaction() {
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    TransactionTerminatedEvent transactionTerminatedEvent = mock(TransactionTerminatedEvent.class);
+    Request request = mock(Request.class);
+
+    when(transactionTerminatedEvent.isServerTransaction()).thenReturn(true);
+    when(transactionTerminatedEvent.getServerTransaction()).thenReturn(serverTransaction);
+    when(serverTransaction.getRequest()).thenReturn(request);
+    when(request.getMethod()).thenReturn("INVITE");
+
+    proxyEventManager.transactionTerminated(transactionTerminatedEvent);
+    verify(transactionTerminatedEvent).getServerTransaction();
+  }
+
+  @Test(description = "test transaction termination on client transaction")
+  public void testTransactionTerminatedForClientTransaction() {
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    TransactionTerminatedEvent transactionTerminatedEvent = mock(TransactionTerminatedEvent.class);
+    Request request = mock(Request.class);
+
+    when(transactionTerminatedEvent.isServerTransaction()).thenReturn(false);
+    when(transactionTerminatedEvent.getClientTransaction()).thenReturn(clientTransaction);
+    when(clientTransaction.getRequest()).thenReturn(request);
+    when(request.getMethod()).thenReturn("INVITE");
+
+    proxyEventManager.transactionTerminated(transactionTerminatedEvent);
+    verify(transactionTerminatedEvent).getClientTransaction();
   }
 }

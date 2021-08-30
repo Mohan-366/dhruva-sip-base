@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
 import javax.sip.TimeoutEvent;
+import javax.sip.TransactionTerminatedEvent;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,7 +24,9 @@ public class ProxyPacketProcessorTest {
     MockitoAnnotations.initMocks(this);
   }
 
-  @Test()
+  @Test(
+      description =
+          "check if 'RequestEvent' received by SipListener from stack is handed over to next layer i.e ProxyEventListener without any modification")
   public void testRequestEvent() {
     RequestEvent requestEvent = mock(RequestEvent.class);
     doNothing().when(proxyEventListener).request(requestEvent);
@@ -35,7 +38,9 @@ public class ProxyPacketProcessorTest {
     Assert.assertEquals(requestEvent, requestEventTest);
   }
 
-  @Test()
+  @Test(
+      description =
+          "check if 'ResponseEvent' received by SipListener from stack is handed over to next layer i.e ProxyEventListener without any modification")
   public void testResponseEvent() {
     ResponseEvent responseEvent = mock(ResponseEvent.class);
     doNothing().when(proxyEventListener).response(responseEvent);
@@ -47,7 +52,9 @@ public class ProxyPacketProcessorTest {
     Assert.assertEquals(responseEvent, responseEventTest);
   }
 
-  @Test()
+  @Test(
+      description =
+          "check if 'TimeoutEvent' received by SipListener from stack is handed over to next layer i.e ProxyEventListener without any modification")
   public void testTimeoutEvent() {
     TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
     doNothing().when(proxyEventListener).timeOut(timeoutEvent);
@@ -57,5 +64,20 @@ public class ProxyPacketProcessorTest {
     verify(proxyEventListener, times(1)).timeOut(argumentCaptor.capture());
     TimeoutEvent timeoutEventTest = argumentCaptor.getValue();
     Assert.assertEquals(timeoutEvent, timeoutEventTest);
+  }
+
+  @Test(
+      description =
+          "check if 'TransactionTerminatedEvent' received by SipListener from stack is handed over to next layer i.e ProxyEventListener without any modification")
+  public void testTransactionTerminatedEvent() {
+    TransactionTerminatedEvent transactionTerminatedEvent = mock(TransactionTerminatedEvent.class);
+    doNothing().when(proxyEventListener).transactionTerminated(transactionTerminatedEvent);
+    proxyPacketProcessor.processTransactionTerminated(transactionTerminatedEvent);
+
+    ArgumentCaptor<TransactionTerminatedEvent> argumentCaptor =
+        ArgumentCaptor.forClass(TransactionTerminatedEvent.class);
+    verify(proxyEventListener).transactionTerminated(argumentCaptor.capture());
+    TransactionTerminatedEvent transactionTerminatedEventTest = argumentCaptor.getValue();
+    Assert.assertEquals(transactionTerminatedEvent, transactionTerminatedEventTest);
   }
 }

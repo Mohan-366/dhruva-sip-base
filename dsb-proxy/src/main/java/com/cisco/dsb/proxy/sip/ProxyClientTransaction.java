@@ -2,13 +2,20 @@ package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
 import javax.sip.header.ViaHeader;
@@ -55,6 +62,15 @@ public class ProxyClientTransaction {
 
   @Getter @Setter private boolean isTimedOut = false;
 
+  // holds the (max-request-timeout)timer inserted into the DsScheduler
+  // Once it fires, we send CANCEL if the transaction is not terminated yet
+  // We also need to remove this timer if the transaction completes in some
+  // other way so that we don't hold the references unnecessarily (this
+  // will enable garbage collection)
+  private ScheduledFuture timerC = null;
+  private final ScheduledThreadPoolExecutor scheduledExecutor;
+  private final DhruvaExecutorService dhruvaExecutorService;
+
   protected ProxyClientTransaction(
       @NonNull ProxyTransaction proxy,
       @NonNull ClientTransaction branch,
@@ -68,7 +84,11 @@ public class ProxyClientTransaction {
     state = STATE_REQUEST_SENT;
     this.cookie = cookie;
 
-    logger.debug("ProxyClientTransaction for {}", request.getMethod());
+    dhruvaExecutorService =
+        SpringApplicationContext.getAppContext().getBean(DhruvaExecutorService.class);
+    scheduledExecutor =
+        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
+
     // end
     if (proxy.isProcessVia()) {
       topVia = (Via) request.getTopmostVia().clone();
@@ -92,7 +112,7 @@ public class ProxyClientTransaction {
       throw new RuntimeException("unable to fetch sip provider not set");
     }
 
-    logger.debug("ProxyClientTransaction created to {}", request.getRequestURI());
+    logger.debug("ProxyClientTransaction created");
   }
 
   /** Cancels this branch if in the right state */
@@ -148,10 +168,8 @@ public class ProxyClientTransaction {
   /** Saves the last response received */
   protected void gotResponse(ProxySIPResponse proxySIPResponse) {
     logger.debug("Entering gotResponse()");
-
     if (response == null || ProxyUtils.getResponseClass(response) == 1) {
       response = proxySIPResponse.getResponse();
-
       if (proxySIPResponse.getResponseClass() == 1) {
         // TODO request passport state change can be recorded here
         state = STATE_PROV_RECVD;
@@ -159,6 +177,9 @@ public class ProxyClientTransaction {
       } else {
         state = STATE_FINAL_RECVD;
         logger.debug("In STATE_FINAL_RECVD");
+        // we've just received a final response so there is no point
+        // holding up the references until the max-timeout timer
+        removeTimerC();
       }
     } else if (getState() == STATE_FINAL_RECVD) {
       state = STATE_FINAL_RETRANSMISSION_RECVD;
@@ -168,12 +189,47 @@ public class ProxyClientTransaction {
   }
 
   /**
-   * @return the last provisional or the final response received by this transaction. This method is
-   *     not strictly necessary but it makes application's life somewhat easier as the application
-   *     is not required to save the response for later reference NOTE: modifying this response will
-   *     have unpredictable consequences on further operation of this transaction
+   * Schedule Timer C to fire the task after waiting for provided 'x' millisec delay
+   *
+   * @param milliSec delay time before firing the task
    */
-  public SIPResponse getResponse() {
-    return response;
+  protected void scheduleTimerC(long milliSec) {
+    if (Objects.isNull(scheduledExecutor)) {
+      logger.error("'PROXY_CLIENT_TIMEOUT' Scheduled Executor Service has not started");
+      return;
+    }
+    Runnable task = () -> proxy.timeOut(branch, sipProvider);
+    timerC = scheduledExecutor.schedule(task, milliSec, TimeUnit.MILLISECONDS);
+    logger.info("Set Timer C for {} milliseconds", milliSec);
+  }
+
+  /** If Timer C has fired due to timeout, - mark this client tx as timed out - remove the timer */
+  public void timedOut() {
+    setTimedOut(true);
+    removeTimerC();
+  }
+
+  public void removeTimerC() {
+    if (!isTimerCRemoved()) {
+      logger.info("Cannot remove the Timer C for client transaction as it is already removed");
+    }
+  }
+
+  /**
+   * If Timer C is not already cancelled, cancel it.
+   *
+   * @return true - if not cancelled before and cancelled successfully after this method invocation.
+   *     false - if its already cancelled/not scheduled at all - nothing to remove here
+   */
+  protected boolean isTimerCRemoved() {
+    logger.debug("Entering isTimerCRemoved()");
+    boolean success = false;
+    if (timerC != null) {
+      timerC.cancel(false);
+      timerC = null;
+      success = true;
+    }
+    logger.debug("Leaving isTimerCRemoved(), returning {}", success);
+    return success;
   }
 }

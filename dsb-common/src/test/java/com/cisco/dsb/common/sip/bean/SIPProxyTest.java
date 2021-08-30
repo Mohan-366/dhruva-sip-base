@@ -14,6 +14,7 @@ public class SIPProxyTest {
             .setCreateDNSServergroup(true)
             .setProcessRouteHeader(true)
             .setProcessRegisterRequest(true)
+            .setTimerCIntervalInMilliSec(60000)
             .build();
 
     Assert.assertNotNull(sipProxy);
@@ -21,5 +22,6 @@ public class SIPProxyTest {
     Assert.assertTrue(sipProxy.isCreateDNSServerGroup());
     Assert.assertTrue(sipProxy.isProcessRouteHeader());
     Assert.assertTrue(sipProxy.isProcessRegisterRequest());
+    Assert.assertEquals(sipProxy.getTimerCIntervalInMilliSec(), 60000);
   }
 }

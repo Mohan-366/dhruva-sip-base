@@ -10,6 +10,7 @@ import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.service.TrunkService;
@@ -22,6 +23,7 @@ import com.cisco.dsb.common.sip.stack.dto.SipDestination;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
@@ -55,11 +57,9 @@ import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.mockito.*;
+import org.springframework.context.ApplicationContext;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -87,6 +87,8 @@ public class ProxyControllerTest {
   SipProvider incomingSipProvider;
   SipProvider outgoingSipProvider;
 
+  SpringApplicationContext springApplicationContext;
+  ScheduledThreadPoolExecutor scheduledExecutor;
   //    @BeforeEach
   //    public void beforeEach(){
   //        ReflectionTestUtils.setField(proxyControllerFactory,"controllerConfig", new
@@ -111,8 +113,8 @@ public class ProxyControllerTest {
     proxyFactory = new ProxyFactory();
     controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
     // dhruvaSIPConfigProperties = new DhruvaSIPConfigProperties();
-    dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
     dhruvaExecutorService = mock(DhruvaExecutorService.class);
+    scheduledExecutor = mock(ScheduledThreadPoolExecutor.class);
 
     controllerConfig.addListenInterface(
         incomingNetwork,
@@ -171,6 +173,17 @@ public class ProxyControllerTest {
     DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
 
     when(dhruvaSIPConfigProperties.isHostPortEnabled()).thenReturn(false);
+    SIPProxy sipProxy = mock(SIPProxy.class);
+    when(sipProxy.getTimerCIntervalInMilliSec()).thenReturn((long) 2);
+    when(dhruvaSIPConfigProperties.getSIPProxy()).thenReturn(sipProxy);
+
+    springApplicationContext = new SpringApplicationContext();
+    ApplicationContext context = mock(ApplicationContext.class);
+    springApplicationContext.setApplicationContext(context);
+
+    when(context.getBean(DhruvaExecutorService.class)).thenReturn(dhruvaExecutorService);
+    when(dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT))
+        .thenReturn(scheduledExecutor);
   }
 
   //    @BeforeEach
@@ -245,11 +258,16 @@ public class ProxyControllerTest {
     reset(sipStack);
     reset(trunkService);
     Router router = mock(Router.class);
-    when(outgoingSipProvider.getSipStack()).thenReturn((SipStack) sipStack);
+    when(outgoingSipProvider.getSipStack()).thenReturn(sipStack);
     when(sipStack.getRouter()).thenReturn(router);
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
     DhruvaNetwork.setSipProvider(incomingNetwork.getName(), incomingSipProvider);
     DhruvaNetwork.setSipProvider(outgoingNetwork.getName(), outgoingSipProvider);
+  }
+
+  @AfterClass
+  void cleanUp() {
+    springApplicationContext.setApplicationContext(null);
   }
 
   @Test(description = "test proxy client creation for outgoing invite request")
@@ -325,7 +343,7 @@ public class ProxyControllerTest {
         .verifyComplete();
 
     ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
-    verify(outgoingSipProvider, Mockito.times(1)).getNewClientTransaction(argumentCaptor.capture());
+    verify(outgoingSipProvider).getNewClientTransaction(argumentCaptor.capture());
 
     SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
 
@@ -333,12 +351,12 @@ public class ProxyControllerTest {
     Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
     Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
 
-    verify(clientTransaction, Mockito.times(1)).sendRequest();
+    verify(clientTransaction).sendRequest();
 
     // Verify that we set the proxy object in applicationData of jain for future response
     ArgumentCaptor<ProxyTransaction> appArgumentCaptor =
         ArgumentCaptor.forClass(ProxyTransaction.class);
-    verify(clientTransaction, Mockito.times(1)).setApplicationData(appArgumentCaptor.capture());
+    verify(clientTransaction).setApplicationData(appArgumentCaptor.capture());
 
     ProxyTransaction proxyTransaction = appArgumentCaptor.getValue();
 
@@ -399,7 +417,7 @@ public class ProxyControllerTest {
                 destination, proxySIPRequest, proxyController.timeToTry))
         .verifyErrorMatches(err -> err instanceof SipException);
 
-    verify(clientTransaction, Mockito.times(1)).sendRequest();
+    verify(clientTransaction).sendRequest();
   }
 
   @Test(
@@ -450,7 +468,7 @@ public class ProxyControllerTest {
                 destination, proxySIPRequest, proxyController.timeToTry))
         .verifyErrorMatches(err -> err instanceof DhruvaRuntimeException);
 
-    verify(clientTransaction, Mockito.times(0)).sendRequest();
+    verify(clientTransaction, never()).sendRequest();
     reset(clientTransaction);
   }
 
@@ -568,9 +586,9 @@ public class ProxyControllerTest {
         .verifyComplete();
 
     ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
-    verify(outgoingSipProvider, Mockito.times(0)).getNewClientTransaction(argumentCaptor.capture());
+    verify(outgoingSipProvider, never()).getNewClientTransaction(argumentCaptor.capture());
 
-    verify(clientTransaction, Mockito.times(0)).sendRequest();
+    verify(clientTransaction, never()).sendRequest();
   }
 
   @Test(description = "test proxy client creation for outgoing bye request")
@@ -636,7 +654,7 @@ public class ProxyControllerTest {
         .verifyComplete();
 
     ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
-    verify(outgoingSipProvider, Mockito.times(1)).getNewClientTransaction(argumentCaptor.capture());
+    verify(outgoingSipProvider).getNewClientTransaction(argumentCaptor.capture());
 
     SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
 
@@ -644,12 +662,12 @@ public class ProxyControllerTest {
     Assert.assertEquals(sendRequest.getMethod(), Request.BYE);
     Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
 
-    verify(clientTransaction, Mockito.times(1)).sendRequest();
+    verify(clientTransaction).sendRequest();
 
     // Verify that we set the proxy object in applicationData of jain for future response
     ArgumentCaptor<ProxyTransaction> appArgumentCaptor =
         ArgumentCaptor.forClass(ProxyTransaction.class);
-    verify(clientTransaction, Mockito.times(1)).setApplicationData(appArgumentCaptor.capture());
+    verify(clientTransaction).setApplicationData(appArgumentCaptor.capture());
 
     ProxyTransaction proxyTransaction = appArgumentCaptor.getValue();
 
@@ -875,7 +893,7 @@ public class ProxyControllerTest {
 
     ArgumentCaptor<ProxyTransaction> argumentCaptor =
         ArgumentCaptor.forClass(ProxyTransaction.class);
-    verify(serverTransaction, Mockito.times(1)).setApplicationData(argumentCaptor.capture());
+    verify(serverTransaction).setApplicationData(argumentCaptor.capture());
 
     ProxyTransaction proxyTransaction = argumentCaptor.getValue();
 
@@ -935,7 +953,7 @@ public class ProxyControllerTest {
 
       Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
 
-      verify(st, times(1)).sendResponse(captor.capture());
+      verify(st).sendResponse(captor.capture());
       Response response = captor.getValue();
       System.out.println("Error response: " + response);
       Assert.assertEquals(response.getStatusCode(), 405);
@@ -962,7 +980,7 @@ public class ProxyControllerTest {
 
     Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), proxySIPRequest);
 
-    verify(st, times(1)).sendResponse(captor.capture());
+    verify(st).sendResponse(captor.capture());
     Response response = captor.getValue();
     System.out.println("Response: " + response);
     Assert.assertEquals(response.getStatusCode(), 200);
@@ -990,9 +1008,9 @@ public class ProxyControllerTest {
     proxyController.onSuccessResponse(proxyTransaction, proxySIPResponse);
 
     if (cancelBranches) {
-      verify(proxyTransaction, times(1)).cancel();
+      verify(proxyTransaction).cancel();
     } else {
-      verify(proxyTransaction, times(0)).cancel();
+      verify(proxyTransaction, never()).cancel();
     }
   }
 
@@ -1018,9 +1036,9 @@ public class ProxyControllerTest {
     proxyController.onGlobalFailureResponse(proxyTransaction);
 
     if (cancelBranches) {
-      verify(proxyTransaction, times(1)).cancel();
+      verify(proxyTransaction).cancel();
     } else {
-      verify(proxyTransaction, times(0)).cancel();
+      verify(proxyTransaction, never()).cancel();
     }
   }
 
@@ -1061,7 +1079,7 @@ public class ProxyControllerTest {
 
     Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
 
-    verify(st, times(1)).sendResponse(captor.capture());
+    verify(st).sendResponse(captor.capture());
     Response response = captor.getValue();
     System.out.println("Response: " + response);
     Assert.assertEquals(response.getStatusCode(), 200);
@@ -1155,7 +1173,7 @@ public class ProxyControllerTest {
         ArgumentCaptor.forClass(Destination.class);
     ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
         ArgumentCaptor.forClass(AbstractSipRequest.class);
-    verify(trunkService, times(1))
+    verify(trunkService)
         .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
 
     Destination destination1 = argumentCaptorDestination.getValue();
@@ -1165,7 +1183,7 @@ public class ProxyControllerTest {
     Assert.assertEquals(proxySIPRequest, abstractSipRequest);
 
     ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
-    verify(outgoingSipProvider, Mockito.times(1)).getNewClientTransaction(argumentCaptor.capture());
+    verify(outgoingSipProvider).getNewClientTransaction(argumentCaptor.capture());
 
     SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
 
@@ -1173,12 +1191,12 @@ public class ProxyControllerTest {
     Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
     Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
 
-    verify(clientTransaction, Mockito.times(1)).sendRequest();
+    verify(clientTransaction).sendRequest();
 
     // Verify that we set the proxy object in applicationData of jain for future response
     ArgumentCaptor<ProxyTransaction> appArgumentCaptor =
         ArgumentCaptor.forClass(ProxyTransaction.class);
-    verify(clientTransaction, Mockito.times(1)).setApplicationData(appArgumentCaptor.capture());
+    verify(clientTransaction).setApplicationData(appArgumentCaptor.capture());
 
     ProxyTransaction proxyTransaction = appArgumentCaptor.getValue();
 
@@ -1322,7 +1340,7 @@ public class ProxyControllerTest {
         ArgumentCaptor.forClass(Destination.class);
     ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
         ArgumentCaptor.forClass(AbstractSipRequest.class);
-    verify(trunkService, times(1))
+    verify(trunkService)
         .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
 
     Destination destination1 = argumentCaptorDestination.getValue();
@@ -1415,7 +1433,7 @@ public class ProxyControllerTest {
         ArgumentCaptor.forClass(Destination.class);
     ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
         ArgumentCaptor.forClass(AbstractSipRequest.class);
-    verify(trunkService, times(1))
+    verify(trunkService)
         .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
 
     Destination destination1 = argumentCaptorDestination.getValue();
@@ -1513,7 +1531,7 @@ public class ProxyControllerTest {
     ArgumentCaptor<AbstractSipRequest> argumentCaptorRequest =
         ArgumentCaptor.forClass(AbstractSipRequest.class);
     // No Trunk Service invocation
-    verify(trunkService, times(0))
+    verify(trunkService, never())
         .getElementAsync(argumentCaptorRequest.capture(), argumentCaptorDestination.capture());
 
     EndPoint ep = proxySIPRequest.getDownstreamElement();
@@ -1579,7 +1597,7 @@ public class ProxyControllerTest {
     proxyController.onNewRequest(proxySIPRequest);
 
     ArgumentCaptor<Response> responseArgumentCaptor = ArgumentCaptor.forClass(Response.class);
-    verify(serverTransaction, times(1)).sendResponse(responseArgumentCaptor.capture());
+    verify(serverTransaction).sendResponse(responseArgumentCaptor.capture());
 
     SIPResponse response = (SIPResponse) responseArgumentCaptor.getValue();
 

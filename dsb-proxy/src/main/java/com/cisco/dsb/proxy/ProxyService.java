@@ -9,6 +9,7 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -64,7 +65,6 @@ public class ProxyService {
   // Map of network and provider
   private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
 
-  private List<String> allowedHeaders = new ArrayList<>();
   // Default ProxyConfig
   private ProxyAppConfig proxyAppConfig = ProxyAppConfig.builder().build();
 
@@ -137,6 +137,9 @@ public class ProxyService {
     }
 
     listenPointFutures.forEach(CompletableFuture::join);
+    // Start the Executor Service, while initialising the ProxyService, that is used for Timer C.
+    // However, tasks will be scheduled in ProxyClientTransaction
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {

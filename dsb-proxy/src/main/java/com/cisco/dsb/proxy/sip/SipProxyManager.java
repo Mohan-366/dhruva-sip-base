@@ -123,13 +123,11 @@ public class SipProxyManager {
    * PlaceHolder for creating ProxyController for new Requests or getting existing ProxyController
    * for that transaction
    */
-  // TODO: tests for this module. Bound to change when adding OPTIONS/CANCEL handling
   public Function<ProxySIPRequest, ProxySIPRequest> getProxyController(
       ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       SIPRequest sipRequest = proxySIPRequest.getRequest();
       ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
-
       String requestType = sipRequest.getMethod();
 
       if (serverTransaction != null && requestType.equals(Request.ACK)) {

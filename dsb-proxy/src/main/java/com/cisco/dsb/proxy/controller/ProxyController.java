@@ -102,9 +102,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public HashMap<Integer, Map<String, String>> parsedProxyParamsByType = null;
 
-  // Order in which the transport is selected.
-  private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
-
   /* Stores if we are in stateful or stateless mode */
   @Setter protected byte stateMode = -1;
   /** reference if request was sent to application. Default is true. */
@@ -1109,6 +1106,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         logger.debug("onProxyFailure():sending out the best response received so far");
         filterResponse(proxy.getBestResponse());
       }
+      if (proxyClientTransaction != null) {
+        logger.debug("Remove Timer C from the ProxyClientTransaction due to ProxyFailure");
+        proxyClientTransaction.removeTimerC();
+      }
       return;
     }
 
@@ -1163,7 +1164,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onSuccessResponse(ProxyTransaction proxy, ProxySIPResponse proxySIPResponse) {
-    logger.info("Inside onSuccessResponse()");
+    logger.debug("Inside onSuccessResponse()");
     if (cancelBranchesAutomatically) {
       logger.info("Cancel branches automatically");
       proxy.cancel();

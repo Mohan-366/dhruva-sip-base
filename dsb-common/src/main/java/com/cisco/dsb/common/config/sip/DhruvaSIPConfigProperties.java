@@ -45,6 +45,8 @@ public class DhruvaSIPConfigProperties {
 
   public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
 
+  public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 45000;
+
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
 
   private static final String USE_REDIS_AS_CACHE = "useRedis";

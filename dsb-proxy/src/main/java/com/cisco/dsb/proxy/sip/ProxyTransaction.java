@@ -19,8 +19,10 @@ import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sip.ClientTransaction;
+import javax.sip.ObjectInUseException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
@@ -424,18 +426,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         }
         branchesOutstanding++;
 
-        // TODO: Shri - is this the timer check for CANCEL
-        // set the user provided timer if necessary
-        /*long timeout;
-        if (params != null)
-          timeout = params.getRequestTimeout();
-        else
-          timeout = 0;
-
-        if (timeout > 0) {
-          proxyClientTrans.setTimeout(timeout);
-        }*/
-
+        // start timer C (which waits for a given interval, within which a final response for the
+        // request sent out is expected)
+        startTimerC(proxyClientTrans);
         // DSB
         // for response matching
         proxySIPRequest.setProxyClientTransaction(proxyClientTrans);
@@ -451,6 +444,16 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           new DhruvaRuntimeException(
               ErrorCode.UNKNOWN_ERROR_REQ, "exception while sending proxy request", e));
     }
+  }
+
+  private void startTimerC(ProxyClientTransaction proxyClientTransaction) {
+    logger.debug("Schedule Timer C for ClientTx");
+    if (Objects.isNull(controller) || Objects.isNull(controller.getControllerConfig())) {
+      logger.error(
+          "Controller/ControllerConfig of ProxyTransaction is null. Cannot fetch timer C timeout value & cant schedule it");
+      return;
+    }
+    proxyClientTransaction.scheduleTimerC(controller.getControllerConfig().getRequestTimeout());
   }
 
   /**
@@ -617,13 +620,20 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     if (clientState == ProxyClientTransaction.STATE_PROV_RECVD) {
       logger.info("Cancelling ProxyClientTrans");
+      try {
+        // When this timeOut is invoked by Timer C expiration (which waits for final response),
+        // we need to terminate the client transaction.
+        trans.terminate();
+      } catch (ObjectInUseException e) {
+        logger.warn("Exception while trying to terminate client tx", e);
+      }
       // invoke the cancel method on the transaction
       proxyClientTrans.cancel();
     }
 
     // construct a timeout response
     // ignore future responses except 200 OKs
-    proxyClientTrans.setTimedOut(true);
+    proxyClientTrans.timedOut();
 
     try {
       SIPResponse response =
@@ -639,7 +649,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       controller.onRequestTimeOut(this, proxyClientTrans.getCookie(), proxyClientTrans);
 
     } catch (DhruvaException | ParseException e) {
-      logger.error("Exception thrown creating response for timeout", e);
+      logger.error("Exception thrown while creating response for timeout", e);
     }
   }
 

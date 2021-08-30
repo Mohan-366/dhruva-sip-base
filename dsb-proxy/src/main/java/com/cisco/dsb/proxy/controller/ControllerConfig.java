@@ -27,7 +27,6 @@ import com.cisco.dsb.proxy.sip.ProxyUtils;
 import com.cisco.dsb.proxy.sip.hostPort.HostPortUtil;
 import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.message.SIPMessage;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -63,7 +62,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   // Adding Getters and Setters for testing
   @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
-  private Transport defaultProtocol = Transport.UDP;
   protected boolean doRecordRoute = true;
 
   @Autowired
@@ -117,7 +115,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       Transport protocol,
       InetAddress translatedAddress,
       boolean attachExternalIP)
-      throws DhruvaException, IOException {
+      throws DhruvaException {
 
     ListenIf newInterface =
         new ListenIf(
@@ -393,7 +391,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public long getRequestTimeout() {
-    return 0;
+    return dhruvaSIPConfigProperties.getSIPProxy().getTimerCIntervalInMilliSec();
   }
 
   @Override
