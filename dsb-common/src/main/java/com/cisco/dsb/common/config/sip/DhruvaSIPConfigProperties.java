@@ -105,7 +105,7 @@ public class DhruvaSIPConfigProperties {
   private static final Boolean DEFAULT_TLS_CERT_OCSP_ENABLED = true;
 
   private static final String NIO_ENABLED = "dhruva.nioEnabled";
-  private static final Boolean DEFAULT_NIO_ENABLED = true;
+  private static final Boolean DEFAULT_NIO_ENABLED = false;
   public static int DEFAULT_PORT = 5060;
 
   @Autowired private Environment env;

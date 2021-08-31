@@ -73,6 +73,7 @@ public class ProxyServiceTest {
 
   SIPListenPoint udpListenPoint1;
   SIPListenPoint udpListenPoint2;
+  SIPListenPoint tcpListenPoint3;
   List<SIPListenPoint> sipListenPointList;
 
   @BeforeClass
@@ -99,9 +100,20 @@ public class ProxyServiceTest {
             .setAttachExternalIP(false)
             .build();
 
+    tcpListenPoint3 =
+        new SIPListenPoint.SIPListenPointBuilder()
+            .setName("TCPNetwork1")
+            .setHostIPAddress("127.0.0.1")
+            .setTransport(Transport.UDP)
+            .setPort(9064)
+            .setRecordRoute(true)
+            .setAttachExternalIP(false)
+            .build();
+
     sipListenPointList = new ArrayList<>();
     sipListenPointList.add(udpListenPoint1);
     sipListenPointList.add(udpListenPoint2);
+    sipListenPointList.add(tcpListenPoint3);
 
     when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(sipListenPointList);
 
@@ -160,10 +172,14 @@ public class ProxyServiceTest {
 
     Optional<SipStack> optionalSipStack1 = proxyService.getSipStack(udpListenPoint1.getName());
     Optional<SipStack> optionalSipStack2 = proxyService.getSipStack(udpListenPoint2.getName());
+    Optional<SipStack> optionalSipStack3 = proxyService.getSipStack(tcpListenPoint3.getName());
     SipStack sipStack1 =
         optionalSipStack1.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
     SipStack sipStack2 =
         optionalSipStack2.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
+    SipStack sipStack3 =
+        optionalSipStack3.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
+
 
     Optional<SipProvider> optionalSipProvider1 =
         proxyService.getSipProvider(sipStack1, udpListenPoint1);
@@ -174,6 +190,11 @@ public class ProxyServiceTest {
         proxyService.getSipProvider(sipStack2, udpListenPoint2);
     SipProvider sipProvider2 =
         optionalSipProvider2.orElseThrow(() -> new RuntimeException("sip provider 2 is not set"));
+
+    Optional<SipProvider> optionalSipProvider3 =
+        proxyService.getSipProvider(sipStack1, tcpListenPoint3);
+    SipProvider sipProvider3 =
+        optionalSipProvider3.orElseThrow(() -> new RuntimeException("sip provider 3 is not set"));
 
     ProxySIPRequest proxySIPRequest =
         DhruvaSipRequestMessage.newBuilder()

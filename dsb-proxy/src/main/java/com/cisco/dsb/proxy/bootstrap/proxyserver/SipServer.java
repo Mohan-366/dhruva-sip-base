@@ -94,21 +94,6 @@ public class SipServer implements Server {
     // Disable dialog support for proxy
     stackProps.setProperty("javax.sip.AUTOMATIC_DIALOG_SUPPORT", "off");
 
-    // need to verify these before enabling
-    /*
-    properties.setProperty("gov.nist.javax.sip.AUTOMATIC_DIALOG_ERROR_HANDLING", "false");
-    properties.setProperty("gov.nist.javax.sip.DELIVER_UNSOLICITED_NOTIFY", "true");
-    properties.setProperty("gov.nist.javax.sip.AGGRESSIVE_CLEANUP", "true");
-    properties.setProperty("gov.nist.javax.sip.LOOSE_DIALOG_VALIDATION", "true");
-    */
-
-    //    stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE",
-    // clientAuthType.toString());
-    //    stackProps.setProperty("gov.nist.javax.sip.NETWORK_LAYER",
-    // DsbNetworkLayer.class.getName());
-    //    stackProps.setProperty(
-    //        "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
-    //        DsbJainSipMessageProcessorFactory.class.getName());
     stackProps.setProperty(
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
