@@ -10,6 +10,7 @@ import com.cisco.dsb.common.loadbalancer.ServerGroupInterface;
 import com.cisco.dsb.common.loadbalancer.ServerInterface;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.servergroups.DnsServerGroupUtil;
+import com.cisco.dsb.common.servergroups.FailoverResponseCode;
 import com.cisco.dsb.common.servergroups.SG;
 import com.cisco.dsb.common.servergroups.StaticServerGroupUtil;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -18,6 +19,7 @@ import com.cisco.dsb.common.util.log.Logger;
 import java.util.Objects;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -28,15 +30,20 @@ public class TrunkService {
   private LBFactory lbFactory;
   DnsServerGroupUtil dnsServerGroupUtil;
   StaticServerGroupUtil staticServerGroupUtil;
+  FailoverResponseCode failoverResponseCode;
 
   @Autowired
   public TrunkService(
       SipServerLocatorService resolver,
       LBFactory lbFactory,
-      StaticServerGroupUtil staticServerGroupUtil) {
+      StaticServerGroupUtil staticServerGroupUtil,
+      DnsServerGroupUtil dnsServerGroupUtil,
+      FailoverResponseCode failoverResponseCode) {
     this.resolver = resolver;
     this.lbFactory = lbFactory;
     this.staticServerGroupUtil = staticServerGroupUtil;
+    this.dnsServerGroupUtil = dnsServerGroupUtil;
+    this.failoverResponseCode = failoverResponseCode;
   }
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
@@ -109,7 +116,8 @@ public class TrunkService {
 
   public EndPoint getNextElement(@NonNull LBInterface lb, @NonNull Integer errorCode) {
 
-    if (staticServerGroupUtil.isCodeInFailoverCodeSet(
+    if (lb.getLastServerTried().getEndPoint() == null) return null;
+    if (failoverResponseCode.isCodeInFailoverCodeSet(
         lb.getLastServerTried().getEndPoint().getServerGroupName(), errorCode)) {
       return lb.getServer().getEndPoint();
     }

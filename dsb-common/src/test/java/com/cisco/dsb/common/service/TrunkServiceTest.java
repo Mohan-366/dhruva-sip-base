@@ -13,12 +13,7 @@ import com.cisco.dsb.common.loadbalancer.LBFactory;
 import com.cisco.dsb.common.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.common.loadbalancer.ServerGroupInterface;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.common.servergroups.AbstractNextHop;
-import com.cisco.dsb.common.servergroups.DefaultNextHop;
-import com.cisco.dsb.common.servergroups.DnsNextHop;
-import com.cisco.dsb.common.servergroups.DnsServerGroupUtil;
-import com.cisco.dsb.common.servergroups.SG;
-import com.cisco.dsb.common.servergroups.StaticServerGroupUtil;
+import com.cisco.dsb.common.servergroups.*;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.dto.Hop;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
@@ -47,6 +42,8 @@ public class TrunkServiceTest {
   private SIPListenPoint sipListenPoint;
   private SipServerLocatorService sipServerLocatorService;
   private LocateSIPServersResponse locateSIPServersResponse;
+  private DnsServerGroupUtil dnsServerGroupUtil;
+  private FailoverResponseCode failoverResponseCode;
 
   @BeforeClass
   void initSetUp() {
@@ -153,7 +150,14 @@ public class TrunkServiceTest {
         Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
     destination.setDestinationType(Destination.DestinationType.SERVER_GROUP);
     destination.setNetwork(network);
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    dnsServerGroupUtil = new DnsServerGroupUtil(sipServerLocatorService);
+    TrunkService ts =
+        new TrunkService(
+            sipServerLocatorService,
+            lbf,
+            staticServerGroupUtil,
+            dnsServerGroupUtil,
+            failoverResponseCode);
 
     StepVerifier.create(ts.getElementAsync(message, destination))
         .assertNext(
@@ -186,7 +190,13 @@ public class TrunkServiceTest {
 
     staticServerGroupUtil = mock(StaticServerGroupUtil.class);
     when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    TrunkService ts =
+        new TrunkService(
+            sipServerLocatorService,
+            lbf,
+            staticServerGroupUtil,
+            dnsServerGroupUtil,
+            failoverResponseCode);
 
     Destination destination =
         Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
@@ -220,7 +230,13 @@ public class TrunkServiceTest {
     staticServerGroupUtil = mock(StaticServerGroupUtil.class);
     when(staticServerGroupUtil.getServerGroup(any())).thenReturn(null);
 
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    TrunkService ts =
+        new TrunkService(
+            sipServerLocatorService,
+            lbf,
+            staticServerGroupUtil,
+            dnsServerGroupUtil,
+            failoverResponseCode);
 
     Destination destination =
         Destination.builder().uri(request.getRequestURI()).address("webex.example.com").build();
@@ -258,7 +274,13 @@ public class TrunkServiceTest {
     staticServerGroupUtil = mock(StaticServerGroupUtil.class);
     when(staticServerGroupUtil.getServerGroup(any())).thenReturn(serverGroup);
 
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    TrunkService ts =
+        new TrunkService(
+            sipServerLocatorService,
+            lbf,
+            staticServerGroupUtil,
+            dnsServerGroupUtil,
+            failoverResponseCode);
 
     Destination destination =
         Destination.builder().uri(request.getRequestURI()).address("testSG1").build();
@@ -318,14 +340,21 @@ public class TrunkServiceTest {
 
     LBFactory lbf = mock(LBFactory.class);
     staticServerGroupUtil = mock(StaticServerGroupUtil.class);
+    failoverResponseCode = mock(FailoverResponseCode.class);
 
-    TrunkService ts = new TrunkService(sipServerLocatorService, lbf, staticServerGroupUtil);
+    TrunkService ts =
+        new TrunkService(
+            sipServerLocatorService,
+            lbf,
+            staticServerGroupUtil,
+            dnsServerGroupUtil,
+            failoverResponseCode);
     Assert.assertNotEquals(ts.getNextElement(callBased), ts.getNextElement(callBased));
     // test with error response
     String serverGroupName = callBased.getLastServerTried().getEndPoint().getServerGroupName();
 
-    when(staticServerGroupUtil.isCodeInFailoverCodeSet(serverGroupName, 503)).thenReturn(true);
-    when(staticServerGroupUtil.isCodeInFailoverCodeSet(serverGroupName, 502)).thenReturn(false);
+    when(failoverResponseCode.isCodeInFailoverCodeSet(serverGroupName, 503)).thenReturn(true);
+    when(failoverResponseCode.isCodeInFailoverCodeSet(serverGroupName, 502)).thenReturn(false);
 
     Assert.assertNotNull(ts.getNextElement(callBased, 503));
     Assert.assertNull(ts.getNextElement(callBased, 502));

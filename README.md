@@ -85,17 +85,23 @@ To use the dsb artifacts in any new repo, the following text will have to be add
        - Provide Server Groups as below
             - In 'Name' -> `sipServerGroups`
             - In 'Value' ->`[{`
-                            `"serverGroupName": "<networkName>",`
-                            `"networkName": "<IP of machine where DSB runs",`
+                            `"serverGroupName": "<SG name>",`
+                            `"networkName": "<Network name>",`
                             `"elements": [{"ipAddress": "<SG IP address>", "port": "<SG port>", "transport": "UDP", "qValue": <qValue>, "weight": <weight>}],` 
                             `"sgPolicy": <"PolicyName">,`   	
                             `}] `
+       - Provide Dynamic Server Group as below
+                   - In 'Name' -> `sipDynamicServerGroups`
+                   - In 'Value' -> `[{`
+                                   `"serverGroupName": "<SG name>",`
+                                   `"sgPolicy": <"PolicyName">`
+                                    `}]` 
                                   
        - Provide Server Groups as below
             - In 'Name' -> `sgPolicies`
             - In 'Value' -> `[{`
-                                    `"name": "<networkName>",`
-                                    `"lbType": "<IP of machine where DSB runs",`
+                                    `"name": "<Policy Name>",`
+                                    `"lbType": "<Load balancer type>",`
                                     `"failoverResponseCodes": [{"ipAddress": [List of Error Codes]`  	
                                          `}] `
 
@@ -103,6 +109,8 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 Reference
   sipServerGroups:
 [{"serverGroupName": "SG1", "networkName": "UDPNetwork", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.1", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}], "sgPolicy": "sgPolicy"},{"serverGroupName": "SG2", "networkName": "net_me_tcp", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.2", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}]}]
+dynamicServerGroup:
+[{"serverGroupName": "cisco.webex.com","sgPolicy": "policy1"}]
   sgPolicies:
 [{"name": "policy1", "lbType": "call-type", "failoverResponseCodes": [501,502]},
 {"name": "global", "lbType": "call-type", "failoverResponseCodes": [503,504]}]
