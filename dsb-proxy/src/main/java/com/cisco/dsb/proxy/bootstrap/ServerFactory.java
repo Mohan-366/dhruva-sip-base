@@ -4,7 +4,7 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.proxy.bootstrap.proxyserver.SipUDPServer;
+import com.cisco.dsb.proxy.bootstrap.proxyserver.SipServer;
 import javax.sip.SipListener;
 
 public class ServerFactory {
@@ -29,7 +29,10 @@ public class ServerFactory {
       throws Exception {
     switch (transport) {
       case UDP:
-        Server udpServer = new SipUDPServer(handler, executorService, networkConfig, metricService);
+      case TCP:
+      case TLS:
+        Server udpServer =
+            new SipServer(transport, handler, executorService, networkConfig, metricService);
         return udpServer;
 
       default:

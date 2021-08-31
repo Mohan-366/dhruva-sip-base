@@ -31,7 +31,7 @@ public class DhruvaSIPConfigProperties {
 
   public static final String SIP_PROXY = "sipProxy";
 
-  public static final Transport DEFAULT_TRANSPORT = Transport.UDP;
+  public static final Transport DEFAULT_TRANSPORT = Transport.TCP;
 
   // MeetPass TODO
   // Env is not read properly, hence setting it here to true
@@ -104,7 +104,9 @@ public class DhruvaSIPConfigProperties {
   private static final String TLS_CERT_OCSP_ENABLED = "dhruva.tlsCertEnableOcsp";
   private static final Boolean DEFAULT_TLS_CERT_OCSP_ENABLED = true;
 
-  public static int DEFAULT_PORT_UDP = 5060;
+  private static final String NIO_ENABLED = "dhruva.nioEnabled";
+  private static final Boolean DEFAULT_NIO_ENABLED = true;
+  public static int DEFAULT_PORT = 5060;
 
   @Autowired private Environment env;
 
@@ -408,5 +410,9 @@ public class DhruvaSIPConfigProperties {
 
   public boolean isTlsOcspEnabled() {
     return env.getProperty(TLS_CERT_OCSP_ENABLED, Boolean.class, DEFAULT_TLS_CERT_OCSP_ENABLED);
+  }
+
+  public boolean isNioEnabled() {
+    return env.getProperty(NIO_ENABLED, Boolean.class, DEFAULT_NIO_ENABLED);
   }
 }

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.google.common.collect.Iterators;
 import gov.nist.javax.sip.ListeningPointImpl;
 import gov.nist.javax.sip.SipProviderImpl;
@@ -14,10 +15,13 @@ import java.util.List;
 import java.util.Properties;
 import java.util.TooManyListenersException;
 import javax.sip.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class JainStackInitializerTest {
+
+  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   @Test(
       description =
@@ -111,7 +115,14 @@ public class JainStackInitializerTest {
 
     SipStack simpleStack =
         JainStackInitializer.getSimpleStack(
-            mockFactory, "gov.nist", mockProps, "1.1.1.1", 5060, "tcp", mockListener);
+            dhruvaSIPConfigProperties,
+            mockFactory,
+            "gov.nist",
+            mockProps,
+            "1.1.1.1",
+            5060,
+            "tcp",
+            mockListener);
     Assert.assertEquals(simpleStack, mockStack);
   }
 }
