@@ -4,7 +4,6 @@ import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.SipStackImpl;
-import gov.nist.javax.sip.stack.NIOMode;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.sip.*;
@@ -179,7 +178,7 @@ public class JainStackInitializer {
       SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
       ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
           .initFromApplication(dhruvaSIPConfigProperties);
-//      sipStackImpl.nioMode = NIOMode.BLOCKING;
+      //      sipStackImpl.nioMode = NIOMode.BLOCKING;
     }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);

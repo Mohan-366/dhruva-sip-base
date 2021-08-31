@@ -180,7 +180,6 @@ public class ProxyServiceTest {
     SipStack sipStack3 =
         optionalSipStack3.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
 
-
     Optional<SipProvider> optionalSipProvider1 =
         proxyService.getSipProvider(sipStack1, udpListenPoint1);
     SipProvider sipProvider1 =
@@ -192,7 +191,7 @@ public class ProxyServiceTest {
         optionalSipProvider2.orElseThrow(() -> new RuntimeException("sip provider 2 is not set"));
 
     Optional<SipProvider> optionalSipProvider3 =
-        proxyService.getSipProvider(sipStack1, tcpListenPoint3);
+        proxyService.getSipProvider(sipStack3, tcpListenPoint3);
     SipProvider sipProvider3 =
         optionalSipProvider3.orElseThrow(() -> new RuntimeException("sip provider 3 is not set"));
 
