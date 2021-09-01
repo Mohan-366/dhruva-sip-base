@@ -27,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class ProxyClientTransactionTest {
@@ -45,7 +46,7 @@ public class ProxyClientTransactionTest {
 
   @Mock Dialog dialog;
 
-  DhruvaNetwork testNetwork;
+  DhruvaNetwork testNetwork1, testNetwork2;
 
   @BeforeMethod
   public void setup() {
@@ -58,24 +59,33 @@ public class ProxyClientTransactionTest {
     when(clientTransaction.getDialog()).thenReturn(dialog);
   }
 
-  public SIPListenPoint createTestSipListenPoint() throws JsonProcessingException {
-    String json =
+  @BeforeClass
+  void init() {}
+
+  @DataProvider
+  public Object[] getNetwork() throws JsonProcessingException, DhruvaException {
+    MockitoAnnotations.initMocks(this);
+    String jsonUDP =
         "{ \"name\": \"test_net_proxyclient\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"UDP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
-  }
+    SIPListenPoint sipListenPoint =
+        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonUDP);
+    testNetwork1 = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
+    DhruvaNetwork.setSipProvider(testNetwork1.getName(), sipProvider);
+    String jsonTCP =
+        "{ \"name\": \"test_net_proxyclient_tcp\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"TCP\", "
+            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
+    SIPListenPoint sipListenPointTCP =
+        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonTCP);
+    testNetwork2 = DhruvaNetwork.createNetwork("test_net_proxyclient_tcp", sipListenPointTCP);
+    DhruvaNetwork.setSipProvider(testNetwork2.getName(), sipProvider);
 
-  @BeforeClass
-  void init() throws JsonProcessingException, DhruvaException {
-    MockitoAnnotations.initMocks(this);
-    SIPListenPoint sipListenPoint = createTestSipListenPoint();
-    testNetwork = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
-    DhruvaNetwork.setSipProvider(testNetwork.getName(), sipProvider);
+    return new DhruvaNetwork[] {testNetwork1, testNetwork2};
   }
 
   @AfterClass
   void cleanUp() {
-    DhruvaNetwork.removeSipProvider(testNetwork.getName());
+    DhruvaNetwork.removeSipProvider(testNetwork1.getName());
   }
 
   // For error responses, Jain Sip stack sends an ACK
@@ -90,7 +100,7 @@ public class ProxyClientTransactionTest {
             request, sipProvider, serverTransaction, executionContext);
 
     proxyRequest.setClonedRequest((SIPRequest) request.clone());
-    proxyRequest.setOutgoingNetwork(testNetwork.getName());
+    proxyRequest.setOutgoingNetwork(testNetwork1.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
     SIPResponse errorResponse =
@@ -106,8 +116,8 @@ public class ProxyClientTransactionTest {
     verify(dialog, times(1)).sendAck(any(Request.class));
   }
 
-  @Test()
-  public void testCancel() throws SipException, ParseException, IOException {
+  @Test(dataProvider = "getNetwork")
+  public void testCancel(DhruvaNetwork network) throws SipException, ParseException, IOException {
 
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
 
@@ -116,7 +126,7 @@ public class ProxyClientTransactionTest {
             request, sipProvider, serverTransaction, executionContext);
 
     proxyRequest.setClonedRequest((SIPRequest) request.clone());
-    proxyRequest.setOutgoingNetwork(testNetwork.getName());
+    proxyRequest.setOutgoingNetwork(network.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
 

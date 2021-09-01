@@ -25,6 +25,7 @@ import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPRequest;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -104,8 +105,8 @@ public class ProxyServiceTest {
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("TCPNetwork1")
             .setHostIPAddress("127.0.0.1")
-            .setTransport(Transport.UDP)
-            .setPort(9064)
+            .setTransport(Transport.TCP)
+            .setPort(8081)
             .setRecordRoute(true)
             .setAttachExternalIP(false)
             .build();
@@ -141,11 +142,35 @@ public class ProxyServiceTest {
   }
 
   @Test()
-  public void testListeningPoints() throws Exception {
+  public void testUDPListeningPoints() throws Exception {
     Consumer<ProxySIPRequest> requestConsumer = proxySIPRequest -> {};
     Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
 
     for (SIPListenPoint sipListeningPoint : sipListenPointList) {
+      if (sipListeningPoint.getTransport() != Transport.UDP) {
+        continue;
+      }
+      Socket socket = new Socket();
+      socket.bind(
+          new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));
+      socket.close();
+    }
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
+  }
+
+  @Test(expectedExceptions = {BindException.class})
+  public void testTCPListeningPoints() throws Exception {
+    Consumer<ProxySIPRequest> requestConsumer = proxySIPRequest -> {};
+    Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
+
+    for (SIPListenPoint sipListeningPoint : sipListenPointList) {
+      if (sipListeningPoint.getTransport() == Transport.UDP) {
+        continue;
+      }
       Socket socket = new Socket();
       socket.bind(
           new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));

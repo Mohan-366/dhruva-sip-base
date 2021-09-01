@@ -1,14 +1,12 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
-import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import gov.nist.javax.sip.stack.MessageProcessor;
 import gov.nist.javax.sip.stack.MessageProcessorFactory;
 import gov.nist.javax.sip.stack.OIOMessageProcessorFactory;
 import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.sip.ListeningPoint;
 
 public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactory {
