@@ -3,7 +3,6 @@ package com.cisco.dsb.common.sip.jain.channelCache;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
-import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
@@ -12,14 +11,11 @@ import gov.nist.javax.sip.stack.TLSMessageProcessor;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
     implements MessageChannelCache {
   private static final Logger logger =
       DhruvaLoggerFactory.getLogger(DsbNioTlsMessageProcessor.class);
-  //  private final StartStoppable keepAliveTimerTask;
-  //  private final StartStoppable connectionMetricsTask;
 
   /**
    * Constructor.
@@ -32,31 +28,19 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
       InetAddress ipAddress,
       SIPTransactionStack sipStack,
       int port,
-      DhruvaSIPConfigProperties sipProperties,
-      StripedExecutorService keepAliveExecutor,
-      ScheduledExecutorService keepAliveScheduler,
-      ScheduledExecutorService connectionMetricsScheduler) {
+      DhruvaSIPConfigProperties sipProperties) {
     super(ipAddress, sipStack, port);
     Preconditions.checkNotNull(sipProperties);
-    //    Preconditions.checkNotNull(shutdownService);
-    //    keepAliveTimerTask =
-    //    new KeepAliveTimerTask(this, sipProperties, keepAliveExecutor, keepAliveScheduler);
-    //    connectionMetricsTask = new ConnectionMetricsTask(this, sipProperties, shutdownService,
-    // metricsService, proxyStack, connectionMetricsScheduler);
   }
 
   /** Start our thread. */
   public void start() throws IOException {
     logger.info("TCP message processor thread for stack {} starting", getStackName());
     super.start();
-    //    keepAliveTimerTask.start();
-    //    connectionMetricsTask.start();
   }
 
   /** Stop method. */
   public void stop() {
-    //    keepAliveTimerTask.stop();
-    //    connectionMetricsTask.stop();
     logger.info("TCP message processor thread for stack {} stopping", getStackName());
     super.stop();
   }

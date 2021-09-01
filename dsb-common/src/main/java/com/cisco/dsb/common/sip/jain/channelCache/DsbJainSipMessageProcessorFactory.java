@@ -29,43 +29,15 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
     if (transport.equalsIgnoreCase(ListeningPoint.TCP)) {
 
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTCPMessageProcessor(
-            ipAddress,
-            sipStack,
-            port,
-            sipProperties,
-            keepAliveExecutor,
-            keepAliveTaskScheduler,
-            connectionMetricsScheduler);
+        return new DsbNioTCPMessageProcessor(ipAddress, sipStack, port, sipProperties);
       } else {
-        return new DsbSipTCPMessageProcessor(
-            ipAddress,
-            sipStack,
-            port,
-            sipProperties,
-            keepAliveExecutor,
-            keepAliveTaskScheduler,
-            connectionMetricsScheduler);
+        return new DsbSipTCPMessageProcessor(ipAddress, sipStack, port, sipProperties);
       }
     } else if (transport.equalsIgnoreCase(ListeningPoint.TLS)) {
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTlsMessageProcessor(
-            ipAddress,
-            sipStack,
-            port,
-            sipProperties,
-            keepAliveExecutor,
-            keepAliveTaskScheduler,
-            connectionMetricsScheduler);
+        return new DsbNioTlsMessageProcessor(ipAddress, sipStack, port, sipProperties);
       } else {
-        return new DsbJainSipTLSMessageProcessor(
-            ipAddress,
-            sipStack,
-            port,
-            sipProperties,
-            keepAliveExecutor,
-            keepAliveTaskScheduler,
-            connectionMetricsScheduler);
+        return new DsbJainSipTLSMessageProcessor(ipAddress, sipStack, port, sipProperties);
       }
     } else {
       throw new IllegalArgumentException("bad transport");
