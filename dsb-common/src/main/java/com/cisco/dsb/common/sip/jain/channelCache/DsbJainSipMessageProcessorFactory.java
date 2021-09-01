@@ -46,8 +46,5 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
 
   public void initFromApplication(DhruvaSIPConfigProperties sipProperties) {
     this.sipProperties = sipProperties;
-    //    this.keepAliveExecutor = keepAliveExecutor;
-    //    this.keepAliveTaskScheduler = keepAliveTaskScheduler;
-    //    this.connectionMetricsScheduler = connectionMetricsScheduler;
   }
 }
