@@ -14,9 +14,6 @@ import javax.sip.ListeningPoint;
 public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactory {
 
   private DhruvaSIPConfigProperties sipProperties;
-  private StripedExecutorService keepAliveExecutor;
-  private ScheduledExecutorService keepAliveTaskScheduler;
-  private ScheduledExecutorService connectionMetricsScheduler;
 
   @Override
   public MessageProcessor createMessageProcessor(
