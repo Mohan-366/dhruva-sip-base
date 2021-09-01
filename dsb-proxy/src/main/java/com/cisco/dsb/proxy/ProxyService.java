@@ -76,7 +76,6 @@ public class ProxyService {
           server.startListening(
               dhruvaSIPConfigProperties,
               sipListenPoint.getTransport(),
-              networkConfig,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
               proxyPacketProcessor);

@@ -178,7 +178,6 @@ public class JainStackInitializer {
       SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
       ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
           .initFromApplication(dhruvaSIPConfigProperties);
-      //      sipStackImpl.nioMode = NIOMode.BLOCKING;
     }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);

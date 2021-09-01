@@ -32,11 +32,9 @@ public class SipServer implements Server {
       Transport transport,
       SipListener handler,
       DhruvaExecutorService executorService,
-      DhruvaNetwork networkConfig,
       MetricService metricService) {
     this.transport = transport;
     this.metricService = metricService;
-    this.networkConfig = networkConfig;
     this.sipListener = handler;
     this.executorService = executorService;
   }
@@ -44,7 +42,6 @@ public class SipServer implements Server {
   @Override
   public void startListening(
       DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
-      DhruvaNetwork transportConfig,
       InetAddress address,
       int port,
       SipListener handler,
