@@ -106,8 +106,8 @@ public class ProxyControllerTest {
     SIPListenPoint sipListenPoint2 = createOutgoingUDPSipListenPoint();
     SIPListenPoint sipListenPoint3 = createTestSipListenPoint();
 
-    incomingNetwork = DhruvaNetwork.createNetwork("net_sp_udp", sipListenPoint1);
-    outgoingNetwork = DhruvaNetwork.createNetwork("net_internal_udp", sipListenPoint2);
+    incomingNetwork = DhruvaNetwork.createNetwork("net_sp_tcp", sipListenPoint1);
+    outgoingNetwork = DhruvaNetwork.createNetwork("net_internal_tcp", sipListenPoint2);
     testNetwork = DhruvaNetwork.createNetwork("test_net", sipListenPoint3);
 
     proxyFactory = new ProxyFactory();
@@ -196,21 +196,21 @@ public class ProxyControllerTest {
 
   public SIPListenPoint createIncomingUDPSipListenPoint() throws JsonProcessingException {
     String json =
-        "{ \"name\": \"net_sp_udp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5060, \"transport\": \"UDP\", "
+        "{ \"name\": \"net_sp_tcp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5060, \"transport\": \"TCP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
 
   public SIPListenPoint createOutgoingUDPSipListenPoint() throws JsonProcessingException {
     String json =
-        "{ \"name\": \"net_internal_udp\", \"hostIPAddress\": \"2.2.2.2\", \"port\": 5080, \"transport\": \"UDP\", "
+        "{ \"name\": \"net_internal_tcp\", \"hostIPAddress\": \"2.2.2.2\", \"port\": 5080, \"transport\": \"TCP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
 
   public SIPListenPoint createTestSipListenPoint() throws JsonProcessingException {
     String json =
-        "{ \"name\": \"test_net\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"UDP\", "
+        "{ \"name\": \"test_net\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"TCP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
@@ -334,7 +334,7 @@ public class ProxyControllerTest {
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
               SipURI routeUri = (SipURI) uri;
-              assert routeUri.getTransportParam().equals("udp");
+              assert routeUri.getTransportParam().equals("tcp");
               assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
               assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
               assert routeUri.hasLrParam();
@@ -484,12 +484,12 @@ public class ProxyControllerTest {
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "tcp");
 
     RouteHeader routeHeader2 =
-        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "tcp");
 
     // Route 2 is last header, hence due to lrfix it will be removed
     // Own Route Header will be removed.
@@ -580,7 +580,7 @@ public class ProxyControllerTest {
                 SipURI routeValue = (SipURI) lastRouteHeader.getAddress().getURI();
                 assert routeValue.getHost().equals("10.1.1.1");
                 assert routeValue.getPort() == 5080;
-                assert routeValue.getTransportParam().equalsIgnoreCase("udp");
+                assert routeValue.getTransportParam().equalsIgnoreCase("tcp");
               }
             })
         .verifyComplete();
@@ -687,7 +687,7 @@ public class ProxyControllerTest {
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
 
     ListIterator routes = sipRequest.getHeaders(RouteHeader.NAME);
     if (routes != null && routes.hasNext()) {
@@ -718,12 +718,12 @@ public class ProxyControllerTest {
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "tcp");
 
     RouteHeader routeHeader2 =
-        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "tcp");
 
     sipRequest.addHeader(routeHeader1);
     sipRequest.addHeader(routeHeader2);
@@ -740,7 +740,7 @@ public class ProxyControllerTest {
     SipURI lrfixUri = (SipURI) proxySIPRequest.getLrFixUri();
 
     assert lrfixUri.getHost().equals("1.1.1.1");
-    assert lrfixUri.getUser().equals("rr$n=net_internal_udp");
+    assert lrfixUri.getUser().equals("rr$n=net_internal_tcp");
 
     RouteHeader topRouteHeader =
         (RouteHeader) proxySIPRequest.getRequest().getHeader(RouteHeader.NAME);
@@ -748,7 +748,7 @@ public class ProxyControllerTest {
 
     // Check if top most route header which belongs to proxy is removed
     assert !routeUri.getHost().equals("1.1.1.1");
-    assert !routeUri.getUser().equals("rr$n=net_internal_udp");
+    assert !routeUri.getUser().equals("rr$n=net_internal_tcp");
   }
 
   @Test(
@@ -764,12 +764,12 @@ public class ProxyControllerTest {
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "tcp");
 
     RouteHeader routeHeader2 =
-        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "20.1.1.1", 5080, "tcp");
 
     sipRequest.addHeader(routeHeader1);
     sipRequest.addHeader(routeHeader2);
@@ -816,7 +816,7 @@ public class ProxyControllerTest {
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
-    URI uri = JainSipHelper.createSipURI("testDhruva@9.9.9.9:5060;transport=udp");
+    URI uri = JainSipHelper.createSipURI("testDhruva@9.9.9.9:5060;transport=tcp");
     sipRequest.setRequestURI(uri);
     SipURI mAddr = (SipURI) sipRequest.getRequestURI();
     mAddr.setMAddrParam("1.1.1.1");
@@ -848,7 +848,7 @@ public class ProxyControllerTest {
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
-    URI uri = JainSipHelper.createSipURI("testDhruva@9.9.9.9:5060;transport=udp");
+    URI uri = JainSipHelper.createSipURI("testDhruva@9.9.9.9:5060;transport=tcp");
     sipRequest.setRequestURI(uri);
     SipURI mAddr = (SipURI) sipRequest.getRequestURI();
     mAddr.setMAddrParam("10.1.1.1");
@@ -1161,7 +1161,7 @@ public class ProxyControllerTest {
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
               SipURI routeUri = (SipURI) uri;
-              assert routeUri.getTransportParam().equals("udp");
+              assert routeUri.getTransportParam().equals("tcp");
               assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
               assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
               assert routeUri.hasLrParam();
@@ -1328,7 +1328,7 @@ public class ProxyControllerTest {
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
               SipURI routeUri = (SipURI) uri;
-              assert routeUri.getTransportParam().equals("udp");
+              assert routeUri.getTransportParam().equals("tcp");
               assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
               assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
               assert routeUri.hasLrParam();
@@ -1373,9 +1373,9 @@ public class ProxyControllerTest {
     }
 
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "alpha.xyz.com", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "alpha.xyz.com", 5080, "tcp");
 
     sipRequest.addHeader(routeHeader1);
     sipRequest.addFirst(ownRouteHeader);
@@ -1470,9 +1470,9 @@ public class ProxyControllerTest {
     }
 
     RouteHeader ownRouteHeader =
-        JainSipHelper.createRouteHeader("rr$n=net_internal_udp", "1.1.1.1", 5060, "udp");
+        JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "11.1.1.1", 5080, "udp");
+        JainSipHelper.createRouteHeader("testDhruva", "11.1.1.1", 5080, "tcp");
 
     sipRequest.addHeader(routeHeader1);
     sipRequest.addFirst(ownRouteHeader);

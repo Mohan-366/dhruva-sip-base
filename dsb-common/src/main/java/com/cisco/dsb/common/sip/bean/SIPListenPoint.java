@@ -148,10 +148,10 @@ public class SIPListenPoint {
     @JsonProperty private boolean enableCertService;
 
     public SIPListenPointBuilder() {
-      this.name = "UDPNetwork";
+      this.name = "TCPNetwork";
       this.hostIPAddress = "0.0.0.0";
       this.transport = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT;
-      this.port = DhruvaSIPConfigProperties.DEFAULT_PORT_UDP;
+      this.port = DhruvaSIPConfigProperties.DEFAULT_PORT;
       this.recordRoute = DhruvaSIPConfigProperties.DEFAULT_RECORD_ROUTE_ENABLED;
       this.attachExternalIP = DhruvaSIPConfigProperties.DEFAULT_ATTACH_EXTERNAL_IP;
       this.tlsAuthType = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT_AUTH;

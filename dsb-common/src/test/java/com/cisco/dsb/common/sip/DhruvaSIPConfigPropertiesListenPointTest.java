@@ -34,9 +34,9 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
     MockitoAnnotations.initMocks(this);
     defaultListenPoint =
         new SIPListenPoint.SIPListenPointBuilder()
-            .setName("UDPNetwork")
+            .setName("TCPNetwork")
             .setHostIPAddress("0.0.0.0")
-            .setTransport(Transport.UDP)
+            .setTransport(Transport.TCP)
             .setPort(5060)
             .setRecordRoute(true)
             .setAttachExternalIP(false)

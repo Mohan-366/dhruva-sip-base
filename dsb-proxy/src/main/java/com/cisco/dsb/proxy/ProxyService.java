@@ -80,8 +80,8 @@ public class ProxyService {
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
+              dhruvaSIPConfigProperties,
               sipListenPoint.getTransport(),
-              networkConfig,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
               proxyPacketProcessor);
@@ -90,7 +90,6 @@ public class ProxyService {
           (sipStack, throwable) -> {
             if (throwable == null) {
               proxyStackMap.putIfAbsent(sipListenPoint.getName(), sipStack);
-
               // We can always derive sip stack from a given provider
               SipProvider sipProvider = null;
               Optional<SipProvider> optionalSipProvider = getSipProvider(sipStack, sipListenPoint);

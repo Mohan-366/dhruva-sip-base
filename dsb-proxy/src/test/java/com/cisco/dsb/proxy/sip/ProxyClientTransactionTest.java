@@ -34,6 +34,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class ProxyClientTransactionTest {
@@ -54,7 +55,8 @@ public class ProxyClientTransactionTest {
 
   @Mock DhruvaExecutorService dhruvaExecutorService;
 
-  DhruvaNetwork testNetwork;
+  DhruvaNetwork testNetwork1, testNetwork2;
+
 
   SpringApplicationContext springApplicationContext;
 
@@ -69,19 +71,30 @@ public class ProxyClientTransactionTest {
     when(clientTransaction.getDialog()).thenReturn(dialog);
   }
 
-  public SIPListenPoint createTestSipListenPoint() throws JsonProcessingException {
-    String json =
+
+  @DataProvider
+  public Object[] getNetwork() throws JsonProcessingException, DhruvaException {
+
+    String jsonUDP =
         "{ \"name\": \"test_net_proxyclient\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"UDP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
-  }
+    SIPListenPoint sipListenPoint =
+        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonUDP);
+    testNetwork1 = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
+    DhruvaNetwork.setSipProvider(testNetwork1.getName(), sipProvider);
+    String jsonTCP =
+        "{ \"name\": \"test_net_proxyclient_tcp\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"TCP\", "
+            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
+    SIPListenPoint sipListenPointTCP =
+        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonTCP);
+    testNetwork2 = DhruvaNetwork.createNetwork("test_net_proxyclient_tcp", sipListenPointTCP);
+    DhruvaNetwork.setSipProvider(testNetwork2.getName(), sipProvider);
 
+    return new DhruvaNetwork[]{testNetwork1, testNetwork2};
+  }
   @BeforeClass
-  void init() throws JsonProcessingException, DhruvaException {
+  void init() {
     MockitoAnnotations.initMocks(this);
-    SIPListenPoint sipListenPoint = createTestSipListenPoint();
-    testNetwork = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
-    DhruvaNetwork.setSipProvider(testNetwork.getName(), sipProvider);
 
     springApplicationContext = new SpringApplicationContext();
     ApplicationContext context = mock(ApplicationContext.class);
@@ -92,8 +105,9 @@ public class ProxyClientTransactionTest {
 
   @AfterClass
   void cleanUp() {
-    DhruvaNetwork.removeSipProvider(testNetwork.getName());
+    DhruvaNetwork.removeSipProvider(testNetwork1.getName());
     springApplicationContext.setApplicationContext(null);
+
   }
 
   // For error responses, Jain Sip stack sends an ACK
@@ -108,7 +122,7 @@ public class ProxyClientTransactionTest {
             request, sipProvider, serverTransaction, executionContext);
 
     proxyRequest.setClonedRequest((SIPRequest) request.clone());
-    proxyRequest.setOutgoingNetwork(testNetwork.getName());
+    proxyRequest.setOutgoingNetwork(testNetwork1.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
     SIPResponse errorResponse =
@@ -124,8 +138,10 @@ public class ProxyClientTransactionTest {
     verify(dialog).sendAck(any(Request.class));
   }
 
-  @Test(description = "test a client transaction cancellation based on the transaction state")
-  public void testCancel() throws SipException, ParseException, IOException {
+
+  @Test(description = "test a client transaction cancellation based on the transaction state",
+      dataProvider = "getNetwork")
+  public void testCancel(DhruvaNetwork network) throws SipException, ParseException, IOException {
 
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
 
@@ -134,7 +150,7 @@ public class ProxyClientTransactionTest {
             request, sipProvider, serverTransaction, executionContext);
 
     proxyRequest.setClonedRequest((SIPRequest) request.clone());
-    proxyRequest.setOutgoingNetwork(testNetwork.getName());
+    proxyRequest.setOutgoingNetwork(network.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
 
@@ -178,7 +194,7 @@ public class ProxyClientTransactionTest {
         .thenReturn(scheduledExecutor);
     when(scheduledExecutor.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
         .thenReturn(timerC);
-    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork.getName());
+    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork1.getName());
 
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
@@ -225,7 +241,7 @@ public class ProxyClientTransactionTest {
         .thenReturn(scheduledExecutor);
     when(scheduledExecutor.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
         .thenReturn(timerC);
-    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork.getName());
+    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork1.getName());
 
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
@@ -254,7 +270,7 @@ public class ProxyClientTransactionTest {
 
     when(dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT))
         .thenReturn(null);
-    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork.getName());
+    when(proxyRequest.getOutgoingNetwork()).thenReturn(testNetwork1.getName());
 
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);

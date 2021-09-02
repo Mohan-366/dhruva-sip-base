@@ -25,6 +25,7 @@ import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPRequest;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -73,6 +74,7 @@ public class ProxyServiceTest {
 
   SIPListenPoint udpListenPoint1;
   SIPListenPoint udpListenPoint2;
+  SIPListenPoint tcpListenPoint3;
   List<SIPListenPoint> sipListenPointList;
 
   @BeforeClass
@@ -99,9 +101,20 @@ public class ProxyServiceTest {
             .setAttachExternalIP(false)
             .build();
 
+    tcpListenPoint3 =
+        new SIPListenPoint.SIPListenPointBuilder()
+            .setName("TCPNetwork1")
+            .setHostIPAddress("127.0.0.1")
+            .setTransport(Transport.TCP)
+            .setPort(8081)
+            .setRecordRoute(true)
+            .setAttachExternalIP(false)
+            .build();
+
     sipListenPointList = new ArrayList<>();
     sipListenPointList.add(udpListenPoint1);
     sipListenPointList.add(udpListenPoint2);
+    sipListenPointList.add(tcpListenPoint3);
 
     when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(sipListenPointList);
 
@@ -129,11 +142,35 @@ public class ProxyServiceTest {
   }
 
   @Test()
-  public void testListeningPoints() throws Exception {
+  public void testUDPListeningPoints() throws Exception {
     Consumer<ProxySIPRequest> requestConsumer = proxySIPRequest -> {};
     Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
 
     for (SIPListenPoint sipListeningPoint : sipListenPointList) {
+      if (sipListeningPoint.getTransport() != Transport.UDP) {
+        continue;
+      }
+      Socket socket = new Socket();
+      socket.bind(
+          new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));
+      socket.close();
+    }
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
+  }
+
+  @Test(expectedExceptions = {BindException.class})
+  public void testTCPListeningPoints() throws Exception {
+    Consumer<ProxySIPRequest> requestConsumer = proxySIPRequest -> {};
+    Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
+
+    for (SIPListenPoint sipListeningPoint : sipListenPointList) {
+      if (sipListeningPoint.getTransport() == Transport.UDP) {
+        continue;
+      }
       Socket socket = new Socket();
       socket.bind(
           new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));
@@ -160,10 +197,13 @@ public class ProxyServiceTest {
 
     Optional<SipStack> optionalSipStack1 = proxyService.getSipStack(udpListenPoint1.getName());
     Optional<SipStack> optionalSipStack2 = proxyService.getSipStack(udpListenPoint2.getName());
+    Optional<SipStack> optionalSipStack3 = proxyService.getSipStack(tcpListenPoint3.getName());
     SipStack sipStack1 =
         optionalSipStack1.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
     SipStack sipStack2 =
         optionalSipStack2.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
+    SipStack sipStack3 =
+        optionalSipStack3.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
 
     Optional<SipProvider> optionalSipProvider1 =
         proxyService.getSipProvider(sipStack1, udpListenPoint1);
@@ -172,6 +212,11 @@ public class ProxyServiceTest {
 
     Optional<SipProvider> optionalSipProvider2 =
         proxyService.getSipProvider(sipStack2, udpListenPoint2);
+
+    Optional<SipProvider> optionalSipProvider3 =
+        proxyService.getSipProvider(sipStack3, tcpListenPoint3);
+    SipProvider sipProvider3 =
+        optionalSipProvider3.orElseThrow(() -> new RuntimeException("sip provider 3 is not set"));
 
     ProxySIPRequest proxySIPRequest =
         DhruvaSipRequestMessage.newBuilder()

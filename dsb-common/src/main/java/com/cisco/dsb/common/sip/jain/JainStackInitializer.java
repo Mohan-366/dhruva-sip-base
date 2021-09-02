@@ -1,6 +1,9 @@
 package com.cisco.dsb.common.sip.jain;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.google.common.base.Preconditions;
+import gov.nist.javax.sip.SipStackImpl;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.sip.*;
@@ -159,6 +162,7 @@ public class JainStackInitializer {
    *     listener is possible
    */
   public static SipStack getSimpleStack(
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
       SipFactory sipFactory,
       String path,
       Properties properties,
@@ -170,6 +174,11 @@ public class JainStackInitializer {
           ObjectInUseException, TooManyListenersException {
     sipFactory.setPathName(path);
     SipStack sipStack = sipFactory.createSipStack(properties);
+    if (sipStack instanceof SipStackImpl) {
+      SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
+      ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
+          .initFromApplication(dhruvaSIPConfigProperties);
+    }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);
     sipProvider.addSipListener(listener);
