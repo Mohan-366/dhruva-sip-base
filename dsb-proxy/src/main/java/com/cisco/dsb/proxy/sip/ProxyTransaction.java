@@ -2,6 +2,8 @@ package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.controller.ProxyResponseGenerator;
@@ -17,8 +19,10 @@ import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sip.ClientTransaction;
+import javax.sip.ObjectInUseException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
@@ -356,18 +360,13 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       }
 
     } catch (InvalidStateException e) {
-      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_STATE, e.getMessage(), e);
-      return null;
+      throw new DhruvaRuntimeException(ErrorCode.INVALID_STATE, e.getMessage(), e);
     } catch (InvalidParameterException e) {
-      controller.onProxyFailure(this, cookie, ControllerInterface.INVALID_PARAM, e.getMessage(), e);
-      return null;
+      throw new DhruvaRuntimeException(ErrorCode.INVALID_PARAM, e.getMessage(), e);
     } catch (DestinationUnreachableException e) {
-      controller.onProxyFailure(
-          this, cookie, ControllerInterface.DESTINATION_UNREACHABLE, e.getMessage(), e);
-      return null;
+      throw new DhruvaRuntimeException(ErrorCode.DESTINATION_UNREACHABLE, e.getMessage(), e);
     } catch (Throwable e) {
-      controller.onProxyFailure(this, cookie, ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
-      return null;
+      throw new DhruvaRuntimeException(ErrorCode.UNKNOWN_ERROR_REQ, e.getMessage(), e);
     }
     return proxySIPRequest;
   }
@@ -390,8 +389,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     if (optionalSipProvider.isPresent()) sipProvider = optionalSipProvider.get();
     else
       return Mono.error(
-          new DhruvaException(
-              "unable to find provider for outbound request with network:" + network.getName()));
+          new DhruvaRuntimeException(
+              ErrorCode.REQUEST_NO_PROVIDER,
+              String.format(
+                  "unable to find provider for outbound request with network:"
+                      + network.getName())));
 
     SIPRequest request = proxySIPRequest.getClonedRequest();
 
@@ -424,18 +426,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         }
         branchesOutstanding++;
 
-        // TODO: is this the timer check for CANCEL
-        // set the user provided timer if necessary
-        /*long timeout;
-        if (params != null)
-          timeout = params.getRequestTimeout();
-        else
-          timeout = 0;
-
-        if (timeout > 0) {
-          proxyClientTrans.setTimeout(timeout);
-        }*/
-
+        // start timer C (which waits for a given interval, within which a final response for the
+        // request sent out is expected)
+        startTimerC(proxyClientTrans);
         // DSB
         // for response matching
         proxySIPRequest.setProxyClientTransaction(proxyClientTrans);
@@ -446,12 +439,21 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       return ProxySendMessage.sendProxyRequestAsync(sipProvider, clientTrans, proxySIPRequest);
 
     } catch (Throwable e) {
-      // In the calling function, subscribe call this api, cross check TODO DSB
-      controller.onProxyFailure(this, cookie, ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
-
+      if (e instanceof DhruvaRuntimeException) return Mono.error(e);
       return Mono.error(
-          new DhruvaException("exception while sending proxy request" + e.getMessage()));
+          new DhruvaRuntimeException(
+              ErrorCode.UNKNOWN_ERROR_REQ, "exception while sending proxy request", e));
     }
+  }
+
+  private void startTimerC(ProxyClientTransaction proxyClientTransaction) {
+    logger.debug("Schedule Timer C for ClientTx");
+    if (Objects.isNull(controller) || Objects.isNull(controller.getControllerConfig())) {
+      logger.error(
+          "Controller/ControllerConfig of ProxyTransaction is null. Cannot fetch timer C timeout value & cant schedule it");
+      return;
+    }
+    proxyClientTransaction.scheduleTimerC(controller.getControllerConfig().getRequestTimeout());
   }
 
   /**
@@ -485,7 +487,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         controller.onResponseFailure(
             this,
             getServerTransaction(),
-            ControllerInterface.INVALID_STATE,
+            ErrorCode.INVALID_STATE,
             "Cannot send " + responseClass + "xx response in " + (currentServerState) + " state",
             null);
         return;
@@ -499,14 +501,10 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       }
     } catch (DestinationUnreachableException e) {
       controller.onResponseFailure(
-          this,
-          getServerTransaction(),
-          ControllerInterface.DESTINATION_UNREACHABLE,
-          e.getMessage(),
-          e);
+          this, getServerTransaction(), ErrorCode.DESTINATION_UNREACHABLE, e.getMessage(), e);
     } catch (Throwable e) {
       controller.onResponseFailure(
-          this, getServerTransaction(), ControllerInterface.UNKNOWN_ERROR, e.getMessage(), e);
+          this, getServerTransaction(), ErrorCode.UNKNOWN_ERROR_RES, e.getMessage(), e);
     }
   }
 
@@ -517,7 +515,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       controller.onResponseFailure(
           this,
           getServerTransaction(),
-          ControllerInterface.INVALID_STATE,
+          ErrorCode.INVALID_STATE,
           "No final response received so far!",
           null);
     } else respond(bestResponse.getResponse());
@@ -622,13 +620,20 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     if (clientState == ProxyClientTransaction.STATE_PROV_RECVD) {
       logger.info("Cancelling ProxyClientTrans");
+      try {
+        // When this timeOut is invoked by Timer C expiration (which waits for final response),
+        // we need to terminate the client transaction.
+        trans.terminate();
+      } catch (ObjectInUseException e) {
+        logger.warn("Exception while trying to terminate client tx", e);
+      }
       // invoke the cancel method on the transaction
       proxyClientTrans.cancel();
     }
 
     // construct a timeout response
     // ignore future responses except 200 OKs
-    proxyClientTrans.setTimedOut(true);
+    proxyClientTrans.timedOut();
 
     try {
       SIPResponse response =
@@ -644,7 +649,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       controller.onRequestTimeOut(this, proxyClientTrans.getCookie(), proxyClientTrans);
 
     } catch (DhruvaException | ParseException e) {
-      logger.error("Exception thrown creating response for timeout", e);
+      logger.error("Exception thrown while creating response for timeout", e);
     }
   }
 
@@ -712,7 +717,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         SIPResponse resp =
             ProxyResponseGenerator.createResponse(
                 Response.SERVER_INTERNAL_ERROR, clientTrans.getRequest());
-        // TODO close is called using IOExceptionEvent from stack
+        // TODO Kalpa - close is called using IOExceptionEvent from stack
         // finalResponse(trans, resp);
       } catch (DhruvaException | ParseException e) {
         logger.error("Error creating response in close", e);
@@ -749,7 +754,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         controller.onResponseFailure(
             this,
             serverTransaction,
-            ControllerInterface.NO_VIA_LEFT,
+            ErrorCode.RESPONSE_NO_VIA,
             "Response is meant for proxy, no more Vias left",
             null);
         return;
@@ -787,7 +792,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         controller.onResponseFailure(
             this,
             serverTransaction,
-            ControllerInterface.NO_VIA_LEFT,
+            ErrorCode.RESPONSE_NO_VIA,
             "Response is meant for proxy, no more Vias left",
             null);
         return;
@@ -845,7 +850,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         || bestResponse.getStatusCode() > proxySIPResponse.getStatusCode()
         || proxySIPResponse.getResponseClass() == 2) {
       // Note that _all_ 200 responses must be forwarded
-      // TODO request passport update
       bestResponse = proxySIPResponse;
     }
   }

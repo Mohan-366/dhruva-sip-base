@@ -7,7 +7,6 @@ import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.LogContext;
 import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
-import java.io.IOException;
 import java.io.Serializable;
 import javax.sip.Dialog;
 import javax.sip.ServerTransaction;
@@ -29,8 +28,10 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   private static Logger logger = DhruvaLoggerFactory.getLogger(AbstractSipRequest.class);
 
   public AbstractSipRequest(
-      ExecutionContext executionContext, SipProvider sipProvider, ServerTransaction st, Request req)
-      throws IOException {
+      ExecutionContext executionContext,
+      SipProvider sipProvider,
+      ServerTransaction st,
+      Request req) {
     super(JainSipHelper.getCallId(req), JainSipHelper.getCSeq(req));
     this.req = req;
     this.st = st;

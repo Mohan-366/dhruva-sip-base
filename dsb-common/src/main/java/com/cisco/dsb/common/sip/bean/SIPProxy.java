@@ -12,12 +12,14 @@ public class SIPProxy {
   @Getter private boolean createDNSServerGroup;
   @Getter private boolean processRouteHeader;
   @Getter private boolean processRegisterRequest;
+  @Getter private long timerCIntervalInMilliSec;
 
   private SIPProxy(SIPProxyBuilder proxyBuilder) {
     this.errorAggregator = proxyBuilder.errorAggregator;
     this.createDNSServerGroup = proxyBuilder.createDNSServerGroup;
     this.processRouteHeader = proxyBuilder.processRouteHeader;
     this.processRegisterRequest = proxyBuilder.processRegisterRequest;
+    this.timerCIntervalInMilliSec = proxyBuilder.timerCIntervalInMilliSec;
   }
 
   public String toString() {
@@ -29,6 +31,8 @@ public class SIPProxy {
         .append(processRouteHeader)
         .append(" isProcessRegisterRequest = ")
         .append(processRegisterRequest)
+        .append(" timerCIntervalInMilliSec = ")
+        .append(timerCIntervalInMilliSec)
         .toString();
   }
 
@@ -44,6 +48,7 @@ public class SIPProxy {
         .append(createDNSServerGroup, otherProxy.isCreateDNSServerGroup())
         .append(processRouteHeader, otherProxy.isProcessRouteHeader())
         .append(processRegisterRequest, otherProxy.isProcessRegisterRequest())
+        .append(timerCIntervalInMilliSec, otherProxy.getTimerCIntervalInMilliSec())
         .isEquals();
   }
 
@@ -54,6 +59,7 @@ public class SIPProxy {
         .append(createDNSServerGroup)
         .append(processRouteHeader)
         .append(processRegisterRequest)
+        .append(timerCIntervalInMilliSec)
         .toHashCode();
   }
 
@@ -66,6 +72,8 @@ public class SIPProxy {
 
     @JsonProperty private boolean processRegisterRequest;
 
+    @JsonProperty private long timerCIntervalInMilliSec;
+
     public SIPProxyBuilder() {
       this.errorAggregator = DhruvaSIPConfigProperties.DEFAULT_PROXY_ERROR_AGGREGATOR_ENABLED;
       this.createDNSServerGroup =
@@ -74,6 +82,7 @@ public class SIPProxy {
           DhruvaSIPConfigProperties.DEFAULT_PROXY_PROCESS_ROUTE_HEADER_ENABLED;
       this.processRegisterRequest =
           DhruvaSIPConfigProperties.DEFAULT_PROXY_PROCESS_REGISTER_REQUEST;
+      this.timerCIntervalInMilliSec = DhruvaSIPConfigProperties.DEFAULT_TIMER_C_DURATION_MILLISEC;
     }
 
     public SIPProxyBuilder setErrorAggregator(boolean errorAggregator) {
@@ -93,6 +102,11 @@ public class SIPProxy {
 
     public SIPProxyBuilder setProcessRegisterRequest(boolean processRegisterRequest) {
       this.processRegisterRequest = processRegisterRequest;
+      return this;
+    }
+
+    public SIPProxyBuilder setTimerCIntervalInMilliSec(long timerCIntervalInMilliSec) {
+      this.timerCIntervalInMilliSec = timerCIntervalInMilliSec;
       return this;
     }
 

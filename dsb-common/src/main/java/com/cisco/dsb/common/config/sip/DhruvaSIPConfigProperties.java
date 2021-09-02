@@ -2,6 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.bean.SIPProxy;
+import com.cisco.dsb.common.sip.stack.dto.DynamicServer;
 import com.cisco.dsb.common.sip.stack.dto.SGPolicy;
 import com.cisco.dsb.common.sip.stack.dto.StaticServer;
 import com.cisco.dsb.common.transport.TLSAuthenticationType;
@@ -27,6 +28,8 @@ public class DhruvaSIPConfigProperties {
 
   public static final String SIP_SERVER_GROUPS = "sipServerGroups";
 
+  public static final String SIP_DYNAMIC_SERVER_GROUPS = "sipDynamicServerGroups";
+
   public static final String SIP_SG_POLICY = "sgPolicies";
 
   public static final String SIP_PROXY = "sipProxy";
@@ -44,6 +47,8 @@ public class DhruvaSIPConfigProperties {
   public static final boolean DEFAULT_PROXY_PROCESS_ROUTE_HEADER_ENABLED = false;
 
   public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
+
+  public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 45000;
 
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
 
@@ -221,6 +226,34 @@ public class DhruvaSIPConfigProperties {
     serverArrayList.add(serverGroup);
 
     return serverArrayList;
+  }
+
+  @Bean(name = "dynamicServers")
+  public List<DynamicServer> getDynamicServerGroups() {
+
+    String configuredDynamicServerGroups = env.getProperty(SIP_DYNAMIC_SERVER_GROUPS);
+
+    List<DynamicServer> sipDynamicServerGroups = null;
+
+    if (configuredDynamicServerGroups != null) {
+      try {
+        sipDynamicServerGroups =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredDynamicServerGroups, DynamicServer[].class));
+      } catch (Exception e) {
+        // TODO should we generate an Alarm
+        logger.error(
+            "Error converting JSON Dynamic ServerGroup configuration provided in the environment",
+            e);
+      }
+    }
+    logger.info(
+        "Sip Dynamic ServerGroup from the {} configuration {}",
+        SIP_DYNAMIC_SERVER_GROUPS,
+        sipDynamicServerGroups);
+
+    return sipDynamicServerGroups;
   }
 
   @Bean(name = "sgPolicies")

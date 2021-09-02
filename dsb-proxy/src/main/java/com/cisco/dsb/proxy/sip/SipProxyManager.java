@@ -3,6 +3,8 @@ package com.cisco.dsb.proxy.sip;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipPredicates;
@@ -24,7 +26,6 @@ import gov.nist.javax.sip.header.Unsupported;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -81,7 +82,7 @@ public class SipProxyManager {
           serverTransaction = sipProvider.getNewServerTransaction(request);
 
         } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex) {
-          logger.error("Exception while creating new jain server transaction: {}", ex);
+          throw new DhruvaRuntimeException(ErrorCode.TRANSACTION_ERROR, ex.getMessage(), ex);
         }
       }
       logger.info("Server transaction: {}", serverTransaction);
@@ -112,14 +113,9 @@ public class SipProxyManager {
   public TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest>
       createProxySipRequest() {
     return (request, serverTransaction, sipProvider) -> {
-      try {
-        logger.debug("Creating Proxy SIP Request from Jain SIP Request");
-        return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
-            request, sipProvider, serverTransaction, new ExecutionContext());
-      } catch (IOException e) {
-        logger.error("failed to create proxy sip request {}", e.getMessage());
-      }
-      return null;
+      logger.debug("Creating Proxy SIP Request from Jain SIP Request");
+      return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
+          request, sipProvider, serverTransaction, new ExecutionContext());
     };
   }
 
@@ -127,13 +123,11 @@ public class SipProxyManager {
    * PlaceHolder for creating ProxyController for new Requests or getting existing ProxyController
    * for that transaction
    */
-  // TODO: tests for this module. Bound to change when adding OPTIONS/CANCEL handling
   public Function<ProxySIPRequest, ProxySIPRequest> getProxyController(
       ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       SIPRequest sipRequest = proxySIPRequest.getRequest();
       ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
-
       String requestType = sipRequest.getMethod();
 
       if (serverTransaction != null && requestType.equals(Request.ACK)) {
@@ -255,7 +249,10 @@ public class SipProxyManager {
               request.getServerTransaction(),
               sipRequest);
         } catch (DhruvaException e) {
-          logger.error("Error sending {} response: {}", Response.UNSUPPORTED_URI_SCHEME, e);
+          throw new DhruvaRuntimeException(
+              ErrorCode.SEND_RESPONSE_ERR,
+              String.format("Error sending {} response: {}", Response.UNSUPPORTED_URI_SCHEME, e),
+              e);
         }
         return null;
       } else if (maxForwardsCheckFailure.test(sipRequest)) {
@@ -267,7 +264,10 @@ public class SipProxyManager {
               request.getServerTransaction(),
               sipRequest);
         } catch (DhruvaException e) {
-          logger.error("Error sending {} response: {}", Response.TOO_MANY_HOPS, e);
+          throw new DhruvaRuntimeException(
+              ErrorCode.SEND_RESPONSE_ERR,
+              String.format("Error sending {} response: {}", Response.TOO_MANY_HOPS, e),
+              e);
         }
         return null;
       } else {
@@ -284,7 +284,10 @@ public class SipProxyManager {
             ProxySendMessage.sendResponse(
                 sipResponse, request.getServerTransaction(), request.getProvider());
           } catch (DhruvaException | ParseException e) {
-            logger.error("Error sending {} response: {}", Response.BAD_EXTENSION, e);
+            throw new DhruvaRuntimeException(
+                ErrorCode.SEND_RESPONSE_ERR,
+                String.format("Error sending {} response: {}", Response.BAD_EXTENSION, e),
+                e);
           }
           return null;
         }
@@ -403,14 +406,14 @@ public class SipProxyManager {
       // transaction will be provided by stack
       ClientTransaction clientTransaction = responseEvent.getClientTransaction();
 
-      if (clientTransaction != null) {
+      if (clientTransaction != null
+          && clientTransaction.getApplicationData() instanceof ProxyTransaction) {
         logger.info("Client transaction: {}", clientTransaction);
         ProxySIPResponse proxySIPResponse = createProxySipResponse().apply(responseEvent);
         proxySIPResponse.setProxyTransaction(
             (ProxyTransaction) clientTransaction.getApplicationData());
         return proxySIPResponse;
       } else {
-        // TODO stray response handling
         logger.info(
             "No Client transaction exist for {} {}",
             responseEvent.getResponse().getStatusCode(),
@@ -428,8 +431,6 @@ public class SipProxyManager {
   public Function<ProxySIPResponse, ProxySIPResponse> processProxyTransaction() {
     return proxySIPResponse -> {
       ProxyTransaction proxyTransaction = proxySIPResponse.getProxyTransaction();
-      // Is this check for null needed because if it's null this function will/should not be
-      // called
       if (proxyTransaction != null) {
         logger.info(
             "Found proxy transaction for {} response: {}",
@@ -446,6 +447,10 @@ public class SipProxyManager {
           case 6:
             proxyTransaction.finalResponse(proxySIPResponse);
         }
+      } else {
+        logger.error(
+            "No proxyTransaction associated with {}",
+            proxySIPResponse.getResponse().getCallIdHeader());
       }
       return null;
     };

@@ -30,8 +30,8 @@ public class ProxySIPResponse extends AbstractSipResponse {
       Response message,
       ClientTransaction transaction) {
     super(executionContext, provider, transaction, message);
-    this.responseClass = message.getStatusCode() / 100;
     this.statusCode = message.getStatusCode();
+    this.responseClass = this.statusCode / 100;
   }
 
   @Override

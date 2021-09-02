@@ -35,7 +35,6 @@ public class ParseProxyParamUtil {
     HeaderAddress header = null;
     switch (type) {
       case ReConstants.MY_URI:
-        // TODO DSB
         if (proxySIPRequest.getLrFixUri() != null)
           userPortion = getUserPortionFromUri(request.getRequestURI());
         else userPortion = null;

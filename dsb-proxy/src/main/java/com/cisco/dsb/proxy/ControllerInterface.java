@@ -1,6 +1,7 @@
 package com.cisco.dsb.proxy;
 
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -37,12 +38,6 @@ public interface ControllerInterface {
    * New asynchronous callbacks
    */
 
-  int INVALID_STATE = 1;
-  int INVALID_PARAM = 2;
-  int DESTINATION_UNREACHABLE = 3;
-  int UNKNOWN_ERROR = 4;
-  int NO_VIA_LEFT = 5;
-  int SEND_REQUEST_ERROR = 6;
   /**
    * This callback is invoked if a request was forwarded successfully, i.e., without any synchronous
    * exceptions and a DsProxyClientTransaction is created NOTE: It is possible to receive
@@ -69,7 +64,7 @@ public interface ControllerInterface {
   void onProxyFailure(
       ProxyStatelessTransaction proxy,
       ProxyCookie cookie,
-      int errorCode,
+      ErrorCode errorCode,
       String errorPhrase,
       Throwable exception);
 
@@ -93,7 +88,7 @@ public interface ControllerInterface {
   void onResponseFailure(
       ProxyTransaction proxy,
       ProxyServerTransaction trans,
-      int errorCode,
+      ErrorCode errorCode,
       String errorPhrase,
       Throwable exception);
 

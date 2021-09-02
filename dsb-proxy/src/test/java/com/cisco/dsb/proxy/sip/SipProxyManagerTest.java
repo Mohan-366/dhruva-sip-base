@@ -305,16 +305,42 @@ public class SipProxyManagerTest {
   @Test(description = "Creates a new ProxyController for a proxy SIP Request")
   public void testProxyControllerCreation() {
     ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
+    SIPRequest request = mock(SIPRequest.class);
     ProxyController proxyController = mock(ProxyController.class);
 
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    when(proxySIPRequest.getServerTransaction()).thenReturn(null);
     TriFunction<ServerTransaction, SipProvider, ProxyAppConfig, ProxyController>
         mockProxyController = (stx, spd, pc) -> proxyController;
     when(proxyControllerFactory.proxyController()).thenReturn(mockProxyController);
+    when(proxyController.onNewRequest(proxySIPRequest)).thenReturn(proxySIPRequest);
 
     Assert.assertEquals(
-        sipProxyManager.createNewProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest),
-        proxyController);
-    verify(proxySIPRequest, times(1)).setProxyInterface(proxyController);
+        sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest),
+        proxySIPRequest);
+    verify(proxySIPRequest).setProxyInterface(proxyController);
+    verify(proxyController).onNewRequest(proxySIPRequest);
+  }
+
+  @Test(
+      description =
+          "No new ProxyController is created for a proxy SIP Request, if it already exists (eg: ACK for a 4xx has this scenario)")
+  public void testProxyControllerAlreadyExists() {
+    ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
+    SIPRequest request = mock(SIPRequest.class);
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxyTransaction proxyTransaction = mock(ProxyTransaction.class);
+    ProxyController proxyController = mock(ProxyController.class);
+
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    when(request.getMethod()).thenReturn(Request.ACK);
+    when(proxySIPRequest.getServerTransaction()).thenReturn(serverTransaction);
+    when(serverTransaction.getApplicationData()).thenReturn(proxyTransaction);
+    when(proxyTransaction.getController()).thenReturn(proxyController);
+
+    Assert.assertNull(
+        sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest));
+    verify(proxyController).onAck(proxyTransaction);
   }
 
   @Test(

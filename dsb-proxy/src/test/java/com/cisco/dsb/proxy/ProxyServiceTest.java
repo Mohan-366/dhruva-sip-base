@@ -212,8 +212,6 @@ public class ProxyServiceTest {
 
     Optional<SipProvider> optionalSipProvider2 =
         proxyService.getSipProvider(sipStack2, udpListenPoint2);
-    SipProvider sipProvider2 =
-        optionalSipProvider2.orElseThrow(() -> new RuntimeException("sip provider 2 is not set"));
 
     Optional<SipProvider> optionalSipProvider3 =
         proxyService.getSipProvider(sipStack3, tcpListenPoint3);

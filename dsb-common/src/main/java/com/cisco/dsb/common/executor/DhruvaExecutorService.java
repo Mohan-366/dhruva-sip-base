@@ -509,16 +509,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
       if (r instanceof CustomScheduledThreadPoolExecutor.CustomScheduledTask) {
         CustomScheduledTask customScheduledTask = (CustomScheduledTask) r;
         Map<String, String> mdcMap = customScheduledTask.mdcMap;
-
-        // Adding Task Scheduled Time in seconds to MDC
-        // DSB TODO, ScheduledTaskDelay is from caffienne stack which is not required now in DSB
-        //        if (customScheduledTask.runnable instanceof ScheduledTaskDelay) {
-        //          mdcMap.put(
-        //              "taskScheduledDelayInSeconds",
-        //              Long.toString(
-        //                  ((ScheduledTaskDelay) customScheduledTask.runnable)
-        //                      .getTaskDelay(TimeUnit.SECONDS)));
-        //        }
         setMDCContext(mdcMap);
       }
     }

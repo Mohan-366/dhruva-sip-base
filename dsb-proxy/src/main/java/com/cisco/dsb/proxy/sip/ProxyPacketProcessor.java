@@ -1,16 +1,15 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import javax.sip.*;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@CustomLog
 public class ProxyPacketProcessor implements SipListener {
 
   @Autowired ProxyEventListener proxyEventListener;
-  Logger logger = DhruvaLoggerFactory.getLogger(ProxyPacketProcessor.class);
 
   @Override
   public void processRequest(RequestEvent requestEvent) {
@@ -42,7 +41,7 @@ public class ProxyPacketProcessor implements SipListener {
   @Override
   public void processTransactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
     logger.info("received transaction terminated event from sip stack");
-    /*proxyEventListener.transactionTerminated(transactionTerminatedEvent);*/
+    proxyEventListener.transactionTerminated(transactionTerminatedEvent);
   }
 
   @Override

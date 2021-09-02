@@ -27,7 +27,6 @@ import com.cisco.dsb.proxy.sip.ProxyUtils;
 import com.cisco.dsb.proxy.sip.hostPort.HostPortUtil;
 import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.message.SIPMessage;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -55,7 +54,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
   public static final byte TLS = (byte) Transport.TLS.getValue();
-  // TODO DSB confirm this
   public static final byte STATEFUL = (byte) 1;
 
   protected ConcurrentHashMap<ListenIf, ListenIf> listenIf = new ConcurrentHashMap<>();
@@ -64,8 +62,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   // Adding Getters and Setters for testing
   @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
-  private Transport defaultProtocol = Transport.UDP;
-  // TODO DSB Adding by default
   protected boolean doRecordRoute = true;
 
   @Autowired
@@ -119,7 +115,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       Transport protocol,
       InetAddress translatedAddress,
       boolean attachExternalIP)
-      throws DhruvaException, IOException {
+      throws DhruvaException {
 
     ListenIf newInterface =
         new ListenIf(
@@ -395,7 +391,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public long getRequestTimeout() {
-    return 0;
+    return dhruvaSIPConfigProperties.getSIPProxy().getTimerCIntervalInMilliSec();
   }
 
   @Override
@@ -581,7 +577,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
             currentRRURL.getTransportParam());
 
     if (name != null) {
-      // todo optimize when get a chance
       logger.debug("Record Route URL to be modified : " + currentRRURL);
       String user = currentRRURL.getUser();
       StringTokenizer st = new StringTokenizer(user, ReConstants.DELIMITER_STR);

@@ -5,6 +5,8 @@ import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.loadbalancer.LBInterface;
 import com.cisco.dsb.common.service.TrunkService;
@@ -100,9 +102,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public HashMap<Integer, Map<String, String>> parsedProxyParamsByType = null;
 
-  // Order in which the transport is selected.
-  private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
-
   /* Stores if we are in stateful or stateless mode */
   @Setter protected byte stateMode = -1;
   /** reference if request was sent to application. Default is true. */
@@ -176,29 +175,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public void proxyRequest(
       @NonNull ProxySIPRequest proxySIPRequest, @NonNull Destination destination) {
-    // StepVerifier.create(proxyTo.apply(proxySIPRequest)).ex
-    // proxyTo.apply(proxySIPRequest).subscribe((val) -> {},(err) -> {}
-    // );
-    // ConcatMap
-    // Mono.just(proxySIPRequest).subscribe();
-    // ## Sending out the Request
-    // Clone the request
-    // process the Location object - validate Location
-    // Trunk Service - getNextElement
-    // Client transaction - proxy -
-    // Client transaction - stack
-    // post processing - Addition Via , Route  , Record-Route
-    // Send the packet out using stack interface
-
-    // Proxy Error , returns failure
-    // Stack return error - (transaction processing)
-    // IO Exception - Transport errors
-
-    // Response
-    // 200, 180
-    // Flip record route
-    // Find the right server transaction - other leg
-    //
     logger.debug("Entering proxyTo()");
 
     proxySIPRequest.setDestination(destination);
@@ -232,16 +208,25 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   sentRequest.getProxyClientTransaction());
             },
             err -> {
-              // TODO on Akshay, we need to send failure to other leg, via app?
-              int errorCode = ControllerInterface.UNKNOWN_ERROR;
-              if (err instanceof SipException)
-                errorCode = ControllerInterface.DESTINATION_UNREACHABLE;
-              this.onProxyFailure(
-                  this.proxyTransaction,
-                  proxySIPRequest.getCookie(),
-                  errorCode,
-                  err.getMessage(),
-                  err);
+              try {
+                ErrorCode errorCode;
+                if (err instanceof DhruvaRuntimeException)
+                  errorCode = ((DhruvaRuntimeException) err).getErrCode();
+                else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
+                if (err instanceof SipException && err.getCause() instanceof IOException)
+                  errorCode = ErrorCode.DESTINATION_UNREACHABLE;
+                this.onProxyFailure(
+                    this.proxyTransaction,
+                    proxySIPRequest.getCookie(),
+                    errorCode,
+                    err.getMessage(),
+                    err);
+              } catch (Exception e) {
+                logger.error(
+                    "Unable to handle exception gracefully during proxy forward request", e);
+                if (this.proxyTransaction instanceof ProxyTransaction)
+                  this.onBestResponse((ProxyTransaction) this.proxyTransaction);
+              }
             });
   }
 
@@ -254,25 +239,23 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return Mono.just(proxySIPRequest)
         .name("proxyForwardRequest")
         .mapNotNull(proxyPostProcessor)
-        .flatMap(fetchOutboundDestination())
-        // TODO Akshay error handling if we are not able to find destiantion, send 502
-        //        .onErrorContinue(
-        //            (err, p) -> {
-        //              logger.error(
-        //                  "failed to fetch outbound destination for this request",
-        // err.getMessage());
-        //              sendFailureResponse(proxySIPRequest.getRequest(), Response.BAD_GATEWAY);
-        //            })
-        .flatMap((ep) -> proxyToEndpoint(ep, proxySIPRequest));
+        .mapNotNull(fetchOutboundDestination())
+        .flatMap((epMono) -> proxyToEndpoint(epMono, proxySIPRequest));
   }
 
-  public Mono<ProxySIPRequest> proxyToEndpoint(EndPoint endPoint, ProxySIPRequest proxySIPRequest) {
-    return Mono.just(endPoint)
+  public Mono<ProxySIPRequest> proxyToEndpoint(
+      Mono<EndPoint> endPointMono, ProxySIPRequest proxySIPRequest) {
+    return endPointMono
         .mapNotNull(
             (ep) ->
-                processOutboundDestination(proxySIPRequest, ep).orElseThrow(RuntimeException::new))
+                processOutboundDestination(proxySIPRequest, ep)
+                    .orElseThrow(
+                        () ->
+                            new DhruvaRuntimeException(
+                                ErrorCode.PROCESS_OUTBOUND_DESTINATION_ERR,
+                                "Unable to process the outbound destination using endpoint received")))
         .mapNotNull(proxyTransactionProcessRequest)
-        .flatMap((proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest)));
+        .flatMap(proxyRequest -> proxyTransaction.proxySendOutBoundRequest(proxyRequest));
   }
 
   private Function<ProxySIPRequest, ProxySIPRequest> proxyPostProcessor =
@@ -289,15 +272,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     DhruvaNetwork network;
     proxySIPRequest.setDownstreamElement(ep);
     Destination destination = proxySIPRequest.getDestination();
-    network = getNetwork(destination, ep); // TODO DSB, SG integration
-    // For mid-dialog requests , dhruva removes the top route header if it matches proxy
-    // At that point it would have set the outgoing network based on matching route header.
+    network = getNetwork(destination, ep);
     if (network != null) {
       if (destination.getDestinationType() != Destination.DestinationType.DEFAULT_SIP)
         try {
           addRouteFromEndpoint(proxySIPRequest.getClonedRequest(), ep);
         } catch (ParseException pe) {
-          throw new RuntimeException(pe.getMessage(), pe);
+          throw new DhruvaRuntimeException(
+              ErrorCode.PROXY_REQ_PROC_ERR, "Unable to add Endpoint as route to request", pe);
         }
       proxySIPRequest.setOutgoingNetwork(network.getName());
       logger.info("setting outgoing network to ", network.getName());
@@ -305,8 +287,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       if (proxySIPRequest.getOutgoingNetwork() == null) {
         logger.warn("Could not find the network to set to the request");
         // until then we need to fail the call.
-        sendFailureResponse(proxySIPRequest.getRequest(), Response.SERVER_INTERNAL_ERROR);
-        return Optional.empty();
+        throw new DhruvaRuntimeException(
+            ErrorCode.PROXY_REQ_PROC_ERR, "Could not find the network to set to the request");
       }
     }
     return Optional.of(proxySIPRequest);
@@ -331,10 +313,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     routes.addFirst(routeFromEndPoint);
   }
 
-  // TODO Akshay
-  // This function returns Mono.error in case of exception
-  // App or proxy should send 502 Bad gW (Response.BAD_GATEWAY) since we unable
-  // to find thr right downstream element
   private Function<ProxySIPRequest, Mono<EndPoint>> fetchOutboundDestination() {
     return proxySIPRequest -> {
       // Default Sip Routing
@@ -348,7 +326,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           || destination.getDestinationType() == Destination.DestinationType.SRV) {
         return trunkService.getElementAsync(proxySIPRequest, destination);
       } else {
-        return Mono.error(new RuntimeException("unknown destination type"));
+        return Mono.error(
+            new DhruvaRuntimeException(
+                ErrorCode.UNKNOWN_DESTINATION_TYPE,
+                String.format("Unkown Destination type {}", destination.getDestinationType())));
       }
     };
   }
@@ -403,7 +384,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         return Mono.just(ep);
       }
     }
-    return Mono.error(new RuntimeException("uri is not sip uri"));
+    return Mono.error(new DhruvaRuntimeException(ErrorCode.REQUEST_PARSE_ERROR, "Not sip uri"));
   }
 
   private URI getURIFromDestinationAndRequest(
@@ -434,8 +415,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           proxyTransaction.addProxyRecordRoute(proxySIPRequest);
           return proxyTransaction.proxyTo(proxySIPRequest);
         } catch (SipException | ParseException | DhruvaException | UnknownHostException e) {
-          logger.error("exception while doing proxy transaction processing" + e.getMessage());
-          return null;
+          throw new DhruvaRuntimeException(
+              ErrorCode.PROXY_REQ_PROC_ERR,
+              "exception while doing proxy transaction processing",
+              e);
         }
       };
 
@@ -705,12 +688,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             while (routes.hasNext());
           }
           if (lastRouteHeader == null) {
-
-            // Not failing
-            //            proxySIPRequest.setLrFixUri(request.getRequestURI());
-            //            return proxySIPRequest;
-            // TODO Akshay error handling
-            throw new RuntimeException("failed to fix the loose routing for the request");
+            throw new DhruvaRuntimeException(
+                ErrorCode.PROXY_REQ_PROC_ERR, "Failed to fix the loose routing for the request");
           }
 
           proxySIPRequest.setLrFixUri(request.getRequestURI());
@@ -792,9 +771,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
 
     if (proxyTransaction == null) {
-      logger.error(
-          "unable to create ProxyTransaction for new incoming {} request", request.getMethod());
-      return null;
+      throw new DhruvaRuntimeException(
+          ErrorCode.TRANSACTION_ERROR,
+          "unable to create ProxyTransaction for new incoming" + request.getMethod() + " request");
     }
 
     proxySIPRequest.setProxyStatelessTransaction(proxyTransaction);
@@ -829,8 +808,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               addAllowHeader(getDhruvaSIPConfigProperties().getAllowedMethods(), sipResponse);
               ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
             } catch (Exception e) {
-              logger.error(
-                  "Error sending 405 (METHOD NOT ALLOWED) response for REGISTER request", e);
+              throw new DhruvaRuntimeException(
+                  ErrorCode.SEND_RESPONSE_ERR,
+                  "Error sending 405 (METHOD NOT ALLOWED) response for REGISTER request",
+                  e);
             }
             return null;
           }
@@ -843,7 +824,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
             ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
           } catch (Exception e) {
-            logger.error("Error sending 200 (OK) response for CANCEL request", e);
+            throw new DhruvaRuntimeException(
+                ErrorCode.SEND_RESPONSE_ERR,
+                "Error sending 200 (OK) response for CANCEL request",
+                e);
           }
           return proxySIPRequest;
 
@@ -859,7 +843,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             // to this OPTIONS 200 OK response (as per rfc)
             ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
           } catch (Exception e) {
-            logger.error("Error sending 200 (OK) response for OPTIONS request", e);
+            throw new DhruvaRuntimeException(
+                ErrorCode.SEND_RESPONSE_ERR,
+                "Error sending 200 (OK) response for OPTIONS request",
+                e);
           }
           return null;
 
@@ -937,7 +924,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               proxyFactory.proxyTransaction().apply(this, controllerConfig, serverTrans, request);
         } catch (InternalProxyErrorException ex) {
           logger.error("exception while creating proxy transaction" + ex.getMessage());
-          respond(Response.SERVER_INTERNAL_ERROR, ourRequest);
           return null;
         }
       } else {
@@ -946,7 +932,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         } catch (InternalProxyErrorException dse) {
           logger.error("exception while creating proxy transaction" + dse.getMessage());
           // Do not invoke sendFailureResponse, there is no proxy transaction is created
-          respond(Response.SERVER_INTERNAL_ERROR, ourRequest);
           return null;
         }
       }
@@ -1066,37 +1051,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return success;
   }
 
-  /*
-   * Sends a 404 or 500 response.
-   */
-  protected void sendFailureResponse(SIPRequest request, int errorResponseCode) {
-    // TODO-Akshay this should be a static method of some Utility Class, which should be called
-    // anywhere in the
-    // path of request or response to send out serverInternal error, or send out some 5xx response,
-    // like maintenance mode
-    if (errorResponseCode == Response.SERVER_INTERNAL_ERROR) {
-      if (changeToStatefulForResponse(request, Response.SERVER_INTERNAL_ERROR)) {
-        try {
-          ProxyResponseGenerator.sendServerInternalErrorResponse(
-              request, (ProxyTransaction) proxyTransaction);
-        } catch (DhruvaException | ParseException e) {
-          logger.error("Error encountered while sending internal error response", e);
-        }
-        // failureResponseSent = true;
-      }
-    } else if (errorResponseCode == Response.NOT_FOUND) {
-      if (changeToStatefulForResponse(request, Response.NOT_FOUND)) {
-        try {
-          ProxyResponseGenerator.sendNotFoundResponse(request, (ProxyTransaction) proxyTransaction);
-        } catch (DhruvaException | ParseException e) {
-          // Warn Logging
-          logger.error("Unable to create not found response", e);
-        }
-        // failureResponseSent = true;
-      }
-    }
-  }
-
   @Override
   public void onProxySuccess(
       ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans) {
@@ -1125,32 +1079,21 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public void onProxyFailure(
       ProxyStatelessTransaction proxyStatelessTransaction,
       ProxyCookie cookie,
-      int errorCode,
+      ErrorCode errorCode,
       String errorPhrase,
       Throwable exception) {
     logger.debug("Entering onProxyFailure():");
     SIPResponse sipResponse;
     try {
-      switch (errorCode) {
-        case ControllerInterface.DESTINATION_UNREACHABLE:
-          sipResponse =
-              ProxyResponseGenerator.createResponse(Response.BAD_GATEWAY, getOriginalRequest());
-          break;
-        case ControllerInterface.SEND_REQUEST_ERROR:
-        default:
-          sipResponse =
-              ProxyResponseGenerator.createResponse(
-                  Response.SERVER_INTERNAL_ERROR, getOriginalRequest());
-      }
+      sipResponse =
+          ProxyResponseGenerator.createResponse(errorCode.getResponseCode(), getOriginalRequest());
     } catch (DhruvaException | ParseException ex) {
-      logger.error("Unable to create Response, dropping the request!!!");
-      return;
+      throw new DhruvaRuntimeException(ErrorCode.CREATE_ERR_RESPONSE, ex.getMessage(), exception);
     }
     ProxySIPResponse proxySIPResponse;
     if (proxyStatelessTransaction instanceof ProxyTransaction) {
       ProxyTransaction proxy = (ProxyTransaction) proxyStatelessTransaction;
       ProxyClientTransaction proxyClientTransaction = proxy.getClientTransaction();
-
       proxySIPResponse =
           MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
               sipResponse,
@@ -1158,10 +1101,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               proxyClientTransaction == null ? null : proxyClientTransaction.getBranch(),
               new ExecutionContext());
       proxy.updateBestResponse(proxySIPResponse);
-      if (!tryNextEndPoint(proxy, cookie, sipResponse.getStatusCode())) {
-        logger.debug(
-            "onProxyFailure(): Unable to send request to next endpoint, sending out the best response received so far");
+      if (errorCode.getAction().equals(ErrorCode.Action.SEND_ERR_RESPONSE)
+          || !tryNextEndPoint(proxy, cookie, sipResponse.getStatusCode())) {
+        logger.debug("onProxyFailure():sending out the best response received so far");
         filterResponse(proxy.getBestResponse());
+      }
+      if (proxyClientTransaction != null) {
+        logger.debug("Remove Timer C from the ProxyClientTransaction due to ProxyFailure");
+        proxyClientTransaction.removeTimerC();
       }
       return;
     }
@@ -1187,7 +1134,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public void onResponseFailure(
       ProxyTransaction proxy,
       ProxyServerTransaction trans,
-      int errorCode,
+      ErrorCode errorCode,
       String errorPhrase,
       Throwable exception) {
     if (Objects.isNull(exception)) exception = new DhruvaException(errorPhrase);
@@ -1217,7 +1164,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onSuccessResponse(ProxyTransaction proxy, ProxySIPResponse proxySIPResponse) {
-    logger.info("Inside onSuccessResponse()");
+    logger.debug("Inside onSuccessResponse()");
     if (cancelBranchesAutomatically) {
       logger.info("Cancel branches automatically");
       proxy.cancel();
@@ -1249,11 +1196,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     logger.debug("Leaving onProvisionalResponse()");
   }
-  // TODO make this private method as ony PC should send out BestResponse
+
   @Override
   public void onBestResponse(ProxyTransaction proxy) {
     logger.debug("Entering onBestResponse");
-    // Should we cancel branches???
+    if (cancelBranchesAutomatically) {
+      logger.info("Cancel branches automatically");
+      proxy.cancel();
+    }
     filterResponse(proxy.getBestResponse());
   }
 
@@ -1292,7 +1242,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onResponse(ProxySIPResponse response) {
-    // TODO what to do here???
+    // TODO LMA
     /*response.setNormalizationState(
     DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
   }
@@ -1307,13 +1257,19 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    * @return
    */
   private void filterResponse(@NonNull ProxySIPResponse proxySIPResponse) {
-    if (sendRequestToApp && proxyAppConfig.getInterest(proxySIPResponse.getResponseClass())) {
-      if (proxySIPResponse.getProxyInterface() == null) proxySIPResponse.setProxyInterface(this);
-      proxyAppConfig.getResponseConsumer().accept(proxySIPResponse);
-      return;
+    try {
+      if (sendRequestToApp && proxyAppConfig.getInterest(proxySIPResponse.getResponseClass())) {
+        if (proxySIPResponse.getProxyInterface() == null) proxySIPResponse.setProxyInterface(this);
+        proxyAppConfig.getResponseConsumer().accept(proxySIPResponse);
+        return;
+      }
+      logger.debug("Sending out Response as Application was not interested in Request");
+      proxyResponse(proxySIPResponse);
+    } catch (Exception e) {
+      ProxyTransaction trans = (ProxyTransaction) this.proxyTransaction;
+      onResponseFailure(
+          trans, trans.getServerTransaction(), ErrorCode.UNKNOWN_ERROR_RES, e.getMessage(), e);
     }
-    logger.debug("Sending out Response as Application was not interested in Request");
-    proxyResponse(proxySIPResponse);
   }
 
   private boolean tryNextEndPoint(
@@ -1341,17 +1297,27 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     logger.debug("tryNextEndPoint(): Sending request to next EndPoint received from Trunk");
     SIPRequest request = (SIPRequest) preprocessedRequest.clone();
     ourRequest.setClonedRequest(request);
-    proxyToEndpoint(nextEndPoint, ourRequest)
+    proxyToEndpoint(Mono.just(nextEndPoint), ourRequest)
         .subscribe(
             sentRequest -> {
               this.onProxySuccess(
                   proxy, sentRequest.getCookie(), sentRequest.getProxyClientTransaction());
             },
             err -> {
-              int errorCode = ControllerInterface.SEND_REQUEST_ERROR;
-              if (err instanceof SipException && err.getCause() instanceof IOException)
-                errorCode = ControllerInterface.DESTINATION_UNREACHABLE;
-              this.onProxyFailure(proxy, ourRequest.getCookie(), errorCode, err.getMessage(), err);
+              try {
+                ErrorCode errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
+                if (err instanceof DhruvaRuntimeException)
+                  errorCode = ((DhruvaRuntimeException) err).getErrCode();
+                if (err instanceof SipException && err.getCause() instanceof IOException)
+                  errorCode = ErrorCode.DESTINATION_UNREACHABLE;
+                this.onProxyFailure(
+                    proxy, ourRequest.getCookie(), errorCode, err.getMessage(), err);
+              } catch (Exception e) {
+                logger.error(
+                    "Unable to handle exception gracefully during proxy forward request", e);
+                if (proxy instanceof ProxyTransaction)
+                  this.onBestResponse((ProxyTransaction) proxy);
+              }
             });
     return true;
   }

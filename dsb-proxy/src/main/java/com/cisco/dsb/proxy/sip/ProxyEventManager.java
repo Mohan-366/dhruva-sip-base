@@ -46,12 +46,15 @@ public class ProxyEventManager implements ProxyEventListener {
 
   @Override
   public void transactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
-    /*if (!transactionTerminatedEvent.isServerTransaction()) {
+    if (!transactionTerminatedEvent.isServerTransaction()) {
       ClientTransaction clientTx = transactionTerminatedEvent.getClientTransaction();
-
       String method = clientTx.getRequest().getMethod();
-      logger.info("Server Tx : " + method + " terminated ");
-    }*/
+      logger.debug("Client Tx {} of {} terminated : ", clientTx, method);
+    } else {
+      ServerTransaction serverTransaction = transactionTerminatedEvent.getServerTransaction();
+      String method = serverTransaction.getRequest().getMethod();
+      logger.debug("Server Tx {} of {} terminated : ", serverTransaction, method);
+    }
   }
 
   private void startProcessing(ProxyEventHandler proxyEventHandler) {

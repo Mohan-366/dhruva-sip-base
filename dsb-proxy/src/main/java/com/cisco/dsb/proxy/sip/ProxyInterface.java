@@ -6,11 +6,11 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 
 public interface ProxyInterface {
 
-  public void proxyResponse(ProxySIPResponse proxySIPResponse);
+  void proxyResponse(ProxySIPResponse proxySIPResponse);
 
-  public void respond(int responseCode, ProxySIPRequest proxySIPRequest);
+  void respond(int responseCode, ProxySIPRequest proxySIPRequest);
 
-  public void proxyRequest(ProxySIPRequest proxySIPRequest, Destination destination);
+  void proxyRequest(ProxySIPRequest proxySIPRequest, Destination destination);
 
   void sendRequestToApp(boolean send);
 }

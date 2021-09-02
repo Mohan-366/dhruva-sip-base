@@ -3,7 +3,6 @@ package com.cisco.dsb.proxy.messaging;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.util.log.LogContext;
-import java.io.IOException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Request;
@@ -58,7 +57,7 @@ public final class DhruvaSipRequestMessage {
       this.network = network;
     }
 
-    public ProxySIPRequest build() throws IOException {
+    public ProxySIPRequest build() {
       ProxySIPRequest message =
           new ProxySIPRequest(this.context, this.sipProvider, this.payload, this.transaction);
       if (callType != null) {

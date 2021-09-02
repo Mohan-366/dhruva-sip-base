@@ -8,7 +8,6 @@ import com.cisco.dsb.common.util.log.LogContext;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -21,8 +20,7 @@ public class MessageConvertor {
       Request message,
       SipProvider sipProvider,
       ServerTransaction transaction,
-      ExecutionContext context)
-      throws IOException {
+      ExecutionContext context) {
 
     requireNonNull(message, "sip message should not be null");
     requireNonNull(context);
