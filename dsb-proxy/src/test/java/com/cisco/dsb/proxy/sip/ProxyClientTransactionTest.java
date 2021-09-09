@@ -57,7 +57,6 @@ public class ProxyClientTransactionTest {
 
   DhruvaNetwork testNetwork1, testNetwork2;
 
-
   SpringApplicationContext springApplicationContext;
 
   @BeforeMethod
@@ -70,7 +69,6 @@ public class ProxyClientTransactionTest {
     reset(executionContext);
     when(clientTransaction.getDialog()).thenReturn(dialog);
   }
-
 
   @DataProvider
   public Object[] getNetwork() throws JsonProcessingException, DhruvaException {
@@ -108,7 +106,6 @@ public class ProxyClientTransactionTest {
   void cleanUp() {
     DhruvaNetwork.removeSipProvider(testNetwork1.getName());
     springApplicationContext.setApplicationContext(null);
-
   }
 
   // For error responses, Jain Sip stack sends an ACK
@@ -139,8 +136,8 @@ public class ProxyClientTransactionTest {
     verify(dialog).sendAck(any(Request.class));
   }
 
-
-  @Test(description = "test a client transaction cancellation based on the transaction state",
+  @Test(
+      description = "test a client transaction cancellation based on the transaction state",
       dataProvider = "getNetwork")
   public void testCancel(DhruvaNetwork network) throws SipException, ParseException, IOException {
 
