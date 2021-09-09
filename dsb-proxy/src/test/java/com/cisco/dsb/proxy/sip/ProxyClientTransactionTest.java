@@ -90,8 +90,9 @@ public class ProxyClientTransactionTest {
     testNetwork2 = DhruvaNetwork.createNetwork("test_net_proxyclient_tcp", sipListenPointTCP);
     DhruvaNetwork.setSipProvider(testNetwork2.getName(), sipProvider);
 
-    return new DhruvaNetwork[]{testNetwork1, testNetwork2};
+    return new DhruvaNetwork[] {testNetwork1, testNetwork2};
   }
+
   @BeforeClass
   void init() {
     MockitoAnnotations.initMocks(this);

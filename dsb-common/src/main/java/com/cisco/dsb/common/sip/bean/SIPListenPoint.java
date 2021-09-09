@@ -148,7 +148,7 @@ public class SIPListenPoint {
     @JsonProperty private boolean enableCertService;
 
     public SIPListenPointBuilder() {
-      this.name = "TCPNetwork";
+      this.name = "TLSNetwork";
       this.hostIPAddress = "0.0.0.0";
       this.transport = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT;
       this.port = DhruvaSIPConfigProperties.DEFAULT_PORT;

@@ -34,7 +34,7 @@ public class DhruvaSIPConfigProperties {
 
   public static final String SIP_PROXY = "sipProxy";
 
-  public static final Transport DEFAULT_TRANSPORT = Transport.TCP;
+  public static final Transport DEFAULT_TRANSPORT = Transport.TLS;
 
   // MeetPass TODO
   // Env is not read properly, hence setting it here to true

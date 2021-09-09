@@ -15,8 +15,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+@Ignore
 public class DhruvaSIPConfigPropertiesListenPointTest {
 
   @InjectMocks DhruvaSIPConfigProperties sipConfigProperties;

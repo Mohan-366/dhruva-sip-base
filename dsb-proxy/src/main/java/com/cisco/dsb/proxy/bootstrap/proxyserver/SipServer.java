@@ -67,7 +67,10 @@ public class SipServer implements Server {
   }
 
   private Properties getStackProperties() {
-
+    System.setProperty("javax.net.ssl.keyStore", "/tmp/keystore.jks");
+    System.setProperty("javax.net.ssl.trustStore", "/tmp/keystore.jks");
+    System.setProperty("javax.net.ssl.keyStoreType", "jks");
+    System.setProperty("javax.net.ssl.keyStorePassword", "dsb123");
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
@@ -94,6 +97,10 @@ public class SipServer implements Server {
     stackProps.setProperty(
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
+    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
+    stackProps.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
+    stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", "Enabled");
+    stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
 
     return stackProps;
   }

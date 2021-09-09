@@ -78,6 +78,10 @@ public class ProxyService {
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
+      logger.info(
+          "KALPA: getting path: "
+              + this.getClass().getClassLoader().getResource("keystore.jks").getPath());
+
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
               dhruvaSIPConfigProperties,
