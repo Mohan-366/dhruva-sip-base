@@ -96,21 +96,13 @@ public class DhruvaSIPConfigProperties {
       "dhruva.tlsOcspResponseTimeoutIn" + "Seconds";
   private static final int DEFAULT_TLS_OCSP_RESPONSE_TIMEOUT_SECONDS = 5;
   private static final String TLS_TRUST_STORE_FILE_PATH = "dhruva.tlsTrustStoreFilePath";
-  private static final String DEFAULT_TRUST_STORE_FILE_PATH =
-      System.getProperty("javax.net.ssl.trustStore");
   private static final String TLS_TRUST_STORE_TYPE = "dhruva.tlsTrustStoreType";
   private static final String DEFAULT_TLS_TRUST_STORE_TYPE = KeyStore.getDefaultType();
   private static final String TLS_TRUST_STORE_PASSWORD = "dhruva.tlsTrustStorePassword";
-  private static final String DEFAULT_TLS_TRUST_STORE_PASSWORD =
-      System.getProperty("javax.net.ssl.trustStorePassword", "");
   private static final String TLS_KEY_STORE_FILE_PATH = "dhruva.tlsKeyStoreFilePath";
-  private static final String DEFAULT_KEY_STORE_FILE_PATH =
-      System.getProperty("javax.net.ssl.trustStore");
   private static final String TLS_KEY_STORE_TYPE = "dhruva.tlsKeyStoreType";
   private static final String DEFAULT_TLS_KEY_STORE_TYPE = KeyStore.getDefaultType();
   private static final String TLS_KEY_STORE_PASSWORD = "dhruva.tlsKeyStorePassword";
-  private static final String DEFAULT_TLS_KEY_STORE_PASSWORD =
-      System.getProperty("javax.net.ssl.keyStorePassword", "");
   private static final String TLS_CERT_REVOCATION_SOFTFAIL_ENABLED =
       "dhruva.tlsCertRevocationEnable" + "SoftFail";
   private static final Boolean DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED = Boolean.TRUE;
@@ -430,7 +422,7 @@ public class DhruvaSIPConfigProperties {
   }
 
   public String getTrustStoreFilePath() {
-    return env.getProperty(TLS_TRUST_STORE_FILE_PATH, String.class, DEFAULT_TRUST_STORE_FILE_PATH);
+    return env.getProperty(TLS_TRUST_STORE_FILE_PATH, String.class);
   }
 
   public String getTrustStoreType() {
@@ -438,12 +430,11 @@ public class DhruvaSIPConfigProperties {
   }
 
   public String getTrustStorePassword() {
-    return env.getProperty(
-        TLS_TRUST_STORE_PASSWORD, String.class, DEFAULT_TLS_TRUST_STORE_PASSWORD);
+    return env.getProperty(TLS_TRUST_STORE_PASSWORD, String.class);
   }
 
   public String getKeyStoreFilePath() {
-    return env.getProperty(TLS_KEY_STORE_FILE_PATH, String.class, DEFAULT_KEY_STORE_FILE_PATH);
+    return env.getProperty(TLS_KEY_STORE_FILE_PATH);
   }
 
   public String getKeyStoreType() {
@@ -451,7 +442,7 @@ public class DhruvaSIPConfigProperties {
   }
 
   public String getKeyStorePassword() {
-    return env.getProperty(TLS_KEY_STORE_PASSWORD, String.class, DEFAULT_TLS_KEY_STORE_PASSWORD);
+    return env.getProperty(TLS_KEY_STORE_PASSWORD, String.class);
   }
 
   public Boolean isTlsCertRevocationSoftFailEnabled() {
