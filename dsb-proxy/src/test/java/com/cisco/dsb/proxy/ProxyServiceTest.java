@@ -24,7 +24,9 @@ import com.cisco.dsb.proxy.sip.ProxyFactory;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
+import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.stack.ClientAuthType;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -75,12 +77,22 @@ public class ProxyServiceTest {
   SIPListenPoint udpListenPoint1;
   SIPListenPoint udpListenPoint2;
   SIPListenPoint tcpListenPoint3;
+  SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
+  String keyStorePath;
+  String keyStorePassword;
+  String keyStoreType;
 
   @BeforeClass
   public void setup() throws Exception {
-    MockitoAnnotations.initMocks(this);
+    keyStorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
+    keyStorePassword = "dsb123";
+    keyStoreType = "jks";
 
+    MockitoAnnotations.initMocks(this);
+    when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keyStorePath);
+    when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
+    when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
     udpListenPoint1 =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")
@@ -110,11 +122,21 @@ public class ProxyServiceTest {
             .setRecordRoute(true)
             .setAttachExternalIP(false)
             .build();
+    tlsListenPoint4 =
+        new SIPListenPoint.SIPListenPointBuilder()
+            .setName("TLSNetwork1")
+            .setHostIPAddress("127.0.0.1")
+            .setTransport(Transport.TLS)
+            .setPort(8082)
+            .setRecordRoute(true)
+            .setAttachExternalIP(false)
+            .build();
 
     sipListenPointList = new ArrayList<>();
     sipListenPointList.add(udpListenPoint1);
     sipListenPointList.add(udpListenPoint2);
     sipListenPointList.add(tcpListenPoint3);
+    sipListenPointList.add(tlsListenPoint4);
 
     when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(sipListenPointList);
 
@@ -168,7 +190,28 @@ public class ProxyServiceTest {
     Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
 
     for (SIPListenPoint sipListeningPoint : sipListenPointList) {
-      if (sipListeningPoint.getTransport() == Transport.UDP) {
+      if (sipListeningPoint.getTransport() != Transport.TCP) {
+        continue;
+      }
+      Socket socket = new Socket();
+      socket.bind(
+          new InetSocketAddress(sipListeningPoint.getHostIPAddress(), sipListeningPoint.getPort()));
+      socket.close();
+    }
+    proxyService.register(
+        ProxyAppConfig.builder()
+            .requestConsumer(requestConsumer)
+            .responseConsumer(responseConsumer)
+            .build());
+  }
+
+  @Test(expectedExceptions = {BindException.class})
+  public void testTLSListeningPoints() throws Exception {
+    Consumer<ProxySIPRequest> requestConsumer = proxySIPRequest -> {};
+    Consumer<ProxySIPResponse> responseConsumer = proxySIPResponse -> {};
+
+    for (SIPListenPoint sipListeningPoint : sipListenPointList) {
+      if (sipListeningPoint.getTransport() != Transport.TLS) {
         continue;
       }
       Socket socket = new Socket();
@@ -198,13 +241,15 @@ public class ProxyServiceTest {
     Optional<SipStack> optionalSipStack1 = proxyService.getSipStack(udpListenPoint1.getName());
     Optional<SipStack> optionalSipStack2 = proxyService.getSipStack(udpListenPoint2.getName());
     Optional<SipStack> optionalSipStack3 = proxyService.getSipStack(tcpListenPoint3.getName());
+    Optional<SipStack> optionalSipStack4 = proxyService.getSipStack(tlsListenPoint4.getName());
     SipStack sipStack1 =
         optionalSipStack1.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
     SipStack sipStack2 =
         optionalSipStack2.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
     SipStack sipStack3 =
         optionalSipStack3.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
-
+    SipStack sipStack4 =
+        optionalSipStack4.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
     Optional<SipProvider> optionalSipProvider1 =
         proxyService.getSipProvider(sipStack1, udpListenPoint1);
     SipProvider sipProvider1 =
@@ -217,6 +262,10 @@ public class ProxyServiceTest {
         proxyService.getSipProvider(sipStack3, tcpListenPoint3);
     SipProvider sipProvider3 =
         optionalSipProvider3.orElseThrow(() -> new RuntimeException("sip provider 3 is not set"));
+    Optional<SipProvider> optionalSipProvider4 =
+        proxyService.getSipProvider(sipStack4, tlsListenPoint4);
+    SipProvider sipProvider4 =
+        optionalSipProvider4.orElseThrow(() -> new RuntimeException("sip provider 4 is not set"));
 
     ProxySIPRequest proxySIPRequest =
         DhruvaSipRequestMessage.newBuilder()
@@ -355,5 +404,19 @@ public class ProxyServiceTest {
               Assert.assertEquals(proxyResponse, proxySIPResponse);
             })
         .verifyComplete();
+  }
+
+  @Test(description = "test creation of keystore")
+  public void testTKeyStoreCreation() {
+    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStore"), keyStorePath);
+    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStorePassword"), keyStorePassword);
+    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStoreType"), keyStoreType);
+    Optional<SipStack> optionalSipStackTls = proxyService.getSipStack(tlsListenPoint4.getName());
+    SipStack sipStackTls =
+        optionalSipStackTls.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
+    if (sipStackTls instanceof SipStackImpl) {
+      SipStackImpl sipStackImpl = (SipStackImpl) sipStackTls;
+      Assert.assertEquals(sipStackImpl.getClientAuth(), ClientAuthType.Enabled);
+    }
   }
 }

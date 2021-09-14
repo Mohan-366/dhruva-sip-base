@@ -39,8 +39,10 @@ public class DhruvaServerImpl implements DhruvaServer {
       return serverStartFuture;
     }
     try {
-      Server server = new SipServer(transportType, handler, executorService, metricService);
-      server.startListening(dhruvaSIPConfigProperties, address, port, handler, serverStartFuture);
+      Server server =
+          new SipServer(
+              transportType, handler, executorService, metricService, dhruvaSIPConfigProperties);
+      server.startListening(address, port, handler, serverStartFuture);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e);
     }

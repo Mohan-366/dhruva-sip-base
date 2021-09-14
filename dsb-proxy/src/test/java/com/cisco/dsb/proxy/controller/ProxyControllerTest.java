@@ -102,8 +102,8 @@ public class ProxyControllerTest {
 
     sipStack = mock(SipStack.class);
 
-    SIPListenPoint sipListenPoint1 = createIncomingUDPSipListenPoint();
-    SIPListenPoint sipListenPoint2 = createOutgoingUDPSipListenPoint();
+    SIPListenPoint sipListenPoint1 = createIncomingTCPSipListenPoint();
+    SIPListenPoint sipListenPoint2 = createOutgoingTCPSipListenPoint();
     SIPListenPoint sipListenPoint3 = createTestSipListenPoint();
 
     incomingNetwork = DhruvaNetwork.createNetwork("net_sp_tcp", sipListenPoint1);
@@ -194,14 +194,14 @@ public class ProxyControllerTest {
   //        //doReturn(dhruvaExecutorService).when(ctx).getBean(DhruvaExecutorService.class);
   //    }
 
-  public SIPListenPoint createIncomingUDPSipListenPoint() throws JsonProcessingException {
+  public SIPListenPoint createIncomingTCPSipListenPoint() throws JsonProcessingException {
     String json =
         "{ \"name\": \"net_sp_tcp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5060, \"transport\": \"TCP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
 
-  public SIPListenPoint createOutgoingUDPSipListenPoint() throws JsonProcessingException {
+  public SIPListenPoint createOutgoingTCPSipListenPoint() throws JsonProcessingException {
     String json =
         "{ \"name\": \"net_internal_tcp\", \"hostIPAddress\": \"2.2.2.2\", \"port\": 5080, \"transport\": \"TCP\", "
             + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";

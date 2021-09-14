@@ -18,8 +18,10 @@ import java.util.concurrent.CompletableFuture;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
+import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
 
+@CustomLog
 public class SipServer implements Server {
 
   private final Transport transport;
@@ -27,21 +29,23 @@ public class SipServer implements Server {
   private DhruvaNetwork networkConfig;
   private MetricService metricService;
   private DhruvaExecutorService executorService;
+  private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   public SipServer(
       Transport transport,
       SipListener handler,
       DhruvaExecutorService executorService,
-      MetricService metricService) {
+      MetricService metricService,
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
     this.transport = transport;
     this.metricService = metricService;
     this.sipListener = handler;
     this.executorService = executorService;
+    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
   }
 
   @Override
   public void startListening(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
       InetAddress address,
       int port,
       SipListener handler,
@@ -52,7 +56,7 @@ public class SipServer implements Server {
     try {
       SipStack sipStack =
           JainStackInitializer.getSimpleStack(
-              dhruvaSIPConfigProperties,
+              this.dhruvaSIPConfigProperties,
               sipFactory,
               sipFactory.getPathName(),
               getStackProperties(),
@@ -67,10 +71,17 @@ public class SipServer implements Server {
   }
 
   private Properties getStackProperties() {
-    System.setProperty("javax.net.ssl.keyStore", "/tmp/keystore.jks");
-    System.setProperty("javax.net.ssl.trustStore", "/tmp/keystore.jks");
-    System.setProperty("javax.net.ssl.keyStoreType", "jks");
-    System.setProperty("javax.net.ssl.keyStorePassword", "dsb123");
+    String keyStorePath = dhruvaSIPConfigProperties.getKeyStoreFilePath();
+    String keyStorePassword = dhruvaSIPConfigProperties.getKeyStorePassword();
+    String keyStoreType = dhruvaSIPConfigProperties.getKeyStoreType();
+    if (keyStorePath != null && keyStorePassword != null && keyStoreType != null) {
+      logger.info("Creating keystore from file: " + keyStorePath);
+      System.setProperty("javax.net.ssl.keyStore", keyStorePath);
+      System.setProperty("javax.net.ssl.trustStore", keyStorePath);
+      System.setProperty("javax.net.ssl.keyStoreType", dhruvaSIPConfigProperties.getKeyStoreType());
+      System.setProperty(
+"javax.net.ssl.keyStorePassword", dhruvaSIPConfigProperties.getKeyStorePassword());
+    }
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
