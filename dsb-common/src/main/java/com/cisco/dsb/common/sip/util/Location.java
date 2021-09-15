@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.util;
 
-import com.cisco.dsb.common.loadbalancer.LBInterface;
+// import com.cisco.dsb.trunk.loadbalancer.LBInterface;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
@@ -40,7 +40,7 @@ public final class Location implements Cloneable, Comparable {
   @Getter @Setter protected DhruvaNetwork defaultNetwork = null;
   @Getter @Setter protected int hashCode = -1;
 
-  @Getter @Setter protected LBInterface loadBalancer;
+  // @Getter @Setter protected LBInterface loadBalancer;
 
   @Getter @Setter RouteType routeType;
 
@@ -87,7 +87,7 @@ public final class Location implements Cloneable, Comparable {
   public Object clone() {
     URI clonedURI = (URI) uri.clone();
     Location location = new Location(clonedURI, routeHeaders, serverGroupName, qValue, lastUpdate);
-    location.setLoadBalancer(loadBalancer);
+    // location.setLoadBalancer(loadBalancer);
     location.setProcessRoute(processRoute);
     location.setUseDestInfo(useDestInfo);
     location.setNetwork(network);

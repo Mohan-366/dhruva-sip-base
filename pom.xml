@@ -36,6 +36,7 @@
         <module>dsb-common</module>
         <module>dsb-calling-app</module>
         <module>dsb-proxy</module>
+        <module>dsb-trunk-service</module>
     </modules>
 
     <properties>
