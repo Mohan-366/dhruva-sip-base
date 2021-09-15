@@ -80,7 +80,7 @@ public class SipServer implements Server {
       System.setProperty("javax.net.ssl.trustStore", keyStorePath);
       System.setProperty("javax.net.ssl.keyStoreType", dhruvaSIPConfigProperties.getKeyStoreType());
       System.setProperty(
-"javax.net.ssl.keyStorePassword", dhruvaSIPConfigProperties.getKeyStorePassword());
+          "javax.net.ssl.keyStorePassword", dhruvaSIPConfigProperties.getKeyStorePassword());
     }
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
