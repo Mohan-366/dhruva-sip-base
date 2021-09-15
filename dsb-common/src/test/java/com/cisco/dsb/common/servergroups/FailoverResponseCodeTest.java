@@ -8,8 +8,6 @@ import com.cisco.dsb.common.sip.stack.dto.SGPolicy;
 import com.cisco.dsb.common.sip.stack.dto.StaticServer;
 import java.util.Arrays;
 import java.util.List;
-
-import org.junit.runner.Description;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -68,12 +66,12 @@ public class FailoverResponseCodeTest {
     staticServer = Arrays.asList(server1, server2);
     sgPolicyList = Arrays.asList(sgPolicy1, sgPolicy2, global);
     dynamicServers = Arrays.asList(dynamicServer1);
-
-
   }
 
-  @Test(description = "errorCodes for both static and dynamic SGs, return true only if policy is associated " +
-          "and contains errorCode")
+  @Test(
+      description =
+          "errorCodes for both static and dynamic SGs, return true only if policy is associated "
+              + "and contains errorCode")
   void errorCodeTest() {
     dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
 
@@ -102,7 +100,7 @@ public class FailoverResponseCodeTest {
     Assert.assertFalse(failoverResponseCode.isCodeInFailoverCodeSet("go.webex.com", 566));
   }
 
-  @Test(description= " when no policy is associated for SG, return false")
+  @Test(description = " when no policy is associated for SG, return false")
   void errorCodeNoPolicy() {
 
     FailoverResponseCode failoverResponseCode = new FailoverResponseCode(null, null, null);

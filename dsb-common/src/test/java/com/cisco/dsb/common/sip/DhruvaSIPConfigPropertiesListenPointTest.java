@@ -35,7 +35,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
     defaultListenPoint =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("TCPNetwork")
-            .setHostIPAddress("0.0.0.0")
+            .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.TCP)
             .setPort(5060)
             .setRecordRoute(true)

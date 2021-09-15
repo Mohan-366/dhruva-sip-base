@@ -34,12 +34,10 @@ public class StaticServerGroupUtil {
     this.sipStaticServer = staticServers;
   }
 
-
   @PostConstruct
   void init() {
     List<StaticServer> staticServers = this.sipStaticServer;
     addServerGroups(staticServers);
-
   }
 
   public boolean addServerGroups(List<StaticServer> staticServers) {

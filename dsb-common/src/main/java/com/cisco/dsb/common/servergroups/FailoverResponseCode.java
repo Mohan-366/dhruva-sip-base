@@ -5,7 +5,6 @@ import com.cisco.dsb.common.sip.stack.dto.SGPolicy;
 import com.cisco.dsb.common.sip.stack.dto.StaticServer;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -13,7 +12,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +22,6 @@ public class FailoverResponseCode {
   private List<SGPolicy> sgPolicy;
 
   @Getter private ConcurrentMap<String, StaticServer> staticSGMap = new ConcurrentHashMap<>();
-
 
   @Getter private ConcurrentMap<String, DynamicServer> dynamicSGMap = new ConcurrentHashMap<>();
   @Getter private ConcurrentMap<String, SGPolicy> sgPolicyMap = new ConcurrentHashMap<>();
@@ -65,25 +62,22 @@ public class FailoverResponseCode {
 
     String sgPolicy = null;
 
-      DynamicServer dServer ;
-      StaticServer server = getStaticSGMap().getOrDefault(sgName, null);
+    DynamicServer dServer;
+    StaticServer server = getStaticSGMap().getOrDefault(sgName, null);
 
-      if (Objects.nonNull(server) ) {
-        sgPolicy = server.getSgPolicy();
-      }
-      else {
-        dServer = getDynamicSGMap().getOrDefault(sgName, null);
-        if (Objects.nonNull(dServer))
-          sgPolicy = dServer.getSgPolicy();
-      }
+    if (Objects.nonNull(server)) {
+      sgPolicy = server.getSgPolicy();
+    } else {
+      dServer = getDynamicSGMap().getOrDefault(sgName, null);
+      if (Objects.nonNull(dServer)) sgPolicy = dServer.getSgPolicy();
+    }
 
     if (Objects.isNull(sgPolicy)) {
       sgPolicy = "global";
     }
 
     SGPolicy policy = getSgPolicyMap().getOrDefault(sgPolicy, null);
-    if (Objects.isNull(policy))
-      return  false;
+    if (Objects.isNull(policy)) return false;
     return policy.getFailoverResponseCodes().contains(errorCode);
   }
 }

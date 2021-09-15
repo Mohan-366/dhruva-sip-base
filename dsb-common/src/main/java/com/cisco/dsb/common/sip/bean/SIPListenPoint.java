@@ -149,7 +149,7 @@ public class SIPListenPoint {
 
     public SIPListenPointBuilder() {
       this.name = "TCPNetwork";
-      this.hostIPAddress = "0.0.0.0";
+      this.hostIPAddress = "127.0.0.1";
       this.transport = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT;
       this.port = DhruvaSIPConfigProperties.DEFAULT_PORT;
       this.recordRoute = DhruvaSIPConfigProperties.DEFAULT_RECORD_ROUTE_ENABLED;

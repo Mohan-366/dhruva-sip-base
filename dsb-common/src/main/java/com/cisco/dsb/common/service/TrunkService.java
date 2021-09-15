@@ -19,7 +19,6 @@ import com.cisco.dsb.common.util.log.Logger;
 import java.util.Objects;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
