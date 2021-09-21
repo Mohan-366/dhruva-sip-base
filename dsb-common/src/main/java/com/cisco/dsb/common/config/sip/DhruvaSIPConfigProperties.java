@@ -12,10 +12,12 @@ import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
+@ConfigurationProperties(prefix = "bean")
 @Qualifier("dhruvaSIPConfigProperties")
 @CustomLog
 public class DhruvaSIPConfigProperties {
