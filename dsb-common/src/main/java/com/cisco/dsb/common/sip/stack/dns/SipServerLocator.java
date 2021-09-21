@@ -16,8 +16,6 @@ import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.stack.util.IPValidator;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.*;
@@ -26,12 +24,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.sip.address.SipURI;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@CustomLog
 public class SipServerLocator implements SipResolver {
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(SipServerLocator.class);
   private final DnsLookup dnsLookup;
   public static boolean m_useDsUnreachableTable = false;
 

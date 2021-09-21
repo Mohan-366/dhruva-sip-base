@@ -16,9 +16,8 @@
 //////////////////////////////////////////////////////////////////////////////
 package com.cisco.dsb.trunk.loadbalancer;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.util.ArrayList;
+import lombok.CustomLog;
 
 /**
  * <p>This class implements the Hash-Based load balancer.<br>
@@ -30,8 +29,8 @@ import java.util.ArrayList;
  * <code>LBInterface is internally created for that sub server group and the process
  * is recursively repeated until a <code>NextHop</code> is chosen.
  */
+@CustomLog
 public class LBHashBased extends LBBase {
-  private static final Logger log = DhruvaLoggerFactory.getLogger(LBHashBased.class);
 
   protected final ServerGroupElementInterface selectElement(String varKey) {
     ServerGroupElementInterface selectedElement = null;
@@ -52,15 +51,15 @@ public class LBHashBased extends LBBase {
       output.append(", ");
     }
 
-    log.info("list of elements in order on which load balancing is done : " + output);
+    logger.info("list of elements in order on which load balancing is done : " + output);
 
     if (list.size() == 1) selectedElement = (ServerGroupElementInterface) list.get(0);
     else {
       String hashKey = (varKey != null) ? varKey : key;
-      log.info("Hashing on " + hashKey);
+      logger.info("Hashing on " + hashKey);
       int index = HashAlgorithm.selectIndex(hashKey, list.size());
       if (index != -1) {
-        log.info("Index selected " + index);
+        logger.info("Index selected " + index);
         selectedElement = (ServerGroupElementInterface) list.get(index);
       }
     }

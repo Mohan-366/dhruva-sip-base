@@ -7,26 +7,26 @@ import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupInterface;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
+@CustomLog
 public class DnsServerGroupUtil {
   private float maxDnsPriority = 65535f;
   private int maxDnsQValue = 65536;
 
   @Autowired private SipServerLocatorService locatorService;
 
-  private static final Logger log = DhruvaLoggerFactory.getLogger(DnsServerGroupUtil.class);
+  // private static final Logger log = DhruvaLoggerFactory.getLogger(DnsServerGroupUtil.class);
 
   public DnsServerGroupUtil(SipServerLocatorService locatorService) {
     this.locatorService = locatorService;

@@ -11,8 +11,6 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.dto.IdentityMachineAccount;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
@@ -20,6 +18,7 @@ import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.ciscospark.server.Wx2ConfigAdapter;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.*;
@@ -32,9 +31,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @DependsOn("dhruvaSIPConfigProperties")
+@CustomLog
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaConfig.class);
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 

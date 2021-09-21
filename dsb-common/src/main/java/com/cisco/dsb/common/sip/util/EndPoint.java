@@ -1,8 +1,6 @@
 package com.cisco.dsb.common.sip.util;
 
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import lombok.*;
 
 /**
@@ -12,9 +10,9 @@ import lombok.*;
 @Getter
 @NoArgsConstructor
 @ToString
+@CustomLog
 public class EndPoint implements Cloneable {
 
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(EndPoint.class);
 
   /* The logical network for this end point */
   protected String network;
@@ -45,7 +43,7 @@ public class EndPoint implements Cloneable {
    * @param serverGroup SG Name
    */
   public EndPoint(String network, String host, int port, Transport protocol, String serverGroup) {
-    Log.debug("Entering EndPoint()");
+    logger.debug("Entering EndPoint()");
     this.network = network;
     this.host = host;
     this.serverGroupName = serverGroup;
@@ -55,7 +53,7 @@ public class EndPoint implements Cloneable {
   }
 
   public EndPoint(String network, String host, int port, Transport protocol) {
-    Log.debug("Entering EndPoint()");
+    logger.debug("Entering EndPoint()");
     this.network = network;
     this.host = host;
     if (port > 0) this.port = port;

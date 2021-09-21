@@ -17,19 +17,18 @@
 package com.cisco.dsb.trunk.loadbalancer;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.trunk.servergroups.SG;
+import lombok.CustomLog;
 import org.springframework.stereotype.Component;
 
 /**
  * This factory creates a load balancer based on settings in the configuration or by loading a
  * specific named class.
  */
+@CustomLog
 @Component
 public class LBFactory {
 
-  private static final Logger log = DhruvaLoggerFactory.getLogger(LBFactory.class);
 
   public static final int GLOBAL = SG.index_sgSgLbType_global;
   public static final int REQUEST_URI = SG.index_sgSgLbType_request_uri;
@@ -71,8 +70,8 @@ public class LBFactory {
 
     if (lbtype == GLOBAL) {
       lbtype = getDefaultLBType();
-      log.info("Default lbtype is " + lbtype + "(" + getLBTypeAsString(lbtype) + ")");
     }
+    logger.info("Load balancer type for the server group is :  {}", getLBTypeAsString(lbtype));
     switch (lbtype) {
       case REQUEST_URI:
         lb = new LBHashBased();

@@ -6,12 +6,12 @@ package com.cisco.dsb.common.sip.util;
 
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import lombok.CustomLog;
 
 /** the class describing an interface (port/protocol for now) to listen on */
+@CustomLog
 public class ListenIf implements ListenInterface {
 
   protected int port;
@@ -32,7 +32,6 @@ public class ListenIf implements ListenInterface {
 
   protected boolean attachExternalIp;
   // Our Log object
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(ListenIf.class);
 
   /**
    * Creates a new ListenIf that based on the resolveAddress parameter, will try create an

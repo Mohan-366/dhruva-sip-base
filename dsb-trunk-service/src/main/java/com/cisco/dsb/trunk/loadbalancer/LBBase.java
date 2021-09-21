@@ -17,12 +17,11 @@
 package com.cisco.dsb.trunk.loadbalancer;
 
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.trunk.servergroups.ServerGroupElement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
+import lombok.CustomLog;
 
 /**
  * This class is the base class for <code>LBHashBased</code> and <code>LBHighestQ</code>.
@@ -31,9 +30,9 @@ import java.util.TreeSet;
  * @see LBHighestQ
  * @see RepositoryReceiverInterface
  */
+@CustomLog
 public abstract class LBBase implements RepositoryReceiverInterface {
 
-  private static final Logger log = DhruvaLoggerFactory.getLogger(LBBase.class);
 
   protected ServerInterface lastTried;
 
@@ -90,7 +89,7 @@ public abstract class LBBase implements RepositoryReceiverInterface {
 
     if (domainsToTry == null) initializeDomains();
     if (domainsToTry.size() == 0) {
-      log.warn("No more routes remain");
+      logger.warn("No more routes remain");
       return null;
     }
 

@@ -1,11 +1,10 @@
 package com.cisco.dsb.common.config;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.dto.BuildInfo;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.google.common.base.Strings;
 import java.net.URI;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
@@ -15,11 +14,11 @@ import org.springframework.core.env.Environment;
  * <p>See also:
  * http://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
  */
+@CustomLog
 // @ConfigurationProperties(prefix = "dhruva")
 public class DhruvaProperties extends ConfigProperties {
   // implements DiagnosticsClientFactory.DiagnosticsClientFactoryProperties {
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaProperties.class);
 
   private static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_DHRUVA";
 

@@ -59,6 +59,7 @@ public class DefaultCallType implements CallType {
                   // new destination
                   proxySIPRequest.proxy(proxySIPRequest, destination);
                 } catch (Exception exception) {
+                  logger.error("Unable to set any interface to forward the request");
                   exception.printStackTrace();
                 }
               });

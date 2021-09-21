@@ -5,8 +5,6 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.util.EndPoint;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.trunk.dto.Destination;
 import com.cisco.dsb.trunk.loadbalancer.*;
 import com.cisco.dsb.trunk.servergroups.DnsServerGroupUtil;
@@ -14,12 +12,14 @@ import com.cisco.dsb.trunk.servergroups.FailoverResponseCode;
 import com.cisco.dsb.trunk.servergroups.SG;
 import com.cisco.dsb.trunk.servergroups.StaticServerGroupUtil;
 import java.util.Objects;
+import lombok.CustomLog;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
+@CustomLog
 public class TrunkService {
 
   private SipServerLocatorService resolver;
@@ -42,18 +42,17 @@ public class TrunkService {
     this.failoverResponseCode = failoverResponseCode;
   }
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(TrunkService.class);
 
   public Mono<EndPoint> getElementAsync(
       @NonNull AbstractSipRequest request, @NonNull Destination destination) {
     String destinationAddress = destination.getAddress();
-    if (Objects.isNull(destinationAddress))
+    if (Objects.isNull(destinationAddress)) {
       return Mono.error(
           new DhruvaRuntimeException(
               ErrorCode.FETCH_ENDPOINT_ERROR, "Destination Address is null!!!"));
-
-    logger.info(
-        "get element for destination address {} and type {}",
+    }
+    logger.debug(
+        "get element for destination address: {} and type: {}",
         destination.getAddress(),
         destination.destinationType);
 
@@ -66,7 +65,11 @@ public class TrunkService {
   private Mono<ServerGroupInterface> fetchStaticServerGroupAysnc(Destination destination) {
     ServerGroupInterface serverGroup =
         staticServerGroupUtil.getServerGroup(destination.getAddress());
-    if (serverGroup == null) return Mono.empty();
+    if (serverGroup == null) {
+      logger.info(
+          "No static server group  information fetched for the given destination {}", destination);
+      return Mono.empty();
+    }
     return Mono.just(staticServerGroupUtil.getServerGroup(destination.getAddress()));
   }
 

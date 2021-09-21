@@ -67,6 +67,9 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 
 
 #### ENV variables to be configured
+   - To set logger level to "Debug", use environment variable `debug_mode` and set the value as `enabled` in the tomcat configuration's 'Startup/Connection' section.
+
+
    - Provide listen points for Dhruva SIP Base. Since we are running DSB in Tomcat in IntelliJ (more details in 'Running in Tomcat in Intellij IDE'),
    pass the required config as environment variables.
        - For this, go to 'Services' in IDE. You will find the tomcat that you have configured earlier. Right click on that tomcat server
@@ -76,11 +79,11 @@ To use the dsb artifacts in any new repo, the following text will have to be add
        - Provide listen points as below
            - In 'Name' -> `sipListenPoints`
            - In 'Value' -> `[{`
-                           	`"name": "<networkName>",`
-                           	`"hostIPAddress": "<IP of machine where DSB runs",`
-                           	`"transport": "<UDP>",`
-                           	`"port": <port>,`
-                           	`"recordRoute": true`
+                               `"name": "<networkName>",`
+                               `"hostIPAddress": "<IP of machine where DSB runs",`
+                               `"transport": "<TCP>",`
+                               `"port": <port>,`
+                               `"recordRoute": true`
                            `}] `
        - Provide Server Groups as below
             - In 'Name' -> `sipServerGroups`

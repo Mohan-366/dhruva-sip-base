@@ -1,18 +1,17 @@
 package com.cisco.dsb.trunk.loadbalancer;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import lombok.CustomLog;
 
 /**
  * Created by IntelliJ IDEA. User: rrachuma Date: Jul 22, 2008 Time: 12:41:05 PM To change this
  * template use File | Settings | File Templates.
  */
+@CustomLog
 public class LBWeight extends LBBase {
 
   private static final SecureRandom randomGenerator = new SecureRandom();
-  protected static final Logger logger = DhruvaLoggerFactory.getLogger(LBWeight.class);
 
   protected void setKey() {
     // To change body of implemented methods use File | Settings | File Templates.
