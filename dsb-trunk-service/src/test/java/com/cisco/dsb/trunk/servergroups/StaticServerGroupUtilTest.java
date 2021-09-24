@@ -58,7 +58,6 @@ public class StaticServerGroupUtilTest {
         StaticServer.builder()
             .networkName("net1")
             .serverGroupName("SG1")
-            .lbType("call-id")
             .elements(sgeList)
             .sgPolicy("policy1")
             .build();
@@ -66,7 +65,6 @@ public class StaticServerGroupUtilTest {
         StaticServer.builder()
             .networkName("net1")
             .serverGroupName("SG2")
-            .lbType("call-id")
             .elements(sgeList1)
             .sgPolicy("dummy")
             .build();

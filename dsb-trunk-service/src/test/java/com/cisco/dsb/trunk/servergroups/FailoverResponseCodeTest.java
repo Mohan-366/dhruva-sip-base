@@ -28,16 +28,10 @@ public class FailoverResponseCodeTest {
         StaticServer.builder()
             .networkName("net1")
             .serverGroupName("SG1")
-            .lbType("call-id")
             .sgPolicy("policy1")
             .build();
     StaticServer server2 =
-        StaticServer.builder()
-            .networkName("net1")
-            .serverGroupName("SG2")
-            .lbType("call-id")
-            .sgPolicy("dummy")
-            .build();
+        StaticServer.builder().networkName("net1").serverGroupName("SG2").sgPolicy("dummy").build();
 
     DynamicServer dynamicServer1 =
         DynamicServer.builder().serverGroupName("cisco.webex.com").sgPolicy("policy1").build();

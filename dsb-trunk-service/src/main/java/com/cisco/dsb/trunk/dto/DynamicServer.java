@@ -12,12 +12,12 @@ import lombok.ToString;
 @Builder(builderClassName = "DynamicServerBuilder", toBuilder = true)
 public class DynamicServer {
 
-  private String serverGroupName = "DefaultSG";
-  private String sgPolicy = "global";
+  private String serverGroupName;
+  private String sgPolicy;
 
   @JsonPOJOBuilder(withPrefix = "")
   public static class DynamicServerBuilder {
-    private String serverGroupName = "DefaultSG";
-    private String sgPolicy = "global";
+    private String serverGroupName;
+    private String sgPolicy;
   }
 }

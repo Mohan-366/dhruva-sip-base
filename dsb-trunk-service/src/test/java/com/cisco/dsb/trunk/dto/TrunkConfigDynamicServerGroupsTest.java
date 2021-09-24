@@ -2,7 +2,10 @@ package com.cisco.dsb.trunk.dto;
 
 import static org.mockito.Mockito.when;
 
+import com.cisco.dsb.common.util.JsonSchemaValidator;
 import com.cisco.dsb.trunk.config.TrunkConfigProperties;
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.mockito.InjectMocks;
@@ -43,9 +46,16 @@ public class TrunkConfigDynamicServerGroupsTest {
         expectedDynamicServer.toString());
   }
 
-  @Test
-  public void getDefaultValueFromJSONConfig() {
-    when(env.getProperty("sipDynamicServerGroups")).thenReturn(null);
-    Assert.assertEquals(trunkConfigProperties.getDynamicServerGroups(), null);
+  @Test(description = "validating dynamic server schema, valid and invalid")
+  public void schemaValidation() throws IOException, ProcessingException {
+    String dynamicServer = "[{\"serverGroupName\": \"cisco.webex.com\",\"sgPolicy\": \"policy1\"}]";
+    TrunkConfigProperties trunkConfig = new TrunkConfigProperties();
+    Assert.assertTrue(
+        JsonSchemaValidator.validateSchema(dynamicServer, TrunkConfigProperties.DYNAMIC_SCHEMA));
+
+    String invalidDynamicServer = "[{\"name\": \"cisco.webex.com\",\"sgPolicy\": \"policy1\"}]";
+    Assert.assertFalse(
+        JsonSchemaValidator.validateSchema(
+            invalidDynamicServer, TrunkConfigProperties.DYNAMIC_SCHEMA));
   }
 }

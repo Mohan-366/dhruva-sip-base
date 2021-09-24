@@ -17,7 +17,6 @@ public class StaticServer {
 
   private String serverGroupName = "DefaultSG";
   private String networkName = "DefaultNetwork";
-  private String lbType = "call-id";
   private List<ServerGroupElement> elements = Arrays.asList(ServerGroupElement.builder().build());
   private String sgPolicy = "global";
 
@@ -25,7 +24,6 @@ public class StaticServer {
   public static class StaticServerBuilder {
     private String serverGroupName = "DefaultSG";
     private String networkName = "DefaultNetwork";
-    private String lbType = "call-id";
     private List<ServerGroupElement> elements = Arrays.asList(ServerGroupElement.builder().build());
     private String sgPolicy = "global";
   }

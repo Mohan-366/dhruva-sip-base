@@ -12,6 +12,7 @@ import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -142,6 +143,7 @@ public class DhruvaSIPConfigProperties {
     return allow;
   }
 
+  @Bean(name = "listenPoints")
   public List<SIPListenPoint> getListeningPoints() {
 
     String configuredListeningPoints = env.getProperty(SIP_LISTEN_POINTS);
