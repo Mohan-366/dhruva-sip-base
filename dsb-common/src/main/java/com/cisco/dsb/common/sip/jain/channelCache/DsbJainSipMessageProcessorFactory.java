@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import gov.nist.javax.sip.stack.MessageProcessor;
 import gov.nist.javax.sip.stack.MessageProcessorFactory;
 import gov.nist.javax.sip.stack.OIOMessageProcessorFactory;
@@ -12,6 +13,7 @@ import javax.sip.ListeningPoint;
 public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactory {
 
   private DhruvaSIPConfigProperties sipProperties;
+  private DhruvaExecutorService executorService;
 
   @Override
   public MessageProcessor createMessageProcessor(
@@ -24,22 +26,25 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
     if (transport.equalsIgnoreCase(ListeningPoint.TCP)) {
 
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTCPMessageProcessor(ipAddress, sipStack, port, sipProperties);
+        return new DsbNioTCPMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
       } else {
-        return new DsbSipTCPMessageProcessor(ipAddress, sipStack, port, sipProperties);
+        return new DsbSipTCPMessageProcessor(
+            ipAddress, sipStack, port, sipProperties, executorService);
       }
     } else if (transport.equalsIgnoreCase(ListeningPoint.TLS)) {
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTlsMessageProcessor(ipAddress, sipStack, port, sipProperties);
+        return new DsbNioTlsMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
       } else {
-        return new DsbJainSipTLSMessageProcessor(ipAddress, sipStack, port, sipProperties);
+        return new DsbJainSipTLSMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
       }
     } else {
       throw new IllegalArgumentException("bad transport");
     }
   }
 
-  public void initFromApplication(DhruvaSIPConfigProperties sipProperties) {
+  public void initFromApplication(
+      DhruvaSIPConfigProperties sipProperties, DhruvaExecutorService executorService) {
     this.sipProperties = sipProperties;
+    this.executorService = executorService;
   }
 }

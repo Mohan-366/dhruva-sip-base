@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.util;
+package com.cisco.dsb.common.util;
 
 public class ThreadLocals {
   private static ThreadLocal<String> threadLocalCallId = ThreadLocal.withInitial(() -> null);

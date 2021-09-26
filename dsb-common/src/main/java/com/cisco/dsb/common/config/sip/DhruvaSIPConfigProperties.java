@@ -11,6 +11,7 @@ import com.cisco.dsb.common.util.JsonUtilFactory;
 import com.cisco.wx2.dto.BuildInfo;
 import java.security.KeyStore;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,10 +109,16 @@ public class DhruvaSIPConfigProperties {
   private static final Boolean DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED = Boolean.TRUE;
   private static final String TLS_CERT_OCSP_ENABLED = "dhruva.tlsCertEnableOcsp";
   private static final Boolean DEFAULT_TLS_CERT_OCSP_ENABLED = true;
+  private static final String CLIENT_AUTH_TYPE = "dhruva.clientAuthType";
+  private static final String DEFAULT_CLIENT_AUTH_TYPE = "Disabled";
 
   private static final String NIO_ENABLED = "dhruva.nioEnabled";
   private static final Boolean DEFAULT_NIO_ENABLED = false;
   public static int DEFAULT_PORT = 5060;
+
+  private static final String KEEP_ALIVE_PERIOD = "keepAlivePeriod";
+  private static final Long DEFAULT_KEEP_ALIVE_PERIOD =
+      TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS);
 
   @Autowired private Environment env;
 
@@ -456,7 +463,19 @@ public class DhruvaSIPConfigProperties {
     return env.getProperty(TLS_CERT_OCSP_ENABLED, Boolean.class, DEFAULT_TLS_CERT_OCSP_ENABLED);
   }
 
+  public String getClientAuthType() {
+    return env.getProperty(CLIENT_AUTH_TYPE, String.class, DEFAULT_CLIENT_AUTH_TYPE);
+  }
+
   public boolean isNioEnabled() {
     return env.getProperty(NIO_ENABLED, Boolean.class, DEFAULT_NIO_ENABLED);
+  }
+
+  public boolean isLogKeepAlivesEnabled() {
+    return env.getProperty("logKeepAlivesEnabled", Boolean.class, true);
+  }
+
+  public long getKeepAlivePeriod() {
+    return env.getProperty(KEEP_ALIVE_PERIOD, Long.class, DEFAULT_KEEP_ALIVE_PERIOD);
   }
 }

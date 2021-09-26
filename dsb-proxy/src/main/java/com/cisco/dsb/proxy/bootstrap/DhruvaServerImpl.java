@@ -16,6 +16,15 @@ import org.springframework.stereotype.Component;
 public class DhruvaServerImpl implements DhruvaServer {
 
   DhruvaExecutorService executorService;
+
+  public void setExecutorService(DhruvaExecutorService executorService) {
+    this.executorService = executorService;
+  }
+
+  public void setMetricService(MetricService metricService) {
+    this.metricService = metricService;
+  }
+
   MetricService metricService;
 
   @Autowired

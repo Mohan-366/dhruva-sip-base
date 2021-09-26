@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.sip.tls;
+package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.wx2.certs.common.util.CertHelper;
 import com.fasterxml.jackson.annotation.JsonCreator;

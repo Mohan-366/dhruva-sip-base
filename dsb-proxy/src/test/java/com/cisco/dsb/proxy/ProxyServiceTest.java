@@ -24,6 +24,7 @@ import com.cisco.dsb.proxy.sip.ProxyFactory;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
+import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.ClientAuthType;
@@ -34,6 +35,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.sip.*;
@@ -72,6 +74,9 @@ public class ProxyServiceTest {
   @Mock SipProxyManager sipProxyManager;
   // = new SipProxyManager(proxyControllerFactory, controllerConfig);
 
+  @Mock ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+  @Mock StripedExecutorService stripedExecutorService;
+
   @InjectMocks ProxyService proxyService;
 
   SIPListenPoint udpListenPoint1;
@@ -90,9 +95,16 @@ public class ProxyServiceTest {
     keyStoreType = "jks";
 
     MockitoAnnotations.initMocks(this);
+    when(dhruvaExecutorService.getScheduledExecutorThreadPool(any()))
+        .thenReturn(scheduledThreadPoolExecutor);
+    when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
+    ((DhruvaServerImpl) server).setExecutorService(dhruvaExecutorService);
+    ((DhruvaServerImpl) server).setMetricService(metricsService);
+    when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
     when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keyStorePath);
     when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
     when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
+    when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
     udpListenPoint1 =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")

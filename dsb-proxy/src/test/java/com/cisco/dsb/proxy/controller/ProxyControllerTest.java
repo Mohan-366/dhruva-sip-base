@@ -44,6 +44,7 @@ import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.ListIterator;
@@ -69,6 +70,13 @@ public class ProxyControllerTest {
   DhruvaNetwork outgoingNetwork;
   DhruvaNetwork testNetwork;
 
+  DhruvaNetwork udpNetworkIncoming;
+  DhruvaNetwork tcpNetworkIncoming;
+  DhruvaNetwork tlsNetworkIncoming;
+  DhruvaNetwork udpNetworkOutgoing;
+  DhruvaNetwork tcpNetworkOutgoing;
+  DhruvaNetwork tlsNetworkOutgoing;
+
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   @Mock SipServerLocatorService sipServerLocatorService;
@@ -86,6 +94,19 @@ public class ProxyControllerTest {
 
   SipProvider incomingSipProvider;
   SipProvider outgoingSipProvider;
+  SipProvider udpSipProviderIncoming;
+  SipProvider tcpSipProviderIncoming;
+  SipProvider tlsSipProviderIncoming;
+  SipProvider udpSipProviderOutgoing;
+  SipProvider tcpSipProviderOutgoing;
+  SipProvider tlsSipProviderOutgoing;
+
+  SIPListenPoint sipListenPointUdpIncoming;
+  SIPListenPoint sipListenPointTcpIncoming;
+  SIPListenPoint sipListenPointTlsIncoming;
+  SIPListenPoint sipListenPointUdpOutgoing;
+  SIPListenPoint sipListenPointTcpOutgoing;
+  SIPListenPoint sipListenPointTlsOutgoing;
 
   SpringApplicationContext springApplicationContext;
   ScheduledThreadPoolExecutor scheduledExecutor;
@@ -135,8 +156,8 @@ public class ProxyControllerTest {
     controllerConfig.addListenInterface(
         testNetwork,
         InetAddress.getByName(sipListenPoint3.getHostIPAddress()),
-        sipListenPoint2.getPort(),
-        sipListenPoint2.getTransport(),
+        sipListenPoint3.getPort(),
+        sipListenPoint3.getTransport(),
         InetAddress.getByName(sipListenPoint3.getHostIPAddress()),
         false);
 
@@ -194,6 +215,26 @@ public class ProxyControllerTest {
   //        //doReturn(dhruvaExecutorService).when(ctx).getBean(DhruvaExecutorService.class);
   //    }
 
+  public SIPListenPoint createListenPoint(String networkName, int port, String transport)
+      throws JsonProcessingException {
+    String hostAddress = "1.1.1.1";
+    if (networkName.contains("Outgoing")) {
+      hostAddress = "2.2.2.2";
+    }
+    String json =
+        "{ \"name\":\""
+            + networkName
+            + "\", \"hostIPAddress\": \""
+            + hostAddress
+            + "\", \"port\":"
+            + port
+            + ", \"transport\": \""
+            + transport
+            + "\", "
+            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
+    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  }
+
   public SIPListenPoint createIncomingTCPSipListenPoint() throws JsonProcessingException {
     String json =
         "{ \"name\": \"net_sp_tcp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5060, \"transport\": \"TCP\", "
@@ -216,11 +257,24 @@ public class ProxyControllerTest {
   }
 
   public ProxySIPRequest getProxySipRequest(
-      SIPRequestBuilder.RequestMethod method, ServerTransaction serverTransaction) {
+      SIPRequestBuilder.RequestMethod method,
+      ServerTransaction serverTransaction,
+      DhruvaNetwork network) {
     try {
       ExecutionContext context = new ExecutionContext();
       SIPRequest request =
           SIPRequestBuilder.createRequest(new SIPRequestBuilder().getRequestAsString(method));
+
+      SipProvider sipProvider;
+      if (network == udpNetworkIncoming) {
+        sipProvider = udpSipProviderIncoming;
+      } else if (network == tcpNetworkIncoming) {
+        sipProvider = tcpSipProviderIncoming;
+      } else if (network == tlsNetworkIncoming) {
+        sipProvider = tlsSipProviderIncoming;
+      } else {
+        sipProvider = incomingSipProvider;
+      }
 
       return DhruvaSipRequestMessage.newBuilder()
           .withContext(context)
@@ -230,13 +284,18 @@ public class ProxyControllerTest {
           .correlationId("ABCD")
           .reqURI("sip:test@webex.com")
           .sessionId("testSession")
-          .network(incomingNetwork.getName())
-          .withProvider(incomingSipProvider)
+          .network(network.getName())
+          .withProvider(sipProvider)
           .build();
     } catch (Exception e) {
       System.out.println(e.getMessage());
       return null;
     }
+  }
+
+  public ProxySIPRequest getProxySipRequest(
+      SIPRequestBuilder.RequestMethod method, ServerTransaction serverTransaction) {
+    return getProxySipRequest(method, serverTransaction, incomingNetwork);
   }
 
   public ProxyController getProxyController(ProxySIPRequest proxySIPRequest) {
@@ -259,6 +318,15 @@ public class ProxyControllerTest {
     reset(trunkService);
     Router router = mock(Router.class);
     when(outgoingSipProvider.getSipStack()).thenReturn(sipStack);
+    if (udpSipProviderOutgoing != null) {
+      when(udpSipProviderOutgoing.getSipStack()).thenReturn(sipStack);
+    }
+    if (tcpSipProviderOutgoing != null) {
+      when(tcpSipProviderOutgoing.getSipStack()).thenReturn(sipStack);
+    }
+    if (tlsSipProviderOutgoing != null) {
+      when(tlsSipProviderOutgoing.getSipStack()).thenReturn(sipStack);
+    }
     when(sipStack.getRouter()).thenReturn(router);
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
     DhruvaNetwork.setSipProvider(incomingNetwork.getName(), incomingSipProvider);
@@ -270,14 +338,150 @@ public class ProxyControllerTest {
     springApplicationContext.setApplicationContext(null);
   }
 
-  @Test(description = "test proxy client creation for outgoing invite request")
-  public void testOutgoingInviteRequestProxyTransaction()
+  @DataProvider
+  public Object[][] getSipStack()
+      throws JsonProcessingException, DhruvaException, UnknownHostException, ParseException {
+    udpSipProviderIncoming = mock(SipProvider.class);
+    tcpSipProviderIncoming = mock(SipProvider.class);
+    tlsSipProviderIncoming = mock(SipProvider.class);
+    udpSipProviderOutgoing = mock(SipProvider.class);
+    tcpSipProviderOutgoing = mock(SipProvider.class);
+    tlsSipProviderOutgoing = mock(SipProvider.class);
+    sipListenPointUdpIncoming = createListenPoint("UDPNetworkIncoming", 5064, "UDP");
+    sipListenPointTcpIncoming = createListenPoint("TCPNetworkIncoming", 5065, "TCP");
+    sipListenPointTlsIncoming = createListenPoint("TLSNetworkIncoming", 5066, "TLS");
+    sipListenPointUdpOutgoing = createListenPoint("UDPNetworkOutgoing", 5067, "UDP");
+    sipListenPointTcpOutgoing = createListenPoint("TCPNetworkOutgoing", 5068, "TCP");
+    sipListenPointTlsOutgoing = createListenPoint("TLSNetworkOutgoing", 5069, "TLS");
+    udpNetworkIncoming =
+        DhruvaNetwork.createNetwork("UDPNetworkIncoming", sipListenPointUdpIncoming);
+    tcpNetworkIncoming =
+        DhruvaNetwork.createNetwork("TCPNetworkIncoming", sipListenPointTcpIncoming);
+    tlsNetworkIncoming =
+        DhruvaNetwork.createNetwork("TLSNetworkIncoming", sipListenPointTlsIncoming);
+    udpNetworkOutgoing =
+        DhruvaNetwork.createNetwork("UDPNetworkOutgoing", sipListenPointUdpOutgoing);
+    tcpNetworkOutgoing =
+        DhruvaNetwork.createNetwork("TCPNetworkOutgoing", sipListenPointTcpOutgoing);
+    tlsNetworkOutgoing =
+        DhruvaNetwork.createNetwork("TLSNetworkOutgoing", sipListenPointTlsOutgoing);
+    DhruvaNetwork.setSipProvider(udpNetworkIncoming.getName(), udpSipProviderIncoming);
+    DhruvaNetwork.setSipProvider(tcpNetworkIncoming.getName(), tcpSipProviderIncoming);
+    DhruvaNetwork.setSipProvider(tlsNetworkIncoming.getName(), tlsSipProviderIncoming);
+    DhruvaNetwork.setSipProvider(udpNetworkOutgoing.getName(), udpSipProviderOutgoing);
+    DhruvaNetwork.setSipProvider(tcpNetworkOutgoing.getName(), tcpSipProviderOutgoing);
+    DhruvaNetwork.setSipProvider(tlsNetworkOutgoing.getName(), tlsSipProviderOutgoing);
+    controllerConfig.addListenInterface(
+        udpNetworkIncoming,
+        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
+        sipListenPointUdpIncoming.getPort(),
+        sipListenPointUdpIncoming.getTransport(),
+        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
+        false);
+    controllerConfig.addListenInterface(
+        udpNetworkOutgoing,
+        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
+        sipListenPointUdpOutgoing.getPort(),
+        sipListenPointUdpOutgoing.getTransport(),
+        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
+        false);
+    controllerConfig.addListenInterface(
+        tcpNetworkIncoming,
+        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
+        sipListenPointTcpIncoming.getPort(),
+        sipListenPointTcpIncoming.getTransport(),
+        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
+        false);
+    controllerConfig.addListenInterface(
+        tcpNetworkOutgoing,
+        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
+        sipListenPointTcpOutgoing.getPort(),
+        sipListenPointTcpOutgoing.getTransport(),
+        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
+        false);
+    controllerConfig.addListenInterface(
+        tlsNetworkIncoming,
+        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
+        sipListenPointTlsIncoming.getPort(),
+        sipListenPointTlsIncoming.getTransport(),
+        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
+        false);
+    controllerConfig.addListenInterface(
+        tlsNetworkOutgoing,
+        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
+        sipListenPointTlsOutgoing.getPort(),
+        sipListenPointTlsOutgoing.getTransport(),
+        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
+        false);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
+        sipListenPointUdpIncoming.getPort(),
+        sipListenPointUdpIncoming.getTransport(),
+        udpNetworkIncoming);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
+        sipListenPointUdpOutgoing.getPort(),
+        sipListenPointUdpOutgoing.getTransport(),
+        udpNetworkOutgoing);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
+        sipListenPointTcpIncoming.getPort(),
+        sipListenPointTcpIncoming.getTransport(),
+        tcpNetworkIncoming);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
+        sipListenPointTcpOutgoing.getPort(),
+        sipListenPointTcpOutgoing.getTransport(),
+        tcpNetworkOutgoing);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
+        sipListenPointTlsIncoming.getPort(),
+        sipListenPointTlsIncoming.getTransport(),
+        tlsNetworkIncoming);
+    controllerConfig.addRecordRouteInterface(
+        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
+        sipListenPointTlsOutgoing.getPort(),
+        sipListenPointTlsOutgoing.getTransport(),
+        tlsNetworkOutgoing);
+
+    return new Object[][] {
+      {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
+      {tcpNetworkIncoming, tcpNetworkOutgoing, tcpSipProviderOutgoing},
+      {tlsNetworkIncoming, tlsNetworkOutgoing, tlsSipProviderOutgoing}
+    };
+  }
+
+  @Test(
+      description = "test proxy client creation for outgoing invite request",
+      dataProvider = "getSipStack")
+  public void testOutgoingInviteRequestProxyTransactionAllTransports(Object[] testParams)
       throws SipException, ExecutionException, InterruptedException {
 
-    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    DhruvaNetwork incomingNetwork1 = (DhruvaNetwork) testParams[0];
+    DhruvaNetwork outgoingNetwork1 = (DhruvaNetwork) testParams[1];
+    SipProvider outgoingSipProvider1 = (SipProvider) testParams[2];
 
+    int outPort = 5080;
+    if (outgoingNetwork1.getName().equals("UDPNetworkOutgoing")) {
+      outPort = 5067;
+    } else if (outgoingNetwork1.getName().equals("TCPNetworkOutgoing")) {
+      outPort = 5068;
+    } else if (outgoingNetwork1.getName().equals("TLSNetworkOutgoing")) {
+      outPort = 5069;
+    }
+    int finalOutPort = outPort;
+    String protocol = "tcp";
+    if (outgoingNetwork1.getName().contains("UDP")) {
+      protocol = "udp";
+    } else if (outgoingNetwork1.getName().contains("TLS")) {
+      protocol = "tls";
+    }
+    String finalProtocol = protocol;
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
     ProxySIPRequest proxySIPRequest =
-        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+        getProxySipRequest(
+            SIPRequestBuilder.RequestMethod.INVITE, serverTransaction, incomingNetwork1);
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
@@ -285,7 +489,7 @@ public class ProxyControllerTest {
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
     doNothing().when(clientTransaction).sendRequest();
 
-    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+    when(outgoingSipProvider1.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
 
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
@@ -300,7 +504,7 @@ public class ProxyControllerTest {
     Destination destination =
         Destination.builder()
             .uri(proxySIPRequest.getRequest().getRequestURI())
-            .network(outgoingNetwork)
+            .network(outgoingNetwork1)
             .build();
 
     // proxyController.proxyRequest(proxySIPRequest, location);
@@ -311,7 +515,7 @@ public class ProxyControllerTest {
     proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
-    EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
+    EndPoint endPoint = new EndPoint(outgoingNetwork1.getName(), "9.9.9.9", 5061, Transport.TLS);
     when(trunkService.getElementAsync(any(AbstractSipRequest.class), any(Destination.class)))
         .thenReturn(Mono.just(endPoint));
 
@@ -322,11 +526,11 @@ public class ProxyControllerTest {
             request -> {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
-              assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
+              assert request.getOutgoingNetwork().equals(outgoingNetwork1.getName());
               assert request.getDestination().getUri() == request.getRequest().getRequestURI();
               assert request.getClonedRequest() != null;
               assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getClonedRequest().getTopmostViaHeader().getPort() == finalOutPort;
 
               // Outgoing record route header validation
               RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
@@ -334,16 +538,18 @@ public class ProxyControllerTest {
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
               SipURI routeUri = (SipURI) uri;
-              assert routeUri.getTransportParam().equals("tcp");
-              assert routeUri.getPort() == outgoingNetwork.getListenPoint().getPort();
-              assert routeUri.getHost().equals(outgoingNetwork.getListenPoint().getHostIPAddress());
+              assert routeUri.getTransportParam().equals(finalProtocol);
+              assert routeUri.getPort() == outgoingNetwork1.getListenPoint().getPort();
+              assert routeUri
+                  .getHost()
+                  .equals(outgoingNetwork1.getListenPoint().getHostIPAddress());
               assert routeUri.hasLrParam();
-              assert routeUri.getUser().equals("rr$n=" + incomingNetwork.getName());
+              assert routeUri.getUser().equals("rr$n=" + incomingNetwork1.getName());
             })
         .verifyComplete();
 
     ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
-    verify(outgoingSipProvider).getNewClientTransaction(argumentCaptor.capture());
+    verify(outgoingSipProvider1).getNewClientTransaction(argumentCaptor.capture());
 
     SIPRequest sendRequest = (SIPRequest) argumentCaptor.getValue();
 

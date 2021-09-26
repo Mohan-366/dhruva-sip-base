@@ -1,4 +1,4 @@
-package com.cisco.dsb.proxy.sip.tls;
+package com.cisco.dsb.common.sip.tls;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;

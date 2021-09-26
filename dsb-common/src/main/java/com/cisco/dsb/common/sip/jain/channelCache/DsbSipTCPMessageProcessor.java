@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
@@ -20,6 +21,7 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
 
   private static final Logger logger =
       DhruvaLoggerFactory.getLogger(DsbSipTCPMessageProcessor.class);
+  private final StartStoppable keepAliveTimerTask;
 
   /**
    * Constructor.
@@ -32,19 +34,23 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
       InetAddress ipAddress,
       SIPTransactionStack sipStack,
       int port,
-      DhruvaSIPConfigProperties sipProperties) {
+      DhruvaSIPConfigProperties sipProperties,
+      DhruvaExecutorService executorService) {
     super(ipAddress, sipStack, port);
     Preconditions.checkNotNull(sipProperties);
+    keepAliveTimerTask = new KeepAliveTimerTask(this, sipProperties, executorService);
   }
 
   /** Start our thread. */
   public void start() throws IOException {
     logger.info("TCP message processor thread for stack {} starting", getStackName());
     super.start();
+    keepAliveTimerTask.start();
   }
 
   /** Stop method. */
   public void stop() {
+    keepAliveTimerTask.stop();
     logger.info("TCP message processor thread for stack {} stopping", getStackName());
     super.stop();
   }

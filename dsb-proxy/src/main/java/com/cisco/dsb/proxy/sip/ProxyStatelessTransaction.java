@@ -307,7 +307,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
                   viaHeaderTransport.name(),
                   branch);
 
-      forceRequestSource(request, listenIf.getSourcePort(), listenIf.getSourceAddress());
+      if (listenIf.getProtocol() == Transport.UDP) {
+        forceRequestSource(request, listenIf.getSourcePort(), listenIf.getSourceAddress());
+      }
 
       // !!!!!!!!!! The above must be changed to allow reuse of client
       // TCP connections for responses!!!!

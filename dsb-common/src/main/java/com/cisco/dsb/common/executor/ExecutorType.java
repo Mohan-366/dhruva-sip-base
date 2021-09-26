@@ -5,7 +5,8 @@ public enum ExecutorType {
   METRIC_SERVICE(6),
   DNS_LOCATOR_SERVICE(8),
   PROXY_CLIENT_TIMEOUT(2),
-  PROXY_PROCESSOR();
+  PROXY_PROCESSOR(),
+  KEEP_ALIVE_SERVICE;
 
   ExecutorType(int val) {}
 
