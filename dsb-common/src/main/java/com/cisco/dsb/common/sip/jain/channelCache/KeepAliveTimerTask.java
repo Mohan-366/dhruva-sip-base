@@ -16,7 +16,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
-import lombok.Getter;
 
 /**
  * This class implements RFC 5626 based keepalives against all cached connections.
@@ -45,7 +44,6 @@ import lombok.Getter;
  * SipStack sipStack = SipFactory.getInstance().createSipStack(properties);
  * }</pre>
  */
-
 @CustomLog
 public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
@@ -53,10 +51,10 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
   private final MessageChannelCache channelCache;
   private final boolean logKeepAlives;
-  @Getter private final StripedExecutorService keepAliveExecutor;
-  private final String stackName;
+  private final StripedExecutorService keepAliveExecutor;
   private DhruvaExecutorService executorService;
   private ScheduledThreadPoolExecutor scheduledExecutor;
+  private final String stackName;
 
   public KeepAliveTimerTask(
       MessageChannelCache channelCache,

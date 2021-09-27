@@ -110,12 +110,15 @@ public class SipServer implements Server {
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
-    //    stackProps.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
     stackProps.setProperty(
         "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", dhruvaSIPConfigProperties.getClientAuthType());
     stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
-    stackProps.setProperty("gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT", "25");
-    stackProps.setProperty("gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS", "20");
+    stackProps.setProperty(
+        "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT",
+        dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout());
+    stackProps.setProperty(
+        "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
+        dhruvaSIPConfigProperties.getMinKeepaliveTimeSeconds());
 
     return stackProps;
   }

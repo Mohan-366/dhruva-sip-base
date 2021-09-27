@@ -5,7 +5,6 @@ import com.cisco.dsb.common.sip.bean.SIPProxy;
 import com.cisco.dsb.common.transport.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonUtilFactory;
-import com.cisco.wx2.dto.BuildInfo;
 import java.security.KeyStore;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -13,14 +12,14 @@ import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
 @ConfigurationProperties(prefix = "bean")
-@Qualifier("dhruvaSIPConfigProperties")
+@Qualifier("dsbSIPConfigProperties")
 @CustomLog
 public class DhruvaSIPConfigProperties {
 
@@ -56,20 +55,20 @@ public class DhruvaSIPConfigProperties {
 
   private static final String SIP_PRIVATE_KEY = "sipPrivateKey";
 
-  private static final String UDP_EVENTLOOP_THREAD_COUNT = "dhruva.network.udpEventloopThreadCount";
+  private static final String UDP_EVENTLOOP_THREAD_COUNT = "dsb.network.udpEventloopThreadCount";
 
   private static final Integer DEFAULT_UDP_EVENTLOOP_THREAD_COUNT = 1;
 
-  private static final String TLS_EVENTLOOP_THREAD_COUNT = "dhruva.network.tlsEventloopThreadCount";
+  private static final String TLS_EVENTLOOP_THREAD_COUNT = "dsb.network.tlsEventloopThreadCount";
 
   private static final Integer DEFAULT_TLS_EVENTLOOP_THREAD_COUNT = 20;
 
   private static final String CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_SECONDS =
-      "dhruva.network.connectionCache.connectionIdleTimeout";
+      "dsb.network.connectionCache.connectionIdleTimeout";
 
   private static final Integer DEFAULT_CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_MINUTES = 14400;
 
-  private static final String TLS_CIPHERS = "dhruva.sipTlsCipherSuites";
+  private static final String TLS_CIPHERS = "dsb.sipTlsCipherSuites";
 
   private static final String HOST_PORT_ENABLED = "hostPortEnabled";
 
@@ -78,44 +77,47 @@ public class DhruvaSIPConfigProperties {
   private static final String HOST_IP_OR_FQDN = "hostIpOrFqdn";
 
   private static final String TLS_HANDSHAKE_TIMEOUT_MILLISECONDS =
-      "dhruva.tlsHandShakeTimeOutMilliSeconds";
+      "dsb.tlsHandShakeTimeOutMilliSeconds";
   private static final Integer DEFAULT_TLS_HANDSHAKE_TIMEOUT_MILLISECONDS = 5000;
   private static final String TLS_CA_LIST_IN_SERVER_HELLO_ENABLED =
-      "dhruva.tlsCaListInServerHelloEnabled";
+      "dsb.tlsCaListInServerHelloEnabled";
   private static final Boolean DEFAULT_TLS_CA_LIST_IN_SERVER_HELLO_ENABLED = false;
   private static final String CONNECTION_WRITE_TIMEOUT_IN_MILLIS =
-      "dhruva.connectionWriteTimeoutInMllis";
+      "dsb.connectionWriteTimeoutInMllis";
   private static final long DEFAULT_CONNECTION_WRITE_TIMEOUT_IN_MILLIS = 60000;
   private static final String TLS_OCSP_RESPONSE_TIMEOUT_SECONDS =
-      "dhruva.tlsOcspResponseTimeoutIn" + "Seconds";
+      "dsb.tlsOcspResponseTimeoutIn" + "Seconds";
   private static final int DEFAULT_TLS_OCSP_RESPONSE_TIMEOUT_SECONDS = 5;
-  private static final String TLS_TRUST_STORE_FILE_PATH = "dhruva.tlsTrustStoreFilePath";
-  private static final String TLS_TRUST_STORE_TYPE = "dhruva.tlsTrustStoreType";
+  private static final String TLS_TRUST_STORE_FILE_PATH = "dsb.tlsTrustStoreFilePath";
+  private static final String TLS_TRUST_STORE_TYPE = "dsb.tlsTrustStoreType";
   private static final String DEFAULT_TLS_TRUST_STORE_TYPE = KeyStore.getDefaultType();
-  private static final String TLS_TRUST_STORE_PASSWORD = "dhruva.tlsTrustStorePassword";
-  private static final String TLS_KEY_STORE_FILE_PATH = "dhruva.tlsKeyStoreFilePath";
-  private static final String TLS_KEY_STORE_TYPE = "dhruva.tlsKeyStoreType";
+  private static final String TLS_TRUST_STORE_PASSWORD = "dsb.tlsTrustStorePassword";
+  private static final String TLS_KEY_STORE_FILE_PATH = "dsb.tlsKeyStoreFilePath";
+  private static final String TLS_KEY_STORE_TYPE = "dsb.tlsKeyStoreType";
   private static final String DEFAULT_TLS_KEY_STORE_TYPE = KeyStore.getDefaultType();
-  private static final String TLS_KEY_STORE_PASSWORD = "dhruva.tlsKeyStorePassword";
+  private static final String TLS_KEY_STORE_PASSWORD = "dsb.tlsKeyStorePassword";
   private static final String TLS_CERT_REVOCATION_SOFTFAIL_ENABLED =
-      "dhruva.tlsCertRevocationEnable" + "SoftFail";
+      "dsb.tlsCertRevocationEnable" + "SoftFail";
   private static final Boolean DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED = Boolean.TRUE;
-  private static final String TLS_CERT_OCSP_ENABLED = "dhruva.tlsCertEnableOcsp";
+  private static final String TLS_CERT_OCSP_ENABLED = "dsb.tlsCertEnableOcsp";
   private static final Boolean DEFAULT_TLS_CERT_OCSP_ENABLED = true;
-  private static final String CLIENT_AUTH_TYPE = "dhruva.clientAuthType";
+  private static final String CLIENT_AUTH_TYPE = "dsb.clientAuthType";
   private static final String DEFAULT_CLIENT_AUTH_TYPE = "Disabled";
 
-  private static final String NIO_ENABLED = "dhruva.nioEnabled";
+  private static final String NIO_ENABLED = "dsb.nioEnabled";
   private static final Boolean DEFAULT_NIO_ENABLED = false;
   public static int DEFAULT_PORT = 5060;
 
-  private static final String KEEP_ALIVE_PERIOD = "keepAlivePeriod";
+  private static final String KEEP_ALIVE_PERIOD = "dsb.keepAlivePeriod";
   private static final Long DEFAULT_KEEP_ALIVE_PERIOD =
       TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS);
+  private static final String RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT =
+      "dsb.reliableKeepAlivePeriod";
+  private static final String DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT = "25";
+  private static String MIN_KEEPALIVE_TIME_SECONDS = "dsb.minKeepAliveTimeSeconds";
+  private static String DEFAULT_MIN_KEEPALIVE_TIME_SECONDS = "20";
 
   @Autowired private Environment env;
-
-  private static BuildInfo buildInfo;
 
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
@@ -367,5 +369,17 @@ public class DhruvaSIPConfigProperties {
 
   public long getKeepAlivePeriod() {
     return env.getProperty(KEEP_ALIVE_PERIOD, Long.class, DEFAULT_KEEP_ALIVE_PERIOD);
+  }
+
+  public String getReliableConnectionKeepAliveTimeout() {
+    return env.getProperty(
+        RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT,
+        String.class,
+        DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT);
+  }
+
+  public String getMinKeepaliveTimeSeconds() {
+    return env.getProperty(
+        MIN_KEEPALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEPALIVE_TIME_SECONDS);
   }
 }

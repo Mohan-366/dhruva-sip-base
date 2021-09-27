@@ -23,10 +23,9 @@ import com.cisco.dsb.proxy.sip.ProxyFactory;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
+import com.cisco.dsb.trunk.service.TrunkService;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import gov.nist.javax.sip.SipStackImpl;
-import com.cisco.dsb.trunk.service.TrunkService;
-
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.ClientAuthType;
 import java.net.BindException;
@@ -106,6 +105,8 @@ public class ProxyServiceTest {
     when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
     when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
     when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
+    when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");
+    when(dhruvaSIPConfigProperties.getMinKeepaliveTimeSeconds()).thenReturn("20");
     udpListenPoint1 =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")

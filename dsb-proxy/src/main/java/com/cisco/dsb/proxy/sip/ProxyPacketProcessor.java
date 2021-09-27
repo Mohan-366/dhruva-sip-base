@@ -45,8 +45,7 @@ public class ProxyPacketProcessor implements SipListenerExt {
             && ((IOExceptionEventExt) ioExceptionEvent).getReason() == Reason.KeepAliveTimeout);
     if (keepAliveTimeoutFired) {
       logger.info(
-          "KeepAlive Time out reason : {} ",
-          ((IOExceptionEventExt) ioExceptionEvent).getReason());
+          "KeepAlive Time out reason : {} ", ((IOExceptionEventExt) ioExceptionEvent).getReason());
     }
   }
 
