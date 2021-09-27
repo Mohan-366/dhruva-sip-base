@@ -26,16 +26,19 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
     if (transport.equalsIgnoreCase(ListeningPoint.TCP)) {
 
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTCPMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
+        return new DsbNioTCPMessageProcessor(
+            ipAddress, sipStack, port, sipProperties, executorService);
       } else {
         return new DsbSipTCPMessageProcessor(
             ipAddress, sipStack, port, sipProperties, executorService);
       }
     } else if (transport.equalsIgnoreCase(ListeningPoint.TLS)) {
       if (sipProperties.isNioEnabled()) {
-        return new DsbNioTlsMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
+        return new DsbNioTlsMessageProcessor(
+            ipAddress, sipStack, port, sipProperties, executorService);
       } else {
-        return new DsbJainSipTLSMessageProcessor(ipAddress, sipStack, port, sipProperties, executorService);
+        return new DsbJainSipTLSMessageProcessor(
+            ipAddress, sipStack, port, sipProperties, executorService);
       }
     } else {
       throw new IllegalArgumentException("bad transport");
