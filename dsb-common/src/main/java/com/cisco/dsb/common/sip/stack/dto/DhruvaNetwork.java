@@ -8,15 +8,15 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.sip.SipProvider;
+import lombok.CustomLog;
 import lombok.NonNull;
 
+@CustomLog
 public class DhruvaNetwork implements Cloneable {
 
   private static DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
@@ -31,7 +31,6 @@ public class DhruvaNetwork implements Cloneable {
   /** The default network. */
   public static DhruvaNetwork DEFAULT = null;
 
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaNetwork.class);
 
   public DhruvaNetwork(SIPListenPoint sipListenPoint) {
     this.sipListenPoint = sipListenPoint;

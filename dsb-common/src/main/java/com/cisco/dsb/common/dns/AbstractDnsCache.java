@@ -1,18 +1,17 @@
 package com.cisco.dsb.common.dns;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 
+@CustomLog
 public abstract class AbstractDnsCache<T> {
-  protected final Logger log = DhruvaLoggerFactory.getLogger(getClass());
 
   private final Cache<String, List<T>> dnsCache;
 
@@ -26,14 +25,14 @@ public abstract class AbstractDnsCache<T> {
             // cache
             .expireAfterWrite(retentionTimeMillis, TimeUnit.MILLISECONDS)
             .build();
-    log.info("Initialized {} with max {} records", getClass().getSimpleName(), maxCacheSize);
+    logger.info("Initialized {} with max {} records", getClass().getSimpleName(), maxCacheSize);
   }
 
   protected boolean filterOnType(Record actualObject, Class<? extends Record> expectedType) {
     if (expectedType.isInstance(actualObject)) {
       return true;
     } else {
-      log.warn(
+      logger.warn(
           "{}} lookup array contains element of type {}",
           expectedType.getName(),
           actualObject.getClass());
@@ -42,7 +41,7 @@ public abstract class AbstractDnsCache<T> {
   }
 
   protected void logLookupError(String searchString, DnsLookupResult lookupResult) {
-    log.warn(
+    logger.warn(
         "Returning cached DNS results for [{}], reason = [{}]",
         searchString,
         lookupResult.getErrorString());

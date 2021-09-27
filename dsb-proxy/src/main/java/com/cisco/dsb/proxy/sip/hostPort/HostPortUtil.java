@@ -4,19 +4,18 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.ListenIf;
 import com.cisco.dsb.common.sip.util.ListenInterface;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javax.sip.address.SipURI;
+import lombok.CustomLog;
 import lombok.NonNull;
 
+@CustomLog
 public class HostPortUtil {
 
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(HostPortUtil.class);
 
   private HostPortUtil() {}
 
@@ -61,17 +60,17 @@ public class HostPortUtil {
       return hostInfo
           .map(
               h -> {
-                Log.debug("Host IP/FQDN {} obtained for {}", h, uri);
+                logger.debug("Host IP/FQDN {} obtained for {}", h, uri);
                 return h;
               })
           .orElseGet(
               () -> {
-                Log.debug("No host IP/FQDN found. Use local IP from {}", uri);
+                logger.debug("No host IP/FQDN found. Use local IP from {}", uri);
                 return uri.getHost();
               });
 
     } catch (UnknownHostException e) {
-      Log.warn("No IP address for the host[{}] found ", uri.getHost());
+      logger.warn("No IP address for the host[{}] found ", uri.getHost());
       return uri.getHost();
     }
   }
@@ -91,12 +90,12 @@ public class HostPortUtil {
     return hostInfo
         .map(
             h -> {
-              Log.debug("Host IP/FQDN {} obtained for {}", h, listenIf);
+              logger.debug("Host IP/FQDN {} obtained for {}", h, listenIf);
               return h;
             })
         .orElseGet(
             () -> {
-              Log.debug("No host IP/FQDN found. Use local IP from {}", listenIf);
+              logger.debug("No host IP/FQDN found. Use local IP from {}", listenIf);
               return listenIf.getAddress();
             });
   }
@@ -121,10 +120,10 @@ public class HostPortUtil {
     ListenIf listenIf = (ListenIf) controllerConfig.getInterface(uri.getPort(), transport);
 
     if (hostPortCheck.test(listenIf)) {
-      Log.debug("Local IP {} found for {}", listenIf.getAddress(), uri);
+      logger.debug("Local IP {} found for {}", listenIf.getAddress(), uri);
       return listenIf.getAddress();
     }
-    Log.debug("No host IP/FQDN found. Use local IP for {}", uri);
+    logger.debug("No host IP/FQDN found. Use local IP for {}", uri);
     return uri.getHost();
   }
 }

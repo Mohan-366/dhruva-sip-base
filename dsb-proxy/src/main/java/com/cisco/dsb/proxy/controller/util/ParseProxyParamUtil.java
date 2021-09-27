@@ -4,8 +4,6 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.ReConstants;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import gov.nist.javax.sip.header.Route;
@@ -17,19 +15,21 @@ import java.util.StringTokenizer;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.HeaderAddress;
+import lombok.CustomLog;
 
+@CustomLog
 public class ParseProxyParamUtil {
 
   // Order in which the transport is selected.
   private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
-  protected static final Logger logger = DhruvaLoggerFactory.getLogger(ParseProxyParamUtil.class);
+
 
   private ParseProxyParamUtil() {}
 
   public static Map<String, String> getParsedProxyParams(
       ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter)
       throws DhruvaException {
-    logger.info("Dhruva getParsedProxyParams" + type);
+    logger.info("Parsing proxy parameter for type: " + type);
     SIPRequest request = proxySIPRequest.getRequest();
     String userPortion = null;
     HeaderAddress header = null;
@@ -57,7 +57,7 @@ public class ParseProxyParamUtil {
       default:
         break;
     }
-    logger.info("Dhruva getParsedProxyParams" + userPortion);
+    logger.info("Got user portion post parsing proxy param as: " + userPortion);
     if (userPortion == null) {
       return null;
     }

@@ -1,0 +1,36 @@
+<!--
+Our logging configuration is based off this:
+https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/blob/master/csb-common/cisco-spark-logging/src/main/resources/logback.xml
+-->
+<included>
+    <!-- Suppressing third party low level logs-->
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="org.apache" level="ERROR"/>
+    <logger name="org.eclipse" level="ERROR"/>
+    <logger name="sun.rmi" level="ERROR"/>
+    <logger name="com.cisco.wx2" level="ERROR"/>
+    <logger name="org.xbill" level="WARN"/>
+    <logger name="jdk.event.security" level="ERROR"/>
+    <logger name="javax.management" level="ERROR"/>
+    <logger name="com.netflix" level="ERROR"/>
+    <logger name="org.hibernate" level="ERROR"/>
+    <!--<logger name="io.netty" level="WARN"/>-->
+    <logger name="redis.clients" level="ERROR"/>
+    <logger name="com.ciscospark" level="ERROR"/>
+    <!--<logger name="com.dynamicsoft" level="ERROR"/>-->
+    <logger name="com.datastax" level="ERROR"/>
+    <logger name="com.cisco.wx2.dhruva.diagnostics" level="INFO"/>
+
+
+
+    <if condition = 'property("debug_mode").equals("enabled")' >
+        <then>
+            <logger name="com.cisco.dhruva" level="DEBUG" />
+            <logger name="com.cisco.dsb" level="DEBUG" />
+        </then>
+        <else>
+            <logger name="com.cisco.dhruva" level="INFO" />
+            <logger name="com.cisco.dsb" level="INFO" />
+        </else>
+    </if>
+</included>

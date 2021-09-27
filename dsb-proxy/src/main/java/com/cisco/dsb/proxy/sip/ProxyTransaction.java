@@ -213,7 +213,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       ServerTransaction server,
       @NonNull SIPRequest request)
       throws InternalProxyErrorException {
-    logger.debug("Entering init()");
+    logger.debug("Initiating new proxy transaction for: {}", request.getMethod());
 
     super.init(controller, config, request);
 
@@ -250,11 +250,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         logger.info("No ProxyServerTransaction created for {}", request.getMethod());
       }
     } catch (Throwable e) {
-      logger.error("Error creating proxy server transaction", e);
+      logger.error("Error creating proxy server transaction", e.getMessage());
       throw new InternalProxyErrorException(e.getMessage());
     }
 
-    logger.info("New ProxyTransaction created");
+    logger.info("New ProxyTransaction created for request {}", request.getMethod());
     logger.debug("Leaving init()");
   }
 

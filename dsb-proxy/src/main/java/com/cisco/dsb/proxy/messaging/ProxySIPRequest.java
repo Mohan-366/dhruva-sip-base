@@ -1,7 +1,6 @@
 package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -10,6 +9,7 @@ import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
+import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;

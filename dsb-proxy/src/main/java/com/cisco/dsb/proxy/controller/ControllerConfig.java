@@ -259,6 +259,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         }
       }
     }
+    logger.debug("Record route information not found while checking for record routes");
     return null;
   }
 

@@ -3,8 +3,6 @@ package com.cisco.dsb.proxy.sip;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.stack.util.SipTag;
 import com.cisco.dsb.common.sip.util.SipUtils;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -25,13 +23,13 @@ import javax.sip.address.URI;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.ContactHeader;
 import javax.sip.header.ToHeader;
+import lombok.CustomLog;
 
+@CustomLog
 public class ProxyUtils {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(ProxyUtils.class);
 
   private static final String nullString = "null";
 
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyUtils.class);
 
   public static void updateContactHeader(
       final SIPMessage sipMessage,
@@ -140,12 +138,12 @@ public class ProxyUtils {
   }
 
   public static boolean recognize(String host, int port, String transport, SipURI myURL) {
-    Log.debug("Entering recognize(" + host + ", " + port + ", " + transport + ", " + myURL + ")");
+    logger.debug("Entering recognize(" + host + ", " + port + ", " + transport + ", " + myURL + ")");
     boolean b =
         (host.equals(myURL.getHost())
             && port == myURL.getPort()
             && transport.equalsIgnoreCase(myURL.getTransportParam()));
-    Log.debug("Leaving recognize(), returning " + b);
+    logger.debug("Leaving recognize(), returning " + b);
     return b;
   }
 

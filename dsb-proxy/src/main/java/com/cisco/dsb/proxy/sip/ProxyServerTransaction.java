@@ -1,8 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InvalidStateException;
@@ -13,12 +11,14 @@ import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.InvalidArgumentException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipException;
+import lombok.CustomLog;
 import lombok.NonNull;
 
 /**
  * This class represents the ServerTransaction on the receiving side of ProxyTransaction. Note that
  * more than one such transaction may exist due to merged requests.
  */
+@CustomLog
 public class ProxyServerTransaction {
 
   private ServerTransaction serverTransaction;
@@ -38,7 +38,7 @@ public class ProxyServerTransaction {
 
   private static final int UNINITIALIZED = -1;
 
-  protected static Logger Log = DhruvaLoggerFactory.getLogger(ProxyServerTransaction.class);
+  // protected static Logger Log = DhruvaLoggerFactory.getLogger(ProxyServerTransaction.class);
 
   protected ProxyServerTransaction(
       ProxyTransaction proxy, ServerTransaction trans, SIPRequest request) {
@@ -49,7 +49,7 @@ public class ProxyServerTransaction {
     ViaList viaHeaders = request.getViaHeaders();
     if (viaHeaders != null) numVias = viaHeaders.size();
 
-    Log.debug("Counted number of Vias: " + numVias);
+    logger.debug("Counted number of Vias: " + numVias);
 
     if (controllerConfig.isStateful()) {
       RecordRouteList recordRouteHeaders = request.getRecordRouteHeaders();
@@ -63,7 +63,7 @@ public class ProxyServerTransaction {
 
   public void respond(@NonNull SIPResponse response) throws DestinationUnreachableException {
 
-    Log.debug("Entering respond()");
+    // logger.debug("Entering respond()");
 
     // send the response
     try {
@@ -71,7 +71,7 @@ public class ProxyServerTransaction {
       // DsSipHeaderList vias = response.getHeaders(DsSipConstants.VIA);
       int numResponseVias = vias != null ? vias.size() : 0;
 
-      Log.debug("numResponseVias=" + numResponseVias + ", numVias=" + numVias);
+      logger.debug("numResponseVias=" + numResponseVias + ", numVias=" + numVias);
       for (int x = numResponseVias; x > numVias; x--) {
         vias.removeFirst();
       }

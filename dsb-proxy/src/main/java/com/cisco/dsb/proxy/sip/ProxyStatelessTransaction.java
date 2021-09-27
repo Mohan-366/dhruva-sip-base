@@ -494,7 +494,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
             com.cisco.dsb.proxy.sip.hostPort.HostPortUtil.convertLocalIpToHostInfo(
                 getDefaultParams(), uri));
 
-        logger.info("Adding " + rr);
+        logger.info("Adding record route" + rr);
         request.addFirst(rr);
       }
     }

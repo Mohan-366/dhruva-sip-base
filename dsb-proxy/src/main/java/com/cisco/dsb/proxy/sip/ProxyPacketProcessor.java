@@ -36,27 +36,23 @@ public class ProxyPacketProcessor implements SipListenerExt {
   @Override
   public void processIOException(IOExceptionEvent ioExceptionEvent) {
     logger.info(
-        "KALPA: received IO exception event from sip stack for host {} port {} transport {}",
+        "received IO exception event from sip stack for host {} port {} transport {}",
         ioExceptionEvent.getHost(),
         ioExceptionEvent.getPort(),
         ioExceptionEvent.getTransport());
     boolean keepAliveTimeoutFired =
         (ioExceptionEvent instanceof IOExceptionEventExt
             && ((IOExceptionEventExt) ioExceptionEvent).getReason() == Reason.KeepAliveTimeout);
-
-    logger.info(
-        "KALPA: KeepAlive Time out {} reason : {} ",
-        keepAliveTimeoutFired,
-        ((IOExceptionEventExt) ioExceptionEvent).getReason());
+    if (keepAliveTimeoutFired) {
+      logger.info(
+          "KeepAlive Time out reason : {} ",
+          ((IOExceptionEventExt) ioExceptionEvent).getReason());
+    }
   }
 
   @Override
   public void processTransactionTerminated(TransactionTerminatedEvent transactionTerminatedEvent) {
-    if (transactionTerminatedEvent.isServerTransaction()) {
-      ServerTransaction trans = transactionTerminatedEvent.getServerTransaction();
-      logger.info(trans.getRequest().getRequestURI().toString());
-    }
-    logger.info("received transaction terminated event from sip stack");
+    logger.debug("received transaction terminated event from sip stack");
     proxyEventListener.transactionTerminated(transactionTerminatedEvent);
   }
 

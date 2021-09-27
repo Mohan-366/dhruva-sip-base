@@ -4,10 +4,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.CustomLog;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.Type;
@@ -20,9 +19,9 @@ import org.xbill.DNS.Type;
 // IF DNS lookup fails, we will then attempt to read from our local cache for last known good
 // result.
 //
+@CustomLog
 public class DnsLookupImpl implements DnsLookup {
 
-  private static final Logger log = DhruvaLoggerFactory.getLogger(DnsLookupImpl.class);
 
   private final SrvRecordCache srvCache;
   private final ARecordCache aCache;

@@ -1,12 +1,11 @@
 package com.cisco.dsb.common.dns;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.CustomLog;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 
+@CustomLog
 public class DnsLookupResult {
-  protected static final Logger log = LoggerFactory.getLogger(DnsLookup.class);
 
   private final Record[] records;
   private final Integer result;

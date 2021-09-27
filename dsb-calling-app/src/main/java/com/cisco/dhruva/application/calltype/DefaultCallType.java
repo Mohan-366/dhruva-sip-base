@@ -1,10 +1,10 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.dto.Destination;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -59,6 +59,7 @@ public class DefaultCallType implements CallType {
                   // new destination
                   proxySIPRequest.proxy(proxySIPRequest, destination);
                 } catch (Exception exception) {
+                  logger.error("Unable to set any interface to forward the request");
                   exception.printStackTrace();
                 }
               });

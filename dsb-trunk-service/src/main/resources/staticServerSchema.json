@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Server group",
+  "description": "Server group",
+  "type": "array",
+  "items": { "$ref": "#/definitions/static" },
+  "definitions": {
+    "static": {
+      "type": "object",
+      "properties": {
+      "serverGroupName": {
+        "description": "ServerGroup name",
+        "type": "string"
+      },
+      "networkName": {
+        "description": "Name of the network",
+        "type": "string"
+      },
+      "elements":{
+        "description":"interface IP address of the servergroup element",
+        "type":"array",
+        "items": { "$ref": "#/definitions/staticElements" }
+      }
+    },
+      "required": [ "serverGroupName", "networkName", "elements" ],
+      "additionalProperties":false
+    },
+    "staticElements": {
+      "type": "object",
+      "properties": {
+        "ipAddress": {
+          "description": "IP address",
+          "type":"string",
+          "format":"ipv4"
+        },
+        "port": {
+          "description": "port",
+          "type": "number",
+          "minimum":1024,
+          "maximum":65535
+        },
+        "transport": {
+          "description": "transport ",
+          "type": "string",
+          "enum":[
+            "TLS",
+            "TCP",
+            "UDP"
+          ]
+        },
+        "qValue": {
+          "description": "qValue",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "weight": {
+          "description": "weight",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [ "ipAddress", "port", "transport", "qValue", "weight"],
+      "additionalProperties":false
+    }
+
+  }
+}

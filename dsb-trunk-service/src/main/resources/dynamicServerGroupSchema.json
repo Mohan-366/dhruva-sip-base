@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dynamic SG",
+  "description": "Dynamic SG schema",
+  "type": "array",
+  "items": { "$ref": "#/definitions/dynamicServer" },
+  "definitions": {
+    "dynamicServer": {
+      "type": "object",
+      "properties": {
+        "serverGroupName": {
+          "description": "Dynamic SG name",
+          "type": "string"
+        },
+        "sgPolicy": {
+          "description": "sgPolicy name",
+          "type": "string"
+        }
+      },
+      "required": [ "serverGroupName", "sgPolicy"],
+      "additionalProperties":false
+    }
+  }
+}

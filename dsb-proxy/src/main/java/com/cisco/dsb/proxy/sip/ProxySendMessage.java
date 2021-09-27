@@ -32,6 +32,7 @@ public class ProxySendMessage {
                     JainSipHelper.getMessageFactory().createResponse(responseID, request);
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
+                logger.info("Successfully sent response for  {}", responseID);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }
@@ -50,6 +51,7 @@ public class ProxySendMessage {
       Response response = JainSipHelper.getMessageFactory().createResponse(responseID, request);
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
+      logger.info("Successfully sent response for  {}", responseID);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -72,6 +74,7 @@ public class ProxySendMessage {
     try {
       serverTransaction.sendResponse(response);
     } catch (Exception e) {
+      logger.error("Exception occurred while trying to send  response {}", e.getMessage());
       throw new DhruvaException(e);
     }
   }

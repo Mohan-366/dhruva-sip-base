@@ -3,13 +3,10 @@ package com.cisco.dsb.proxy.controller;
 import com.cisco.dsb.common.CommonContext;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.loadbalancer.LBInterface;
-import com.cisco.dsb.common.service.TrunkService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -39,6 +36,9 @@ import com.cisco.dsb.proxy.sip.ProxyServerTransaction;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import com.cisco.dsb.proxy.sip.ProxyUtils;
+import com.cisco.dsb.trunk.dto.Destination;
+import com.cisco.dsb.trunk.loadbalancer.LBInterface;
+import com.cisco.dsb.trunk.service.TrunkService;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.*;
@@ -215,6 +215,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
                 if (err instanceof SipException && err.getCause() instanceof IOException)
                   errorCode = ErrorCode.DESTINATION_UNREACHABLE;
+                logger.error(
+                    "Error occurred while forwarding request with message: {}", err.getMessage());
                 this.onProxyFailure(
                     this.proxyTransaction,
                     proxySIPRequest.getCookie(),
@@ -371,6 +373,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         destination.setAddress(host);
         // Setting to SRV type, can be A as well
         destination.setDestinationType(Destination.DestinationType.SRV);
+        logger.debug(
+            "Setting destination type as : {}", Destination.DestinationType.SRV.toString());
         destination.setNetwork(network);
         return trunkService.getElementAsync(proxySIPRequest, destination);
       } else {
@@ -541,8 +545,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     if (parsedProxyParams != null) {
-      logger.info("Dhruva " + parsedProxyParams.toString());
-      logger.info("Dhruva " + parsedProxyParams.get(ReConstants.N));
+      // logger.info("Dhruva " + parsedProxyParams.toString());
+      logger.debug(
+          "Dhruva- network name found in proxy param: " + parsedProxyParams.get(ReConstants.N));
       if (parsedProxyParams.get(ReConstants.N) != null)
         return DhruvaNetwork.getNetwork(parsedProxyParams.get(ReConstants.N));
     }
@@ -771,6 +776,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
 
     if (proxyTransaction == null) {
+
       throw new DhruvaRuntimeException(
           ErrorCode.TRANSACTION_ERROR,
           "unable to create ProxyTransaction for new incoming" + request.getMethod() + " request");
@@ -930,7 +936,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         try {
           proxyTransaction = new ProxyStatelessTransaction(this, controllerConfig, request);
         } catch (InternalProxyErrorException dse) {
-          logger.error("exception while creating proxy transaction" + dse.getMessage());
+          logger.error("exception while creating proxy stateless transaction" + dse.getMessage());
           // Do not invoke sendFailureResponse, there is no proxy transaction is created
           return null;
         }
@@ -1310,6 +1316,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   errorCode = ((DhruvaRuntimeException) err).getErrCode();
                 if (err instanceof SipException && err.getCause() instanceof IOException)
                   errorCode = ErrorCode.DESTINATION_UNREACHABLE;
+                logger.error(
+                    "Exception occurred while sending request to next endpoint with message : ",
+                    err.getMessage());
                 this.onProxyFailure(
                     proxy, ourRequest.getCookie(), errorCode, err.getMessage(), err);
               } catch (Exception e) {

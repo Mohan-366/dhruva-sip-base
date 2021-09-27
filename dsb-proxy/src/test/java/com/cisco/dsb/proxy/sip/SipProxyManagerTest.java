@@ -6,9 +6,7 @@ import static org.testng.Assert.assertNull;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.service.TrunkService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
@@ -24,6 +22,8 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
+import com.cisco.dsb.trunk.dto.Destination;
+import com.cisco.dsb.trunk.service.TrunkService;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.header.Unsupported;
 import gov.nist.javax.sip.header.Via;

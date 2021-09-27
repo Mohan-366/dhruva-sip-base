@@ -1,7 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -20,6 +19,7 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
@@ -98,11 +98,12 @@ public class SipProxyManager {
     return (request, serverTransaction, sipProvider) -> {
       if (request.getMethod().equals(Request.INVITE)) {
         try {
-          logger.debug("Sending 100 response");
+          logger.debug("Sending provisional 100 response for {}", request.getMethod());
           ProxySendMessage.sendResponse(
               Response.TRYING, sipProvider, serverTransaction, (SIPRequest) request);
+          logger.info("Successfully sent 100 provisional response for {}", request.getMethod());
         } catch (Exception e) {
-          logger.error("Error sending 100 response", e);
+          logger.error("Error sending provisional 100 response", e);
         }
       }
       return request;
@@ -113,7 +114,7 @@ public class SipProxyManager {
   public TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest>
       createProxySipRequest() {
     return (request, serverTransaction, sipProvider) -> {
-      logger.debug("Creating Proxy SIP Request from Jain SIP Request");
+      logger.debug("Creating Proxy SIP Request from Jain SIP  {}", request.getMethod());
       return MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
           request, sipProvider, serverTransaction, new ExecutionContext());
     };
@@ -162,7 +163,9 @@ public class SipProxyManager {
   public Function<ProxySIPRequest, ProxyController> createNewProxyController(
       ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
-      logger.debug("Creating a new ProxyController");
+      logger.debug(
+          "Creating a new ProxyController for request {}",
+          proxySIPRequest.getRequest().getMethod());
       ProxyController controller =
           proxyControllerFactory
               .proxyController()
@@ -171,7 +174,8 @@ public class SipProxyManager {
                   proxySIPRequest.getProvider(),
                   proxyAppConfig);
       proxySIPRequest.setProxyInterface(controller);
-      logger.debug("New ProxyController created");
+      logger.info(
+          "New ProxyController created for request {}", proxySIPRequest.getRequest().getMethod());
       return controller;
     };
   }
@@ -408,10 +412,10 @@ public class SipProxyManager {
 
       if (clientTransaction != null
           && clientTransaction.getApplicationData() instanceof ProxyTransaction) {
-        logger.info("Client transaction: {}", clientTransaction);
         ProxySIPResponse proxySIPResponse = createProxySipResponse().apply(responseEvent);
         proxySIPResponse.setProxyTransaction(
             (ProxyTransaction) clientTransaction.getApplicationData());
+        logger.info("Proxy transaction set for : {}", responseEvent.getResponse().getStatusCode());
         return proxySIPResponse;
       } else {
         logger.info(

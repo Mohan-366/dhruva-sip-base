@@ -2,10 +2,10 @@ package com.cisco.dsb.proxy.controller;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.common.dto.Destination;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
+import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.ArrayList;
