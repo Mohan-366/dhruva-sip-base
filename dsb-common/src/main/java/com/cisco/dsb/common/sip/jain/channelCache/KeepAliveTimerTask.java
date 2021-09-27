@@ -16,6 +16,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
+import lombok.Getter;
 
 /**
  * This class implements RFC 5626 based keepalives against all cached connections.
@@ -44,14 +45,15 @@ import lombok.CustomLog;
  * SipStack sipStack = SipFactory.getInstance().createSipStack(properties);
  * }</pre>
  */
+
 @CustomLog
 public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
   private final DhruvaSIPConfigProperties sipProperties;
-  //  private final ShutdownService shutdownService;
+
   private final MessageChannelCache channelCache;
   private final boolean logKeepAlives;
-  private final StripedExecutorService keepAliveExecutor;
+  @Getter private final StripedExecutorService keepAliveExecutor;
   private final String stackName;
   private DhruvaExecutorService executorService;
   private ScheduledThreadPoolExecutor scheduledExecutor;
@@ -132,20 +134,16 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
   @Override
   public void run() {
-    //    if (shutdownService.getStatus() != ShutdownService.Status.RUNNING) {
-    //      logger.info("service shutting down skipping keep alives");
-    //      return;
-    //    }
 
     if (logKeepAlives) {
-      logger.info("KALPA: starting heartbeat timer");
+      logger.info("Starting heartbeat timer");
     }
 
     sendKeepAlives("outgoing", channelCache.getOutgoingMessageChannels());
     sendKeepAlives("incoming", channelCache.getIncomingMessageChannels());
 
     if (logKeepAlives) {
-      logger.info("KALPA: finished heartbeat timer");
+      logger.info("Finished heartbeat timer");
     }
   }
 
@@ -175,7 +173,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
         if (log) {
           logger.info(
-              "KALPA: {} sending {} heartbeat to {}:{} for channel {}",
+              "{} sending {} heartbeat to {}:{} for channel {}",
               stackName,
               collectionName,
               address,
