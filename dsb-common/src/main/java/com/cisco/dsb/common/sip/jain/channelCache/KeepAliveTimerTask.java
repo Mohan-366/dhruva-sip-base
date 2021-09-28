@@ -32,17 +32,8 @@ import lombok.CustomLog;
  * stack property "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT". See
  * ListeningPointImpl.sendHeartbeat() for more implementation details.
  *
- * <p>Enable this timer on a stack by registering L2SipJainSipMessageProcessorFactory:
+ * <p>Enable this timer on a stack by registering DSBJainSipMessageProcessorFactory:
  *
- * <pre>{@code
- * Properties properties = new Properties();
- * SipFactory.getInstance().createSipStack(properties);
- * properties.setProperty(
- *     "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
- *     "com.cisco.wx2.sip.sipstack.sip.jain.channelcache.L2SipJainSipMessageProcessorFactory"
- * );
- * SipStack sipStack = SipFactory.getInstance().createSipStack(properties);
- * }</pre>
  */
 @CustomLog
 public class KeepAliveTimerTask implements Runnable, StartStoppable {
