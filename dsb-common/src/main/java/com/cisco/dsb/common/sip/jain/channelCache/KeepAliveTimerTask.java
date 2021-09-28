@@ -50,11 +50,13 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
   private final DhruvaSIPConfigProperties sipProperties;
 
   private final MessageChannelCache channelCache;
-  private final boolean logKeepAlives;
-  private final StripedExecutorService keepAliveExecutor;
+  private boolean logKeepAlives;
+  private StripedExecutorService keepAliveExecutor;
   private DhruvaExecutorService executorService;
   private ScheduledThreadPoolExecutor scheduledExecutor;
+
   private final String stackName;
+  private Long keepAlivePeriod;
 
   public KeepAliveTimerTask(
       MessageChannelCache channelCache,
@@ -68,32 +70,38 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
     this.channelCache = channelCache;
     this.sipProperties = sipProperties;
 
-    logKeepAlives = sipProperties.isLogKeepAlivesEnabled();
+    keepAlivePeriod = sipProperties.getKeepAlivePeriod();
 
     this.stackName = channelCache.getStackName();
-
-    this.executorService = executorService;
-    executorService.startScheduledExecutorService(ExecutorType.KEEP_ALIVE_SERVICE, 4);
-    this.scheduledExecutor =
-        executorService.getScheduledExecutorThreadPool(ExecutorType.KEEP_ALIVE_SERVICE);
-    executorService.startStripedExecutorService(ExecutorType.KEEP_ALIVE_SERVICE);
-    this.keepAliveExecutor =
-        (StripedExecutorService)
-            executorService.getExecutorThreadPool(ExecutorType.KEEP_ALIVE_SERVICE);
+    if (keepAlivePeriod > 0) { // Use a value of -1 to disable keepAlives
+      keepAlivePeriod *= 1000; // converting into milliseconds
+      logKeepAlives = sipProperties.isLogKeepAlivesEnabled();
+      this.executorService = executorService;
+      executorService.startScheduledExecutorService(ExecutorType.KEEP_ALIVE_SERVICE, 4);
+      this.scheduledExecutor =
+          executorService.getScheduledExecutorThreadPool(ExecutorType.KEEP_ALIVE_SERVICE);
+      executorService.startStripedExecutorService(ExecutorType.KEEP_ALIVE_SERVICE);
+      this.keepAliveExecutor =
+          (StripedExecutorService)
+              executorService.getExecutorThreadPool(ExecutorType.KEEP_ALIVE_SERVICE);
+    }
   }
 
   @SuppressFBWarnings(value = "PREDICTABLE_RANDOM", justification = "baseline suppression")
   public void start() {
-    long period = sipProperties.getKeepAlivePeriod();
-    if (period != -1) {
+    if (keepAlivePeriod > 0) {
 
-      long delay = ThreadLocalRandom.current().nextLong(period / 2, period);
-      this.scheduledExecutor.scheduleWithFixedDelay(this, delay, period, TimeUnit.MILLISECONDS);
+      long delay = ThreadLocalRandom.current().nextLong(keepAlivePeriod / 2, keepAlivePeriod);
+      this.scheduledExecutor.scheduleWithFixedDelay(
+          this, delay, keepAlivePeriod, TimeUnit.MILLISECONDS);
     }
   }
 
   public void stop() {
-    scheduledExecutor.shutdownNow();
+    if (keepAlivePeriod > 0) {
+      scheduledExecutor.shutdownNow();
+      keepAliveExecutor.shutdownNow();
+    }
   }
 
   private void sendKeepAlives(
@@ -110,21 +118,15 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
             continue;
           }
           if (((ConnectionOrientedMessageChannel) channel).getPeerProtocol() == null) {
-            logger.info(
+            logger.error(
                 "Not Sending keepAlive on to {} {} as transport is null!",
                 channel.getPeerAddress(),
                 channel.getPeerPort());
             return;
           }
-          logger.info(
-              "Sending keepAlive on {} to {} {}",
-              ((ConnectionOrientedMessageChannel) channel).getPeerProtocol(),
-              channel.getPeerAddress(),
-              channel.getPeerPort());
-
           keepAliveExecutor.submit(new KeepAliveTask(connectedChannel, collectionName));
         } catch (Exception e) {
-          logger.info("failed to submit double CRLF heartbeat", e);
+          logger.error("failed to submit double CRLF heartbeat", e);
         }
       }
     }
@@ -165,11 +167,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
         String address = channel.getPeerAddress();
         int port = channel.getPeerPort();
 
-        boolean log = logKeepAlives;
-        //                && (logKeepAliveAddresses.isEmpty() ||
-        // logKeepAliveAddresses.contains(address));
-
-        if (log) {
+        if (logKeepAlives) {
           logger.info(
               "{} sending {} heartbeat to {}:{} for channel {}",
               stackName,
@@ -188,7 +186,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
           channel.sendSingleCLRF();
         }
 
-        if (log) {
+        if (logKeepAlives) {
           logger.info(
               "{} sent {} heartbeat to {}:{} for channel {}",
               stackName,
@@ -198,7 +196,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
               channel.toString());
         }
       } catch (Exception e) {
-        logger.info("failed to send double CRLF heartbeat", e);
+        logger.error("failed to send double CRLF heartbeat", e);
       }
     }
   }

@@ -37,6 +37,7 @@ public class KeepAliveTimerTaskTest {
   @BeforeClass
   public void init() {
     MockitoAnnotations.initMocks(this);
+    when(sipProperties.getKeepAlivePeriod()).thenReturn(Long.valueOf(1));
     metricRegistry = new MetricRegistry();
 
     when(sipProperties.isLogKeepAlivesEnabled()).thenReturn(true);

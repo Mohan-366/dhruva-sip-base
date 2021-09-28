@@ -118,7 +118,7 @@ public class SipServer implements Server {
         dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout());
     stackProps.setProperty(
         "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
-        dhruvaSIPConfigProperties.getMinKeepaliveTimeSeconds());
+        dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds());
 
     return stackProps;
   }

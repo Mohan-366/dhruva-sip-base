@@ -106,7 +106,7 @@ public class ProxyServiceTest {
     when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
     when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
     when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");
-    when(dhruvaSIPConfigProperties.getMinKeepaliveTimeSeconds()).thenReturn("20");
+    when(dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
     udpListenPoint1 =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")

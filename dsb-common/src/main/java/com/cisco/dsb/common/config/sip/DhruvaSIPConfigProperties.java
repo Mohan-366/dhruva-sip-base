@@ -7,7 +7,6 @@ import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonUtilFactory;
 import java.security.KeyStore;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,14 +107,16 @@ public class DhruvaSIPConfigProperties {
   private static final Boolean DEFAULT_NIO_ENABLED = false;
   public static int DEFAULT_PORT = 5060;
 
+  // All Keep Alive time related values in seconds
   private static final String KEEP_ALIVE_PERIOD = "dsb.keepAlivePeriod";
-  private static final Long DEFAULT_KEEP_ALIVE_PERIOD =
-      TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS);
+  private static final Long DEFAULT_KEEP_ALIVE_PERIOD = Long.valueOf(20);
   private static final String RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT =
       "dsb.reliableKeepAlivePeriod";
   private static final String DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT = "25";
-  private static String MIN_KEEPALIVE_TIME_SECONDS = "dsb.minKeepAliveTimeSeconds";
-  private static String DEFAULT_MIN_KEEPALIVE_TIME_SECONDS = "20";
+  private static final String MIN_KEEP_ALIVE_TIME_SECONDS = "dsb.minKeepAliveTimeSeconds";
+  private static final String DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS = "20";
+  private static final String LOG_KEEP_ALIVES_ENABLED = "dsb.logKeepAlivesEnabled";
+  private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
 
   @Autowired private Environment env;
 
@@ -364,7 +365,7 @@ public class DhruvaSIPConfigProperties {
   }
 
   public boolean isLogKeepAlivesEnabled() {
-    return env.getProperty("logKeepAlivesEnabled", Boolean.class, true);
+    return env.getProperty(LOG_KEEP_ALIVES_ENABLED, Boolean.class, DEFAULT_LOG_KEEP_ALIVES_ENABLED);
   }
 
   public long getKeepAlivePeriod() {
@@ -378,8 +379,8 @@ public class DhruvaSIPConfigProperties {
         DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT);
   }
 
-  public String getMinKeepaliveTimeSeconds() {
+  public String getMinKeepAliveTimeSeconds() {
     return env.getProperty(
-        MIN_KEEPALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEPALIVE_TIME_SECONDS);
+        MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
   }
 }
