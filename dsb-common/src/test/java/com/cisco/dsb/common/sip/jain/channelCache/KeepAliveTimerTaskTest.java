@@ -65,14 +65,17 @@ public class KeepAliveTimerTaskTest {
 
     channel1 = mock(ConnectionOrientedMessageChannel.class);
     when(channel1.getPeerAddress()).thenReturn("10.128.98.116");
+    when(channel1.getPeerPort()).thenReturn(5060);
     when(((ConnectionOrientedMessageChannel) channel1).getPeerProtocol()).thenReturn("tcp");
 
     channel2 = mock(ConnectionOrientedMessageChannel.class);
     when(channel2.getPeerAddress()).thenReturn("10.127.94.8");
+    when(channel2.getPeerPort()).thenReturn(5060);
     when(((ConnectionOrientedMessageChannel) channel2).getPeerProtocol()).thenReturn("TCP");
 
     localChannel = mock(ConnectionOrientedMessageChannel.class);
     when(localChannel.getPeerAddress()).thenReturn("127.0.0.1");
+    when(channel2.getPeerPort()).thenReturn(5060);
   }
 
   private void verifyPingSent(ConnectionOrientedMessageChannel channel) throws Exception {
@@ -90,8 +93,6 @@ public class KeepAliveTimerTaskTest {
     when(cache.getStackName()).thenReturn("TestStack");
 
     runTest(cache);
-
-    Thread.sleep(1000);
     verifyPingSent(channel1);
     verifyPingSent(channel2);
   }
@@ -106,13 +107,13 @@ public class KeepAliveTimerTaskTest {
     when(cache.getStackName()).thenReturn("TestStack");
 
     runTest(cache);
-
     verify(localChannel, never()).sendMessage(any());
   }
 
   protected void runTest(MessageChannelCache cache) throws InterruptedException {
     KeepAliveTimerTask task = new KeepAliveTimerTask(cache, sipProperties, dhruvaExecutorService);
     task.run();
+    Thread.sleep(1000);
     task.stop();
   }
 }
