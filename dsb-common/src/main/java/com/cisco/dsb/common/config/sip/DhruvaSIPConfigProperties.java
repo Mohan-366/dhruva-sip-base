@@ -116,14 +116,14 @@ public class DhruvaSIPConfigProperties {
 
   private static BuildInfo buildInfo;
   // All Keep Alive time related values in seconds
-  private static final String KEEP_ALIVE_PERIOD = "dsb.keepAlivePeriod";
+  private static final String KEEP_ALIVE_PERIOD = "keepAlivePeriod";
   private static final Long DEFAULT_KEEP_ALIVE_PERIOD = Long.valueOf(20);
   private static final String RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT =
       "dsb.reliableKeepAlivePeriod";
   private static final String DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT = "25";
   private static final String MIN_KEEP_ALIVE_TIME_SECONDS = "dsb.minKeepAliveTimeSeconds";
   private static final String DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS = "20";
-  private static final String LOG_KEEP_ALIVES_ENABLED = "dsb.logKeepAlivesEnabled";
+  private static final String LOG_KEEP_ALIVES_ENABLED = "logKeepAlivesEnabled";
   private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
 
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
