@@ -93,8 +93,7 @@ public class KeepAliveTimerTaskTest {
     when(cache.getStackName()).thenReturn("TestStack");
 
     runTest(cache);
-
-    Thread.sleep(2000);
+    Thread.sleep(1000);
     verifyPingSent(channel1);
     verifyPingSent(channel2);
   }
@@ -116,6 +115,5 @@ public class KeepAliveTimerTaskTest {
   protected void runTest(MessageChannelCache cache) throws InterruptedException {
     KeepAliveTimerTask task = new KeepAliveTimerTask(cache, sipProperties, dhruvaExecutorService);
     task.run();
-    task.stop();
   }
 }
