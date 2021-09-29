@@ -114,7 +114,7 @@ node() {
                     }
                     def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/server/manifest.yaml", tag: tag, metadata: metaBody]
                     buildCI(this, buildArgs)
-                    sh "curl https://ecr-sync.int.mccprod.prod.infra.webex.com/api/v1/sync"
+                    sh "curl https://ecr-sync.int.mccprod02.prod.infra.webex.com/api/v1/sync"
                 } catch (Exception e) {
                     echo "ERROR: An error occurred while syncing image to ECR"
                     throw e
