@@ -18,8 +18,10 @@ import java.util.concurrent.CompletableFuture;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
+import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
 
+@CustomLog
 public class SipServer implements Server {
 
   private final Transport transport;
@@ -27,21 +29,23 @@ public class SipServer implements Server {
   private DhruvaNetwork networkConfig;
   private MetricService metricService;
   private DhruvaExecutorService executorService;
+  private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   public SipServer(
       Transport transport,
       SipListener handler,
       DhruvaExecutorService executorService,
-      MetricService metricService) {
+      MetricService metricService,
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
     this.transport = transport;
     this.metricService = metricService;
     this.sipListener = handler;
     this.executorService = executorService;
+    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
   }
 
   @Override
   public void startListening(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
       InetAddress address,
       int port,
       SipListener handler,
@@ -52,14 +56,15 @@ public class SipServer implements Server {
     try {
       SipStack sipStack =
           JainStackInitializer.getSimpleStack(
-              dhruvaSIPConfigProperties,
+              this.dhruvaSIPConfigProperties,
               sipFactory,
               sipFactory.getPathName(),
               getStackProperties(),
               address.getHostAddress(),
               port,
               transport.toString(),
-              handler);
+              handler,
+              executorService);
       serverStartFuture.complete(sipStack);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e.getCause());
@@ -67,7 +72,17 @@ public class SipServer implements Server {
   }
 
   private Properties getStackProperties() {
-
+    String keyStorePath = dhruvaSIPConfigProperties.getKeyStoreFilePath();
+    String keyStorePassword = dhruvaSIPConfigProperties.getKeyStorePassword();
+    String keyStoreType = dhruvaSIPConfigProperties.getKeyStoreType();
+    if (keyStorePath != null && keyStorePassword != null && keyStoreType != null) {
+      logger.info("Creating keystore from file: " + keyStorePath);
+      System.setProperty("javax.net.ssl.keyStore", keyStorePath);
+      System.setProperty("javax.net.ssl.trustStore", keyStorePath);
+      System.setProperty("javax.net.ssl.keyStoreType", dhruvaSIPConfigProperties.getKeyStoreType());
+      System.setProperty(
+          "javax.net.ssl.keyStorePassword", dhruvaSIPConfigProperties.getKeyStorePassword());
+    }
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
@@ -94,6 +109,16 @@ public class SipServer implements Server {
     stackProps.setProperty(
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
+    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
+    stackProps.setProperty(
+        "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", dhruvaSIPConfigProperties.getClientAuthType());
+    stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
+    stackProps.setProperty(
+        "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT",
+        dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout());
+    stackProps.setProperty(
+        "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
+        dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds());
 
     return stackProps;
   }

@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.concurrent.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Schedulers;
 
+@Component
 public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
   private static Logger LOG = DhruvaLoggerFactory.getLogger(ExecutorService.class);

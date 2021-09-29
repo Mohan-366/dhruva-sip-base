@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.sip.jain;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.SipStackImpl;
@@ -169,7 +170,8 @@ public class JainStackInitializer {
       @Nonnull String ip,
       @PositiveOrZero int port,
       @Nonnull String transport,
-      SipListener listener)
+      SipListener listener,
+      DhruvaExecutorService executorService)
       throws PeerUnavailableException, TransportNotSupportedException, InvalidArgumentException,
           ObjectInUseException, TooManyListenersException {
     sipFactory.setPathName(path);
@@ -177,7 +179,7 @@ public class JainStackInitializer {
     if (sipStack instanceof SipStackImpl) {
       SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
       ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-          .initFromApplication(dhruvaSIPConfigProperties);
+          .initFromApplication(dhruvaSIPConfigProperties, executorService);
     }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);

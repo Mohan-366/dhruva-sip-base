@@ -1,5 +1,9 @@
 package com.cisco.dsb.proxy.sip;
 
+import gov.nist.javax.sip.DialogTimeoutEvent;
+import gov.nist.javax.sip.IOExceptionEventExt;
+import gov.nist.javax.sip.IOExceptionEventExt.Reason;
+import gov.nist.javax.sip.SipListenerExt;
 import javax.sip.*;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @CustomLog
-public class ProxyPacketProcessor implements SipListener {
+public class ProxyPacketProcessor implements SipListenerExt {
 
   @Autowired ProxyEventListener proxyEventListener;
 
@@ -36,6 +40,13 @@ public class ProxyPacketProcessor implements SipListener {
         ioExceptionEvent.getHost(),
         ioExceptionEvent.getPort(),
         ioExceptionEvent.getTransport());
+    boolean keepAliveTimeoutFired =
+        (ioExceptionEvent instanceof IOExceptionEventExt
+            && ((IOExceptionEventExt) ioExceptionEvent).getReason() == Reason.KeepAliveTimeout);
+    if (keepAliveTimeoutFired) {
+      logger.info(
+          "KeepAlive Time out reason : {} ", ((IOExceptionEventExt) ioExceptionEvent).getReason());
+    }
   }
 
   @Override
@@ -47,5 +58,10 @@ public class ProxyPacketProcessor implements SipListener {
   @Override
   public void processDialogTerminated(DialogTerminatedEvent dialogTerminatedEvent) {
     logger.info("received dialog terminated event from sip stack");
+  }
+
+  @Override
+  public void processDialogTimeout(DialogTimeoutEvent timeoutEvent) {
+    logger.info("received dialog timeout event from sip stack");
   }
 }

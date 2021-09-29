@@ -16,6 +16,15 @@ import org.springframework.stereotype.Component;
 public class DhruvaServerImpl implements DhruvaServer {
 
   DhruvaExecutorService executorService;
+
+  public void setExecutorService(DhruvaExecutorService executorService) {
+    this.executorService = executorService;
+  }
+
+  public void setMetricService(MetricService metricService) {
+    this.metricService = metricService;
+  }
+
   MetricService metricService;
 
   @Autowired
@@ -39,8 +48,10 @@ public class DhruvaServerImpl implements DhruvaServer {
       return serverStartFuture;
     }
     try {
-      Server server = new SipServer(transportType, handler, executorService, metricService);
-      server.startListening(dhruvaSIPConfigProperties, address, port, handler, serverStartFuture);
+      Server server =
+          new SipServer(
+              transportType, handler, executorService, metricService, dhruvaSIPConfigProperties);
+      server.startListening(address, port, handler, serverStartFuture);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e);
     }

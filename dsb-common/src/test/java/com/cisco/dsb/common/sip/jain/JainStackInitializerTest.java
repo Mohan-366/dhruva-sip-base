@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.google.common.collect.Iterators;
 import gov.nist.javax.sip.ListeningPointImpl;
 import gov.nist.javax.sip.SipProviderImpl;
@@ -22,6 +23,7 @@ import org.testng.annotations.Test;
 public class JainStackInitializerTest {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired DhruvaExecutorService executorService;
 
   @Test(
       description =
@@ -122,7 +124,8 @@ public class JainStackInitializerTest {
             "1.1.1.1",
             5060,
             "tcp",
-            mockListener);
+            mockListener,
+            executorService);
     Assert.assertEquals(simpleStack, mockStack);
   }
 }

@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.sip;
 
+import static com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties.SIP_LISTEN_POINTS;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
@@ -25,6 +26,8 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
 
   SIPListenPoint defaultListenPoint;
 
+  SIPListenPoint udpListenPoint;
+
   SIPListenPoint tcpListenPoint;
 
   SIPListenPoint tlsListenPoint;
@@ -41,13 +44,22 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
             .setRecordRoute(true)
             .setAttachExternalIP(false)
             .build();
+    udpListenPoint =
+        new SIPListenPoint.SIPListenPointBuilder()
+            .setName("TCPNetwork")
+            .setHostIPAddress("0.0.0.0")
+            .setTransport(Transport.UDP)
+            .setPort(5061)
+            .setRecordRoute(true)
+            .setAttachExternalIP(false)
+            .build();
 
     tcpListenPoint =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("TCPNetwork")
             .setHostIPAddress("10.78.98.21")
             .setTransport(Transport.TCP)
-            .setPort(5061)
+            .setPort(5062)
             .setRecordRoute(true)
             .setAttachExternalIP(false)
             .build();
@@ -57,7 +69,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
             .setName("TLSNetwork")
             .setHostIPAddress("10.78.98.21")
             .setTransport(Transport.TLS)
-            .setPort(5062)
+            .setPort(5063)
             .setRecordRoute(true)
             .setAttachExternalIP(false)
             .setTlsAuthType(TLSAuthenticationType.MTLS)
@@ -67,7 +79,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
 
   @Test
   public void getListenPointsWithDefaultValues() {
-    when(env.getProperty("sipListenPoints")).thenReturn(null);
+    when(env.getProperty(SIP_LISTEN_POINTS)).thenReturn(null);
 
     List<SIPListenPoint> defaultListenPointList = new ArrayList<SIPListenPoint>();
     List<SIPListenPoint> listenPoints = sipConfigProperties.getListeningPoints();
@@ -80,7 +92,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
   public void getListenPointsFromJSONConfig() {
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
-            "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5061,\"recordRoute\":true,\"attachExternalIP\":false}]");
+            "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false}]");
 
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tcpListenPoint);
@@ -111,7 +123,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
 
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
-            "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5061,\"recordRoute\":true,\"attachExternalIP\":false},{\"name\":\"UDPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"UDP\",\"port\":5060,\"recordRoute\":false,\"attachExternalIP\":false}]");
+            "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false},{\"name\":\"UDPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"UDP\",\"port\":5060,\"recordRoute\":false,\"attachExternalIP\":false}]");
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tcpListenPoint);
     expectedListenPointList.add(udpListenPoint);
@@ -122,7 +134,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
   void getListenPointsFromJSONConfigListForTLS() {
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
-            "[{\"name\":\"TLSNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TLS\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false, \"tlsAuthType\": \"MTLS\", \"enableCertService\": true}]");
+            "[{\"name\":\"TLSNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TLS\",\"port\":5063,\"recordRoute\":true,\"attachExternalIP\":false, \"tlsAuthType\": \"MTLS\", \"enableCertService\": true}]");
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tlsListenPoint);
     Assert.assertEquals(sipConfigProperties.getListeningPoints(), expectedListenPointList);
