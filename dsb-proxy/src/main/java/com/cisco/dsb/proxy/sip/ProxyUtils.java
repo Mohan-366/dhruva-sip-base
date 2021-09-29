@@ -30,7 +30,6 @@ public class ProxyUtils {
 
   private static final String nullString = "null";
 
-
   public static void updateContactHeader(
       final SIPMessage sipMessage,
       final ContactHeader originalContactHeader,
@@ -138,7 +137,8 @@ public class ProxyUtils {
   }
 
   public static boolean recognize(String host, int port, String transport, SipURI myURL) {
-    logger.debug("Entering recognize(" + host + ", " + port + ", " + transport + ", " + myURL + ")");
+    logger.debug(
+        "Entering recognize(" + host + ", " + port + ", " + transport + ", " + myURL + ")");
     boolean b =
         (host.equals(myURL.getHost())
             && port == myURL.getPort()

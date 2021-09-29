@@ -33,7 +33,6 @@ import lombok.CustomLog;
 @CustomLog
 public abstract class LBBase implements RepositoryReceiverInterface {
 
-
   protected ServerInterface lastTried;
 
   protected String key;

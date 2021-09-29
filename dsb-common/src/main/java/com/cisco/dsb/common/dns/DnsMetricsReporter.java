@@ -13,7 +13,6 @@ public class DnsMetricsReporter implements DnsReporter {
 
   @Autowired public MetricService metricsService;
 
-
   @Override
   public DnsTimingContext resolveTimer() {
     return new DnsTimingContext() {

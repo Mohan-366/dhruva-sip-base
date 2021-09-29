@@ -2,7 +2,6 @@ package com.cisco.dsb.common.messaging.models;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.util.log.LogContext;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import java.io.Serializable;
@@ -92,8 +91,4 @@ public interface SipEvent extends Cloneable, Serializable {
   public String getNetwork();
 
   public SIPMessage getSIPMessage();
-
-  LogContext getLogContext();
-
-  void setLoggingContext(LogContext loggingContext);
 }

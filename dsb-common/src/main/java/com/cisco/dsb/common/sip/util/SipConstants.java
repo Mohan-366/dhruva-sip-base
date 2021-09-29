@@ -128,6 +128,8 @@ public class SipConstants {
 
   public static final String HUNT_PILOT_URI = "huntpiloturi";
 
+  public static final String Testname_Header_Name = "Testname";
+
   public static final String SEPARATE_TLS_CONNECTION_PER_CALL = "Separate-TLS-Connection-Per-Call";
 
   public static final NameValue PHONE_USER_PARAMETER = new NameValue("user", "phone");

@@ -34,7 +34,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @CustomLog
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
-
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
   @Autowired private Environment env;

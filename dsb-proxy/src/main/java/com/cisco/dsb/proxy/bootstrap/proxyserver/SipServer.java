@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy.bootstrap.proxyserver;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.jain.DhruvaServerLogger;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
 import com.cisco.dsb.common.sip.jain.JainStackLogger;
@@ -86,7 +87,7 @@ public class SipServer implements Server {
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
-    stackProps.setProperty("gov.nist.javax.sip.SERVER_LOGGER", JainStackLogger.class.getName());
+    stackProps.setProperty("gov.nist.javax.sip.SERVER_LOGGER", DhruvaServerLogger.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.LOG_MESSAGE_CONTENT", "true");
     stackProps.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
     stackProps.setProperty("gov.nist.javax.sip.PASS_INVITE_NON_2XX_ACK_TO_LISTENER", "true");

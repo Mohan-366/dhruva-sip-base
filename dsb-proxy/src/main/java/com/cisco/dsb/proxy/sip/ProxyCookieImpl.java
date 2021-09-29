@@ -6,27 +6,20 @@ package com.cisco.dsb.proxy.sip;
  */
 
 import com.cisco.dsb.trunk.dto.Destination;
-import gov.nist.javax.sip.message.SIPRequest;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class ProxyCookieImpl implements ProxyCookie {
 
   protected Destination destination;
-  protected SIPRequest outboundRequest = null;
+  private Object calltype;
+  private Object requestTo;
 
   public ProxyCookieImpl(Destination destination) {
     this.destination = destination;
   }
 
-  public ProxyCookieImpl(Destination destination, SIPRequest request) {
-    this.destination = destination;
-    outboundRequest = request;
-  }
-
-  public Destination getLocation() {
-    return destination;
-  }
-
-  public SIPRequest getOutboundRequest() {
-    return outboundRequest;
-  }
+  public ProxyCookieImpl() {};
 }

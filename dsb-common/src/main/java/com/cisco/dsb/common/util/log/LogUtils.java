@@ -3,7 +3,6 @@ package com.cisco.dsb.common.util.log;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.SipAddressUtils;
 import com.cisco.dsb.common.sip.util.SipConstants;
-import com.cisco.dsb.common.util.ObfuscationAspect;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -269,10 +268,10 @@ public class LogUtils {
   public static String getFirstLine(SIPMessage message) {
     if (obfuscateLog) {
       try {
-        com.cisco.dsb.common.util.ObfuscationAspect.enableObfuscationForThisThread();
+        ObfuscationAspect.enableObfuscationForThisThread();
         return message.getFirstLine();
       } finally {
-        com.cisco.dsb.common.util.ObfuscationAspect.disableObfuscationForThisThread();
+        ObfuscationAspect.disableObfuscationForThisThread();
       }
     } else {
       return message.getFirstLine();
@@ -331,7 +330,7 @@ public class LogUtils {
   public static String obfuscateObject(GenericObject object, boolean forceObfuscation) {
     if (obfuscateLog || forceObfuscation) {
       try {
-        com.cisco.dsb.common.util.ObfuscationAspect.enableObfuscationForThisThread();
+        ObfuscationAspect.enableObfuscationForThisThread();
 
         String objectEncoded = object.encode();
 

@@ -62,6 +62,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   // Adding Getters and Setters for testing
   @Getter @Setter protected HashMap<String, RecordRouteHeader> recordRoutesMap = new HashMap<>();
 
+  private Transport defaultProtocol = Transport.UDP;
   protected boolean doRecordRoute = true;
 
   @Autowired

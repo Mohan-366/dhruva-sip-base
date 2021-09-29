@@ -77,8 +77,10 @@ public class SipProxyManagerTest {
     ResponseEvent responseEvent = mock(ResponseEvent.class);
     when(responseEvent.getClientTransaction()).thenReturn(null);
     SIPResponse sipResponse = mock(SIPResponse.class);
+
     // Test: Topmost via is null
     when(responseEvent.getResponse()).thenReturn(sipResponse);
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     ProxySIPResponse proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
@@ -89,6 +91,7 @@ public class SipProxyManagerTest {
     Via via1 = mock(Via.class);
     viaList.addFirst(via1);
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
     verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
     verify(via1, Mockito.times(1)).getBranch();
@@ -97,6 +100,7 @@ public class SipProxyManagerTest {
 
     // Test: Top via with branch but does not match any listenIf
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     when(via1.getBranch()).thenReturn("testbranch");
     when(via1.getHost()).thenReturn("testHost");
     when(via1.getPort()).thenReturn(5060);
@@ -110,6 +114,7 @@ public class SipProxyManagerTest {
 
     // Test: Top via with matching listenIf but no Via left after top via removal
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
         .thenReturn(true);
     doAnswer(
@@ -127,6 +132,7 @@ public class SipProxyManagerTest {
 
     // Test: Valid ViaList but RR does not contain outbound network to send out the response
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
         .thenReturn(true);
     doAnswer(
@@ -147,6 +153,7 @@ public class SipProxyManagerTest {
     // Test: Valid ViaList, RR does contain outbound network but network not present in listenIf
     when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
         .thenReturn(true);
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     doAnswer(
             invocationOnMock -> {
               when(sipResponse.getTopmostViaHeader()).thenReturn(via1);
@@ -166,6 +173,7 @@ public class SipProxyManagerTest {
 
     // Test: Valid ViaList, RR does contain outbound network and network a valid listenIf
     when(sipResponse.getApplicationData()).thenReturn("test_out_network");
+    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipProvider, Mockito.times(1)).sendResponse(sipResponse);

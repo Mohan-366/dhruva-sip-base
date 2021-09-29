@@ -14,9 +14,9 @@ node() {
         notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMDc1NDVhZDAtMWYyMi0xMWViLWIxZjgtMzdmOGEzNjNhOGQ5'
 
         stage('Checkout') {
-                    cleanWs notFailBuild: true
-                     checkout scm
-                     sh 'ls -lrth'
+            cleanWs notFailBuild: true
+            checkout scm
+            sh 'ls -lrth'
         }
         stage('initializeEnv') {
             env.GIT_BRANCH = env.BRANCH_NAME ?: 'master'
@@ -54,7 +54,7 @@ node() {
                 sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
-                    step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/target/classes', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
             }
         }
         stage('postBuild') {
@@ -63,9 +63,9 @@ node() {
             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
         }
         stage('archive') {
-            archiveArtifacts artifacts: 'dsb-calling-app/microservice-itjenkins.yml', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dsb-calling-app/docker/*', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dsb-calling-app/target/dsb-calling-app-1.0-SNAPSHOT.war', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
         }
         stage('build and publish wbx3 images') {
             try {
@@ -81,11 +81,11 @@ node() {
                     // pass a file called microservice-itjenkins.yml in this case (which lets us handle
                     // both requirements for now).
 
-                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
+                    buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
                 }
                 if (env.CHANGE_ID != null) {
                     def PULL_REQUEST = env.CHANGE_ID+'-pr'
-                    buildAndPushWbx3DockerImages("dsb-calling-app/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
+                    buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
                 }
 
             } catch (Exception ex) {
@@ -112,7 +112,7 @@ node() {
                         registry_url = 'containers.cisco.com'
                         service_group = 'WebEx'
                     }
-                    def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/manifest.yaml", tag: tag, metadata: metaBody]
+                    def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/server/manifest.yaml", tag: tag, metadata: metaBody]
                     buildCI(this, buildArgs)
                     sh "curl https://ecr-sync.int.mccprod.prod.infra.webex.com/api/v1/sync"
                 } catch (Exception e) {
@@ -123,10 +123,10 @@ node() {
         }
     }
     catch (Exception ex) {
-                currentBuild.result = 'FAILURE'
-                echo "ERROR: Could not trigger the job"
-                throw ex
-            }
+        currentBuild.result = 'FAILURE'
+        echo "ERROR: Could not trigger the job "+ex.toString()
+        throw ex
+    }
     finally {
         def message
         def details = ''

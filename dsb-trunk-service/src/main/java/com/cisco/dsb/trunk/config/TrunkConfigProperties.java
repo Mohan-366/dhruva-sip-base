@@ -51,7 +51,6 @@ public class TrunkConfigProperties {
                         .toObject(configuredServerGroups, StaticServer[].class)));
         validateNetwork(sipServerGroups);
 
-
       } catch (IOException | ProcessingException | JSONUtilityException | DhruvaException pe) {
         logger.error("Schema validation failed for staticServerGroup, exiting", pe);
         SpringApplication.exit(context, () -> 0);
@@ -65,7 +64,6 @@ public class TrunkConfigProperties {
     return Collections.unmodifiableList(sipServerGroups);
   }
 
-
   @Bean(name = "dynamicServers")
   public List<DynamicServer> getDynamicServerGroups() {
 
@@ -76,16 +74,16 @@ public class TrunkConfigProperties {
     if (configuredDynamicServerGroups != null) {
       try {
 
-          JsonSchemaValidator.validateSchema(configuredDynamicServerGroups, DYNAMIC_SCHEMA);
-          sipDynamicServerGroups =
-                  Arrays.asList(
-                          JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
-                                  .toObject(configuredDynamicServerGroups, DynamicServer[].class));
+        JsonSchemaValidator.validateSchema(configuredDynamicServerGroups, DYNAMIC_SCHEMA);
+        sipDynamicServerGroups =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredDynamicServerGroups, DynamicServer[].class));
 
-        } catch (IOException | ProcessingException | JSONUtilityException pe) {
-          logger.error("Schema validation failed for dynamicServers", pe);
-          SpringApplication.exit(context, () -> 0);
-        }
+      } catch (IOException | ProcessingException | JSONUtilityException pe) {
+        logger.error("Schema validation failed for dynamicServers", pe);
+        SpringApplication.exit(context, () -> 0);
+      }
     }
     logger.info(
         "Sip Dynamic ServerGroup from the {} configuration {}",
@@ -104,17 +102,17 @@ public class TrunkConfigProperties {
 
     if (configuredSgPolicies != null) {
 
-        try {
-          JsonSchemaValidator.validateSchema(
-              configuredSgPolicies, TrunkConfigProperties.SGPOLICY_SCHEMA);
-          sgPolicies =
-                  Arrays.asList(
-                          JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
-                                  .toObject(configuredSgPolicies, SGPolicy[].class));
-        } catch (IOException | ProcessingException | JSONUtilityException pe) {
-          logger.error("Schema validation failed for sgPolicies, exiting", pe);
-          SpringApplication.exit(context, () -> 0);
-        }
+      try {
+        JsonSchemaValidator.validateSchema(
+            configuredSgPolicies, TrunkConfigProperties.SGPOLICY_SCHEMA);
+        sgPolicies =
+            Arrays.asList(
+                JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
+                    .toObject(configuredSgPolicies, SGPolicy[].class));
+      } catch (IOException | ProcessingException | JSONUtilityException pe) {
+        logger.error("Schema validation failed for sgPolicies, exiting", pe);
+        SpringApplication.exit(context, () -> 0);
+      }
     }
     logger.info("Sip SG Policies from the {} configuration {}", SIP_SG_POLICY, sgPolicies);
     return sgPolicies;
@@ -131,5 +129,4 @@ public class TrunkConfigProperties {
         throw new DhruvaException("wrong network name, does not exist");
     }
   }
-
 }

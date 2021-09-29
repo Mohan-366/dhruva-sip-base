@@ -125,6 +125,5 @@ public class TrunkConfigStaticServerGroupsTest {
 
     assertThrows(
         DhruvaException.class, () -> trunkConfigProperties.validateNetwork(expectedServerGroup));
-
   }
 }

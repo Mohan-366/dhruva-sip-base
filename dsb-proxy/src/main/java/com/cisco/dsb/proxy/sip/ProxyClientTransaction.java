@@ -77,7 +77,7 @@ public class ProxyClientTransaction {
       @NonNull ProxyCookie cookie,
       @NonNull ProxySIPRequest proxySIPRequest) {
 
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
     this.proxy = proxy;
     this.branch = branch;
     this.request = request;
@@ -185,6 +185,7 @@ public class ProxyClientTransaction {
       state = STATE_FINAL_RETRANSMISSION_RECVD;
       logger.debug("In STATE_FINAL_RETRANSMISSION_RECVD");
     }
+    proxySIPResponse.setCookie(cookie);
     logger.debug("Leaving gotResponse()");
   }
 

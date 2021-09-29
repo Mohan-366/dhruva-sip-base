@@ -510,9 +510,6 @@ public class ProxyControllerTest {
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork1.getName(), "9.9.9.9", 5061, Transport.TLS);
@@ -527,13 +524,13 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork1.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == finalOutPort;
+              assert request.getDestination().getUri().equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == finalOutPort;
 
               // Outgoing record route header validation
-              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteList recordRouteList = request.getRequest().getRecordRouteHeaders();
               RecordRouteHeader recordRouteHeader = (RecordRouteHeader) recordRouteList.getFirst();
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
@@ -555,7 +552,7 @@ public class ProxyControllerTest {
 
     Assert.assertNotNull(sendRequest);
     Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
-    Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
+    Assert.assertEquals(sendRequest, proxySIPRequest.getRequest());
 
     verify(clientTransaction).sendRequest();
 
@@ -609,9 +606,6 @@ public class ProxyControllerTest {
     // This is set only  for mid dialog request by passing application
 
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
@@ -660,9 +654,6 @@ public class ProxyControllerTest {
             .build();
 
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
@@ -737,16 +728,14 @@ public class ProxyControllerTest {
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
-
-    Destination destination = Destination.builder().uri(proxySIPRequest.getLrFixUri()).build();
+    proxySIPRequest.getRequest().setRequestURI(proxySIPRequest.getLrFixUri());
+    Destination destination =
+        Destination.builder().uri(proxySIPRequest.getRequest().getRequestURI()).build();
     // Do not set outgoing network, proxy should derive
     // location.setNetwork(outgoingNetwork);
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     StepVerifier.create(
             proxyController.proxyForwardRequest(
@@ -757,8 +746,8 @@ public class ProxyControllerTest {
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
 
-              assert request.getClonedRequest() != null;
-              SipURI reqSipUri = (SipURI) request.getClonedRequest().getRequestURI();
+              assert request.getRequest() != null;
+              SipURI reqSipUri = (SipURI) request.getRequest().getRequestURI();
               SipURI locSipUri = (SipURI) request.getDestination().getUri();
 
               assert locSipUri.getHost().equalsIgnoreCase(reqSipUri.getHost());
@@ -766,16 +755,16 @@ public class ProxyControllerTest {
               assert locSipUri.getUser().equals(reqSipUri.getUser());
               assert locSipUri.getTransportParam().equalsIgnoreCase(reqSipUri.getTransportParam());
 
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
 
               RouteHeader firstRouteHeader =
-                  (RouteHeader) request.getClonedRequest().getRouteHeaders().getFirst();
+                  (RouteHeader) request.getRequest().getRouteHeaders().getFirst();
               SipURI firstRouteHeaderUri = (SipURI) firstRouteHeader.getAddress().getURI();
               assert !firstRouteHeaderUri.getHost().equals("1.1.1.1");
               assert firstRouteHeaderUri.getPort() != 5060;
 
-              ListIterator routes = request.getClonedRequest().getHeaders(RouteHeader.NAME);
+              ListIterator routes = request.getRequest().getHeaders(RouteHeader.NAME);
               assert routes != null;
               if (routes.hasNext()) {
                 RouteHeader lastRouteHeader;
@@ -832,9 +821,6 @@ public class ProxyControllerTest {
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, Transport.TLS);
@@ -848,13 +834,13 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getDestination().getUri().equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
 
               // record route should not be added to outgoing BYE request
-              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteList recordRouteList = request.getRequest().getRecordRouteHeaders();
               assert recordRouteList == null;
             })
         .verifyComplete();
@@ -866,7 +852,7 @@ public class ProxyControllerTest {
 
     Assert.assertNotNull(sendRequest);
     Assert.assertEquals(sendRequest.getMethod(), Request.BYE);
-    Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
+    Assert.assertEquals(sendRequest, proxySIPRequest.getRequest());
 
     verify(clientTransaction).sendRequest();
 
@@ -1339,9 +1325,6 @@ public class ProxyControllerTest {
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "5.5.5.5", 5061, Transport.TLS);
@@ -1356,13 +1339,13 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getDestination().getUri().equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
 
               // Outgoing record route header validation
-              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteList recordRouteList = request.getRequest().getRecordRouteHeaders();
               RecordRouteHeader recordRouteHeader = (RecordRouteHeader) recordRouteList.getFirst();
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
@@ -1395,7 +1378,7 @@ public class ProxyControllerTest {
 
     Assert.assertNotNull(sendRequest);
     Assert.assertEquals(sendRequest.getMethod(), Request.INVITE);
-    Assert.assertEquals(sendRequest, proxySIPRequest.getClonedRequest());
+    Assert.assertEquals(sendRequest, proxySIPRequest.getRequest());
 
     verify(clientTransaction).sendRequest();
 
@@ -1451,9 +1434,6 @@ public class ProxyControllerTest {
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service, return exception
 
@@ -1506,9 +1486,6 @@ public class ProxyControllerTest {
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
@@ -1523,13 +1500,13 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getDestination().getUri().equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
 
               // Outgoing record route header validation
-              RecordRouteList recordRouteList = request.getClonedRequest().getRecordRouteHeaders();
+              RecordRouteList recordRouteList = request.getRequest().getRecordRouteHeaders();
               RecordRouteHeader recordRouteHeader = (RecordRouteHeader) recordRouteList.getFirst();
               URI uri = recordRouteHeader.getAddress().getURI();
               assert uri.isSipURI();
@@ -1611,9 +1588,6 @@ public class ProxyControllerTest {
 
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
@@ -1628,10 +1602,10 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert request.getDestination().getUri().equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
             })
         .verifyComplete();
 
@@ -1708,9 +1682,6 @@ public class ProxyControllerTest {
 
     // using stepVerifier
     proxySIPRequest.setDestination(destination);
-    SIPRequest preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-    proxyController.setPreprocessedRequest(preprocessedRequest);
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
 
     // Mock Trunk Service
     EndPoint endPoint = new EndPoint(outgoingNetwork.getName(), "10.1.1.1", 5061, Transport.TLS);
@@ -1725,10 +1696,11 @@ public class ProxyControllerTest {
               assert request.getProxyClientTransaction() != null;
               assert request.getProxyStatelessTransaction() != null;
               assert request.getOutgoingNetwork().equals(outgoingNetwork.getName());
-              assert request.getDestination().getUri() == request.getRequest().getRequestURI();
-              assert request.getClonedRequest() != null;
-              assert request.getClonedRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
-              assert request.getClonedRequest().getTopmostViaHeader().getPort() == 5080;
+              assert (request.getDestination().getUri())
+                  .equals(request.getRequest().getRequestURI());
+              assert request.getRequest() != null;
+              assert request.getRequest().getTopmostViaHeader().getHost().equals("2.2.2.2");
+              assert request.getRequest().getTopmostViaHeader().getPort() == 5080;
             })
         .verifyComplete();
 

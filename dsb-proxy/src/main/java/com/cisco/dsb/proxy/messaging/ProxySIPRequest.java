@@ -4,6 +4,7 @@ import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.proxy.sip.*;
 import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
 import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
@@ -11,9 +12,9 @@ import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.message.SIPMessage;
-import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.HashMap;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -22,20 +23,20 @@ import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
+import javax.sip.message.Response;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
 @CustomLog
-public class ProxySIPRequest extends AbstractSipRequest {
+public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   @Getter @Setter private ProxyStatelessTransaction proxyStatelessTransaction;
   @Getter @Setter private ProxyInterface proxyInterface;
   @Getter @Setter private String network;
-  @Getter @Setter private SIPRequest clonedRequest;
   @Getter @Setter private Destination destination;
   @Getter @Setter private String outgoingNetwork = null;
-  @Getter @Setter private ProxyCookie cookie;
+  @Getter private final ProxyCookie cookie;
   @Getter @Setter private ProxyParamsInterface params;
   @Getter @Setter private boolean statefulClientTransaction;
   @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
@@ -43,6 +44,7 @@ public class ProxySIPRequest extends AbstractSipRequest {
   @Getter @Setter private URI m_routeTo = null;
   @Getter @Setter private boolean m_escaped = false;
   @Getter @Setter private EndPoint downstreamElement;
+  @Getter HashMap<Object, Object> cache = new HashMap<>();
 
   public ProxySIPRequest(
       ExecutionContext executionContext,
@@ -50,20 +52,58 @@ public class ProxySIPRequest extends AbstractSipRequest {
       Request request,
       ServerTransaction transaction) {
     super(executionContext, provider, transaction, request);
+    this.cookie = new ProxyCookieImpl();
   }
 
-  public void proxy(@NonNull ProxySIPRequest proxySIPRequest, @NonNull Destination destination) {
+  public ProxySIPRequest(ProxySIPRequest proxySIPRequest) {
+    super(proxySIPRequest);
+    this.proxyStatelessTransaction = proxySIPRequest.proxyStatelessTransaction;
+    this.proxyInterface = proxySIPRequest.proxyInterface;
+    this.network = proxySIPRequest.network;
+    this.destination = proxySIPRequest.destination;
+    this.outgoingNetwork = proxySIPRequest.outgoingNetwork;
+    this.cookie = proxySIPRequest.cookie;
+    this.params = proxySIPRequest.params;
+    this.statefulClientTransaction = proxySIPRequest.statefulClientTransaction;
+    this.proxyClientTransaction = proxySIPRequest.proxyClientTransaction;
+    this.lrFixUri = proxySIPRequest.lrFixUri;
+    this.m_routeTo =
+        proxySIPRequest.m_routeTo == null ? null : (URI) proxySIPRequest.m_routeTo.clone();
+    this.m_escaped = proxySIPRequest.m_escaped;
+    this.cache = proxySIPRequest.cache;
+  }
+
+  public void proxy(@NonNull Destination destination) {
     if (this.proxyInterface == null) {
-      throw new RuntimeException("proxy does not right interface set to forward the request");
+      throw new RuntimeException("proxy interface not set, unable to forward the request");
     }
-    this.proxyInterface.proxyRequest(proxySIPRequest, destination);
+    this.proxyInterface.proxyRequest(this, destination);
+  }
+
+  /**
+   * Call this method only when Destination is set on the request. If not, the request will be
+   * rejected with SERVER_INTERNAL_ERROR(500)
+   */
+  public void proxy() {
+    if (destination != null) proxy(destination);
+    else {
+      logger.error("Destination not set, rejecting the message");
+      reject(Response.SERVER_INTERNAL_ERROR);
+    }
+  }
+
+  public void reject(int responseCode) {
+    if (this.proxyInterface == null) {
+      throw new RuntimeException("proxy interface not set, unable to forward the request");
+    }
+    this.proxyInterface.respond(responseCode, this);
   }
 
   @Override
-  public void sendSuccessResponse() throws IOException, ServletException {}
+  public void sendSuccessResponse() {}
 
   @Override
-  public void sendFailureResponse() throws IOException, ServletException {}
+  public void sendFailureResponse() {}
 
   @Override
   public void sendRateLimitedFailureResponse() {}
@@ -122,31 +162,40 @@ public class ProxySIPRequest extends AbstractSipRequest {
   public URI lrEscape() throws ParseException {
     // do the escape checking ONE time
     if (m_routeTo != null) return m_routeTo;
-    SIPRequest request;
 
-    if (this.clonedRequest != null) {
+    /*    if (this.clonedRequest != null) {
       request = this.getClonedRequest();
     } else {
       request = this.getRequest();
-    }
+    }*/
 
-    m_routeTo = request.getRequestURI();
+    m_routeTo = req.getRequestURI();
 
-    RouteHeader topRoute = (RouteHeader) request.getHeader(RouteHeader.NAME);
+    RouteHeader topRoute = (RouteHeader) req.getHeader(RouteHeader.NAME);
     if (topRoute != null) {
       m_routeTo = topRoute.getAddress().getURI();
       if (!((SipURI) m_routeTo).hasLrParam()) {
-        SipURI reqURI = (SipURI) request.getRequestURI();
+        SipURI reqURI = (SipURI) req.getRequestURI();
         RouteHeader routeHeader =
             JainSipHelper.createRouteHeader(
                 reqURI.getUser(), reqURI.getHost(), reqURI.getPort(), reqURI.getTransportParam());
         // Add header to the bottom
-        request.addHeader(routeHeader);
-        request.setRequestURI(m_routeTo);
-        request.removeFirst(RouteHeader.NAME);
+        req.addHeader(routeHeader);
+        req.setRequestURI(m_routeTo);
+        req.removeFirst(RouteHeader.NAME);
         m_escaped = true;
       }
     }
     return m_routeTo;
+  }
+
+  /**
+   * Returns new proxySIPRequest whose meta data are same as original proxySipRequest but Request is
+   * clone,i.e new copy
+   *
+   * @return
+   */
+  public Object clone() {
+    return new ProxySIPRequest(this);
   }
 }

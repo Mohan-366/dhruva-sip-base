@@ -69,10 +69,10 @@ import reactor.core.publisher.Mono;
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
 
-  @Getter private ServerTransaction serverTransaction;
-  private SipProvider sipProvider;
-  @Getter private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-  @Getter private ProxyFactory proxyFactory;
+  @Getter private final ServerTransaction serverTransaction;
+  private final SipProvider sipProvider;
+  @Getter private final DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Getter private final ProxyFactory proxyFactory;
   @Getter @Setter private ControllerConfig controllerConfig;
 
   @Getter @Setter private DhruvaExecutorService dhruvaExecutorService;
@@ -80,14 +80,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Getter @Setter private TrunkService trunkService;
 
   @Getter @Setter private ProxyStatelessTransaction proxyTransaction;
-  /* Stores the request for this controller */
+  /* Stores the request for this controller. Do not work on this directly, always work on the clone. */
   @Getter @Setter protected ProxySIPRequest ourRequest;
 
   @Getter @Setter private String incomingNetwork;
-  /* Stores the original request as a clone */
-  @Getter @Setter protected SIPRequest originalRequest;
-  /* Stores the request with pre-normalization and xcl processing applied */
-  @Getter @Setter protected SIPRequest preprocessedRequest;
+  @Getter @Setter private String outgoingNetwork;
 
   @Getter @Setter protected int timeToTry = 32;
 
@@ -160,23 +157,21 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public void respond(int responseCode, @NonNull ProxySIPRequest proxySIPRequest) {
 
-    ProxySendMessage.sendResponseAsync(
-            responseCode,
-            proxySIPRequest.getProvider(),
-            proxySIPRequest.getServerTransaction(),
-            proxySIPRequest.getRequest())
-        .subscribe(
-            req -> {},
-            err -> {
-              logger.error("error in sending the response {}", err.getMessage());
-              // Handle exception
-            });
+    Response response = null;
+    try {
+      response =
+          JainSipHelper.getMessageFactory()
+              .createResponse(responseCode, proxySIPRequest.getOriginalRequest());
+    } catch (ParseException e) {
+      logger.error("Unable to create SipResponse for responseCode {}", responseCode);
+    }
+    ((ProxyTransaction) proxyTransaction).respond((SIPResponse) response);
   }
 
   public void proxyRequest(
       @NonNull ProxySIPRequest proxySIPRequest, @NonNull Destination destination) {
     logger.debug("Entering proxyTo()");
-
+    if (destination.getNetwork() != null) outgoingNetwork = destination.getNetwork().getName();
     proxySIPRequest.setDestination(destination);
     proxyTo(destination, proxySIPRequest, timeToTry);
 
@@ -195,10 +190,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public void proxyTo(Destination destination, ProxySIPRequest proxySIPRequest, long timeToTry) {
 
     logger.info("Entering proxyTo() with Destination: {} & Timeout: {}", destination, timeToTry);
-    preprocessedRequest = (SIPRequest) proxySIPRequest.getRequest().clone();
-
-    proxySIPRequest.setClonedRequest((SIPRequest) preprocessedRequest.clone());
-
+    ourRequest = (ProxySIPRequest) proxySIPRequest.clone();
     proxyForwardRequest(destination, proxySIPRequest, timeToTry)
         .subscribe(
             sentRequest -> {
@@ -240,8 +232,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
     return Mono.just(proxySIPRequest)
         .name("proxyForwardRequest")
-        .mapNotNull(proxyPostProcessor)
-        .mapNotNull(fetchOutboundDestination())
+        .map(proxyPostProcessor.andThen(fetchOutboundDestination()))
         .flatMap((epMono) -> proxyToEndpoint(epMono, proxySIPRequest));
   }
 
@@ -262,10 +253,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private Function<ProxySIPRequest, ProxySIPRequest> proxyPostProcessor =
       proxySIPRequest -> {
-        SIPRequest request = proxySIPRequest.getClonedRequest();
+        SIPRequest request = proxySIPRequest.getRequest();
         Destination destination = proxySIPRequest.getDestination();
-        ProxyCookieImpl cookie = new ProxyCookieImpl(destination, request);
-        proxySIPRequest.setCookie(cookie);
+        ProxyCookieImpl cookie = new ProxyCookieImpl(destination);
+        cookie.setDestination(destination);
         return proxySIPRequest;
       };
 
@@ -278,7 +269,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     if (network != null) {
       if (destination.getDestinationType() != Destination.DestinationType.DEFAULT_SIP)
         try {
-          addRouteFromEndpoint(proxySIPRequest.getClonedRequest(), ep);
+          addRouteFromEndpoint(proxySIPRequest.getRequest(), ep);
         } catch (ParseException pe) {
           throw new DhruvaRuntimeException(
               ErrorCode.PROXY_REQ_PROC_ERR, "Unable to add Endpoint as route to request", pe);
@@ -290,7 +281,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         logger.warn("Could not find the network to set to the request");
         // until then we need to fail the call.
         throw new DhruvaRuntimeException(
-            ErrorCode.PROXY_REQ_PROC_ERR, "Could not find the network to set to the request");
+            ErrorCode.NO_OUTGOING_NETWORK, "Could not find the network to set to the request");
       }
     }
     return Optional.of(proxySIPRequest);
@@ -376,12 +367,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         logger.debug(
             "Setting destination type as : {}", Destination.DestinationType.SRV.toString());
         destination.setNetwork(network);
+        outgoingNetwork = network.getName();
         return trunkService.getElementAsync(proxySIPRequest, destination);
       } else {
         // get the port from url(route or request uri), else set to default 5060
+
         EndPoint ep =
             new EndPoint(
-                network == null ? null : network.getName(),
+                network == null ? null : (outgoingNetwork = network.getName()),
                 host,
                 sipUrl.getPort() > 0 ? sipUrl.getPort() : 5060,
                 routeTransport);
@@ -393,7 +386,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private URI getURIFromDestinationAndRequest(
       Destination destination, ProxySIPRequest proxySIPRequest) {
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     URI uri;
 
@@ -428,7 +421,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest)
       throws DhruvaException, ParseException, UnknownHostException {
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     Destination destination = proxySIPRequest.getDestination();
 
@@ -438,13 +431,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     outgoingNetwork =
         optionalDhruvaNetwork.orElseThrow(
             () -> new DhruvaException("unable to find outgoing network"));
-
-    SipURI uri = destination.getUri().isSipURI() ? (SipURI) destination.getUri().clone() : null;
-    if (uri != null) {
-      request.setRequestURI(uri);
-    } else {
-      request.setRequestURI(destination.getUri());
-    }
 
     ProxyParams pp;
     pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
@@ -762,12 +748,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // Fetch the network from provider
     SipProvider sipProvider = proxySIPRequest.getProvider();
     Optional<String> networkFromProvider = DhruvaNetwork.getNetworkFromProvider(sipProvider);
-    String network = networkFromProvider.orElseGet(() -> DhruvaNetwork.getDefault().getName());
+    String network =
+        networkFromProvider.orElseThrow(
+            () ->
+                new DhruvaRuntimeException(
+                    ErrorCode.NO_INCOMING_NETWORK, "Unable to find network from provider"));
     incomingNetwork = network;
     proxySIPRequest.setNetwork(network);
-
-    // Save the request once all the preprocessing and validations are done.
-    originalRequest = (SIPRequest) request.clone();
 
     // Create ProxyTransaction
     // ProxyTransaction internally creates ProxyServerTransaction
@@ -974,7 +961,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private void proxyRouteSetRemoteInfo(ProxySIPRequest proxySIPRequest)
       throws UnknownHostException, ParseException {
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     URI routeToURI = null;
     String hostStr = "";
@@ -1064,7 +1051,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // demarshall the cookie object
     ProxyCookieImpl cookieThing = (ProxyCookieImpl) cookie;
     // ProxyResponseInterface responseIf = cookieThing.getResponseInterface();
-    Destination destination = cookieThing.getLocation();
+    Destination destination = cookieThing.getDestination();
 
     // See if this is a branch that should be cancelled
     int index;
@@ -1092,7 +1079,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     SIPResponse sipResponse;
     try {
       sipResponse =
-          ProxyResponseGenerator.createResponse(errorCode.getResponseCode(), getOriginalRequest());
+          ProxyResponseGenerator.createResponse(
+              errorCode.getResponseCode(), ourRequest.getOriginalRequest());
     } catch (DhruvaException | ParseException ex) {
       throw new DhruvaRuntimeException(ErrorCode.CREATE_ERR_RESPONSE, ex.getMessage(), exception);
     }
@@ -1251,6 +1239,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     // TODO LMA
     /*response.setNormalizationState(
     DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
+    Optional<String> network = DhruvaNetwork.getNetworkFromProvider(response.getProvider());
+    if (network.isPresent()) response.setNetwork(network.get());
+    else logger.warn("Unable to set incoming network from SipProvider");
   }
 
   /**
@@ -1266,7 +1257,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     try {
       if (sendRequestToApp && proxyAppConfig.getInterest(proxySIPResponse.getResponseClass())) {
         if (proxySIPResponse.getProxyInterface() == null) proxySIPResponse.setProxyInterface(this);
+        proxySIPResponse.setNetwork(outgoingNetwork);
         proxyAppConfig.getResponseConsumer().accept(proxySIPResponse);
+        if (proxyTransaction instanceof ProxyTransaction)
+          ((ProxyTransaction) proxyTransaction).setBestResponse(null);
         return;
       }
       logger.debug("Sending out Response as Application was not interested in Request");
@@ -1281,7 +1275,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   private boolean tryNextEndPoint(
       ProxyStatelessTransaction proxy, ProxyCookie cookie, int responseCode) {
     ProxyCookieImpl proxyCookie = (ProxyCookieImpl) cookie;
-    Destination destination = proxyCookie.getLocation();
+    Destination destination = proxyCookie.getDestination();
     // TODO destination is null? where to route??
     if (Objects.isNull(destination)) {
       logger.debug("location is not present in the cookie!!!");
@@ -1301,9 +1295,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     logger.debug("tryNextEndPoint(): Sending request to next EndPoint received from Trunk");
-    SIPRequest request = (SIPRequest) preprocessedRequest.clone();
-    ourRequest.setClonedRequest(request);
-    proxyToEndpoint(Mono.just(nextEndPoint), ourRequest)
+    proxyToEndpoint(Mono.just(nextEndPoint), (ProxySIPRequest) ourRequest.clone())
         .subscribe(
             sentRequest -> {
               this.onProxySuccess(

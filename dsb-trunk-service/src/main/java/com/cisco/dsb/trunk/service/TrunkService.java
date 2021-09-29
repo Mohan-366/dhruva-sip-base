@@ -42,7 +42,6 @@ public class TrunkService {
     this.failoverResponseCode = failoverResponseCode;
   }
 
-
   public Mono<EndPoint> getElementAsync(
       @NonNull AbstractSipRequest request, @NonNull Destination destination) {
     String destinationAddress = destination.getAddress();

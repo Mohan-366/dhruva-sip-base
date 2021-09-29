@@ -100,17 +100,18 @@ public class ProxySendMessage {
                       .getRouter()
                       .getNextHop(
                           proxySIPRequest
-                              .getClonedRequest()); // getNext comment has exactly steps to find the
+                              .getRequest()); // getNext comment has exactly steps to find the
               // dest, first priority is given to route
               String server = hop.getHost();
               logger.info("Sending the proxy request to next hop {}", server);
               if (transaction != null) {
                 transaction.sendRequest();
               } else {
-                provider.sendRequest(proxySIPRequest.getClonedRequest());
+                provider.sendRequest(proxySIPRequest.getRequest());
               }
               return proxySIPRequest;
             })
         .subscribeOn(Schedulers.boundedElastic());
+    // TODO DSB, need to change this to fromExecutorService for metrics.
   }
 }

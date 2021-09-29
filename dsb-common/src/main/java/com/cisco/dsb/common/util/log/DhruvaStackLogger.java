@@ -85,8 +85,8 @@ public class DhruvaStackLogger implements StackLogger {
     } else if (traceLevel == TRACE_DEBUG) {
       logger.debug(message, parameters);
       // TODO dsb
-      //        } else if (traceLevel == TRACE_TRACE) {
-      //            logger.trace(message, parameters);
+    } else if (traceLevel == TRACE_TRACE) {
+      logger.trace(message, parameters);
     } else {
       logger.info(message, parameters);
     }
@@ -231,11 +231,11 @@ public class DhruvaStackLogger implements StackLogger {
   public void logTrace(String message) {
 
     // TODO DSB
-    //        if (logger.isTraceEnabled()) {
-    //            String newMessage = this.enhanceMessage(message);
-    //            countLines(newMessage);
-    //            logger.trace(newMessage);
-    //        }
+    if (logger.isTraceEnabled()) {
+      String newMessage = this.enhanceMessage(message);
+      countLines(newMessage);
+      logger.trace(newMessage);
+    }
   }
 
   /**
@@ -346,11 +346,11 @@ public class DhruvaStackLogger implements StackLogger {
    */
   public void logFatalError(String message) {
     // TODO dsb
-    // if (logger.isErrorEnabled()) {
-    String newMsg = this.enhanceMessage(message);
-    countLines(newMsg);
-    logger.error(newMsg);
-    // }
+    if (logger.isErrorEnabled()) {
+      String newMsg = this.enhanceMessage(message);
+      countLines(newMsg);
+      logger.error(newMsg);
+    }
   }
 
   /** @return flag to indicate if logging is enabled. */
@@ -373,21 +373,19 @@ public class DhruvaStackLogger implements StackLogger {
     boolean result = false;
     if (logLevel == TRACE_INFO) {
       result = logger.isInfoEnabled();
-
-      //        } else if (logLevel == TRACE_FATAL) {
-      //            result = logger.isErrorEnabled();
-      //        } else if (logLevel == TRACE_ERROR) {
+    } else if (logLevel == TRACE_FATAL) {
+      result = logger.isErrorEnabled();
+    } else if (logLevel == TRACE_ERROR) {
       result = logger.isInfoEnabled();
     } else if (logLevel == TRACE_WARN) {
       result = logger.isInfoEnabled();
     } else if (logLevel == TRACE_DEBUG) {
       result = logger.isDebugEnabled();
+    } else if (logLevel == TRACE_TRACE) {
+      result = logger.isTraceEnabled();
+    } else {
+      result = logger.isTraceEnabled();
     }
-    //        } else if (logLevel == TRACE_TRACE) {
-    //            result = logger.isTraceEnabled();
-    //        } else {
-    //            result = logger.isTraceEnabled();
-    //        }
 
     return result;
   }

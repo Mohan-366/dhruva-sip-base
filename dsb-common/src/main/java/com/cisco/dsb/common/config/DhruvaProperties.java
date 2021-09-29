@@ -18,8 +18,6 @@ import org.springframework.core.env.Environment;
 // @ConfigurationProperties(prefix = "dhruva")
 public class DhruvaProperties extends ConfigProperties {
   // implements DiagnosticsClientFactory.DiagnosticsClientFactoryProperties {
-
-
   private static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_DHRUVA";
 
   public static final String CLIENT_ID = "clientId";

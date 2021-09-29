@@ -314,7 +314,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     ProxyCookie cookie = proxySIPRequest.getCookie();
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     try {
       logger.debug("Entering ProxyTransaction proxyTo()");
@@ -395,7 +395,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
                   "unable to find provider for outbound request with network:"
                       + network.getName())));
 
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     ClientTransaction clientTrans = null;
     try {
@@ -759,7 +759,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
             null);
         return;
       }
-
+      controller.onResponse(proxySIPResponse);
       proxyClientTransaction.gotResponse(proxySIPResponse);
       if (!proxyClientTransaction.isTimedOut())
         controller.onProvisionalResponse(

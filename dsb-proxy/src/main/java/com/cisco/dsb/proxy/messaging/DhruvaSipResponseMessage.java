@@ -2,7 +2,6 @@ package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
-import com.cisco.dsb.common.util.log.LogContext;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
@@ -31,7 +30,6 @@ public final class DhruvaSipResponseMessage {
     private boolean isMidCall;
     private boolean isRequest;
     private String network;
-    private LogContext loggingContext;
 
     private DhruvaSipResponseMessageBuilder() {
       dhruvaSipResponseMessageBuilder(null, null, null, null, null, null, null, null, false);
@@ -75,8 +73,6 @@ public final class DhruvaSipResponseMessage {
       if (network != null) {
         message.setNetwork(network);
       }
-
-      message.setLoggingContext(loggingContext);
       message.setMidCall(isMidCall);
       message.setRequest(isRequest);
       return message;
@@ -133,11 +129,6 @@ public final class DhruvaSipResponseMessage {
 
     public DhruvaSipResponseMessageBuilder request(boolean isRequest) {
       this.isRequest = isRequest;
-      return this;
-    }
-
-    public DhruvaSipResponseMessageBuilder loggingContext(LogContext loggingContext) {
-      this.loggingContext = loggingContext;
       return this;
     }
 

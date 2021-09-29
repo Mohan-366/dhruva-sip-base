@@ -11,7 +11,6 @@ import javax.sip.SipStack;
 /** Stack factory for creating proxy stack. */
 public final class ProxyStackFactory {
 
-
   private static ProxyStackFactory instance = new ProxyStackFactory();
 
   ProxyStackFactory() {}

@@ -10,7 +10,6 @@ import com.cisco.dsb.common.sip.util.SipPredicates;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.TriFunction;
-import com.cisco.dsb.common.util.log.LogContext;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyController;
@@ -23,9 +22,9 @@ import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
-import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPServerTransaction;
 import java.text.ParseException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -81,8 +80,14 @@ public class SipProxyManager {
               "No server transaction exist. Creating new one for {} msg", request.getMethod());
           serverTransaction = sipProvider.getNewServerTransaction(request);
 
-        } catch (TransactionAlreadyExistsException | TransactionUnavailableException ex) {
-          throw new DhruvaRuntimeException(ErrorCode.TRANSACTION_ERROR, ex.getMessage(), ex);
+        } catch (TransactionAlreadyExistsException ex) {
+          logger.error(
+              "Server Transaction Already exists, dropping the message as it's retransmission");
+          return null;
+        } catch (TransactionUnavailableException ex) {
+          serverTransaction = (SIPServerTransaction) ((SIPRequest) request).getTransaction();
+          if (serverTransaction == null)
+            throw new DhruvaRuntimeException(ErrorCode.TRANSACTION_ERROR, ex.getMessage(), ex);
         }
       }
       logger.info("Server transaction: {}", serverTransaction);
@@ -138,14 +143,14 @@ public class SipProxyManager {
             (ProxyTransaction) serverTransaction.getApplicationData();
 
         if (proxyTransaction != null) {
-          // for 4xx-ACK -> since we are using the INVITE's serverTransaction, it already has the
+          // for non2xx-ACK -> since we are using the INVITE's serverTransaction, it already has the
           // proxyTransaction also
           // So, do not create it again and the controller.
           logger.info("Proxy transaction exists for ACK: {}", proxyTransaction);
           ProxyController controller = (ProxyController) proxyTransaction.getController();
 
           // behaviours based on method-type
-          // Note : only for 4xx-ACK request at this point - consume and do nothing
+          // Note : only for non2xx-ACK request at this point - consume and do nothing
           logger.debug("Calling onAck() in proxyController");
           controller.onAck(proxyTransaction);
           return null;
@@ -317,7 +322,8 @@ public class SipProxyManager {
   public Consumer<ResponseEvent> processStrayResponse() {
     return responseEvent -> {
       SIPResponse response = (SIPResponse) responseEvent.getResponse();
-
+      // process only 2xx as they are critical
+      if (response.getStatusCode() / 100 != 2) return;
       // check the top Via;
       ViaHeader myVia;
       myVia = response.getTopmostViaHeader();
@@ -444,12 +450,14 @@ public class SipProxyManager {
         switch (proxySIPResponse.getResponseClass()) {
           case 1:
             proxyTransaction.provisionalResponse(proxySIPResponse);
+            break;
           case 2:
           case 3:
           case 4:
           case 5:
           case 6:
             proxyTransaction.finalResponse(proxySIPResponse);
+            break;
         }
       } else {
         logger.error(
@@ -469,16 +477,12 @@ public class SipProxyManager {
         SIPRequest sipRequest = (SIPRequest) requestEvent.getRequest();
         SipProvider sipProvider = (SipProvider) requestEvent.getSource();
         logger.info(
-            "received incoming request {} on provider {}",
-            LogUtils.obfuscate(sipRequest),
-            sipProvider.getListeningPoints()[0].toString());
-
-        logger.setMDC(
-            LogContext.CONNECTION_SIGNATURE, LogUtils.getConnectionSignature.apply(sipRequest));
-
-        new LogContext()
-            .getLogContext((SIPMessage) requestEvent.getRequest())
-            .ifPresent(logContext -> logger.setMDC(logContext.getLogContextAsMap()));
+            "received incoming request {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",
+            LogUtils.obfuscateObject(sipRequest.getRequestLine(), false),
+            sipProvider.getListeningPoints()[0].getPort(),
+            sipProvider.getListeningPoints()[0].getTransport(),
+            sipProvider.getListeningPoints()[0].getIPAddress(),
+            sipProvider.getListeningPoints()[0].getSentBy());
       });
 
   public Consumer<ResponseEvent> getManageLogAndMetricsForResponse() {
@@ -490,16 +494,12 @@ public class SipProxyManager {
         SIPResponse sipResponse = (SIPResponse) responseEvent.getResponse();
         SipProvider sipProvider = (SipProvider) responseEvent.getSource();
         logger.info(
-            "received incoming response {} on provider {}",
-            LogUtils.obfuscate(sipResponse),
-            sipProvider.getListeningPoints()[0].toString());
-
-        logger.setMDC(
-            LogContext.CONNECTION_SIGNATURE, LogUtils.getConnectionSignature.apply(sipResponse));
-
-        new LogContext()
-            .getLogContext((SIPMessage) responseEvent.getResponse())
-            .ifPresent(logContext -> logger.setMDC(logContext.getLogContextAsMap()));
+            "received incoming response: {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",
+            sipResponse.getStatusLine(),
+            sipProvider.getListeningPoints()[0].getPort(),
+            sipProvider.getListeningPoints()[0].getTransport(),
+            sipProvider.getListeningPoints()[0].getIPAddress(),
+            sipProvider.getListeningPoints()[0].getSentBy());
       });
 
   public Function<TimeoutEvent, ProxySIPResponse> handleProxyTimeoutEvent() {

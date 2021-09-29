@@ -23,7 +23,6 @@ public class ParseProxyParamUtil {
   // Order in which the transport is selected.
   private static final Transport[] Transports = {Transport.TLS, Transport.TCP, Transport.UDP};
 
-
   private ParseProxyParamUtil() {}
 
   public static Map<String, String> getParsedProxyParams(

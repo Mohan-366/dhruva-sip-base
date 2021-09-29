@@ -29,7 +29,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class LBFactory {
 
-
   public static final int GLOBAL = SG.index_sgSgLbType_global;
   public static final int REQUEST_URI = SG.index_sgSgLbType_request_uri;
   public static final int HIGHEST_Q = SG.index_sgSgLbType_highest_q;

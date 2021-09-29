@@ -44,7 +44,7 @@ public class SipServerLocatorService {
     this.props = props;
     this.executorService = executorService;
     executorService.startExecutorService(
-        ExecutorType.DNS_LOCATOR_SERVICE, 10); // TODO make number of thread as property
+        ExecutorType.DNS_LOCATOR_SERVICE, 100); // TODO make number of thread as property
   }
 
   // using for testing
@@ -61,17 +61,14 @@ public class SipServerLocatorService {
     final String userIdInject = (user == null) ? null : user.getId().toString();
 
     // TODO enable when required
-    boolean useDnsInjection = false;
+    //    boolean useDnsInjection = false;
 
     CompletableFuture<LocateSIPServersResponse> responseCF = new CompletableFuture<>();
     CompletableFuture.runAsync(
         () -> {
           LocateSIPServersResponse response;
           try {
-            response =
-                useDnsInjection
-                    ? locator.resolve(name, transportLookupType, iPort, userIdInject)
-                    : locator.resolve(name, transportLookupType, iPort);
+            response = locator.resolve(name, transportLookupType, iPort, userIdInject);
             logger.info(
                 "DNS lookup name={} port={} transportLookupType={} -> \n{}\n",
                 name,

@@ -11,7 +11,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import gov.nist.javax.sip.stack.MessageChannel;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,6 @@ import lombok.CustomLog;
  * ListeningPointImpl.sendHeartbeat() for more implementation details.
  *
  * <p>Enable this timer on a stack by registering DSBJainSipMessageProcessorFactory:
- *
  */
 @CustomLog
 public class KeepAliveTimerTask implements Runnable, StartStoppable {
@@ -105,9 +103,9 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
             (ConnectionOrientedMessageChannel) channel;
         try {
           // Don't send ping from proxy sip stack to regular sip stack.
-          if (Objects.equals(channel.getPeerAddress(), "127.0.0.1")) {
+          /*          if (Objects.equals(channel.getPeerAddress(), "127.0.0.1")) {
             continue;
-          }
+          }*/
           if (((ConnectionOrientedMessageChannel) channel).getPeerProtocol() == null) {
             logger.error(
                 "Not Sending keepAlive on to {} {} as transport is null!",

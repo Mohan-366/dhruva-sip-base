@@ -10,13 +10,14 @@ import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.address.TelephoneNumber;
 import gov.nist.javax.sip.header.ExtensionHeaderImpl;
 import javax.sip.address.URI;
+import lombok.CustomLog;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 @Aspect
+@CustomLog
 public class ObfuscationAspect {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(ObfuscationAspect.class);
 
   private static ThreadLocal<Boolean> obfuscate = ThreadLocal.withInitial(() -> Boolean.FALSE);
 

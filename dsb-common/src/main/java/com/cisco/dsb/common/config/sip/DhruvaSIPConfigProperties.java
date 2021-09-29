@@ -5,6 +5,7 @@ import com.cisco.dsb.common.sip.bean.SIPProxy;
 import com.cisco.dsb.common.transport.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonUtilFactory;
+import com.cisco.wx2.dto.BuildInfo;
 import java.security.KeyStore;
 import java.util.*;
 import javax.sip.message.Request;
@@ -21,6 +22,7 @@ import org.springframework.core.env.Environment;
 @Qualifier("dsbSIPConfigProperties")
 @CustomLog
 public class DhruvaSIPConfigProperties {
+  private Environment env;
 
   public static final String SIP_LISTEN_POINTS = "sipListenPoints";
 
@@ -40,7 +42,8 @@ public class DhruvaSIPConfigProperties {
 
   public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
 
-  public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 45000;
+  // timer C = 3 mins
+  public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 180000;
 
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
 
@@ -88,6 +91,8 @@ public class DhruvaSIPConfigProperties {
       "dsb.tlsOcspResponseTimeoutIn" + "Seconds";
   private static final int DEFAULT_TLS_OCSP_RESPONSE_TIMEOUT_SECONDS = 5;
   private static final String TLS_TRUST_STORE_FILE_PATH = "dsb.tlsTrustStoreFilePath";
+  private static final String DEFAULT_TRUST_STORE_FILE_PATH =
+      System.getProperty("javax.net.ssl.trustStore");
   private static final String TLS_TRUST_STORE_TYPE = "dsb.tlsTrustStoreType";
   private static final String DEFAULT_TLS_TRUST_STORE_TYPE = KeyStore.getDefaultType();
   private static final String TLS_TRUST_STORE_PASSWORD = "dsb.tlsTrustStorePassword";
@@ -95,6 +100,8 @@ public class DhruvaSIPConfigProperties {
   private static final String TLS_KEY_STORE_TYPE = "dsb.tlsKeyStoreType";
   private static final String DEFAULT_TLS_KEY_STORE_TYPE = KeyStore.getDefaultType();
   private static final String TLS_KEY_STORE_PASSWORD = "dsb.tlsKeyStorePassword";
+  private static final String DEFAULT_TLS_TRUST_STORE_PASSWORD =
+      System.getProperty("javax.net.ssl.trustStorePassword", "");
   private static final String TLS_CERT_REVOCATION_SOFTFAIL_ENABLED =
       "dsb.tlsCertRevocationEnable" + "SoftFail";
   private static final Boolean DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED = Boolean.TRUE;
@@ -107,6 +114,7 @@ public class DhruvaSIPConfigProperties {
   private static final Boolean DEFAULT_NIO_ENABLED = false;
   public static int DEFAULT_PORT = 5060;
 
+  private static BuildInfo buildInfo;
   // All Keep Alive time related values in seconds
   private static final String KEEP_ALIVE_PERIOD = "dsb.keepAlivePeriod";
   private static final Long DEFAULT_KEEP_ALIVE_PERIOD = Long.valueOf(20);
@@ -118,11 +126,149 @@ public class DhruvaSIPConfigProperties {
   private static final String LOG_KEEP_ALIVES_ENABLED = "dsb.logKeepAlivesEnabled";
   private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
 
-  @Autowired private Environment env;
-
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
   private String[] tlsProtocols = new String[] {"TLSv1.2"};
+  private String configuredSipProxy;
+  private String HOST_IP_OR_FQDN_VALUE;
+  private Boolean USE_REDIS_AS_CACHE_VALUE;
+  private String configuredListeningPoints;
+  private List<SIPListenPoint> listenPoints;
+  private SIPProxy proxy;
+  private static final int defaultCacheSize = 1_000;
+  private int cacheSize;
+
+  private static final long defaultTimeOutCache = 32000L;
+  private long timeOutCache;
+
+  private static final long defaultTimeOutDns = 10000L;
+  private long timeOutDns;
+
+  private String sipCertificate;
+  private String sipPrivateKey;
+  private int tlsHandshakeTimeOut;
+  private boolean isAcceptedIssuersEnabled;
+  private int tlsOcspResponseTimeout;
+  private String trustStoreFilePath;
+  private String trustStoreType;
+  private String trustStorePassword;
+  private boolean tlsCertRevocationSoftfailEnabled;
+  private boolean tlsOcspEnabled;
+  private boolean nioEnabled;
+  private String keyStoreFilePath;
+  private String keyStoreType;
+  private String keyStorePassword;
+  private String clientAuthType;
+  private boolean logKeepAlivesEnabled;
+  private long keepAlivePeriod;
+  private String reliableConnectionKeepAliveTimeout;
+  private String minKeepAliveTimeSeconds;
+
+  private int udpEventPoolThreadCount;
+  private int tlsEventPoolThreadCount;
+
+  private int connectionCacheConnectionIdleTimeout;
+  private long connectionWriteTimeout;
+
+  private List<String> allowedCiphers;
+  private boolean isHostPortEnabled;
+
+  @Autowired
+  public DhruvaSIPConfigProperties(Environment env) {
+    this.env = env;
+    init();
+  }
+
+  private void init() {
+    this.configuredSipProxy = env.getProperty(SIP_PROXY);
+    this.HOST_IP_OR_FQDN_VALUE = env.getProperty(HOST_IP_OR_FQDN);
+    this.USE_REDIS_AS_CACHE_VALUE = env.getProperty(USE_REDIS_AS_CACHE, Boolean.class, true);
+    this.configuredListeningPoints = env.getProperty(SIP_LISTEN_POINTS);
+    this.cacheSize =
+        (this.cacheSize = env.getProperty("DhruvaDnsCacheMaxSize", Integer.class, defaultCacheSize))
+                > 0
+            ? cacheSize
+            : defaultCacheSize;
+    this.timeOutCache =
+        (this.timeOutCache =
+                    env.getProperty(
+                        "DhruvaDnsRetentionTimeMillis", Long.class, defaultTimeOutCache))
+                > 0
+            ? timeOutCache
+            : defaultTimeOutCache;
+    this.timeOutDns =
+        (this.timeOutDns =
+                    env.getProperty("DhruvaDnsTimeoutTimeMillis", Long.class, defaultTimeOutDns))
+                > 0
+            ? timeOutDns
+            : defaultTimeOutDns;
+    this.sipCertificate = env.getProperty(SIP_CERTIFICATE);
+    this.sipPrivateKey = env.getProperty(SIP_PRIVATE_KEY);
+    this.udpEventPoolThreadCount =
+        env.getProperty(
+            UDP_EVENTLOOP_THREAD_COUNT, Integer.class, DEFAULT_UDP_EVENTLOOP_THREAD_COUNT);
+    this.tlsEventPoolThreadCount =
+        env.getProperty(
+            TLS_EVENTLOOP_THREAD_COUNT, Integer.class, DEFAULT_TLS_EVENTLOOP_THREAD_COUNT);
+    this.connectionCacheConnectionIdleTimeout =
+        env.getProperty(
+            CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_SECONDS,
+            Integer.class,
+            DEFAULT_CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_MINUTES);
+    this.isHostPortEnabled =
+        env.getProperty(HOST_PORT_ENABLED, Boolean.class, DEFAULT_HOST_PORT_ENABLED);
+    this.tlsHandshakeTimeOut =
+        env.getProperty(
+            TLS_HANDSHAKE_TIMEOUT_MILLISECONDS,
+            Integer.class,
+            DEFAULT_TLS_HANDSHAKE_TIMEOUT_MILLISECONDS);
+    this.isAcceptedIssuersEnabled =
+        env.getProperty(
+            TLS_CA_LIST_IN_SERVER_HELLO_ENABLED,
+            Boolean.class,
+            DEFAULT_TLS_CA_LIST_IN_SERVER_HELLO_ENABLED);
+    this.connectionWriteTimeout =
+        env.getProperty(
+            CONNECTION_WRITE_TIMEOUT_IN_MILLIS,
+            Long.class,
+            DEFAULT_CONNECTION_WRITE_TIMEOUT_IN_MILLIS);
+    this.tlsOcspResponseTimeout =
+        env.getProperty(
+            TLS_OCSP_RESPONSE_TIMEOUT_SECONDS,
+            Integer.class,
+            DEFAULT_TLS_OCSP_RESPONSE_TIMEOUT_SECONDS);
+    this.trustStoreFilePath =
+        env.getProperty(TLS_TRUST_STORE_FILE_PATH, String.class, DEFAULT_TRUST_STORE_FILE_PATH);
+    this.trustStoreType =
+        env.getProperty(TLS_TRUST_STORE_TYPE, String.class, DEFAULT_TLS_TRUST_STORE_TYPE);
+    this.tlsCertRevocationSoftfailEnabled =
+        env.getProperty(
+            TLS_CERT_REVOCATION_SOFTFAIL_ENABLED,
+            Boolean.class,
+            DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED);
+    this.tlsOcspEnabled =
+        env.getProperty(TLS_CERT_OCSP_ENABLED, Boolean.class, DEFAULT_TLS_CERT_OCSP_ENABLED);
+    this.nioEnabled = env.getProperty(NIO_ENABLED, Boolean.class, DEFAULT_NIO_ENABLED);
+    this.trustStorePassword =
+        env.getProperty(TLS_TRUST_STORE_PASSWORD, String.class, DEFAULT_TLS_TRUST_STORE_PASSWORD);
+    this.keyStoreFilePath = env.getProperty(TLS_KEY_STORE_FILE_PATH);
+    this.keyStoreType =
+        env.getProperty(TLS_KEY_STORE_TYPE, String.class, DEFAULT_TLS_KEY_STORE_TYPE);
+    this.keyStorePassword = env.getProperty(TLS_KEY_STORE_PASSWORD, String.class);
+    this.clientAuthType = env.getProperty(CLIENT_AUTH_TYPE, String.class, DEFAULT_CLIENT_AUTH_TYPE);
+    this.logKeepAlivesEnabled =
+        env.getProperty(LOG_KEEP_ALIVES_ENABLED, Boolean.class, DEFAULT_LOG_KEEP_ALIVES_ENABLED);
+    this.keepAlivePeriod =
+        env.getProperty(KEEP_ALIVE_PERIOD, Long.class, DEFAULT_KEEP_ALIVE_PERIOD);
+    this.reliableConnectionKeepAliveTimeout =
+        env.getProperty(
+            RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT,
+            String.class,
+            DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT);
+    this.minKeepAliveTimeSeconds =
+        env.getProperty(
+            MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
+  }
 
   public String getAllowedMethods() {
     // TODO:  can this be a configuration ?
@@ -155,10 +301,7 @@ public class DhruvaSIPConfigProperties {
 
   @Bean(name = "listenPoints")
   public List<SIPListenPoint> getListeningPoints() {
-
-    String configuredListeningPoints = env.getProperty(SIP_LISTEN_POINTS);
-
-    List<SIPListenPoint> listenPoints;
+    if (listenPoints != null) return listenPoints;
 
     if (configuredListeningPoints != null) {
       try {
@@ -196,29 +339,27 @@ public class DhruvaSIPConfigProperties {
 
   public SIPProxy getSIPProxy() {
 
-    String configuredSipProxy = env.getProperty(SIP_PROXY);
-
-    SIPProxy proxy;
+    if (this.proxy != null) return this.proxy;
 
     if (configuredSipProxy != null) {
       try {
-        proxy =
+        this.proxy =
             JsonUtilFactory.getInstance(JsonUtilFactory.JsonUtilType.LOCAL)
                 .toObject(configuredSipProxy, SIPProxy.class);
       } catch (Exception e) {
         logger.error(
             "Error converting JSON sipProxy configuration provided in the environment , default sipProxy will be choosen ",
             e);
-        proxy = getDefaultSIPProxy();
+        this.proxy = getDefaultSIPProxy();
       }
 
     } else {
-      proxy = getDefaultSIPProxy();
+      this.proxy = getDefaultSIPProxy();
     }
 
     logger.info("sip proxy config from the {} configuration {}", SIP_PROXY, proxy);
 
-    return proxy;
+    return this.proxy;
   }
 
   private SIPProxy getDefaultSIPProxy() {
@@ -226,19 +367,15 @@ public class DhruvaSIPConfigProperties {
   }
 
   public boolean useRedisAsCache() {
-    return env.getProperty(USE_REDIS_AS_CACHE, Boolean.class, true);
+    return this.USE_REDIS_AS_CACHE_VALUE;
   }
 
   public int getDhruvaDnsCacheMaxSize() {
-    int defaultCacheSize = 1_000;
-    int cacheSize = env.getProperty("DhruvaDnsCacheMaxSize", Integer.class, defaultCacheSize);
-    return cacheSize > 0 ? cacheSize : defaultCacheSize;
+    return this.cacheSize;
   }
 
   public long dnsCacheRetentionTimeMillis() {
-    long defaultTime = 32000L;
-    long retTime = env.getProperty("DhruvaDnsRetentionTimeMillis", Long.class, defaultTime);
-    return retTime > 0L ? retTime : defaultTime;
+    return this.timeOutCache;
   }
 
   public long dnsLookupTimeoutMillis() {
@@ -248,47 +385,44 @@ public class DhruvaSIPConfigProperties {
   }
 
   public String getSipCertificate() {
-    return env.getProperty(SIP_CERTIFICATE);
+    return this.sipCertificate;
   }
 
   public String getSipPrivateKey() {
-    return env.getProperty(SIP_PRIVATE_KEY);
+    return this.sipPrivateKey;
   }
 
   public int getUdpEventPoolThreadCount() {
-    return env.getProperty(
-        UDP_EVENTLOOP_THREAD_COUNT, Integer.class, DEFAULT_UDP_EVENTLOOP_THREAD_COUNT);
+    return this.udpEventPoolThreadCount;
   }
 
   public int getTlsEventPoolThreadCount() {
-    return env.getProperty(
-        TLS_EVENTLOOP_THREAD_COUNT, Integer.class, DEFAULT_TLS_EVENTLOOP_THREAD_COUNT);
+    return this.tlsEventPoolThreadCount;
   }
 
   public int getConnectionCacheConnectionIdleTimeout() {
-    return env.getProperty(
-        CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_SECONDS,
-        Integer.class,
-        DEFAULT_CONNECTION_CACHE_CONNECTION_IDLE_TIMEOUT_MINUTES);
+    return this.connectionCacheConnectionIdleTimeout;
   }
 
   public List<String> getCiphers() {
+    if (this.allowedCiphers != null) return this.allowedCiphers;
 
     String ciphers = env.getProperty(TLS_CIPHERS, String.class);
     if (ciphers == null || ciphers.isEmpty()) {
-      return CipherSuites.allowedCiphers;
+      return (this.allowedCiphers = CipherSuites.allowedCiphers);
     } else {
-      return Collections.unmodifiableList(
-          CipherSuites.getAllowedCiphers(Arrays.asList(ciphers.split(","))));
+      return this.allowedCiphers =
+          Collections.unmodifiableList(
+              CipherSuites.getAllowedCiphers(Arrays.asList(ciphers.split(","))));
     }
   }
 
   public String getHostInfo() {
-    return env.getProperty(HOST_IP_OR_FQDN);
+    return HOST_IP_OR_FQDN_VALUE;
   }
 
   public boolean isHostPortEnabled() {
-    return env.getProperty(HOST_PORT_ENABLED, Boolean.class, DEFAULT_HOST_PORT_ENABLED);
+    return this.isHostPortEnabled;
   }
 
   public String[] getTlsProtocols() {
@@ -296,91 +430,74 @@ public class DhruvaSIPConfigProperties {
   }
 
   public int getTlsHandshakeTimeoutMilliSeconds() {
-    return env.getProperty(
-        TLS_HANDSHAKE_TIMEOUT_MILLISECONDS,
-        Integer.class,
-        DEFAULT_TLS_HANDSHAKE_TIMEOUT_MILLISECONDS);
+    return this.tlsHandshakeTimeOut;
   }
 
   public boolean getIsAcceptedIssuersEnabled() {
-    return env.getProperty(
-        TLS_CA_LIST_IN_SERVER_HELLO_ENABLED,
-        Boolean.class,
-        DEFAULT_TLS_CA_LIST_IN_SERVER_HELLO_ENABLED);
+    return this.isAcceptedIssuersEnabled;
   }
 
   public long getConnectionWriteTimeoutInMilliSeconds() {
-    return env.getProperty(
-        CONNECTION_WRITE_TIMEOUT_IN_MILLIS, Long.class, DEFAULT_CONNECTION_WRITE_TIMEOUT_IN_MILLIS);
+    return this.connectionWriteTimeout;
   }
 
   public int getOcspResponseTimeoutSeconds() {
-    return env.getProperty(
-        TLS_OCSP_RESPONSE_TIMEOUT_SECONDS,
-        Integer.class,
-        DEFAULT_TLS_OCSP_RESPONSE_TIMEOUT_SECONDS);
+    return this.tlsOcspResponseTimeout;
   }
 
   public String getTrustStoreFilePath() {
-    return env.getProperty(TLS_TRUST_STORE_FILE_PATH, String.class);
+    return this.trustStoreFilePath;
   }
 
   public String getTrustStoreType() {
-    return env.getProperty(TLS_TRUST_STORE_TYPE, String.class, DEFAULT_TLS_TRUST_STORE_TYPE);
+    return this.trustStoreType;
   }
 
   public String getTrustStorePassword() {
-    return env.getProperty(TLS_TRUST_STORE_PASSWORD, String.class);
+    return this.trustStorePassword;
   }
 
   public String getKeyStoreFilePath() {
-    return env.getProperty(TLS_KEY_STORE_FILE_PATH);
+    return this.keyStoreFilePath;
   }
 
   public String getKeyStoreType() {
-    return env.getProperty(TLS_KEY_STORE_TYPE, String.class, DEFAULT_TLS_KEY_STORE_TYPE);
+    return this.keyStoreType;
   }
 
   public String getKeyStorePassword() {
-    return env.getProperty(TLS_KEY_STORE_PASSWORD, String.class);
+    return this.keyStorePassword;
   }
 
   public Boolean isTlsCertRevocationSoftFailEnabled() {
-    return env.getProperty(
-        TLS_CERT_REVOCATION_SOFTFAIL_ENABLED,
-        Boolean.class,
-        DEFAULT_TLS_CERT_REVOCATION_SOFTFAIL_ENABLED);
+    return this.tlsCertRevocationSoftfailEnabled;
   }
 
   public boolean isTlsOcspEnabled() {
-    return env.getProperty(TLS_CERT_OCSP_ENABLED, Boolean.class, DEFAULT_TLS_CERT_OCSP_ENABLED);
+    return this.tlsOcspEnabled;
   }
 
   public String getClientAuthType() {
-    return env.getProperty(CLIENT_AUTH_TYPE, String.class, DEFAULT_CLIENT_AUTH_TYPE);
+    return this.clientAuthType;
   }
 
   public boolean isNioEnabled() {
-    return env.getProperty(NIO_ENABLED, Boolean.class, DEFAULT_NIO_ENABLED);
+    return this.nioEnabled;
   }
 
   public boolean isLogKeepAlivesEnabled() {
-    return env.getProperty(LOG_KEEP_ALIVES_ENABLED, Boolean.class, DEFAULT_LOG_KEEP_ALIVES_ENABLED);
+    return this.logKeepAlivesEnabled;
   }
 
   public long getKeepAlivePeriod() {
-    return env.getProperty(KEEP_ALIVE_PERIOD, Long.class, DEFAULT_KEEP_ALIVE_PERIOD);
+    return this.keepAlivePeriod;
   }
 
   public String getReliableConnectionKeepAliveTimeout() {
-    return env.getProperty(
-        RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT,
-        String.class,
-        DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT);
+    return this.reliableConnectionKeepAliveTimeout;
   }
 
   public String getMinKeepAliveTimeSeconds() {
-    return env.getProperty(
-        MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
+    return this.minKeepAliveTimeSeconds;
   }
 }

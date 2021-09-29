@@ -159,7 +159,7 @@ public class ProxyControllerServerTest {
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
-    proxyController.setOriginalRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     when(proxyTransaction.getClientTransaction()).thenReturn(proxyClientTransaction);
     doAnswer(
             invocationOnMock -> {
@@ -193,7 +193,7 @@ public class ProxyControllerServerTest {
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
-    proxyController.setOriginalRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     when(proxyTransaction.getClientTransaction()).thenReturn(mock(ProxyClientTransaction.class));
     doAnswer(
             invocationOnMock -> {
@@ -229,15 +229,14 @@ public class ProxyControllerServerTest {
     SIPRequest sipRequest =
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -258,7 +257,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(2)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(1)).respond(resp_captor.capture());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
     assert bestResponses.get(0).getResponse().getStatusCode() == Response.BAD_GATEWAY;
@@ -286,15 +284,14 @@ public class ProxyControllerServerTest {
     ProxySIPResponse proxySIPResponse_404 = mock(ProxySIPResponse.class);
     SIPResponse sipResponse_404 = mock(SIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -333,7 +330,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     // sending response to application
     verify(responseConsumer, Mockito.times(1)).accept(resp_captor.capture());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
@@ -360,15 +356,14 @@ public class ProxyControllerServerTest {
         SIPRequestBuilder.createRequest(
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ProxySIPResponse proxySIPResponse_600 = mock(ProxySIPResponse.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -402,7 +397,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(1)).respond(resp_captor.capture());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
     assert bestResponses.get(0).getResponse().getStatusCode() == Response.BAD_GATEWAY;
@@ -429,15 +423,14 @@ public class ProxyControllerServerTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ProxySIPResponse proxySIPResponse_200 = mock(ProxySIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -472,7 +465,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(0)).respond(any());
     verify(responseConsumer, Mockito.times(1)).accept(resp_captor.capture());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
@@ -501,15 +493,14 @@ public class ProxyControllerServerTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ProxySIPResponse proxySIPResponse_180 = mock(ProxySIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -549,7 +540,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(1)).respond(resp_captor.capture());
     verify(responseConsumer, Mockito.times(0)).accept(any());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
@@ -578,15 +568,14 @@ public class ProxyControllerServerTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ProxySIPResponse proxySIPResponse_3xx = mock(ProxySIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -622,7 +611,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(1)).respond(resp_captor.capture());
     verify(responseConsumer, Mockito.times(0)).accept(any());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
@@ -651,15 +639,14 @@ public class ProxyControllerServerTest {
             new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.INVITE));
     ProxySIPResponse proxySIPResponse_408 = mock(ProxySIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -697,7 +684,6 @@ public class ProxyControllerServerTest {
     // verify
     ArgumentCaptor<ProxySIPResponse> captor = ArgumentCaptor.forClass(ProxySIPResponse.class);
     verify(proxyTransaction, Mockito.times(1)).updateBestResponse(captor.capture());
-    verify(proxySIPRequest, Mockito.times(1)).setClonedRequest(eq(sipRequest));
     verify(proxyTransaction, Mockito.times(1)).respond(resp_captor.capture());
     verify(responseConsumer, Mockito.times(0)).accept(any());
     List<ProxySIPResponse> bestResponses = captor.getAllValues();
@@ -729,15 +715,14 @@ public class ProxyControllerServerTest {
     when(sipResponse_420.getStatusCode()).thenReturn(Response.BAD_EXTENSION);
     when(sipResponse_404.getStatusCode()).thenReturn(Response.NOT_FOUND);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -794,15 +779,14 @@ public class ProxyControllerServerTest {
     SIPResponse sipResponse_200 = mock(SIPResponse.class);
     SIPResponse sipResponse_420 = mock(SIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);
@@ -873,15 +857,14 @@ public class ProxyControllerServerTest {
     ProxySIPResponse proxySIPResponse_200 = mock(ProxySIPResponse.class);
     SIPResponse sipResponse_200 = mock(SIPResponse.class);
     Consumer<ProxySIPResponse> responseConsumer = mock(Consumer.class);
-    when(cookie.getLocation()).thenReturn(destination);
+    when(cookie.getDestination()).thenReturn(destination);
     when(destination.getLoadBalancer()).thenReturn(lbWeight);
     AtomicInteger count = new AtomicInteger(1);
     when(trunkService.getNextElement(eq(lbWeight), anyInt()))
         .thenAnswer(invocationOnMock -> count.getAndDecrement() > 0 ? ep : null);
     when(proxySIPRequest.getCookie()).thenReturn(cookie);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
-    proxyController.setOriginalRequest(sipRequest);
-    proxyController.setPreprocessedRequest(sipRequest);
+    when(proxySIPRequest.getOriginalRequest()).thenReturn(sipRequest);
     proxyController.setOurRequest(proxySIPRequest);
     proxyController.setStateMode(ControllerConfig.STATEFUL);
     proxyController.setProxyTransaction(proxyTransaction);

@@ -16,7 +16,6 @@ import lombok.NonNull;
 @CustomLog
 public class HostPortUtil {
 
-
   private HostPortUtil() {}
 
   private static Predicate<ListenInterface> hostPortCheck =

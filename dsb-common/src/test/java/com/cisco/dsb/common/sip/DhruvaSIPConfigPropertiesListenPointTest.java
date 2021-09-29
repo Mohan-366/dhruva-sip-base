@@ -1,6 +1,9 @@
 package com.cisco.dsb.common.sip;
 
 import static com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties.SIP_LISTEN_POINTS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
@@ -9,20 +12,17 @@ import com.cisco.dsb.common.transport.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.ArrayList;
 import java.util.List;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
-import org.springframework.mock.env.MockEnvironment;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public class DhruvaSIPConfigPropertiesListenPointTest {
 
-  @InjectMocks DhruvaSIPConfigProperties sipConfigProperties;
+  DhruvaSIPConfigProperties sipConfigProperties;
 
-  @Mock Environment env = new MockEnvironment();
+  Environment env;
 
   SIPListenPoint defaultListenPoint;
 
@@ -34,7 +34,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
 
   @BeforeTest
   void init() {
-    MockitoAnnotations.initMocks(this);
+    env = mock(Environment.class);
     defaultListenPoint =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("TCPNetwork")
@@ -77,10 +77,18 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
             .build();
   }
 
+  @BeforeMethod
+  public void setup() {
+    reset(env);
+    doAnswer(invocationOnMock -> invocationOnMock.getArgument(2))
+        .when(env)
+        .getProperty(anyString(), any(), any());
+  }
+
   @Test
   public void getListenPointsWithDefaultValues() {
+    sipConfigProperties = new DhruvaSIPConfigProperties(env);
     when(env.getProperty(SIP_LISTEN_POINTS)).thenReturn(null);
-
     List<SIPListenPoint> defaultListenPointList = new ArrayList<SIPListenPoint>();
     List<SIPListenPoint> listenPoints = sipConfigProperties.getListeningPoints();
     defaultListenPointList.add(defaultListenPoint);
@@ -90,9 +98,10 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
 
   @Test
   public void getListenPointsFromJSONConfig() {
-    when(env.getProperty("sipListenPoints"))
+    when(env.getProperty(SIP_LISTEN_POINTS))
         .thenReturn(
             "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false}]");
+    sipConfigProperties = new DhruvaSIPConfigProperties(env);
 
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tcpListenPoint);
@@ -104,6 +113,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
             "[{\"name\":\"TCPNetwork\",hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5061,\"recordRoute\":true,\"attachExternalIP\":false}]");
+    sipConfigProperties = new DhruvaSIPConfigProperties(env);
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(defaultListenPoint);
     Assert.assertEquals(sipConfigProperties.getListeningPoints(), expectedListenPointList);
@@ -124,6 +134,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
             "[{\"name\":\"TCPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TCP\",\"port\":5062,\"recordRoute\":true,\"attachExternalIP\":false},{\"name\":\"UDPNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"UDP\",\"port\":5060,\"recordRoute\":false,\"attachExternalIP\":false}]");
+    sipConfigProperties = new DhruvaSIPConfigProperties(env);
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tcpListenPoint);
     expectedListenPointList.add(udpListenPoint);
@@ -135,6 +146,7 @@ public class DhruvaSIPConfigPropertiesListenPointTest {
     when(env.getProperty("sipListenPoints"))
         .thenReturn(
             "[{\"name\":\"TLSNetwork\",\"hostIPAddress\":\"10.78.98.21\",\"transport\":\"TLS\",\"port\":5063,\"recordRoute\":true,\"attachExternalIP\":false, \"tlsAuthType\": \"MTLS\", \"enableCertService\": true}]");
+    sipConfigProperties = new DhruvaSIPConfigProperties(env);
     List<SIPListenPoint> expectedListenPointList = new ArrayList<SIPListenPoint>();
     expectedListenPointList.add(tlsListenPoint);
     Assert.assertEquals(sipConfigProperties.getListeningPoints(), expectedListenPointList);

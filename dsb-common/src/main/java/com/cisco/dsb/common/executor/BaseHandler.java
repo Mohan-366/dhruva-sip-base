@@ -2,6 +2,7 @@ package com.cisco.dsb.common.executor;
 
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
+import com.cisco.dsb.common.util.log.LoggingContext;
 import com.cisco.wx2.util.stripedexecutor.StripedRunnable;
 import java.util.Map;
 import org.apache.commons.collections4.map.AbstractReferenceMap;
@@ -26,10 +27,20 @@ public abstract class BaseHandler implements StripedRunnable {
   @Override
   public void run() {
 
-    try {
-      this.executeRun();
-    } catch (Throwable t) {
-      logger.error("BaseHandler Exception: " + t.getMessage(), t);
+    // Use true in the LoggingContext destructor to make sure there aren't residuals left over from
+    // previous runs.
+    try (LoggingContext loggingContext = LoggingContext.createEmptyContext()) {
+      try {
+        // If this thread was just spawned by a thread that already has a tracking ID,
+        // the tracking ID will be copied to this one. So, clear it to be sure,
+        // before setting the real tracking ID
+        String callId = getCallId();
+        loggingContext.setTrackingIdFromCall(callId);
+        this.executeRun();
+
+      } catch (Throwable t) {
+        logger.error("BaseHandler Exception: " + t.getMessage(), t);
+      }
     }
   }
 

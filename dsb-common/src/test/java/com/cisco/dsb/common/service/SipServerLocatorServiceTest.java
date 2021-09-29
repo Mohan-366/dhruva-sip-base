@@ -54,7 +54,8 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     when(locator.resolve(
             sipDestination.getAddress(),
             sipDestination.getTransportLookupType(),
-            sipDestination.getPort()))
+            sipDestination.getPort(),
+            null))
         .thenReturn(
             new LocateSIPServersResponse(
                 Collections.singletonList(
@@ -89,7 +90,8 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     when(locator.resolve(
             sipDestination.getAddress(),
             sipDestination.getTransportLookupType(),
-            sipDestination.getPort()))
+            sipDestination.getPort(),
+            null))
         .thenThrow(iEx);
     CompletableFuture<LocateSIPServersResponse> responseCF =
         sipServerLocatorService.locateDestinationAsync(user, sipDestination, callId);

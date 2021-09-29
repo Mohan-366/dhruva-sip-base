@@ -102,6 +102,11 @@ public class DhruvaLogger implements Logger {
   }
 
   @Override
+  public void trace(String s, Object... objects) {
+    logger.trace(s, objects);
+  }
+
+  @Override
   public void emitEvent(
       EventType eventType,
       EventSubType eventSubType,
@@ -309,6 +314,16 @@ public class DhruvaLogger implements Logger {
   @Override
   public boolean isInfoEnabled() {
     return logger.isInfoEnabled();
+  }
+
+  @Override
+  public boolean isErrorEnabled() {
+    return logger.isErrorEnabled();
+  }
+
+  @Override
+  public boolean isTraceEnabled() {
+    return logger.isTraceEnabled();
   }
 
   // Should be removed once we have lambda support in Slf4j

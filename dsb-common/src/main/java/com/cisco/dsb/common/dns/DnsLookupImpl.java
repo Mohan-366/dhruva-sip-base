@@ -22,7 +22,6 @@ import org.xbill.DNS.Type;
 @CustomLog
 public class DnsLookupImpl implements DnsLookup {
 
-
   private final SrvRecordCache srvCache;
   private final ARecordCache aCache;
   private final LookupFactory lookupFactory;

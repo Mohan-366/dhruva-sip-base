@@ -9,8 +9,10 @@ import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupInterface;
+import com.cisco.wx2.dto.User;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -38,6 +40,17 @@ public class DnsServerGroupUtil {
       String host, String network, Transport protocol, int lbType) {
 
     // create DNS ServerGroup from from SRV, if SRV lookup fails then do A records lookup
+    // host = hostname:port:UUID for testing (both SRV and A record, incase of SRV add 0 as port)
+    // host = hostname:port for A
+    // host = hostname for SRV
+
+    String[] parsedHost = host.split(":");
+    String hostname = parsedHost[0];
+    int port;
+    User userInject = null;
+    port = parsedHost.length > 1 ? Integer.parseInt(parsedHost[1]) : 0;
+    String userId = parsedHost.length > 2 ? parsedHost[2] : null;
+    if (userId != null) userInject = User.builder().id(UUID.fromString(userId)).build();
 
     LocateSIPServerTransportType transportType = LocateSIPServerTransportType.TLS;
     switch (protocol) {
@@ -54,9 +67,9 @@ public class DnsServerGroupUtil {
         return Mono.error(new DhruvaException("unknown transport type" + protocol));
     }
 
-    DnsDestination dnsDestination = new DnsDestination(host, 0, transportType);
+    DnsDestination dnsDestination = new DnsDestination(hostname, port, transportType);
     CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse =
-        locatorService.locateDestinationAsync(null, dnsDestination, null);
+        locatorService.locateDestinationAsync(userInject, dnsDestination, null);
 
     return serverGroupInterfaceMono(locateSIPServersResponse, network, host, protocol, lbType);
   }

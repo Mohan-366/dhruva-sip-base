@@ -31,7 +31,6 @@ public class DhruvaNetwork implements Cloneable {
   /** The default network. */
   public static DhruvaNetwork DEFAULT = null;
 
-
   public DhruvaNetwork(SIPListenPoint sipListenPoint) {
     this.sipListenPoint = sipListenPoint;
   }
@@ -134,6 +133,10 @@ public class DhruvaNetwork implements Cloneable {
       logger.error("network name provided and sip listen point mismatch, should be same");
       throw new DhruvaException("mismatch in network name and sip listen point");
     }
+  }
+
+  public static void removeNetwork(String name) {
+    networkMap.remove(name);
   }
 
   public String getName() {

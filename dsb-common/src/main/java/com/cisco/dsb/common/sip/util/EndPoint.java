@@ -13,7 +13,6 @@ import lombok.*;
 @CustomLog
 public class EndPoint implements Cloneable {
 
-
   /* The logical network for this end point */
   protected String network;
 

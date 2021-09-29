@@ -63,7 +63,7 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 - Set the URL as `http://localhost:8080/dsb_calling_app_war_exploded/`
 - In VM options field enter: `-Xmx2048m -Xms1024m -DexternalUrlProtocol=http -DjedisPoolHealthCheckMonitorEnabled=false`.
 - Now go to the deployment tab
-- Use + button to add the artifact `dsb_calling_app_war_exploded` (pick one with 'exploded' word in name, it will speedup your tomcat run)
+- Use + button to add the artifact `sample-app-war-exploded` (pick one with 'exploded' word in name, it will speedup your tomcat run). You cab deploy any application, just choose the right war file.
 
 
 #### ENV variables to be configured
@@ -122,3 +122,4 @@ dynamicServerGroup:
 
 * For DynamicSG/ Static SG without any SGPolicy configured, default SGPolicy would be ```global```. 
 * Make sure while configuring ```sipServerGroups```, ```networkName``` should be one of the ```sipListenPoints``` network name. 
+* Make sure to check the README of the app you are deploying, so that proper env variables are passed specific to that App.

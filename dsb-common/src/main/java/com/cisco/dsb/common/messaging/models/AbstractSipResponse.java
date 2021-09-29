@@ -4,7 +4,6 @@ import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.LogContext;
 import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ClientTransaction;
@@ -125,14 +124,6 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   public String getNetwork() {
     return null;
   }
-
-  @Override
-  public LogContext getLogContext() {
-    return null;
-  }
-
-  @Override
-  public void setLoggingContext(LogContext loggingContext) {}
 
   public boolean isResponse() {
     return true;

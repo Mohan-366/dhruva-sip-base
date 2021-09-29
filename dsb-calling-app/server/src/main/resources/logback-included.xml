@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<included>
+    <if condition='property("save_to_file").equalsIgnoreCase("true")'>
+        <then>
+            <appender name="FILE_SYNC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <!-- logs are placed in $TOMCAT_HOME/bin/-->
+                <file>${log_file:-logs/log.txt}</file>
+                <append>false</append>
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <fileNamePattern>log-%d{yyyy-MM-dd}.%i.txt</fileNamePattern>
+                    <maxFileSize>200MB</maxFileSize>
+                    <maxHistory>10</maxHistory>
+                    <totalSizeCap>5GB</totalSizeCap>
+                </rollingPolicy>
+                <layout class="com.cisco.wx2.server.logging.PIIMaskingLayout">
+                    <environment>${environment:-local}</environment>
+                    <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </layout>
+                <filter class="com.cisco.wx2.server.logging.filter.CustomThresholdFilter">
+                    <level>${stdout_level_threshold:-INHERITED}</level>
+                </filter>
+            </appender>
+
+            <appender name="FILE" class="ch.qos.logback.classic.AsyncAppender">
+                <queueSize>1024</queueSize>
+                <neverBlock>true</neverBlock>
+                <includeCallerData>${logback_include_caller_data:-false}</includeCallerData>
+                <appender-ref ref="FILE_SYNC" />
+            </appender>
+            <root level="${log_level:-INFO}">
+                <appender-ref ref="FILE" />
+            </root>
+        </then>
+    </if>
+</included>

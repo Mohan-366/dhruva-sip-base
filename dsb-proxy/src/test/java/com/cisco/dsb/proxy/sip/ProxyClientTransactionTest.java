@@ -119,7 +119,6 @@ public class ProxyClientTransactionTest {
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, serverTransaction, executionContext);
 
-    proxyRequest.setClonedRequest((SIPRequest) request.clone());
     proxyRequest.setOutgoingNetwork(testNetwork1.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);
@@ -147,7 +146,6 @@ public class ProxyClientTransactionTest {
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, serverTransaction, executionContext);
 
-    proxyRequest.setClonedRequest((SIPRequest) request.clone());
     proxyRequest.setOutgoingNetwork(network.getName());
     ProxyClientTransaction proxyClientTransaction =
         new ProxyClientTransaction(proxyTransaction, clientTransaction, proxyCookie, proxyRequest);

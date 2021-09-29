@@ -150,7 +150,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
    */
   public synchronized ProxySIPRequest proxyTo(ProxySIPRequest proxySIPRequest) {
 
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
 
     ProxyCookie cookie = proxySIPRequest.getCookie();
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
@@ -223,7 +223,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     logger.debug("Entering prepareRequest()");
     // Always get cloned request
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
     RouteHeader route;
 
     if (params == null) params = getDefaultParams();
@@ -456,7 +456,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   protected void addRecordRoute(ProxySIPRequest proxySIPRequest, URI _requestURI)
       throws SipException, ParseException {
     logger.debug("Entering addRecordRoute()");
-    SIPRequest request = proxySIPRequest.getClonedRequest();
+    SIPRequest request = proxySIPRequest.getRequest();
     ProxyBranchParamsInterface params = proxySIPRequest.getParams();
     if (request.getMethod().equals(Request.INVITE)
         || request.getMethod().equals(Request.SUBSCRIBE)

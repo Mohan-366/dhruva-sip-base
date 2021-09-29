@@ -139,6 +139,7 @@ public class ProxyService {
     // Start the Executor Service, while initialising the ProxyService, that is used for Timer C.
     // However, tasks will be scheduled in ProxyClientTransaction
     dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
+    // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
@@ -203,6 +204,7 @@ public class ProxyService {
   private BiConsumer<Throwable, Object> requestErrorHandler() {
     return (err, o) -> {
       try {
+        logger.error("Exception while processing request");
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;

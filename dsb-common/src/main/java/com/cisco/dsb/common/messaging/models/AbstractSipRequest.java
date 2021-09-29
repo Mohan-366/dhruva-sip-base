@@ -3,9 +3,6 @@ package com.cisco.dsb.common.messaging.models;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.LogContext;
-import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.io.Serializable;
 import javax.sip.Dialog;
@@ -24,8 +21,7 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   private String reqURI;
   private String correlationID;
   private boolean isMidCall;
-
-  private static Logger logger = DhruvaLoggerFactory.getLogger(AbstractSipRequest.class);
+  protected final Request originalRequest;
 
   public AbstractSipRequest(
       ExecutionContext executionContext,
@@ -33,14 +29,35 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
       ServerTransaction st,
       Request req) {
     super(JainSipHelper.getCallId(req), JainSipHelper.getCSeq(req));
-    this.req = req;
+    this.req = (Request) req.clone();
     this.st = st;
     this.provider = sipProvider;
     this.context = executionContext;
+    this.originalRequest = req;
+  }
+
+  public AbstractSipRequest(AbstractSipRequest abstractSipRequest) {
+    super(
+        JainSipHelper.getCallId(abstractSipRequest.req),
+        JainSipHelper.getCSeq(abstractSipRequest.req));
+    this.req = (Request) abstractSipRequest.req.clone();
+    this.st = abstractSipRequest.st;
+    this.provider = abstractSipRequest.provider;
+    this.context = abstractSipRequest.context;
+    this.callType = abstractSipRequest.callType;
+    this.sessionId = abstractSipRequest.sessionId;
+    this.reqURI = abstractSipRequest.reqURI;
+    this.correlationID = abstractSipRequest.correlationID;
+    this.isMidCall = abstractSipRequest.isMidCall;
+    this.originalRequest = abstractSipRequest.originalRequest;
   }
 
   public SIPRequest getRequest() {
     return (SIPRequest) req;
+  }
+
+  public SIPRequest getOriginalRequest() {
+    return (SIPRequest) originalRequest;
   }
 
   @Override
@@ -121,14 +138,6 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
 
   @Override
   public void setRequest(boolean isRequest) {}
-
-  @Override
-  public LogContext getLogContext() {
-    return null;
-  }
-
-  @Override
-  public void setLoggingContext(LogContext loggingContext) {}
 
   public boolean isResponse() {
     return false;

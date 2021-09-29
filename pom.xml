@@ -36,12 +36,15 @@
         <module>dsb-common</module>
         <module>dsb-calling-app</module>
         <module>dsb-proxy</module>
+        <module>sample-app</module>
         <module>dsb-trunk-service</module>
     </modules>
 
     <properties>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.failOnError>true</spotbugs.failOnError>
+        <!-- SpotBugs should ignore JAIN SIP .class files from AspectJ weaving -->
+        <spotbugs.onlyAnalyze>com.cisco.-</spotbugs.onlyAnalyze>
         <jacoco.version>0.8.4</jacoco.version>
     </properties>
 
@@ -91,11 +94,21 @@
             <groupId>javax.sip</groupId>
             <artifactId>jain-sip-ri</artifactId>
             <version>1.3.0-91</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
+        </dependency>
+        <!-- DNS Java dependencies -->
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ciscospark</groupId>
+            <artifactId>cisco-spark-logging</artifactId>
         </dependency>
     </dependencies>
     <build>

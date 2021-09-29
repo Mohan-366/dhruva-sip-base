@@ -84,6 +84,8 @@ public interface Logger {
   // Should be removed , adding for compatible now
   void log(Level level, String message, Throwable throwable);
 
+  void trace(String s, Object... objects);
+
   // Should be removed , adding for compatible now
   boolean isDebugEnabled();
 
@@ -92,4 +94,8 @@ public interface Logger {
 
   // Should be removed , adding for compatible now
   boolean isInfoEnabled();
+
+  boolean isErrorEnabled();
+
+  boolean isTraceEnabled();
 }
