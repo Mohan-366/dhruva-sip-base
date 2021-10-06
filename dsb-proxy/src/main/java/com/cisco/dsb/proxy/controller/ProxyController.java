@@ -253,9 +253,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   private Function<ProxySIPRequest, ProxySIPRequest> proxyPostProcessor =
       proxySIPRequest -> {
-        SIPRequest request = proxySIPRequest.getRequest();
         Destination destination = proxySIPRequest.getDestination();
-        ProxyCookieImpl cookie = new ProxyCookieImpl(destination);
+        ProxyCookieImpl cookie = (ProxyCookieImpl) proxySIPRequest.getCookie();
         cookie.setDestination(destination);
         return proxySIPRequest;
       };
