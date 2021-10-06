@@ -1,9 +1,8 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.certs.client.CertsClientFactory;
-import com.cisco.wx2.certs.client.CertsX509TrustManager;
 import com.cisco.wx2.certs.common.util.CRLRevocationCache;
 import com.cisco.wx2.certs.common.util.OCSPRevocationCache;
 import com.cisco.wx2.certs.common.util.RevocationManager;
@@ -39,7 +38,7 @@ public class CertTrustManager {
     try {
 
       this.trustManager =
-          new CertsX509TrustManager(
+          CertTrustManagerFactory.getCertsX509TrustManager(
               certsClientFactory(),
               orgsCache(),
               revocationManager(),

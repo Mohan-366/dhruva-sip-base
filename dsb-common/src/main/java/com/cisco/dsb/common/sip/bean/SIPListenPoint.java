@@ -1,7 +1,7 @@
 package com.cisco.dsb.common.sip.bean;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
-import com.cisco.dsb.common.transport.TLSAuthenticationType;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -154,7 +154,7 @@ public class SIPListenPoint {
       this.port = DhruvaSIPConfigProperties.DEFAULT_PORT;
       this.recordRoute = DhruvaSIPConfigProperties.DEFAULT_RECORD_ROUTE_ENABLED;
       this.attachExternalIP = DhruvaSIPConfigProperties.DEFAULT_ATTACH_EXTERNAL_IP;
-      this.tlsAuthType = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT_AUTH;
+      this.tlsAuthType = DhruvaSIPConfigProperties.DEFAULT_TLS_AUTH_TYPE;
       this.enableCertService = DhruvaSIPConfigProperties.DEFAULT_ENABLE_CERT_SERVICE;
     }
 

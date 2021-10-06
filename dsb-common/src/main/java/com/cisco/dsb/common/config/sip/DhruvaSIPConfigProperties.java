@@ -2,7 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.bean.SIPProxy;
-import com.cisco.dsb.common.transport.TLSAuthenticationType;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonUtilFactory;
 import com.cisco.wx2.dto.BuildInfo;
@@ -42,6 +42,12 @@ public class DhruvaSIPConfigProperties {
 
   public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
 
+  public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.MTLS;
+
+  public static final Boolean DEFAULT_ENABLE_CERT_SERVICE = false;
+
+  private static final String ENABLE_CERT_SERVICE = "dsb.enableCertService";
+
   // timer C = 3 mins
   public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 180000;
 
@@ -49,9 +55,7 @@ public class DhruvaSIPConfigProperties {
 
   private static final String USE_REDIS_AS_CACHE = "useRedis";
 
-  public static final TLSAuthenticationType DEFAULT_TRANSPORT_AUTH = TLSAuthenticationType.MTLS;
-
-  public static final boolean DEFAULT_ENABLE_CERT_SERVICE = false;
+  private static final String TLS_AUTH_TYPE = "dsb.transportAuth";
 
   private static final String SIP_CERTIFICATE = "sipCertificate";
 
@@ -126,6 +130,8 @@ public class DhruvaSIPConfigProperties {
   private static final String LOG_KEEP_ALIVES_ENABLED = "dsb.logKeepAlivesEnabled";
   private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
 
+  private static final String DEPLOYMENT_NAME = "dsb.deploymentName";
+  private static final String DEFAULT_DEPLOYMENT_NAME = "DEV";
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
   private String[] tlsProtocols = new String[] {"TLSv1.2"};
@@ -172,6 +178,10 @@ public class DhruvaSIPConfigProperties {
 
   private List<String> allowedCiphers;
   private boolean isHostPortEnabled;
+
+  private String tlsAuthType;
+  private Boolean enableCertService;
+  private String deploymentName;
 
   @Autowired
   public DhruvaSIPConfigProperties(Environment env) {
@@ -256,6 +266,9 @@ public class DhruvaSIPConfigProperties {
         env.getProperty(TLS_KEY_STORE_TYPE, String.class, DEFAULT_TLS_KEY_STORE_TYPE);
     this.keyStorePassword = env.getProperty(TLS_KEY_STORE_PASSWORD, String.class);
     this.clientAuthType = env.getProperty(CLIENT_AUTH_TYPE, String.class, DEFAULT_CLIENT_AUTH_TYPE);
+    this.enableCertService =
+        env.getProperty(ENABLE_CERT_SERVICE, Boolean.class, DEFAULT_ENABLE_CERT_SERVICE);
+    this.tlsAuthType = env.getProperty(TLS_AUTH_TYPE, String.class, DEFAULT_TLS_AUTH_TYPE.name());
     this.logKeepAlivesEnabled =
         env.getProperty(LOG_KEEP_ALIVES_ENABLED, Boolean.class, DEFAULT_LOG_KEEP_ALIVES_ENABLED);
     this.keepAlivePeriod =
@@ -268,6 +281,7 @@ public class DhruvaSIPConfigProperties {
     this.minKeepAliveTimeSeconds =
         env.getProperty(
             MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
+    this.deploymentName = env.getProperty(DEPLOYMENT_NAME, String.class, DEFAULT_DEPLOYMENT_NAME);
   }
 
   public String getAllowedMethods() {
@@ -499,5 +513,23 @@ public class DhruvaSIPConfigProperties {
 
   public String getMinKeepAliveTimeSeconds() {
     return this.minKeepAliveTimeSeconds;
+  }
+
+  public String getDeploymentName() {
+    return deploymentName;
+  }
+
+  public TLSAuthenticationType getTlsAuthType() {
+    TLSAuthenticationType authType;
+    try {
+      authType = TLSAuthenticationType.valueOf(this.tlsAuthType);
+    } catch (IllegalArgumentException e) {
+      authType = TLSAuthenticationType.MTLS;
+    }
+    return authType;
+  }
+
+  public Boolean getEnableCertService() {
+    return this.enableCertService;
   }
 }

@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.util.OrgId;

@@ -3,13 +3,20 @@ package com.cisco.dsb.common.sip.jain;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
+import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.google.common.base.Preconditions;
+import gov.nist.core.net.NetworkLayer;
 import gov.nist.javax.sip.SipStackImpl;
+import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.util.*;
 import javax.annotation.Nonnull;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
 import javax.sip.*;
 import javax.validation.constraints.PositiveOrZero;
+import lombok.CustomLog;
 
+@CustomLog
 public class JainStackInitializer {
 
   private JainStackInitializer() {}
@@ -171,15 +178,22 @@ public class JainStackInitializer {
       @PositiveOrZero int port,
       @Nonnull String transport,
       SipListener listener,
-      DhruvaExecutorService executorService)
-      throws PeerUnavailableException, TransportNotSupportedException, InvalidArgumentException,
-          ObjectInUseException, TooManyListenersException {
+      DhruvaExecutorService executorService,
+      TrustManager trustManager,
+      KeyManager keyManager)
+      throws Exception {
     sipFactory.setPathName(path);
     SipStack sipStack = sipFactory.createSipStack(properties);
-    if (sipStack instanceof SipStackImpl) {
+    if (sipStack instanceof SipStackImpl
+        && ((SipStackImpl) sipStack).messageProcessorFactory != null) {
       SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
       ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
           .initFromApplication(dhruvaSIPConfigProperties, executorService);
+    }
+    NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
+    if (networkLayer instanceof DsbNetworkLayer) {
+      logger.info("initializing SSLContext in DsbNetworkLayer");
+      ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager);
     }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);

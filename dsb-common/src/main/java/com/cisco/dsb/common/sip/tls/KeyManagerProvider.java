@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import java.util.Objects;
 import java.util.Optional;

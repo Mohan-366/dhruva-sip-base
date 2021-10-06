@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.wx2.certs.client.CertsClientFactory;
 import com.cisco.wx2.certs.client.CertsX509TrustManager;

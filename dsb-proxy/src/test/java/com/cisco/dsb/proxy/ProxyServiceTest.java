@@ -38,6 +38,8 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
 import javax.sip.*;
 import org.mockito.*;
 import org.testng.Assert;
@@ -59,7 +61,12 @@ public class ProxyServiceTest {
 
   @Mock DhruvaExecutorService dhruvaExecutorService;
 
-  @Spy DhruvaServer server = new DhruvaServerImpl(dhruvaExecutorService, metricsService);
+  @Spy TrustManager trustManager;
+  @Spy KeyManager keyManager;
+
+  @Spy
+  DhruvaServer server =
+      new DhruvaServerImpl(dhruvaExecutorService, metricsService, trustManager, keyManager);
 
   @Mock Dialog dialog;
 
@@ -100,6 +107,8 @@ public class ProxyServiceTest {
     when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
     ((DhruvaServerImpl) server).setExecutorService(dhruvaExecutorService);
     ((DhruvaServerImpl) server).setMetricService(metricsService);
+    ((DhruvaServerImpl) server).setTrustManager(trustManager);
+    ((DhruvaServerImpl) server).setKeyManager(keyManager);
     when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
     when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keyStorePath);
     when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
@@ -418,19 +427,5 @@ public class ProxyServiceTest {
               Assert.assertEquals(proxyResponse, proxySIPResponse);
             })
         .verifyComplete();
-  }
-
-  @Test(description = "test creation of keystore")
-  public void testTKeyStoreCreation() {
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStore"), keyStorePath);
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStorePassword"), keyStorePassword);
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStoreType"), keyStoreType);
-    Optional<SipStack> optionalSipStackTls = proxyService.getSipStack(tlsListenPoint4.getName());
-    SipStack sipStackTls =
-        optionalSipStackTls.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
-    if (sipStackTls instanceof SipStackImpl) {
-      SipStackImpl sipStackImpl = (SipStackImpl) sipStackTls;
-      Assert.assertEquals(sipStackImpl.getClientAuth(), ClientAuthType.Enabled);
-    }
   }
 }

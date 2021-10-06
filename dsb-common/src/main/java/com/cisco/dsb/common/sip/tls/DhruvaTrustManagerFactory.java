@@ -1,20 +1,22 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import lombok.CustomLog;
 
+@CustomLog
 public class DhruvaTrustManagerFactory {
-  private static final Logger logger =
-      DhruvaLoggerFactory.getLogger(DhruvaTrustManagerFactory.class);
 
-  public static TrustManager getTrustManager(
-      String deploymentName, TLSAuthenticationType tlsAuthenticationType, boolean enableCertService)
+  public static TrustManager getTrustManager(DhruvaSIPConfigProperties dhruvaSIPConfigProperties)
       throws Exception {
+    TLSAuthenticationType tlsAuthenticationType = dhruvaSIPConfigProperties.getTlsAuthType();
+    Boolean enableCertService = dhruvaSIPConfigProperties.getEnableCertService();
+    String deploymentName = dhruvaSIPConfigProperties.getDeploymentName();
+
     if (tlsAuthenticationType == TLSAuthenticationType.MTLS && enableCertService) {
       CertTrustManager certTrustManager = CertTrustManager.createCertTrustManager();
 
@@ -51,7 +53,8 @@ public class DhruvaTrustManagerFactory {
       };
     else {
       // Default mTLS
-      return DhruvaTrustManager.getSystemTrustManager();
+      DsbTrustManager.initTransportProperties(dhruvaSIPConfigProperties);
+      return DsbTrustManager.getSystemTrustManager();
     }
   }
 }

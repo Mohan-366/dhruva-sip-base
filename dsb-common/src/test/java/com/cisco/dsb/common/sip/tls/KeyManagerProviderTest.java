@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;

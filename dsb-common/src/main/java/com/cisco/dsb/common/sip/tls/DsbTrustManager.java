@@ -1,5 +1,6 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
@@ -19,9 +20,9 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.jetbrains.annotations.NotNull;
 
-public class DhruvaTrustManager implements X509TrustManager {
+public class DsbTrustManager implements X509TrustManager {
 
-  private static Logger logger = DhruvaLoggerFactory.getLogger(DhruvaTrustManager.class);
+  private static Logger logger = DhruvaLoggerFactory.getLogger(DsbTrustManager.class);
   private static String trustStoreFile;
   private static String trustStoreType;
   private static String trustStorePassword;
@@ -30,31 +31,27 @@ public class DhruvaTrustManager implements X509TrustManager {
   private static boolean enableOcsp;
   private final X509TrustManager trustManager;
 
-  static {
-    initTransportProperties();
-  }
-
-  public static DhruvaTrustManager getSystemTrustManager() throws Exception {
+  public static DsbTrustManager getSystemTrustManager() throws Exception {
     return createSystemTrustManager();
   }
 
-  private static void initTransportProperties() {
+  public static void initTransportProperties(DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
     System.setProperty(
         "com.sun.security.ocsp.timeout",
-        String.valueOf(DhruvaNetwork.getOcspResponseTimeoutSeconds()));
-    trustStoreFile = DhruvaNetwork.getTrustStoreFilePath();
-    trustStoreType = DhruvaNetwork.getTrustStoreType();
-    trustStorePassword = DhruvaNetwork.getTrustStorePassword();
-    softFailEnabled = DhruvaNetwork.isTlsCertRevocationSoftFailEnabled();
-    enableOcsp = DhruvaNetwork.isTlsOcspEnabled();
+        String.valueOf(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()));
+    trustStoreFile = dhruvaSIPConfigProperties.getTrustStoreFilePath();
+    trustStoreType = dhruvaSIPConfigProperties.getTrustStoreType();
+    trustStorePassword = dhruvaSIPConfigProperties.getTrustStorePassword();
+    softFailEnabled = dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled();
+    enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
     javaHome = System.getProperty("java.home");
   }
 
-  public DhruvaTrustManager(X509TrustManager trustManager) {
+  public DsbTrustManager(X509TrustManager trustManager) {
     this.trustManager = trustManager;
   }
 
-  private static DhruvaTrustManager createSystemTrustManager() throws Exception {
+  private static DsbTrustManager createSystemTrustManager() throws Exception {
 
     TrustManagerFactory tmf =
         TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -74,7 +71,7 @@ public class DhruvaTrustManager implements X509TrustManager {
         logger.info(
             "Initializing trust manager with {} certs as trust anchors",
             ((X509TrustManager) tm).getAcceptedIssuers().length);
-        return new DhruvaTrustManager((X509TrustManager) tm);
+        return new DsbTrustManager((X509TrustManager) tm);
       }
     }
 
@@ -99,12 +96,18 @@ public class DhruvaTrustManager implements X509TrustManager {
   public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
       throws CertificateException {
     trustManager.checkClientTrusted(x509Certificates, s);
+    for (X509Certificate cert : x509Certificates) {
+      cert.checkValidity();
+    }
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
       throws CertificateException {
     trustManager.checkServerTrusted(x509Certificates, s);
+    for (X509Certificate cert : x509Certificates) {
+      cert.checkValidity();
+    }
   }
 
   @Override
