@@ -27,10 +27,7 @@ public class DsbTrustManagerTest {
   @BeforeClass
   public void before() {
     MockitoAnnotations.initMocks(this);
-    System.out.println("checking resources path: " + DsbTrustManagerTest.class.getClassLoader()
-        .getResource("logback-included.xml").getPath());
     keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    System.out.println("keystore file path: " + keystorePath);
   }
 
   @Test(
