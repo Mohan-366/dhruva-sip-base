@@ -24,7 +24,7 @@ public class KeyManagerTest {
   @Test
   public void testKeyStoreCreation() {
     String keystoreFile =
-        Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath();
+        KeyManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
     String keystorePassword = "dsb123";
     String keystoreType = "jks";
     when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keystoreFile);
@@ -37,7 +37,7 @@ public class KeyManagerTest {
   @Test
   public void testKeyManager() {
     String keystoreFile =
-        Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath();
+        KeyManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
     String keystorePassword = "dsb123";
     String keystoreType = "jks";
     when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keystoreFile);

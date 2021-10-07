@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public class DsbTrustManagerTest {
@@ -25,12 +24,13 @@ public class DsbTrustManagerTest {
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
   private String keystorePath;
 
-
   @BeforeClass
   public void before() {
     MockitoAnnotations.initMocks(this);
+    System.out.println("checking resources path: " + DsbTrustManagerTest.class.getClassLoader()
+        .getResource("logback-included.xml").getPath());
     keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    System.out.println("keystore file path" + keystorePath);
+    System.out.println("keystore file path: " + keystorePath);
   }
 
   @Test(
