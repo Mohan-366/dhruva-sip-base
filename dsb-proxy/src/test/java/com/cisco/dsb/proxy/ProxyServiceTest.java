@@ -89,15 +89,10 @@ public class ProxyServiceTest {
   SIPListenPoint tcpListenPoint3;
   SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
-  String keyStorePath;
-  String keyStorePassword;
-  String keyStoreType;
+
 
   @BeforeClass
   public void setup() throws Exception {
-    keyStorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    keyStorePassword = "dsb123";
-    keyStoreType = "jks";
 
     MockitoAnnotations.initMocks(this);
     when(dhruvaExecutorService.getScheduledExecutorThreadPool(any()))
@@ -108,9 +103,6 @@ public class ProxyServiceTest {
     ((DhruvaServerImpl) server).setTrustManager(trustManager);
     ((DhruvaServerImpl) server).setKeyManager(keyManager);
     when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
-    when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keyStorePath);
-    when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
-    when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
     when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
     when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");
     when(dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");

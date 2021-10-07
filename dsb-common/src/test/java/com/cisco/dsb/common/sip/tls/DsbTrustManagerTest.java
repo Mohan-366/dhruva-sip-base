@@ -15,6 +15,7 @@ import javax.net.ssl.X509TrustManager;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -22,22 +23,23 @@ public class DsbTrustManagerTest {
 
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
+  private String keystorePath;
 
-  @BeforeTest
+
+  @BeforeClass
   public void before() {
     MockitoAnnotations.initMocks(this);
+    keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
+    System.out.println("keystore file path" + keystorePath);
   }
 
   @Test(
       description =
-          "fetch system trust manager of a trust manager factory and check for valid certificate in keystor")
+          "fetch system trust manager of a trust manager factory and check for valid certificate in keystore")
   public void testSystemTrustManager() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    System.out.println(Thread.currentThread().getContextClassLoader().getResource("keystore.jks"));
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath())
-        .thenReturn(
-            Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath());
+    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
     when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
     when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
     when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
@@ -47,8 +49,6 @@ public class DsbTrustManagerTest {
     Assert.assertTrue(tm instanceof DsbTrustManager);
     Assert.assertTrue(tm instanceof X509TrustManager);
     X509Certificate cert = CertUtil.pemToCert(("server.crt.pem"));
-    System.out.println(cert.getNotBefore());
-    System.out.println(cert.getNotAfter());
 
     X509Certificate[] certs = {cert};
     ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
@@ -61,9 +61,7 @@ public class DsbTrustManagerTest {
   public void testSystemTrustManagerForInvalidDateInCertificate() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath())
-        .thenReturn(
-            Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath());
+    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
     when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
     when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
     when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
@@ -84,9 +82,7 @@ public class DsbTrustManagerTest {
   public void testSystemTrustManagerForUntrustedCertificate() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath())
-        .thenReturn(
-            Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath());
+    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
     when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
     when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
     when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
@@ -105,9 +101,7 @@ public class DsbTrustManagerTest {
   public void testCertTrustManager() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(true);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath())
-        .thenReturn(
-            Thread.currentThread().getContextClassLoader().getResource("keystore.jks").getPath());
+    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
     when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
     when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
     when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
