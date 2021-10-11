@@ -42,7 +42,8 @@ public abstract class LoggerTestBase {
       Assert.assertEquals(argumentCaptor.getAllValues().size(), 1);
       Assert.assertEquals(argumentCaptor.getAllValues().get(0).contains("<![CDATA"), expectContent);
     } else {
-      verifyNoMoreInteractions(stackLogger);
+      verify(stackLogger).logInfo(argumentCaptor.capture());
+      Assert.assertEquals(argumentCaptor.getAllValues().size(), 1);
     }
   }
 }

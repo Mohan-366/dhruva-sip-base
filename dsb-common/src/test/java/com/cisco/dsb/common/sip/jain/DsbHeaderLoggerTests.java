@@ -3,10 +3,14 @@ package com.cisco.dsb.common.sip.jain;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
 import com.cisco.dsb.sip.jain.logger.LoggerTestBase;
 import gov.nist.javax.sip.message.SIPMessage;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.CallIdHeader;
+import javax.sip.header.Header;
 import org.testng.annotations.Test;
 
 public class DsbHeaderLoggerTests extends LoggerTestBase {
@@ -16,7 +20,7 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
   }
 
   @Test
-  public void testHeaderLogging() {
+  public void testHeaderLogging() throws UnknownHostException {
     SIPMessage message = mock(SIPMessage.class);
     String content =
         "INVITE sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n"
@@ -66,6 +70,14 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
     CSeqHeader cSeq = mock(CSeqHeader.class);
     when(cSeq.getSeqNumber()).thenReturn(101l);
     when(message.getCSeq()).thenReturn(cSeq);
+
+    Header rrHeader = mock(RequestReceivedHeader.class);
+    when(message.getHeader(RequestReceivedHeader.NAME)).thenReturn(rrHeader);
+
+    when(message.getLocalAddress()).thenReturn(InetAddress.getByName("1.1.1.1"));
+    when(message.getRemoteAddress()).thenReturn(InetAddress.getByName("2.2.2.2"));
+    when(message.getLocalPort()).thenReturn(5061);
+    when(message.getRemotePort()).thenReturn(5062);
 
     runLoggingTest(message, false);
   }
