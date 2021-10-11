@@ -2,23 +2,17 @@ package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.dto.TrustedSipSources;
-import com.cisco.dsb.common.sip.dns.DnsCache;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.stack.dto.GlobalDnsCache;
-import com.cisco.dsb.common.util.ThreadLocals;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.certs.client.CertsClientFactory;
 import com.cisco.wx2.certs.common.util.RevocationManager;
 import com.cisco.wx2.server.organization.OrganizationCollectionCache;
 import com.cisco.wx2.util.SslUtil;
-import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.security.AccessController;
 import java.security.KeyStore;
 import java.security.PrivilegedExceptionAction;
@@ -26,17 +20,14 @@ import java.security.cert.*;
 import java.security.cert.PKIXRevocationChecker.Option;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.CertPathTrustManagerParameters;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 import org.jetbrains.annotations.NotNull;
 
-public class DsbTrustManager extends X509ExtendedTrustManager {
+public class DsbTrustManager implements X509TrustManager {
 
   private static Logger logger = DhruvaLoggerFactory.getLogger(DsbTrustManager.class);
   private static DsbTrustManager trustAllTrustManagerInstance = new DsbTrustManager();
@@ -54,11 +45,11 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
   public static void initTransportProperties(DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
     System.setProperty(
         "com.sun.security.ocsp.timeout",
-        String.valueOf(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()));
-    trustStoreFile = dhruvaSIPConfigProperties.getTrustStoreFilePath();
-    trustStoreType = dhruvaSIPConfigProperties.getTrustStoreType();
-    trustStorePassword = dhruvaSIPConfigProperties.getTrustStorePassword();
-    softFailEnabled = dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled();
+        String.valueOf(DhruvaNetwork.getOcspResponseTimeoutSeconds()));
+    trustStoreFile = DhruvaNetwork.getTrustStoreFilePath();
+    trustStoreType = DhruvaNetwork.getTrustStoreType();
+    trustStorePassword = DhruvaNetwork.getTrustStorePassword();
+    softFailEnabled = DhruvaNetwork.isTlsCertRevocationSoftFailEnabled();
     enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
     javaHome = System.getProperty("java.home");
   }
@@ -79,10 +70,6 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
         orgCacheSize);
   }
 
-  /** Creates an DsbTrustManager that uses CertsX509TrustManager. */
-  public static DsbTrustManager createPermissiveInstance() {
-    return new DsbTrustManager(new SslUtil.PermissiveTrustManager());
-  }
 
   public static synchronized DsbTrustManager getSystemTrustManager() throws Exception {
     if (systemTrustManager == null) {
@@ -96,8 +83,7 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
   }
 
   /**
-   * Get an DsbTrustManager that uses that trusts all certificates and does NOT perform any hostname
-   * or sipSource validation.
+   * Get an DsbTrustManager that uses that trusts all certificates and does NOT perform any sipSource validation.
    */
   public static DsbTrustManager getTrustAllCertsInstance() {
     return trustAllTrustManagerInstance;
@@ -164,77 +150,23 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
     return options;
   }
 
+
   @Override
-  public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+  public void checkClientTrusted(X509Certificate[] chain, String authType)
       throws CertificateException {
-    try {
-      checkClientTrusted(chain, authType);
-    } catch (CertificateException e) {
-      // If a customer fails TLS certificate validation on inbound connections, this is the only log
-      // we may see in Kibana,
-      // so log the failure with information about the certificate and host.
-      if (chain.length > 0) {
-        throw new CertificateException(
-            String.format(
-                "Client certificate %s from host address %s failed certificate validation.",
-                HostNameValidationHelper.toString(chain[0]),
-                socket.getRemoteSocketAddress().toString()),
-            e);
+    if (logger.isDebugEnabled()) {
+      for (X509Certificate certificate : chain) {
+        logger.debug("SubjectDN: {}, IssuerDN: {}", certificate.getSubjectDN(), certificate.getIssuerDN());
       }
-      throw e;
     }
-  }
 
-  @Override
-  public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
-      throws CertificateException {
-    final InetSocketAddress remoteAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
-    final String remoteAddressString = remoteAddress.getAddress().getHostAddress();
-    checkServerTrusted(chain, authType, remoteAddressString, true);
-  }
-
-  @Override
-  public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine)
-      throws CertificateException {
-    checkClientTrusted(chain, authType);
-  }
-
-  @Override
-  public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine)
-      throws CertificateException {
-    checkServerTrusted(chain, authType, sslEngine.getPeerHost(), false);
-  }
-
-  public void checkServerTrusted(
-      X509Certificate[] chain, String authType, String peerAddress, boolean useCallId)
-      throws CertificateException {
-    if (trustManager != null) {
-      validateHostname(chain, peerAddress, useCallId);
-    }
-    try {
-      checkServerTrusted(chain, authType);
-    } catch (CertificateException e) {
-      if (chain.length > 0) {
-        throw new CertificateException(
-            String.format(
-                "Server certificate %s from host address %s failed certificate validation.",
-                HostNameValidationHelper.toString(chain[0]), peerAddress),
-            e);
-      }
-      throw e;
-    }
-  }
-
-  @Override
-  public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
-      throws CertificateException {
-    if (this.trustManager == null) {
+    if (trustManager == null) {
       return;
     }
-    trustManager.checkClientTrusted(x509Certificates, s);
-    //    for (X509Certificate cert : x509Certificates) {
-    //      cert.checkValidity();
-    //    }
+
+    validateTrustedSipSources(chain);
+
+    trustManager.checkClientTrusted(chain, authType);
   }
 
   @Override
@@ -244,9 +176,10 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
       for (X509Certificate certificate : chain) {
         logger.debug(
             "SubjectDN: {}, IssuerDN: {}", certificate.getSubjectDN(), certificate.getIssuerDN());
+
       }
     }
-    //    validateTrustedSipSources(chain);
+        validateTrustedSipSources(chain);
 
     if (trustManager == null) {
       return;
@@ -261,6 +194,27 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
       return trustManager.getAcceptedIssuers();
     } else {
       return new X509Certificate[0];
+    }
+  }
+
+  /**
+   * Should be set according to "requireTrustedSipSources" config parameter.
+   * @param required set true if an empty trust list should mean that NO sip sources are trusted.
+   *                set false if an empty trust list should mean that ALL sip sources are trusted.
+   */
+  public void setRequireTrustedSipSources(boolean required) {
+    if (!requireTrustedSipSources && required && trustedSipSources.isEmpty()) {
+      logger.warn("trustedSipSources is now required but empty.  No TLS connections will be allowed.");
+    }
+    this.requireTrustedSipSources = required;
+  }
+
+  public void setTrustedSipSources(TrustedSipSources newSipSources) {
+    this.trustedSipSources = newSipSources == null ? new TrustedSipSources() : newSipSources;
+    if (requireTrustedSipSources && trustedSipSources.isEmpty()) {
+      logger.warn("trustedSipSources is empty but required.  No TLS connections will be allowed.");
+    } else {
+      logger.info("Setting trustedSipSources: {}", trustedSipSources);
     }
   }
 
@@ -328,53 +282,6 @@ public class DsbTrustManager extends X509ExtendedTrustManager {
                 return null;
               }
             });
-  }
-
-  private void validateHostname(X509Certificate[] chain, String address, boolean useCallId)
-      throws CertificateException {
-    validateChain(chain);
-
-    // Perform hostname validation similar to HTTPS protocol for
-    // https://cwe.mitre.org/data/definitions/297.html
-    // As a side note, if we didn't implement our own TrustManager, we could use the super simple
-    // method of enabling hostname
-    // validation using the JSSE internal ExtendedTrustManager:
-    // SSLParameters sslParams = new SSLParameters();
-    // sslParams.setEndpointIdentificationAlgorithm("HTTPS");
-    // sslSocket.setSSLParameters(sslParams);
-    // Attempt to lookup hostnames from IP address from DNS cache
-    List<String> hostnames = null;
-    if (useCallId) {
-      String callId = ThreadLocals.getCallId();
-      if (Strings.isNullOrEmpty(callId)) {
-        logger.info("Did not find any call ID for this connection. Skipping hostname validation.");
-        return;
-      }
-
-      hostnames = DnsCache.getInstance().getHostNamesFromAddress(callId, address);
-    } else {
-      hostnames = GlobalDnsCache.getInstance().getHostNamesFromAddress(address);
-    }
-
-    if (hostnames == null || hostnames.isEmpty()) {
-      logger.info(
-          "Did not find any address names associated with IP {}. Skipping hostname validation.",
-          address);
-      return;
-    }
-
-    if (!HostNameValidationHelper.match(hostnames, chain[0])) {
-      throw new CertificateException(
-          "Hostname validation failed for hosts "
-              + hostnames
-              + ", and certificate "
-              + HostNameValidationHelper.toString(chain[0]));
-    }
-
-    logger.debug(
-        "Hostname validation passed for hosts {}, and certificate {}.",
-        hostnames,
-        HostNameValidationHelper.toString(chain[0]));
   }
 
   private void validateTrustedSipSources(X509Certificate[] chain) throws CertificateException {

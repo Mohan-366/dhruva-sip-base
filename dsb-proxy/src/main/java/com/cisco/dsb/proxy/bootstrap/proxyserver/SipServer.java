@@ -6,7 +6,6 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.DhruvaServerLogger;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
-import com.cisco.dsb.common.sip.jain.JainStackLogger;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
@@ -116,7 +115,7 @@ public class SipServer implements Server {
     stackProps.setProperty(
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
-    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
+    //    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
     stackProps.setProperty(
         "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", dhruvaSIPConfigProperties.getClientAuthType());
     stackProps.setProperty("gov.nist.javax.sip.NETWORK_LAYER", DsbNetworkLayer.class.getName());

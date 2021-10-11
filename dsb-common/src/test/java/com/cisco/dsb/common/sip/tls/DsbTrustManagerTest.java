@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.CertUtil;
 import com.cisco.wx2.certs.client.CertsX509TrustManager;
 import java.security.cert.CertificateException;
@@ -33,6 +34,7 @@ public class DsbTrustManagerTest {
   public void before() throws Exception {
 
     MockitoAnnotations.initMocks(this);
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
     keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
   }
 

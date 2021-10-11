@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import javax.sip.*;
 import javax.sip.message.Response;
 import lombok.CustomLog;
@@ -303,7 +302,7 @@ public class ProxyService {
 
   private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType) {
     if (tlsAuthenticationType == TLSAuthenticationType.NONE) {
-      return DsbTrustManager.createPermissiveInstance();
+      return DsbTrustManager.getTrustAllCertsInstance();
     } else {
       return dsbTrustManager;
     }

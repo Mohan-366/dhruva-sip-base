@@ -3,7 +3,6 @@ package com.cisco.dsb.proxy;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
-import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -39,10 +38,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import javax.sip.*;
 import org.mockito.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.Assert;
 import org.testng.annotations.*;
 import reactor.core.publisher.Mono;
@@ -65,9 +62,7 @@ public class ProxyServiceTest {
   @Mock DsbTrustManager dsbTrustManager;
   @Mock KeyManager keyManager;
 
-  @Spy
-  DhruvaServer dhruvaServer = new DhruvaServerImpl();
-
+  @Spy DhruvaServer dhruvaServer = new DhruvaServerImpl();
 
   @Mock Dialog dialog;
 
@@ -93,9 +88,7 @@ public class ProxyServiceTest {
   SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
 
-  public ProxyServiceTest() throws Exception {
-  }
-
+  public ProxyServiceTest() throws Exception {}
 
   @BeforeClass
   public void setup() throws Exception {

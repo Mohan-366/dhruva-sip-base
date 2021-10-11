@@ -9,17 +9,14 @@ import com.cisco.dsb.proxy.bootstrap.proxyserver.SipServer;
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DhruvaServerImpl implements DhruvaServer {
 
-  public DhruvaServerImpl() {
-  }
+  public DhruvaServerImpl() {}
 
   @Override
   public CompletableFuture<SipStack> startListening(
@@ -42,11 +39,7 @@ public class DhruvaServerImpl implements DhruvaServer {
     try {
       Server server =
           new SipServer(
-              transportType,
-              handler,
-              executorService,
-              metricService,
-              dhruvaSIPConfigProperties);
+              transportType, handler, executorService, metricService, dhruvaSIPConfigProperties);
       server.startListening(address, port, handler, dsbTrustManager, keyManager, serverStartFuture);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e);

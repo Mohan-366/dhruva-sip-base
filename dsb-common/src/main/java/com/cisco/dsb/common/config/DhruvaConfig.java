@@ -6,6 +6,7 @@ import com.cisco.dsb.common.dns.DnsLookup;
 import com.cisco.dsb.common.dns.DnsMetricsReporter;
 import com.cisco.dsb.common.dns.DnsResolvers;
 import com.cisco.dsb.common.dns.metrics.DnsReporter;
+import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
@@ -169,7 +170,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     if (dhruvaSIPConfigProperties.getTlsAuthType() == TLSAuthenticationType.NONE) {
       logger.warn(
           "Using PermissiveInstance for TrustManager. No certificate validation will be performed.");
-      trustManager = DsbTrustManager.createPermissiveInstance();
+      trustManager = DsbTrustManager.getTrustAllCertsInstance();
     } else if (dhruvaSIPConfigProperties.getEnableCertService()) {
 
       logger.info("Certs Service URL = {}", certTrustManagerProperties.getCertsApiServiceUrl());
@@ -223,8 +224,10 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
       trustManager = DsbTrustManager.getSystemTrustManager();
     }
 
-    //    trustManager.setRequireTrustedSipSources(props().requireTrustedSipSources());
-    //    trustManager.setTrustedSipSources(props().getTrustedSipSourcesProp());
+    // setting to default for now which means this feature is disabled and we are not rejecting any
+    // source.
+    trustManager.setRequireTrustedSipSources(false);
+    trustManager.setTrustedSipSources(new TrustedSipSources());
     return trustManager;
   }
 
