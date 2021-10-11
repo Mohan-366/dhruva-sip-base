@@ -7,15 +7,17 @@ import com.cisco.dsb.sip.jain.logger.LoggerTestBase;
 import gov.nist.javax.sip.message.SIPMessage;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.CallIdHeader;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-@Test
 public class DsbHeaderLoggerTests extends LoggerTestBase {
 
   public DsbHeaderLoggerTests() {
     super(new DsbHeaderLogger());
   }
 
+  @Ignore
+  @Test
   public void testHeaderLogging() {
     SIPMessage message = mock(SIPMessage.class);
     String content =
