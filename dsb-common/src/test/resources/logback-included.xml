@@ -3,7 +3,7 @@ Our logging configuration is based off this:
 https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/blob/master/csb-common/cisco-spark-logging/src/main/resources/logback.xml
 -->
 <included>
-    <logger name="com.cisco.dhruva" level="DEBUG" />
-    <logger name="com.cisco.dsb" level="DEBUG" />
+    <logger name="com.cisco.dhruva" level="INFO" />
+    <logger name="com.cisco.dsb" level="INFO" />
 
 </included>
