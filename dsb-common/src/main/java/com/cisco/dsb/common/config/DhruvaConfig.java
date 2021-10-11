@@ -27,8 +27,6 @@ import com.cisco.wx2.client.commonidentity.CommonIdentityScimClient;
 import com.cisco.wx2.client.commonidentity.CommonIdentityScimClientFactory;
 import com.cisco.wx2.client.discovery.DiscoveryService;
 import com.cisco.wx2.dto.IdentityMachineAccount;
-import com.cisco.wx2.redis.RedisDataSource;
-import com.cisco.wx2.redis.RedisDataSourceManager;
 import com.cisco.wx2.server.auth.ng.Scope;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
@@ -201,8 +199,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
               certTrustManagerProperties.getOrgCertCacheSize());
     } else {
       logger.info("System trust store will be used as source of trust.");
-      DsbTrustManager.initTransportProperties(dhruvaSIPConfigProperties);
-      trustManager = DsbTrustManager.getSystemTrustManager();
+      trustManager = DsbTrustManager.getSystemTrustManager(dhruvaSIPConfigProperties);
     }
 
     // setting to default for now which means this feature is disabled and we are not rejecting any

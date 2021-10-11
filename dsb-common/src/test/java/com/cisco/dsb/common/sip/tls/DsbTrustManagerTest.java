@@ -28,8 +28,7 @@ public class DsbTrustManagerTest {
 
   DsbTrustManager dsbTrustManager;
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-  @Spy
-  CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
+  @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
   private String keystorePath;
   @InjectMocks DhruvaConfig dhruvaConfig;
@@ -64,8 +63,9 @@ public class DsbTrustManagerTest {
     ((X509TrustManager) tm).checkServerTrusted(certs, "RSA");
   }
 
-  @Test(description = "get systemTrustManager and check for invalid date in cert in keystore", expectedExceptions = {
-      CertificateException.class})
+  @Test(
+      description = "get systemTrustManager and check for invalid date in cert in keystore",
+      expectedExceptions = {CertificateException.class})
   public void testSystemTrustManagerForInvalidDateInCertificate() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
@@ -105,7 +105,6 @@ public class DsbTrustManagerTest {
     ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
   }
 
-
   @Test(description = "getCertTrustManager ")
   public void testCertTrustManager() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(true);
@@ -127,7 +126,6 @@ public class DsbTrustManagerTest {
     X509Certificate[] certs = {cert};
     ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
     verify((X509TrustManager) mockCertsX509TrustManager, times(1)).checkClientTrusted(any(), any());
-
   }
 
   @Test(description = "test permissive trust manager creation")

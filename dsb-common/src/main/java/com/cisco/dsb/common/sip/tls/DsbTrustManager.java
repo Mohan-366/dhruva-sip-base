@@ -41,18 +41,6 @@ public class DsbTrustManager implements X509TrustManager {
   private TrustedSipSources trustedSipSources = new TrustedSipSources();
   private boolean requireTrustedSipSources = false;
 
-  public static void initTransportProperties(DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
-    System.setProperty(
-        "com.sun.security.ocsp.timeout",
-        String.valueOf(DhruvaNetwork.getOcspResponseTimeoutSeconds()));
-    trustStoreFile = DhruvaNetwork.getTrustStoreFilePath();
-    trustStoreType = DhruvaNetwork.getTrustStoreType();
-    trustStorePassword = DhruvaNetwork.getTrustStorePassword();
-    softFailEnabled = DhruvaNetwork.isTlsCertRevocationSoftFailEnabled();
-    enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
-    javaHome = System.getProperty("java.home");
-  }
-
   public static DsbTrustManager createInstance(
       CertsClientFactory certsClientFactory,
       OrganizationCollectionCache orgCollectionCache,
@@ -69,8 +57,18 @@ public class DsbTrustManager implements X509TrustManager {
         orgCacheSize);
   }
 
-  public static synchronized DsbTrustManager getSystemTrustManager() throws Exception {
+  public static synchronized DsbTrustManager getSystemTrustManager(
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) throws Exception {
     if (systemTrustManager == null) {
+      System.setProperty(
+          "com.sun.security.ocsp.timeout",
+          String.valueOf(DhruvaNetwork.getOcspResponseTimeoutSeconds()));
+      trustStoreFile = DhruvaNetwork.getTrustStoreFilePath();
+      trustStoreType = DhruvaNetwork.getTrustStoreType();
+      trustStorePassword = DhruvaNetwork.getTrustStorePassword();
+      softFailEnabled = DhruvaNetwork.isTlsCertRevocationSoftFailEnabled();
+      enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
+      javaHome = System.getProperty("java.home");
       systemTrustManager = createSystemTrustManager();
     }
     return systemTrustManager;

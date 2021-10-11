@@ -10,7 +10,6 @@ import java.net.InetAddress;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.CallIdHeader;
 import javax.sip.header.Header;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 public class DhruvaServerLoggerTest extends LoggerTestBase {
@@ -19,7 +18,6 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     super(new DhruvaServerLogger());
   }
 
-  @Ignore
   @Test
   public void testFullContentLogging() throws Exception {
     SIPMessage message = mock(SIPMessage.class);
@@ -80,7 +78,6 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     runLoggingTest(message, true);
   }
 
-  @Ignore
   @Test
   public void testHeadersOnlyLogging() throws Exception {
 
