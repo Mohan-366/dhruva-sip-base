@@ -8,7 +8,6 @@ import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.certs.client.CertsClientFactory;
 import com.cisco.wx2.certs.common.util.RevocationManager;
 import com.cisco.wx2.server.organization.OrganizationCollectionCache;
-import com.cisco.wx2.util.SslUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileInputStream;
@@ -70,7 +69,6 @@ public class DsbTrustManager implements X509TrustManager {
         orgCacheSize);
   }
 
-
   public static synchronized DsbTrustManager getSystemTrustManager() throws Exception {
     if (systemTrustManager == null) {
       systemTrustManager = createSystemTrustManager();
@@ -83,7 +81,8 @@ public class DsbTrustManager implements X509TrustManager {
   }
 
   /**
-   * Get an DsbTrustManager that uses that trusts all certificates and does NOT perform any sipSource validation.
+   * Get an DsbTrustManager that uses that trusts all certificates and does NOT perform any
+   * sipSource validation.
    */
   public static DsbTrustManager getTrustAllCertsInstance() {
     return trustAllTrustManagerInstance;
@@ -150,13 +149,13 @@ public class DsbTrustManager implements X509TrustManager {
     return options;
   }
 
-
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType)
       throws CertificateException {
     if (logger.isDebugEnabled()) {
       for (X509Certificate certificate : chain) {
-        logger.debug("SubjectDN: {}, IssuerDN: {}", certificate.getSubjectDN(), certificate.getIssuerDN());
+        logger.debug(
+            "SubjectDN: {}, IssuerDN: {}", certificate.getSubjectDN(), certificate.getIssuerDN());
       }
     }
 
@@ -167,6 +166,9 @@ public class DsbTrustManager implements X509TrustManager {
     validateTrustedSipSources(chain);
 
     trustManager.checkClientTrusted(chain, authType);
+    for (X509Certificate cert : chain) {
+      cert.checkValidity();
+    }
   }
 
   @Override
@@ -176,16 +178,18 @@ public class DsbTrustManager implements X509TrustManager {
       for (X509Certificate certificate : chain) {
         logger.debug(
             "SubjectDN: {}, IssuerDN: {}", certificate.getSubjectDN(), certificate.getIssuerDN());
-
       }
     }
-        validateTrustedSipSources(chain);
+    validateTrustedSipSources(chain);
 
     if (trustManager == null) {
       return;
     }
 
     trustManager.checkServerTrusted(chain, authType);
+    for (X509Certificate cert : chain) {
+      cert.checkValidity();
+    }
   }
 
   @Override
@@ -199,12 +203,14 @@ public class DsbTrustManager implements X509TrustManager {
 
   /**
    * Should be set according to "requireTrustedSipSources" config parameter.
+   *
    * @param required set true if an empty trust list should mean that NO sip sources are trusted.
-   *                set false if an empty trust list should mean that ALL sip sources are trusted.
+   *     set false if an empty trust list should mean that ALL sip sources are trusted.
    */
   public void setRequireTrustedSipSources(boolean required) {
     if (!requireTrustedSipSources && required && trustedSipSources.isEmpty()) {
-      logger.warn("trustedSipSources is now required but empty.  No TLS connections will be allowed.");
+      logger.warn(
+          "trustedSipSources is now required but empty.  No TLS connections will be allowed.");
     }
     this.requireTrustedSipSources = required;
   }

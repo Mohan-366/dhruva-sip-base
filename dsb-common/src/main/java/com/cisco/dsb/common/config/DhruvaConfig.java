@@ -42,6 +42,7 @@ import com.ciscospark.server.Wx2ConfigAdapter;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
@@ -176,44 +177,24 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
       logger.info("Certs Service URL = {}", certTrustManagerProperties.getCertsApiServiceUrl());
 
       ExecutorService executorService =
-          monitoredTrackingPreservedExecutorProvider()
-              .newManagedExecutorService("revocation-manager-executor");
+          Executors.newFixedThreadPool(
+              certTrustManagerProperties.getRevocationManagerThreadPoolSize());
 
-      RevocationManager revocationManager = null;
-
-      if (certTrustManagerProperties.useRedisAsCache()) {
-        revocationManager =
-            new RevocationManager(
-                OCSPRevocationCache.redisBackedOcspCache(
-                    redisDataSource(),
-                    certTrustManagerProperties.getRedisPrefix(),
-                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
-                    metricRegistry()),
-                CRLRevocationCache.redisBackedCRLCache(
-                    redisDataSource(),
-                    certTrustManagerProperties.getRedisPrefix(),
-                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
-                    certTrustManagerProperties.getHttpConnectTimeout(),
-                    certTrustManagerProperties.getHttpReadTimeout(),
-                    metricRegistry()),
-                executorService);
-      } else {
-        revocationManager =
-            new RevocationManager(
-                OCSPRevocationCache.memoryBackedOcspCache(
-                    certTrustManagerProperties.getRevocationCacheExpirationHours()),
-                CRLRevocationCache.memoryBackedCRLCache(
-                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
-                    certTrustManagerProperties.getHttpConnectTimeout(),
-                    certTrustManagerProperties.getHttpReadTimeout()),
-                executorService);
-      }
-
+      RevocationManager revocationManager =
+          new RevocationManager(
+              OCSPRevocationCache.memoryBackedOcspCache(
+                  certTrustManagerProperties.getRevocationCacheExpirationHours()),
+              CRLRevocationCache.memoryBackedCRLCache(
+                  certTrustManagerProperties.getRevocationCacheExpirationHours(),
+                  certTrustManagerProperties.getHttpConnectTimeout(),
+                  certTrustManagerProperties.getHttpReadTimeout()),
+              executorService);
       revocationManager.setOcspEnabled(certTrustManagerProperties.getOcspEnabled());
+
       trustManager =
           DsbTrustManager.createInstance(
               certsClientFactory(),
-              orgCollectionCache(),
+              orgsCache(),
               revocationManager,
               certTrustManagerProperties.getRevocationTimeoutMilliseconds(),
               TimeUnit.MILLISECONDS,
@@ -236,8 +217,12 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     return DsbNetworkLayer.createKeyManager(sipProperties);
   }
 
-  public RedisDataSource redisDataSource() {
-    return redisDataSourceManager().getRedisDataSource("dsbRedisDataSource");
+  private OrganizationCollectionCache orgsCache() {
+    return CommonIdentityOrganizationCollectionCache.memoryBackedCache(
+        orgLoader(),
+        certTrustManagerProperties.getOrgCacheExpirationMinutes(),
+        TimeUnit.MINUTES,
+        true);
   }
 
   public OrganizationLoader orgLoader() {
@@ -331,21 +316,6 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .build();
   }
 
-  public OrganizationCollectionCache orgCollectionCache() {
-    if (certTrustManagerProperties.useRedisAsCache()) {
-      return CommonIdentityOrganizationCollectionCache.redisDatasourceBackedCache(
-          orgLoader(),
-          certTrustManagerProperties,
-          redisDataSourceManager()
-              .getRedisDataSource(RedisDataSourceManager.COMMON_REDIS_SOURCE_NAME.ORGCACHE),
-          metricRegistry());
-    }
-    return CommonIdentityOrganizationCollectionCache.memoryBackedCache(
-        orgLoader(),
-        certTrustManagerProperties.getOrgCacheExpirationMinutes(),
-        TimeUnit.MINUTES,
-        true);
-  }
   // TODO DSB
   @Bean
   @Profile("disabled")
