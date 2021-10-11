@@ -130,8 +130,6 @@ public class DhruvaSIPConfigProperties {
   private static final String LOG_KEEP_ALIVES_ENABLED = "logKeepAlivesEnabled";
   private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
 
-  private static final String DEPLOYMENT_NAME = "dsb.deploymentName";
-  private static final String DEFAULT_DEPLOYMENT_NAME = "DEV";
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
   private String[] tlsProtocols = new String[] {"TLSv1.2"};
@@ -181,7 +179,6 @@ public class DhruvaSIPConfigProperties {
 
   private String tlsAuthType;
   private Boolean enableCertService;
-  private String deploymentName;
 
   @Autowired
   public DhruvaSIPConfigProperties(Environment env) {
@@ -281,7 +278,6 @@ public class DhruvaSIPConfigProperties {
     this.minKeepAliveTimeSeconds =
         env.getProperty(
             MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
-    this.deploymentName = env.getProperty(DEPLOYMENT_NAME, String.class, DEFAULT_DEPLOYMENT_NAME);
   }
 
   public String getAllowedMethods() {
@@ -515,10 +511,6 @@ public class DhruvaSIPConfigProperties {
     return this.minKeepAliveTimeSeconds;
   }
 
-  public String getDeploymentName() {
-    return deploymentName;
-  }
-
   public TLSAuthenticationType getTlsAuthType() {
     TLSAuthenticationType authType;
     try {
@@ -531,5 +523,13 @@ public class DhruvaSIPConfigProperties {
 
   public Boolean getEnableCertService() {
     return this.enableCertService;
+  }
+
+  public boolean getTlsTrustAllCerts() {
+    return false;
+  }
+
+  public boolean useSystemTrustStore() {
+    return true;
   }
 }

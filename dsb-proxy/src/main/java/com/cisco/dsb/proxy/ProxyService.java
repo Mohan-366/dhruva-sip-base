@@ -14,6 +14,8 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -47,8 +49,6 @@ public class ProxyService {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
 
-  @Autowired public MetricService metricsService;
-
   @Autowired SipServerLocatorService resolver;
 
   @Autowired DhruvaServer server;
@@ -63,7 +63,9 @@ public class ProxyService {
 
   @Autowired DhruvaExecutorService dhruvaExecutorService;
 
-  @Autowired TrustManager trustManager;
+  @Autowired MetricService metricService;
+
+  @Autowired DsbTrustManager dsbTrustManager;
 
   @Autowired KeyManager keyManager;
 
@@ -90,6 +92,10 @@ public class ProxyService {
               sipListenPoint.getTransport(),
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
+              getTrustManager(sipListenPoint.getTlsAuthType()),
+              keyManager,
+              dhruvaExecutorService,
+              metricService,
               proxyPacketProcessor);
 
       listenPointFuture.whenComplete(
@@ -293,5 +299,13 @@ public class ProxyService {
 
   public Mono<ProxySIPResponse> timeOutPipeline(Mono<TimeoutEvent> timeoutEventMono) {
     return timeoutEventMono.mapNotNull(sipProxyManager.handleProxyTimeoutEvent());
+  }
+
+  private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType) {
+    if (tlsAuthenticationType == TLSAuthenticationType.NONE) {
+      return DsbTrustManager.createPermissiveInstance();
+    } else {
+      return dsbTrustManager;
+    }
   }
 }

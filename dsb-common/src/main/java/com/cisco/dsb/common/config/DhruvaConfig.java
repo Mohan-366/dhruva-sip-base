@@ -11,18 +11,41 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.tls.DhruvaTrustManagerFactory;
+import com.cisco.dsb.common.sip.tls.CertTrustManagerProperties;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
+import com.cisco.wx2.certs.client.CertsClientFactory;
+import com.cisco.wx2.certs.common.util.CRLRevocationCache;
+import com.cisco.wx2.certs.common.util.OCSPRevocationCache;
+import com.cisco.wx2.certs.common.util.RevocationManager;
+import com.cisco.wx2.client.HttpUtil;
+import com.cisco.wx2.client.commonidentity.BearerAuthorizationProvider;
+import com.cisco.wx2.client.commonidentity.CommonIdentityClientFactory;
+import com.cisco.wx2.client.commonidentity.CommonIdentityScimClient;
+import com.cisco.wx2.client.commonidentity.CommonIdentityScimClientFactory;
+import com.cisco.wx2.client.discovery.DiscoveryService;
 import com.cisco.wx2.dto.IdentityMachineAccount;
+import com.cisco.wx2.redis.RedisDataSource;
+import com.cisco.wx2.redis.RedisDataSourceManager;
+import com.cisco.wx2.server.auth.ng.Scope;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
+import com.cisco.wx2.server.organization.CommonIdentityOrganizationCollectionCache;
+import com.cisco.wx2.server.organization.CommonIdentityOrganizationLoader;
+import com.cisco.wx2.server.organization.OrganizationCollectionCache;
+import com.cisco.wx2.server.organization.OrganizationLoader;
+import com.cisco.wx2.util.OrgId;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.ciscospark.server.Wx2ConfigAdapter;
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.*;
@@ -39,6 +62,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired CertTrustManagerProperties certTrustManagerProperties;
 
   @Autowired private Environment env;
 
@@ -140,13 +164,184 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   }
 
   @Bean
-  public TrustManager dsbTrustManager() throws Exception {
-    return DhruvaTrustManagerFactory.getTrustManager(dhruvaSIPConfigProperties);
+  public DsbTrustManager dsbTrustManager() throws Exception {
+    DsbTrustManager trustManager;
+    if (dhruvaSIPConfigProperties.getTlsAuthType() == TLSAuthenticationType.NONE) {
+      logger.warn(
+          "Using PermissiveInstance for TrustManager. No certificate validation will be performed.");
+      trustManager = DsbTrustManager.createPermissiveInstance();
+    } else if (dhruvaSIPConfigProperties.getEnableCertService()) {
+
+      logger.info("Certs Service URL = {}", certTrustManagerProperties.getCertsApiServiceUrl());
+
+      ExecutorService executorService =
+          monitoredTrackingPreservedExecutorProvider()
+              .newManagedExecutorService("revocation-manager-executor");
+
+      RevocationManager revocationManager = null;
+
+      if (certTrustManagerProperties.useRedisAsCache()) {
+        revocationManager =
+            new RevocationManager(
+                OCSPRevocationCache.redisBackedOcspCache(
+                    redisDataSource(),
+                    certTrustManagerProperties.getRedisPrefix(),
+                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
+                    metricRegistry()),
+                CRLRevocationCache.redisBackedCRLCache(
+                    redisDataSource(),
+                    certTrustManagerProperties.getRedisPrefix(),
+                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
+                    certTrustManagerProperties.getHttpConnectTimeout(),
+                    certTrustManagerProperties.getHttpReadTimeout(),
+                    metricRegistry()),
+                executorService);
+      } else {
+        revocationManager =
+            new RevocationManager(
+                OCSPRevocationCache.memoryBackedOcspCache(
+                    certTrustManagerProperties.getRevocationCacheExpirationHours()),
+                CRLRevocationCache.memoryBackedCRLCache(
+                    certTrustManagerProperties.getRevocationCacheExpirationHours(),
+                    certTrustManagerProperties.getHttpConnectTimeout(),
+                    certTrustManagerProperties.getHttpReadTimeout()),
+                executorService);
+      }
+
+      revocationManager.setOcspEnabled(certTrustManagerProperties.getOcspEnabled());
+      trustManager =
+          DsbTrustManager.createInstance(
+              certsClientFactory(),
+              orgCollectionCache(),
+              revocationManager,
+              certTrustManagerProperties.getRevocationTimeoutMilliseconds(),
+              TimeUnit.MILLISECONDS,
+              certTrustManagerProperties.getOrgCertCacheSize());
+    } else {
+      logger.info("System trust store will be used as source of trust.");
+      DsbTrustManager.initTransportProperties(dhruvaSIPConfigProperties);
+      trustManager = DsbTrustManager.getSystemTrustManager();
+    }
+
+    //    trustManager.setRequireTrustedSipSources(props().requireTrustedSipSources());
+    //    trustManager.setTrustedSipSources(props().getTrustedSipSourcesProp());
+    return trustManager;
   }
 
   @Bean
   public KeyManager keyManager(DhruvaSIPConfigProperties sipProperties) {
     return DsbNetworkLayer.createKeyManager(sipProperties);
+  }
+
+  public RedisDataSource redisDataSource() {
+    return redisDataSourceManager().getRedisDataSource("dsbRedisDataSource");
+  }
+
+  public OrganizationLoader orgLoader() {
+    return new CommonIdentityOrganizationLoader(commonIdentityScimClientFactory());
+  }
+
+  public CommonIdentityScimClientFactory commonIdentityScimClientFactory() {
+    logger.info("Common Identity SCIM URL = {}", certTrustManagerProperties.getScimEndpointUrl());
+    return CommonIdentityScimClientFactory.builder(certTrustManagerProperties)
+        .connectionManager(scimConnectionManager())
+        .baseUrl(certTrustManagerProperties.getScimEndpointUrl())
+        .authorizationProvider(scimBearerAuthorizationProvider())
+        .maxQuery(certTrustManagerProperties.getMaxCiQuerySize())
+        .bulkSize(certTrustManagerProperties.getMaxUsersFromCiMultiget())
+        .federationIgnored(true)
+        .build();
+  }
+
+  public PoolingHttpClientConnectionManager scimConnectionManager() {
+    return HttpUtil.newPoolingClientConnectionManager(
+        certTrustManagerProperties.disableSslChecks(),
+        certTrustManagerProperties.getHttpMaxConnections(),
+        certTrustManagerProperties.getHttpMaxConnectionsPerRoute(),
+        certTrustManagerProperties.getDnsResolver());
+  }
+
+  public CertsClientFactory certsClientFactory() {
+
+    return CertsClientFactory.builder(
+            certTrustManagerProperties, certTrustManagerProperties.getCertsApiServiceUrl())
+        .authorizationProvider(bearerAuthorizationProvider())
+        .discoveryService(discoveryService())
+        .serviceAuth(true)
+        .build();
+  }
+
+  public Map<URI, URI> getLocalDiscoveryURIMap() {
+    return null;
+  }
+
+  public DiscoveryService discoveryService() {
+    Map<URI, URI> localDiscoveryURIMap = getLocalDiscoveryURIMap();
+    logger.info("The localDiscoveryURIMap is {}", localDiscoveryURIMap);
+    return new DiscoveryService(localDiscoveryURIMap);
+  }
+
+  @Bean
+  public BearerAuthorizationProvider bearerAuthorizationProvider() {
+
+    BearerAuthorizationProvider.Builder builder =
+        certTrustManagerProperties.isMachineAccountAuthEnabled()
+            ? BearerAuthorizationProvider.builder()
+            : BearerAuthorizationProvider.builder(
+                certTrustManagerProperties.getAuthorizationConfig("dsb".toLowerCase()));
+
+    return builder
+        .commonIdentityClientFactory(commonIdentityClientFactory())
+        .orgId(certTrustManagerProperties.getDhruvaOrgId())
+        .userId(certTrustManagerProperties.getDhruvaServiceUser())
+        .password(certTrustManagerProperties.getDhruvaServicePassword())
+        .scope(com.cisco.wx2.server.auth.ng.Scope.of(Scope.Identity.SCIM))
+        .clientId(certTrustManagerProperties.getDhruvaClientId())
+        .clientSecret(certTrustManagerProperties.getDhruvaClientSecret())
+        .build();
+  }
+
+  public BearerAuthorizationProvider scimBearerAuthorizationProvider() {
+    OrgId commonIdentityOrgId = null;
+    String commonIdentityOrgIdStr = certTrustManagerProperties.getOrgName();
+    if (null != commonIdentityOrgIdStr && !commonIdentityOrgIdStr.isEmpty()) {
+      commonIdentityOrgId = OrgId.fromString(commonIdentityOrgIdStr);
+    }
+    return BearerAuthorizationProvider.builder(
+            certTrustManagerProperties.getCommonIdentityAuthorizationConfig())
+        .commonIdentityClientFactory(commonIdentityClientFactory())
+        .orgId(commonIdentityOrgId)
+        .userId(certTrustManagerProperties.getDhruvaServiceUser())
+        .password(certTrustManagerProperties.getDhruvaServicePassword())
+        .scope(CommonIdentityScimClient.CI_SCIM_SCOPE)
+        .clientId(certTrustManagerProperties.getDhruvaClientId())
+        .clientSecret(certTrustManagerProperties.getDhruvaClientSecret())
+        .build();
+  }
+
+  public CommonIdentityClientFactory commonIdentityClientFactory() {
+    logger.info(
+        "Common Identity OAuth Service URL = {}", certTrustManagerProperties.getOAuthEndpointUrl());
+    return CommonIdentityClientFactory.builder(certTrustManagerProperties)
+        .baseUrl(certTrustManagerProperties.getOAuthEndpointUrl())
+        .federationIgnored(true)
+        .build();
+  }
+
+  public OrganizationCollectionCache orgCollectionCache() {
+    if (certTrustManagerProperties.useRedisAsCache()) {
+      return CommonIdentityOrganizationCollectionCache.redisDatasourceBackedCache(
+          orgLoader(),
+          certTrustManagerProperties,
+          redisDataSourceManager()
+              .getRedisDataSource(RedisDataSourceManager.COMMON_REDIS_SOURCE_NAME.ORGCACHE),
+          metricRegistry());
+    }
+    return CommonIdentityOrganizationCollectionCache.memoryBackedCache(
+        orgLoader(),
+        certTrustManagerProperties.getOrgCacheExpirationMinutes(),
+        TimeUnit.MINUTES,
+        true);
   }
   // TODO DSB
   @Bean

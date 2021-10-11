@@ -15,12 +15,8 @@ public class DhruvaTrustManagerFactory {
       throws Exception {
     TLSAuthenticationType tlsAuthenticationType = dhruvaSIPConfigProperties.getTlsAuthType();
     Boolean enableCertService = dhruvaSIPConfigProperties.getEnableCertService();
-    String deploymentName = dhruvaSIPConfigProperties.getDeploymentName();
 
     if (tlsAuthenticationType == TLSAuthenticationType.MTLS && enableCertService) {
-      CertTrustManager certTrustManager = CertTrustManager.createCertTrustManager();
-
-      return certTrustManager.getTrustManager();
 
     } else if (tlsAuthenticationType == TLSAuthenticationType.NONE)
       // return a dummy trust manager which does nothing
@@ -29,20 +25,14 @@ public class DhruvaTrustManagerFactory {
         @Override
         public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
             throws CertificateException {
-          logger.debug(
-              "Accepting a client certificate: {} for deployment {}",
-              x509Certificates[0].getSubjectDN(),
-              deploymentName);
+          logger.debug("Accepting a client certificate: {}", x509Certificates[0].getSubjectDN());
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
             throws CertificateException {
           final X509Certificate serverCert = x509Certificates[0];
-          logger.debug(
-              "Accepting a server certificate:{} for deployment {}",
-              serverCert.getSubjectDN().getName(),
-              deploymentName);
+          logger.debug("Accepting a server certificate:{}", serverCert.getSubjectDN().getName());
         }
 
         @Override
@@ -56,5 +46,6 @@ public class DhruvaTrustManagerFactory {
       DsbTrustManager.initTransportProperties(dhruvaSIPConfigProperties);
       return DsbTrustManager.getSystemTrustManager();
     }
+    return null;
   }
 }

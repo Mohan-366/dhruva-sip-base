@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
+import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -10,6 +11,7 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServerImpl;
@@ -40,6 +42,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.TrustManager;
 import javax.sip.*;
 import org.mockito.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.Assert;
 import org.testng.annotations.*;
 import reactor.core.publisher.Mono;
@@ -59,12 +62,12 @@ public class ProxyServiceTest {
 
   @Mock DhruvaExecutorService dhruvaExecutorService;
 
-  @Spy TrustManager trustManager;
-  @Spy KeyManager keyManager;
+  @Mock DsbTrustManager dsbTrustManager;
+  @Mock KeyManager keyManager;
 
   @Spy
-  DhruvaServer server =
-      new DhruvaServerImpl(dhruvaExecutorService, metricsService, trustManager, keyManager);
+  DhruvaServer dhruvaServer = new DhruvaServerImpl();
+
 
   @Mock Dialog dialog;
 
@@ -90,6 +93,9 @@ public class ProxyServiceTest {
   SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
 
+  public ProxyServiceTest() throws Exception {
+  }
+
 
   @BeforeClass
   public void setup() throws Exception {
@@ -98,10 +104,6 @@ public class ProxyServiceTest {
     when(dhruvaExecutorService.getScheduledExecutorThreadPool(any()))
         .thenReturn(scheduledThreadPoolExecutor);
     when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
-    ((DhruvaServerImpl) server).setExecutorService(dhruvaExecutorService);
-    ((DhruvaServerImpl) server).setMetricService(metricsService);
-    ((DhruvaServerImpl) server).setTrustManager(trustManager);
-    ((DhruvaServerImpl) server).setKeyManager(keyManager);
     when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
     when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
     when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");

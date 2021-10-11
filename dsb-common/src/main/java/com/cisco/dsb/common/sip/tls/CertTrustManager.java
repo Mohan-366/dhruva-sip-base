@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
@@ -33,37 +32,19 @@ public class CertTrustManager {
 
   public static final String SERVICE_NAME = "Cloudproxy";
 
-  /** Creates an CertTrustManager that uses CertsX509TrustManager. */
-  public TrustManager getTrustManager() throws Exception {
-    try {
+  private static X509TrustManager trustManager;
 
-      this.trustManager =
-          CertTrustManagerFactory.getCertsX509TrustManager(
-              certsClientFactory(),
-              orgsCache(),
-              revocationManager(),
-              certTrustManagerProperties.getRevocationTimeoutMilliseconds(),
-              TimeUnit.MILLISECONDS,
-              certTrustManagerProperties.getOrgCertCacheSize(),
-              false);
-
-      return this.trustManager;
-    } catch (Exception e) {
-      logger.error("Exception in instantiating CertsX509TrustManager ", e);
-      throw e;
-    }
+  private CertTrustManager() {
+    trustManager =
+        CertTrustManagerFactory.getCertsX509TrustManager(
+            certsClientFactory(),
+            orgsCache(),
+            revocationManager(),
+            certTrustManagerProperties.getRevocationTimeoutMilliseconds(),
+            TimeUnit.MILLISECONDS,
+            certTrustManagerProperties.getOrgCertCacheSize(),
+            false);
   }
-
-  public static CertTrustManager createCertTrustManager() {
-    if (certTrustManagerProperties == null) {
-      certTrustManagerProperties = new CertTrustManagerProperties();
-    }
-    return new CertTrustManager();
-  }
-
-  private X509TrustManager trustManager;
-
-  private CertTrustManager() {}
 
   private RevocationManager revocationManager() {
     ExecutorService executorService =

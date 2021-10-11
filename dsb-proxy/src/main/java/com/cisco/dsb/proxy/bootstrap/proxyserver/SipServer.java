@@ -10,6 +10,7 @@ import com.cisco.dsb.common.sip.jain.JainStackLogger;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
@@ -43,16 +44,12 @@ public class SipServer implements Server {
       SipListener handler,
       DhruvaExecutorService executorService,
       MetricService metricService,
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
-      TrustManager trustManager,
-      KeyManager keyManager) {
+      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
     this.transport = transport;
     this.metricService = metricService;
     this.sipListener = handler;
     this.executorService = executorService;
     this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
-    this.trustManager = trustManager;
-    this.keyManager = keyManager;
   }
 
   @Override
@@ -60,6 +57,8 @@ public class SipServer implements Server {
       InetAddress address,
       int port,
       SipListener handler,
+      DsbTrustManager trustManager,
+      KeyManager keyManager,
       CompletableFuture<SipStack> serverStartFuture) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
