@@ -2,6 +2,9 @@ package com.cisco.dsb.common.sip.tls;
 
 import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_PASS;
 import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_USER;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.DhruvaConfig;
@@ -16,17 +19,18 @@ import javax.net.ssl.X509TrustManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 public class DsbTrustManagerTest {
 
   DsbTrustManager dsbTrustManager;
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Spy
+  CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
-  //  @Spy DhruvaConfig dhruvaConfig = new DhruvaConfig();
   private String keystorePath;
   @InjectMocks DhruvaConfig dhruvaConfig;
 
@@ -60,8 +64,8 @@ public class DsbTrustManagerTest {
     ((X509TrustManager) tm).checkServerTrusted(certs, "RSA");
   }
 
-  @Ignore
-  @Test(description = "get systemTrustManager and check for invalid date in cert in keystore")
+  @Test(description = "get systemTrustManager and check for invalid date in cert in keystore", expectedExceptions = {
+      CertificateException.class})
   public void testSystemTrustManagerForInvalidDateInCertificate() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
     when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
@@ -101,7 +105,7 @@ public class DsbTrustManagerTest {
     ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
   }
 
-  @Ignore
+
   @Test(description = "getCertTrustManager ")
   public void testCertTrustManager() throws Exception {
     when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(true);
@@ -118,7 +122,12 @@ public class DsbTrustManagerTest {
     System.setProperty("dhruvaClientSecret", "dummyClientPassword");
     TrustManager tm = dhruvaConfig.dsbTrustManager();
     Assert.assertNotNull(tm);
-    Assert.assertEquals(tm, mockCertsX509TrustManager);
+    X509Certificate cert = CertUtil.pemToCert(("server.crt.pem"));
+
+    X509Certificate[] certs = {cert};
+    ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
+    verify((X509TrustManager) mockCertsX509TrustManager, times(1)).checkClientTrusted(any(), any());
+
   }
 
   @Test(description = "test permissive trust manager creation")

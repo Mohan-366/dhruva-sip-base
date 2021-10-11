@@ -166,6 +166,9 @@ public class DsbTrustManager implements X509TrustManager {
     validateTrustedSipSources(chain);
 
     trustManager.checkClientTrusted(chain, authType);
+    for (X509Certificate cert : chain) {
+      cert.checkValidity();
+    }
   }
 
   @Override
@@ -184,6 +187,9 @@ public class DsbTrustManager implements X509TrustManager {
     }
 
     trustManager.checkServerTrusted(chain, authType);
+    for (X509Certificate cert : chain) {
+      cert.checkValidity();
+    }
   }
 
   @Override
