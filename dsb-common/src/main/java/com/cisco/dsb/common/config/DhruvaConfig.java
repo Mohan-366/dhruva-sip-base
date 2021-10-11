@@ -27,8 +27,6 @@ import com.cisco.wx2.client.commonidentity.CommonIdentityScimClient;
 import com.cisco.wx2.client.commonidentity.CommonIdentityScimClientFactory;
 import com.cisco.wx2.client.discovery.DiscoveryService;
 import com.cisco.wx2.dto.IdentityMachineAccount;
-import com.cisco.wx2.redis.RedisDataSource;
-import com.cisco.wx2.redis.RedisDataSourceManager;
 import com.cisco.wx2.server.auth.ng.Scope;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
