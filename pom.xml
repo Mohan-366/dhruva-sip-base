@@ -177,6 +177,18 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <!-- jacoco -->
+            <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <configuration>
+                <includes>
+                    <include>com/cisco/dsb/**/*</include>
+                    <include>com/cisco/dhruva/**/*</include>
+                </includes>
+            </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
