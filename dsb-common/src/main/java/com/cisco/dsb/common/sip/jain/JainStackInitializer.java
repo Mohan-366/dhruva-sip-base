@@ -4,6 +4,7 @@ import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.transport.Transport;
 import com.google.common.base.Preconditions;
 import gov.nist.core.net.NetworkLayer;
 import gov.nist.javax.sip.SipStackImpl;
@@ -191,8 +192,8 @@ public class JainStackInitializer {
           .initFromApplication(dhruvaSIPConfigProperties, executorService);
     }
     NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
-    if (networkLayer instanceof DsbNetworkLayer) {
-      logger.info("initializing SSLContext in DsbNetworkLayer");
+    if (transport.equals(Transport.TLS.name()) && networkLayer instanceof DsbNetworkLayer) {
+      logger.info("Initializing SSLContext in DsbNetworkLayer");
       ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager);
     }
     ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);

@@ -8,11 +8,11 @@ import com.google.common.base.Splitter;
 import com.google.common.net.InetAddresses;
 import com.google.common.net.InternetDomainName;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import javax.sip.InvalidArgumentException;
 
 public class TrustedSipSources {
-  private LinkedHashSet<String> trustedSipSources = new LinkedHashSet<>();
+  private HashSet<String> trustedSipSources = new HashSet<>();
 
   private static final Splitter splitter = Splitter.on(",").trimResults().omitEmptyStrings();
 
@@ -25,8 +25,7 @@ public class TrustedSipSources {
   }
 
   @JsonCreator
-  public TrustedSipSources(
-      @JsonProperty("trustedSipSources") LinkedHashSet<String> trustedSipSources) {
+  public TrustedSipSources(@JsonProperty("trustedSipSources") HashSet<String> trustedSipSources) {
     setTrustedSipSources(trustedSipSources);
   }
 
@@ -59,22 +58,22 @@ public class TrustedSipSources {
     return errorList;
   }
 
-  public LinkedHashSet<String> getTrustedSipSources() {
+  public HashSet<String> getTrustedSipSources() {
     return trustedSipSources;
   }
 
-  public void setTrustedSipSources(LinkedHashSet<String> trustedSipSources) {
-    this.trustedSipSources = trustedSipSources == null ? new LinkedHashSet<>() : trustedSipSources;
+  public void setTrustedSipSources(HashSet<String> trustedSipSources) {
+    this.trustedSipSources = trustedSipSources == null ? new HashSet<>() : trustedSipSources;
   }
 
   /**
    * Add a valid source
    *
-   * @param String source to be added
+   * @param source to be added
    * @return <tt>true</tt> if this set did not already contain the specified element
    * @throws InvalidArgumentException if source is not a valid domain or ip address
    */
-  public boolean add(String source) throws InvalidArgumentException {
+  public synchronized boolean add(String source) throws InvalidArgumentException {
     if (!InternetDomainName.isValid(source) && !InetAddresses.isInetAddress(source)) {
       throw new InvalidArgumentException(source);
     }
@@ -84,10 +83,10 @@ public class TrustedSipSources {
   /**
    * Remove a source
    *
-   * @param String source to be removed
+   * @param source to be removed
    * @return <tt>true</tt> if the value was removed
    */
-  public boolean remove(String source) {
+  public synchronized boolean remove(String source) {
     return trustedSipSources.remove(source);
   }
 

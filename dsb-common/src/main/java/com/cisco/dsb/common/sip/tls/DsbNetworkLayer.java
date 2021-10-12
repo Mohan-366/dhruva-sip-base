@@ -30,6 +30,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
+import org.jetbrains.annotations.NotNull;
 
 @CustomLog
 public class DsbNetworkLayer implements NetworkLayer {
@@ -37,12 +38,13 @@ public class DsbNetworkLayer implements NetworkLayer {
   private SSLServerSocketFactory sslServerSocketFactory;
   private static int trafficClass = 0x60; // Match traffic classification as CUCM
   // Default connection timeout milliseconds.
-  private int connectionTimeout = 8000;
+  private int connectionTimeout = DhruvaSIPConfigProperties.getSocketConnectionTimeout();
   protected SIPTransactionStack sipStack;
 
   public DsbNetworkLayer() {}
 
-  public void init(TrustManager trustManager, KeyManager keyManager) throws Exception {
+  public void init(@NotNull TrustManager trustManager, @NotNull KeyManager keyManager)
+      throws Exception {
 
     SecureRandom secureRandom = new SecureRandom();
     secureRandom.nextInt();

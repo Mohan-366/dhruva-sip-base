@@ -38,7 +38,7 @@ public class DsbTrustManager implements X509TrustManager {
   private static boolean enableOcsp;
   private X509TrustManager trustManager;
   private static DsbTrustManager systemTrustManager = null;
-  private TrustedSipSources trustedSipSources = new TrustedSipSources();
+  private TrustedSipSources trustedSipSources;
   private boolean requireTrustedSipSources = false;
 
   public static DsbTrustManager createInstance(
@@ -222,14 +222,6 @@ public class DsbTrustManager implements X509TrustManager {
     }
   }
 
-  public TrustedSipSources getTrustedSipSources() {
-    return trustedSipSources;
-  }
-
-  public boolean getRequireTrustedSipSources() {
-    return requireTrustedSipSources;
-  }
-
   @SuppressFBWarnings(value = {"PATH_TRAVERSAL_IN"})
   private static KeyStore getCacertsKeyStore() throws Exception {
     File storeFile;
@@ -290,8 +282,7 @@ public class DsbTrustManager implements X509TrustManager {
 
   private void validateTrustedSipSources(X509Certificate[] chain) throws CertificateException {
     // Trust everything if no whitelist is provided and "requireTrustedSipSources" config is FALSE
-    // This should always be true for non-media fusion nodes.
-    if (trustedSipSources.isEmpty() && !requireTrustedSipSources) {
+    if (!requireTrustedSipSources && (trustedSipSources != null || trustedSipSources.isEmpty())) {
       return;
     }
 

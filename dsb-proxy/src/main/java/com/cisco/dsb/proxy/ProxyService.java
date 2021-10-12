@@ -15,7 +15,9 @@ import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -64,6 +66,8 @@ public class ProxyService {
 
   @Autowired MetricService metricService;
 
+  @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
+
   @Autowired DsbTrustManager dsbTrustManager;
 
   @Autowired KeyManager keyManager;
@@ -85,14 +89,17 @@ public class ProxyService {
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
+      Transport transport = sipListenPoint.getTransport();
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
               dhruvaSIPConfigProperties,
-              sipListenPoint.getTransport(),
+              transport,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
-              getTrustManager(sipListenPoint.getTlsAuthType()),
-              keyManager,
+              (transport == Transport.TLS)
+                  ? (getTrustManager(sipListenPoint.getTlsAuthType()))
+                  : null,
+              (transport == Transport.TLS) ? keyManager : null,
               dhruvaExecutorService,
               metricService,
               proxyPacketProcessor);
@@ -300,9 +307,10 @@ public class ProxyService {
     return timeoutEventMono.mapNotNull(sipProxyManager.handleProxyTimeoutEvent());
   }
 
-  private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType) {
-    if (tlsAuthenticationType == TLSAuthenticationType.NONE) {
-      return DsbTrustManager.getTrustAllCertsInstance();
+  private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType)
+      throws Exception {
+    if (tlsAuthenticationType != dhruvaSIPConfigProperties.getTlsAuthType()) {
+      return dsbTrustManagerFactory.getDsbTrsutManager(tlsAuthenticationType);
     } else {
       return dsbTrustManager;
     }

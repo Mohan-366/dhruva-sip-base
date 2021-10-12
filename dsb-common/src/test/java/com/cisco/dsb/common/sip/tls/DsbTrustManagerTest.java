@@ -3,6 +3,7 @@ package com.cisco.dsb.common.sip.tls;
 import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_PASS;
 import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_USER;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,16 +27,17 @@ import org.testng.annotations.Test;
 
 public class DsbTrustManagerTest {
 
-  DsbTrustManager dsbTrustManager;
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
   @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
   private String keystorePath;
+  @InjectMocks DsbTrustManagerFactory dsbTrustManagerFactory;
   @InjectMocks DhruvaConfig dhruvaConfig;
 
   @BeforeClass
   public void before() throws Exception {
 
+    dsbTrustManagerFactory = spy(new DsbTrustManagerFactory());
     MockitoAnnotations.initMocks(this);
     DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
     keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
