@@ -62,11 +62,11 @@ public class DsbTrustManager implements X509TrustManager {
     if (systemTrustManager == null) {
       System.setProperty(
           "com.sun.security.ocsp.timeout",
-          String.valueOf(DhruvaNetwork.getOcspResponseTimeoutSeconds()));
-      trustStoreFile = DhruvaNetwork.getTrustStoreFilePath();
-      trustStoreType = DhruvaNetwork.getTrustStoreType();
-      trustStorePassword = DhruvaNetwork.getTrustStorePassword();
-      softFailEnabled = DhruvaNetwork.isTlsCertRevocationSoftFailEnabled();
+          String.valueOf(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()));
+      trustStoreFile = dhruvaSIPConfigProperties.getTrustStoreFilePath();
+      trustStoreType = dhruvaSIPConfigProperties.getTrustStoreType();
+      trustStorePassword = dhruvaSIPConfigProperties.getTrustStorePassword();
+      softFailEnabled = dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled();
       enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
       javaHome = System.getProperty("java.home");
       systemTrustManager = createSystemTrustManager();

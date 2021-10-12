@@ -106,12 +106,19 @@ public class DsbNetworkLayer implements NetworkLayer {
         logger.warn("Failed to load key store from environment, base 64 encoded data", e);
         keyStoreLoadedFromFile = null;
       }
+    } else {
+      logger.error(
+          "Could not create keystore from file: {} of type {}", keyStoreFilename, keyStoreType);
     }
     return keyStoreLoadedFromFile;
   }
 
   public static KeyManager createKeyManager(DhruvaSIPConfigProperties sipProperties) {
     DsbNetworkLayer.KeyStoreInfo info = DsbNetworkLayer.createKeyStore(sipProperties);
+    if (info == null) {
+      logger.error("Could not create keymanager as keystore is null. Returning null");
+      return null;
+    }
     return DsbNetworkLayer.createKeyManager(info.keyStore, info.password);
   }
 

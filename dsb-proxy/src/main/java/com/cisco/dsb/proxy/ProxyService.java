@@ -41,6 +41,7 @@ import javax.sip.*;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -70,7 +71,7 @@ public class ProxyService {
 
   @Autowired DsbTrustManager dsbTrustManager;
 
-  @Autowired KeyManager keyManager;
+  @Nullable @Autowired KeyManager keyManager;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider

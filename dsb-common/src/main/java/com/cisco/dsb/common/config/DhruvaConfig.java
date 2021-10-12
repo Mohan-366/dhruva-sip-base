@@ -164,6 +164,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   }
 
   @Bean(name = "configProperties")
+  @Primary
   public DhruvaProperties props() {
     return new DhruvaProperties(env);
   }
