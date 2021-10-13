@@ -47,8 +47,9 @@ public class DsbNetworkLayer implements NetworkLayer {
   public void init(@NotNull TrustManager trustManager, @NotNull KeyManager keyManager)
       throws Exception {
 
-    Objects.requireNonNull(trustManager, "trustManager must not be null");
-    Objects.requireNonNull(keyManager, "keyManager must not be null");
+    if (trustManager == null || keyManager == null) {
+      throw new IllegalArgumentException("trustManager and keyManager cannot be null");
+    }
     SecureRandom secureRandom = new SecureRandom();
     secureRandom.nextInt();
 
