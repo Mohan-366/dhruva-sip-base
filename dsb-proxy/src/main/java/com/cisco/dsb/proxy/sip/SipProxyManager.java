@@ -29,7 +29,6 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sip.*;
@@ -79,7 +78,6 @@ public class SipProxyManager {
           logger.info(
               "No server transaction exist. Creating new one for {} msg", request.getMethod());
           serverTransaction = sipProvider.getNewServerTransaction(request);
-
         } catch (TransactionAlreadyExistsException ex) {
           logger.error(
               "Server Transaction Already exists, dropping the message as it's retransmission");
@@ -198,7 +196,15 @@ public class SipProxyManager {
       };
 
   /** Max-Forwards validation */
-  private IntPredicate isMaxForwardsLess = mf -> mf <= 0;
+  private Predicate<MaxForwardsHeader> isMaxForwardsLess =
+      mf -> {
+        try {
+          mf.decrementMaxForwards();
+          return false;
+        } catch (TooManyHopsException e) {
+          return true;
+        }
+      };
   // requests other than REGISTER will be rejected with error response, when max forwards reaches 0
   // Note: excluding REGISTER is CP behaviour
   private Predicate<String> requestToBeRejected = SipPredicates.register.negate();
@@ -209,7 +215,7 @@ public class SipProxyManager {
       request -> {
         MaxForwardsHeader mf = (MaxForwardsHeader) request.getHeader(MaxForwardsHeader.NAME);
         return Objects.nonNull(mf)
-            && isMaxForwardsLess.test(mf.getMaxForwards())
+            && isMaxForwardsLess.test(mf)
             && rejectRequest.test(request.getMethod());
       };
 

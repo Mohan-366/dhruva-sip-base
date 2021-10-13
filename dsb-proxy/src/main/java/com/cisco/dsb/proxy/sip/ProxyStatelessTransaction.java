@@ -241,7 +241,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     }
 
     // determine destination based on transport params etc
-    Transport destTransport = Transport.NONE;
+    Transport destTransport;
 
     destTransport = setRequestDestination(request, params);
 

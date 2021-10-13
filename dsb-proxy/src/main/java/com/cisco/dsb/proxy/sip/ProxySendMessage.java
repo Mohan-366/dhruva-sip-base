@@ -102,8 +102,8 @@ public class ProxySendMessage {
                           proxySIPRequest
                               .getRequest()); // getNext comment has exactly steps to find the
               // dest, first priority is given to route
-              String server = hop.getHost();
-              logger.info("Sending the proxy request to next hop {}", server);
+              logger.info(
+                  "Sending the proxy request to next hop {}:{}", hop.getHost(), hop.getPort());
               if (transaction != null) {
                 transaction.sendRequest();
               } else {

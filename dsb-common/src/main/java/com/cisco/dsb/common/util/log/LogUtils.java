@@ -354,12 +354,17 @@ public class LogUtils {
   }
 
   public static Function<SIPMessage, String> getConnectionSignature =
-      (sipMessage) ->
-          sipMessage.getLocalAddress().getHostAddress()
+      (sipMessage) -> {
+        try {
+          return sipMessage.getLocalAddress().getHostAddress()
               + COLON
               + sipMessage.getLocalPort()
               + COLON
               + sipMessage.getRemoteAddress().getHostAddress()
               + COLON
               + sipMessage.getRemotePort();
+        } catch (Exception exception) {
+          return "null:0:null:0";
+        }
+      };
 }

@@ -25,6 +25,7 @@ import com.cisco.dsb.proxy.util.SIPRequestBuilder;
 import com.cisco.dsb.trunk.dto.Destination;
 import com.cisco.dsb.trunk.service.TrunkService;
 import gov.nist.javax.sip.SipProviderImpl;
+import gov.nist.javax.sip.header.MaxForwards;
 import gov.nist.javax.sip.header.Unsupported;
 import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.header.ViaList;
@@ -397,9 +398,9 @@ public class SipProxyManagerTest {
   @Test(
       description =
           "Max-Forwards check passes if the header is unavailable "
-              + "(or) header is available with a value of 70 [satisfied implicitly by other tests in this class]"
+              + "(or) header is available with a value of 70 and this should be decremented"
               + "(or) header is available with a value of 0 for a REGISTER request")
-  public void passMaxForwardsCheck() {
+  public void passMaxForwardsCheck() throws InvalidArgumentException {
 
     SIPRequest req = mock(SIPRequest.class);
     SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
@@ -407,9 +408,13 @@ public class SipProxyManagerTest {
     when(req.getHeader(MaxForwardsHeader.NAME)).thenReturn(null);
     Assert.assertFalse(proxyManager.maxForwardsCheckFailure.test(req));
 
-    MaxForwardsHeader mf = mock(MaxForwardsHeader.class);
+    MaxForwardsHeader mf = new MaxForwards(70);
     when(req.getHeader(MaxForwardsHeader.NAME)).thenReturn(mf);
-    when(mf.getMaxForwards()).thenReturn(0);
+    when(req.getMethod()).thenReturn(Request.INVITE);
+    Assert.assertFalse(proxyManager.maxForwardsCheckFailure.test(req));
+    Assert.assertEquals(mf.getMaxForwards(), 69);
+
+    mf.setMaxForwards(0);
     when(req.getMethod()).thenReturn(null);
     Assert.assertFalse(proxyManager.maxForwardsCheckFailure.test(req));
 
