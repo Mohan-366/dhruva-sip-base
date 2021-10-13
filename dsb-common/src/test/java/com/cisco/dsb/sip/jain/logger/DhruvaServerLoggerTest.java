@@ -12,13 +12,13 @@ import javax.sip.header.CallIdHeader;
 import javax.sip.header.Header;
 import org.testng.annotations.Test;
 
-@Test
 public class DhruvaServerLoggerTest extends LoggerTestBase {
 
   public DhruvaServerLoggerTest() {
     super(new DhruvaServerLogger());
   }
 
+  @Test
   public void testFullContentLogging() throws Exception {
     SIPMessage message = mock(SIPMessage.class);
     String content =
@@ -78,6 +78,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     runLoggingTest(message, true);
   }
 
+  @Test
   public void testHeadersOnlyLogging() throws Exception {
 
     SIPMessage message = mock(SIPMessage.class);

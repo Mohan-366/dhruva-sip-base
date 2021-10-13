@@ -14,6 +14,10 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -32,10 +36,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.net.ssl.KeyManager;
 import javax.sip.*;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -44,8 +50,6 @@ import reactor.core.publisher.Mono;
 public class ProxyService {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-
-  @Autowired public MetricService metricsService;
 
   @Autowired SipServerLocatorService resolver;
 
@@ -60,6 +64,14 @@ public class ProxyService {
   @Autowired SipProxyManager sipProxyManager;
 
   @Autowired DhruvaExecutorService dhruvaExecutorService;
+
+  @Autowired MetricService metricService;
+
+  @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
+
+  @Autowired DsbTrustManager dsbTrustManager;
+
+  @Nullable @Autowired KeyManager keyManager;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
@@ -78,12 +90,19 @@ public class ProxyService {
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
+      Transport transport = sipListenPoint.getTransport();
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
               dhruvaSIPConfigProperties,
-              sipListenPoint.getTransport(),
+              transport,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
+              (transport == Transport.TLS)
+                  ? (getTrustManager(sipListenPoint.getTlsAuthType()))
+                  : null,
+              (transport == Transport.TLS) ? keyManager : null,
+              dhruvaExecutorService,
+              metricService,
               proxyPacketProcessor);
 
       listenPointFuture.whenComplete(
@@ -287,5 +306,14 @@ public class ProxyService {
 
   public Mono<ProxySIPResponse> timeOutPipeline(Mono<TimeoutEvent> timeoutEventMono) {
     return timeoutEventMono.mapNotNull(sipProxyManager.handleProxyTimeoutEvent());
+  }
+
+  private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType)
+      throws Exception {
+    if (tlsAuthenticationType != dhruvaSIPConfigProperties.getTlsAuthType()) {
+      return dsbTrustManagerFactory.getDsbTrsutManager(tlsAuthenticationType);
+    } else {
+      return dsbTrustManager;
+    }
   }
 }

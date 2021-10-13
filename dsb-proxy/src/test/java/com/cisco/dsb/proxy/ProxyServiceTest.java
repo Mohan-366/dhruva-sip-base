@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
+import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -10,6 +11,9 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.CertTrustManagerProperties;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServerImpl;
@@ -25,9 +29,7 @@ import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.trunk.service.TrunkService;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
-import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.message.SIPRequest;
-import gov.nist.javax.sip.stack.ClientAuthType;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -38,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.net.ssl.KeyManager;
 import javax.sip.*;
 import org.mockito.*;
 import org.testng.Assert;
@@ -48,18 +51,21 @@ import reactor.test.StepVerifier;
 public class ProxyServiceTest {
 
   @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
 
-  @Mock public MetricService metricsService;
+  @Mock MetricService metricsService;
 
   @Mock SipServerLocatorService resolver;
 
-  @Mock private ProxyPacketProcessor proxyPacketProcessor;
+  @Mock ProxyPacketProcessor proxyPacketProcessor;
 
   @Mock TrunkService trunkService;
 
   @Mock DhruvaExecutorService dhruvaExecutorService;
 
-  @Spy DhruvaServer server = new DhruvaServerImpl(dhruvaExecutorService, metricsService);
+  @Mock KeyManager keyManager;
+
+  @Spy DhruvaServer dhruvaServer = new DhruvaServerImpl();
 
   @Mock Dialog dialog;
 
@@ -76,7 +82,9 @@ public class ProxyServiceTest {
 
   @Mock ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
   @Mock StripedExecutorService stripedExecutorService;
-
+  @Mock DsbTrustManager dsbTrustManager;
+  @InjectMocks DsbTrustManagerFactory dsbTrustManagerFactory;
+  @InjectMocks DhruvaConfig dhruvaConfig;
   @InjectMocks ProxyService proxyService;
 
   SIPListenPoint udpListenPoint1;
@@ -84,29 +92,31 @@ public class ProxyServiceTest {
   SIPListenPoint tcpListenPoint3;
   SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
-  String keyStorePath;
-  String keyStorePassword;
-  String keyStoreType;
+
+  private String keystorePath;
+
+  public ProxyServiceTest() throws Exception {}
 
   @BeforeClass
   public void setup() throws Exception {
-    keyStorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    keyStorePassword = "dsb123";
-    keyStoreType = "jks";
 
+    dsbTrustManagerFactory = spy(new DsbTrustManagerFactory());
     MockitoAnnotations.initMocks(this);
     when(dhruvaExecutorService.getScheduledExecutorThreadPool(any()))
         .thenReturn(scheduledThreadPoolExecutor);
     when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
-    ((DhruvaServerImpl) server).setExecutorService(dhruvaExecutorService);
-    ((DhruvaServerImpl) server).setMetricService(metricsService);
     when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
-    when(dhruvaSIPConfigProperties.getKeyStoreFilePath()).thenReturn(keyStorePath);
-    when(dhruvaSIPConfigProperties.getKeyStorePassword()).thenReturn(keyStorePassword);
-    when(dhruvaSIPConfigProperties.getKeyStoreType()).thenReturn(keyStoreType);
     when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
     when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");
     when(dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
+
+    keystorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
+    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
+    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
+    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
+    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
+    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
+    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
     udpListenPoint1 =
         new SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")
@@ -418,19 +428,5 @@ public class ProxyServiceTest {
               Assert.assertEquals(proxyResponse, proxySIPResponse);
             })
         .verifyComplete();
-  }
-
-  @Test(description = "test creation of keystore")
-  public void testTKeyStoreCreation() {
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStore"), keyStorePath);
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStorePassword"), keyStorePassword);
-    Assert.assertEquals(System.getProperty("javax.net.ssl.keyStoreType"), keyStoreType);
-    Optional<SipStack> optionalSipStackTls = proxyService.getSipStack(tlsListenPoint4.getName());
-    SipStack sipStackTls =
-        optionalSipStackTls.orElseThrow(() -> new RuntimeException("exception fetching sip stack"));
-    if (sipStackTls instanceof SipStackImpl) {
-      SipStackImpl sipStackImpl = (SipStackImpl) sipStackTls;
-      Assert.assertEquals(sipStackImpl.getClientAuth(), ClientAuthType.Enabled);
-    }
   }
 }

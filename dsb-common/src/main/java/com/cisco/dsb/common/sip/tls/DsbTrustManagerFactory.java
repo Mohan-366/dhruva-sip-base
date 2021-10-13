@@ -1,9 +1,7 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
+import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.wx2.certs.client.CertsClientFactory;
-import com.cisco.wx2.certs.client.CertsX509TrustManager;
 import com.cisco.wx2.certs.common.util.CRLRevocationCache;
 import com.cisco.wx2.certs.common.util.OCSPRevocationCache;
 import com.cisco.wx2.certs.common.util.RevocationManager;
@@ -24,63 +22,74 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import lombok.CustomLog;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-public class CertTrustManager {
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(CertTrustManager.class);
-  private static CertTrustManagerProperties certTrustManagerProperties;
+@CustomLog
+@Component
+public class DsbTrustManagerFactory {
 
-  public static final String SERVICE_NAME = "Cloudproxy";
+  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired CertTrustManagerProperties certTrustManagerProperties;
 
-  /** Creates an CertTrustManager that uses CertsX509TrustManager. */
-  public TrustManager getTrustManager() throws Exception {
-    try {
+  public DsbTrustManager getDsbTrsutManager() throws Exception {
+    return getDsbTrsutManager(null);
+  }
 
-      this.trustManager =
-          new CertsX509TrustManager(
+  public DsbTrustManager getDsbTrsutManager(TLSAuthenticationType tlsAuthenticationType)
+      throws Exception {
+    DsbTrustManager trustManager;
+    TLSAuthenticationType authenticationType;
+    if (tlsAuthenticationType == null) {
+      authenticationType = dhruvaSIPConfigProperties.getTlsAuthType();
+    } else {
+      authenticationType = tlsAuthenticationType;
+    }
+    if (authenticationType == TLSAuthenticationType.NONE) {
+      logger.warn(
+          "Using PermissiveInstance for TrustManager. No certificate validation will be performed.");
+      trustManager = DsbTrustManager.getTrustAllCertsInstance();
+    } else if (authenticationType == TLSAuthenticationType.MTLS
+        && dhruvaSIPConfigProperties.getEnableCertService()) {
+
+      logger.info("Certs Service URL = {}", certTrustManagerProperties.getCertsApiServiceUrl());
+
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(
+              certTrustManagerProperties.getRevocationManagerThreadPoolSize());
+
+      RevocationManager revocationManager =
+          new RevocationManager(
+              OCSPRevocationCache.memoryBackedOcspCache(
+                  certTrustManagerProperties.getRevocationCacheExpirationHours()),
+              CRLRevocationCache.memoryBackedCRLCache(
+                  certTrustManagerProperties.getRevocationCacheExpirationHours(),
+                  certTrustManagerProperties.getHttpConnectTimeout(),
+                  certTrustManagerProperties.getHttpReadTimeout()),
+              executorService);
+      revocationManager.setOcspEnabled(certTrustManagerProperties.getOcspEnabled());
+
+      trustManager =
+          DsbTrustManager.createInstance(
               certsClientFactory(),
               orgsCache(),
-              revocationManager(),
+              revocationManager,
               certTrustManagerProperties.getRevocationTimeoutMilliseconds(),
               TimeUnit.MILLISECONDS,
-              certTrustManagerProperties.getOrgCertCacheSize(),
-              false);
-
-      return this.trustManager;
-    } catch (Exception e) {
-      logger.error("Exception in instantiating CertsX509TrustManager ", e);
-      throw e;
+              certTrustManagerProperties.getOrgCertCacheSize());
+    } else {
+      logger.info("System trust store will be used as source of trust.");
+      trustManager = DsbTrustManager.getSystemTrustManager(dhruvaSIPConfigProperties);
     }
-  }
 
-  public static CertTrustManager createCertTrustManager() {
-    if (certTrustManagerProperties == null) {
-      certTrustManagerProperties = new CertTrustManagerProperties();
-    }
-    return new CertTrustManager();
-  }
-
-  private X509TrustManager trustManager;
-
-  private CertTrustManager() {}
-
-  private RevocationManager revocationManager() {
-    ExecutorService executorService =
-        Executors.newFixedThreadPool(
-            certTrustManagerProperties.getRevocationManagerThreadPoolSize());
-    RevocationManager revocationManager =
-        new RevocationManager(
-            OCSPRevocationCache.memoryBackedOcspCache(
-                certTrustManagerProperties.getRevocationCacheExpirationHours()),
-            CRLRevocationCache.memoryBackedCRLCache(
-                certTrustManagerProperties.getRevocationCacheExpirationHours(),
-                certTrustManagerProperties.getHttpConnectTimeout(),
-                certTrustManagerProperties.getHttpReadTimeout()),
-            executorService);
-    revocationManager.setOcspEnabled(certTrustManagerProperties.getOcspEnabled());
-    return revocationManager;
+    // setting to default for now which means this feature is disabled and we are not rejecting any
+    // source.
+    trustManager.setRequireTrustedSipSources(
+        dhruvaSIPConfigProperties.getRequiredTrustedSipSources());
+    trustManager.setTrustedSipSources(dhruvaSIPConfigProperties.getTrustedSipSources());
+    return trustManager;
   }
 
   private OrganizationCollectionCache orgsCache() {
@@ -91,11 +100,11 @@ public class CertTrustManager {
         true);
   }
 
-  private OrganizationLoader orgLoader() {
+  public OrganizationLoader orgLoader() {
     return new CommonIdentityOrganizationLoader(commonIdentityScimClientFactory());
   }
 
-  private CommonIdentityScimClientFactory commonIdentityScimClientFactory() {
+  public CommonIdentityScimClientFactory commonIdentityScimClientFactory() {
     logger.info("Common Identity SCIM URL = {}", certTrustManagerProperties.getScimEndpointUrl());
     return CommonIdentityScimClientFactory.builder(certTrustManagerProperties)
         .connectionManager(scimConnectionManager())
@@ -107,7 +116,7 @@ public class CertTrustManager {
         .build();
   }
 
-  private PoolingHttpClientConnectionManager scimConnectionManager() {
+  public PoolingHttpClientConnectionManager scimConnectionManager() {
     return HttpUtil.newPoolingClientConnectionManager(
         certTrustManagerProperties.disableSslChecks(),
         certTrustManagerProperties.getHttpMaxConnections(),
@@ -115,7 +124,7 @@ public class CertTrustManager {
         certTrustManagerProperties.getDnsResolver());
   }
 
-  private CertsClientFactory certsClientFactory() {
+  public CertsClientFactory certsClientFactory() {
 
     return CertsClientFactory.builder(
             certTrustManagerProperties, certTrustManagerProperties.getCertsApiServiceUrl())
@@ -125,7 +134,7 @@ public class CertTrustManager {
         .build();
   }
 
-  private Map<URI, URI> getLocalDiscoveryURIMap() {
+  public Map<URI, URI> getLocalDiscoveryURIMap() {
     return null;
   }
 
@@ -141,14 +150,14 @@ public class CertTrustManager {
         certTrustManagerProperties.isMachineAccountAuthEnabled()
             ? BearerAuthorizationProvider.builder()
             : BearerAuthorizationProvider.builder(
-                certTrustManagerProperties.getAuthorizationConfig(SERVICE_NAME.toLowerCase()));
+                certTrustManagerProperties.getAuthorizationConfig("dsb".toLowerCase()));
 
     return builder
         .commonIdentityClientFactory(commonIdentityClientFactory())
         .orgId(certTrustManagerProperties.getDhruvaOrgId())
         .userId(certTrustManagerProperties.getDhruvaServiceUser())
         .password(certTrustManagerProperties.getDhruvaServicePassword())
-        .scope(Scope.of(Scope.Identity.SCIM))
+        .scope(com.cisco.wx2.server.auth.ng.Scope.of(Scope.Identity.SCIM))
         .clientId(certTrustManagerProperties.getDhruvaClientId())
         .clientSecret(certTrustManagerProperties.getDhruvaClientSecret())
         .build();

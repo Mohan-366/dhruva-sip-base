@@ -6,16 +6,20 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.DhruvaServerLogger;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
-import com.cisco.dsb.common.sip.jain.JainStackLogger;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
+import gov.nist.javax.sip.SipStackImpl;
 import java.net.InetAddress;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
@@ -31,6 +35,8 @@ public class SipServer implements Server {
   private MetricService metricService;
   private DhruvaExecutorService executorService;
   private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  private TrustManager trustManager;
+  private KeyManager keyManager;
 
   public SipServer(
       Transport transport,
@@ -50,6 +56,8 @@ public class SipServer implements Server {
       InetAddress address,
       int port,
       SipListener handler,
+      DsbTrustManager trustManager,
+      KeyManager keyManager,
       CompletableFuture<SipStack> serverStartFuture) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
@@ -65,7 +73,14 @@ public class SipServer implements Server {
               port,
               transport.toString(),
               handler,
-              executorService);
+              executorService,
+              trustManager,
+              keyManager);
+      if (sipStack instanceof SipStackImpl) {
+        SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
+        ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
+            .initFromApplication(dhruvaSIPConfigProperties, executorService);
+      }
       serverStartFuture.complete(sipStack);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e.getCause());
@@ -73,17 +88,7 @@ public class SipServer implements Server {
   }
 
   private Properties getStackProperties() {
-    String keyStorePath = dhruvaSIPConfigProperties.getKeyStoreFilePath();
-    String keyStorePassword = dhruvaSIPConfigProperties.getKeyStorePassword();
-    String keyStoreType = dhruvaSIPConfigProperties.getKeyStoreType();
-    if (keyStorePath != null && keyStorePassword != null && keyStoreType != null) {
-      logger.info("Creating keystore from file: " + keyStorePath);
-      System.setProperty("javax.net.ssl.keyStore", keyStorePath);
-      System.setProperty("javax.net.ssl.trustStore", keyStorePath);
-      System.setProperty("javax.net.ssl.keyStoreType", dhruvaSIPConfigProperties.getKeyStoreType());
-      System.setProperty(
-          "javax.net.ssl.keyStorePassword", dhruvaSIPConfigProperties.getKeyStorePassword());
-    }
+
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
@@ -110,9 +115,10 @@ public class SipServer implements Server {
     stackProps.setProperty(
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
-    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
+    //    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
     stackProps.setProperty(
         "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", dhruvaSIPConfigProperties.getClientAuthType());
+    stackProps.setProperty("gov.nist.javax.sip.NETWORK_LAYER", DsbNetworkLayer.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
     stackProps.setProperty(
         "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT",

@@ -1,11 +1,14 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.bean.SIPProxy;
-import com.cisco.dsb.common.transport.TLSAuthenticationType;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonUtilFactory;
 import com.cisco.wx2.dto.BuildInfo;
+import com.cisco.wx2.dto.ErrorInfo;
+import com.cisco.wx2.dto.ErrorList;
 import java.security.KeyStore;
 import java.util.*;
 import javax.sip.message.Request;
@@ -42,6 +45,12 @@ public class DhruvaSIPConfigProperties {
 
   public static final boolean DEFAULT_PROXY_PROCESS_REGISTER_REQUEST = false;
 
+  public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;
+
+  public static final Boolean DEFAULT_ENABLE_CERT_SERVICE = false;
+
+  private static final String ENABLE_CERT_SERVICE = "dsb.enableCertService";
+
   // timer C = 3 mins
   public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 180000;
 
@@ -49,9 +58,7 @@ public class DhruvaSIPConfigProperties {
 
   private static final String USE_REDIS_AS_CACHE = "useRedis";
 
-  public static final TLSAuthenticationType DEFAULT_TRANSPORT_AUTH = TLSAuthenticationType.MTLS;
-
-  public static final boolean DEFAULT_ENABLE_CERT_SERVICE = false;
+  private static final String TLS_AUTH_TYPE = "dsb.transportAuth";
 
   private static final String SIP_CERTIFICATE = "sipCertificate";
 
@@ -117,7 +124,7 @@ public class DhruvaSIPConfigProperties {
   private static BuildInfo buildInfo;
   // All Keep Alive time related values in seconds
   private static final String KEEP_ALIVE_PERIOD = "keepAlivePeriod";
-  private static final Long DEFAULT_KEEP_ALIVE_PERIOD = Long.valueOf(20);
+  private static final long DEFAULT_KEEP_ALIVE_PERIOD = Long.valueOf(20);
   private static final String RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT =
       "dsb.reliableKeepAlivePeriod";
   private static final String DEFAULT_RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT = "25";
@@ -125,6 +132,14 @@ public class DhruvaSIPConfigProperties {
   private static final String DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS = "20";
   private static final String LOG_KEEP_ALIVES_ENABLED = "logKeepAlivesEnabled";
   private static final Boolean DEFAULT_LOG_KEEP_ALIVES_ENABLED = false;
+
+  private static final String TRUSTED_SIP_SOURCES = "dsb.trustedSipSources";
+  private static final String DEFAULT_TRUSTED_SIP_SOURCES = "";
+  private static final String REQUIRED_TRUSTED_SIP_SOURCES = "dsb.requiredTrustedSipSources";
+  private static final Boolean DEFAULT_REQUIRED_TRUSTED_SIP_SOURCES = false;
+
+  private static final String SOCKET_CONNECTION_TIMEOUT = "dsb.socketConnectionTimeout";
+  private static final int DEFAULT_SOCKET_CONNECTION_TIMEOUT = 8000;
 
   public static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_Dhruva";
 
@@ -172,6 +187,14 @@ public class DhruvaSIPConfigProperties {
 
   private List<String> allowedCiphers;
   private boolean isHostPortEnabled;
+
+  private String tlsAuthType;
+  private Boolean enableCertService;
+
+  private String trustedSipSources;
+  private Boolean requiredTrustedSipSources;
+
+  private static int socketConnectionTimeout;
 
   @Autowired
   public DhruvaSIPConfigProperties(Environment env) {
@@ -256,6 +279,9 @@ public class DhruvaSIPConfigProperties {
         env.getProperty(TLS_KEY_STORE_TYPE, String.class, DEFAULT_TLS_KEY_STORE_TYPE);
     this.keyStorePassword = env.getProperty(TLS_KEY_STORE_PASSWORD, String.class);
     this.clientAuthType = env.getProperty(CLIENT_AUTH_TYPE, String.class, DEFAULT_CLIENT_AUTH_TYPE);
+    this.enableCertService =
+        env.getProperty(ENABLE_CERT_SERVICE, Boolean.class, DEFAULT_ENABLE_CERT_SERVICE);
+    this.tlsAuthType = env.getProperty(TLS_AUTH_TYPE, String.class, DEFAULT_TLS_AUTH_TYPE.name());
     this.logKeepAlivesEnabled =
         env.getProperty(LOG_KEEP_ALIVES_ENABLED, Boolean.class, DEFAULT_LOG_KEEP_ALIVES_ENABLED);
     this.keepAlivePeriod =
@@ -268,6 +294,14 @@ public class DhruvaSIPConfigProperties {
     this.minKeepAliveTimeSeconds =
         env.getProperty(
             MIN_KEEP_ALIVE_TIME_SECONDS, String.class, DEFAULT_MIN_KEEP_ALIVE_TIME_SECONDS);
+    this.trustedSipSources =
+        env.getProperty(TRUSTED_SIP_SOURCES, String.class, DEFAULT_TRUSTED_SIP_SOURCES);
+    this.requiredTrustedSipSources =
+        env.getProperty(
+            REQUIRED_TRUSTED_SIP_SOURCES, Boolean.class, DEFAULT_REQUIRED_TRUSTED_SIP_SOURCES);
+    socketConnectionTimeout =
+        env.getProperty(
+            SOCKET_CONNECTION_TIMEOUT, Integer.class, DEFAULT_SOCKET_CONNECTION_TIMEOUT);
   }
 
   public String getAllowedMethods() {
@@ -499,5 +533,38 @@ public class DhruvaSIPConfigProperties {
 
   public String getMinKeepAliveTimeSeconds() {
     return this.minKeepAliveTimeSeconds;
+  }
+
+  public TLSAuthenticationType getTlsAuthType() {
+    TLSAuthenticationType authType;
+    try {
+      authType = TLSAuthenticationType.valueOf(this.tlsAuthType);
+    } catch (IllegalArgumentException e) {
+      authType = DEFAULT_TLS_AUTH_TYPE;
+    }
+    return authType;
+  }
+
+  public Boolean getEnableCertService() {
+    return this.enableCertService;
+  }
+
+  public TrustedSipSources getTrustedSipSources() {
+    TrustedSipSources trustedSipSources = new TrustedSipSources(this.trustedSipSources);
+    // Log and purge any values that are not valid
+    ErrorList errorList = trustedSipSources.validateSources();
+    for (ErrorInfo errorInfo : errorList) {
+      logger.warn("trustedSipSources included invalid entry: {}", errorInfo.getDescription());
+      trustedSipSources.remove(errorInfo.getDescription());
+    }
+    return trustedSipSources;
+  }
+
+  public Boolean getRequiredTrustedSipSources() {
+    return this.requiredTrustedSipSources;
+  }
+
+  public static int getSocketConnectionTimeout() {
+    return socketConnectionTimeout;
   }
 }

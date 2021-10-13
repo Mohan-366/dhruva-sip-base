@@ -11,6 +11,9 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.wx2.dto.IdentityMachineAccount;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
@@ -18,6 +21,7 @@ import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.ciscospark.server.Wx2ConfigAdapter;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
+import javax.net.ssl.KeyManager;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -35,6 +39,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
   @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
 
   @Autowired private Environment env;
 
@@ -135,6 +140,16 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .build();
   }
 
+  @Bean
+  public DsbTrustManager dsbTrustManager() throws Exception {
+    return dsbTrustManagerFactory.getDsbTrsutManager();
+  }
+
+  @Bean
+  public KeyManager keyManager(DhruvaSIPConfigProperties sipProperties) {
+    return DsbNetworkLayer.createKeyManager(sipProperties);
+  }
+
   // TODO DSB
   @Bean
   @Profile("disabled")
@@ -149,6 +164,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   }
 
   @Bean(name = "configProperties")
+  @Primary
   public DhruvaProperties props() {
     return new DhruvaProperties(env);
   }

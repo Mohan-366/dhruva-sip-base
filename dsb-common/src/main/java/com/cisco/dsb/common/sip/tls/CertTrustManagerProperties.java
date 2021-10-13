@@ -1,13 +1,19 @@
-package com.cisco.dsb.common.transport;
+package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.util.OrgId;
 import com.google.common.base.Strings;
 import java.net.URI;
 import java.util.Properties;
+import lombok.CustomLog;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 
+@Configuration
+@Qualifier("certTrustManagerConfigProperties")
+@CustomLog
 public class CertTrustManagerProperties extends ConfigProperties {
 
   private static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_DHRUVA";

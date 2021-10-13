@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.transport.TLSAuthenticationType;
+import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.ArrayList;
 import java.util.List;

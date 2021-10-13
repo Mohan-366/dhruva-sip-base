@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.google.common.collect.Iterators;
 import gov.nist.javax.sip.ListeningPointImpl;
 import gov.nist.javax.sip.SipProviderImpl;
@@ -15,15 +18,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.TooManyListenersException;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
 import javax.sip.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class JainStackInitializerTest {
 
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
-  @Autowired DhruvaExecutorService executorService;
+  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock DhruvaExecutorService executorService;
+  @Mock TrustManager trustManager;
+  @Mock KeyManager keyManager;
+  @Mock DsbJainSipMessageProcessorFactory mockDsbJainSipMessageProcessorFactory;
+
+  @BeforeClass
+  public void before() {
+    MockitoAnnotations.initMocks(this);
+    when(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()).thenReturn(1);
+  }
 
   @Test(
       description =
@@ -100,20 +116,21 @@ public class JainStackInitializerTest {
   }
 
   @Test(description = "simple stack creation (1 Stack, 1 LP, 1 SP, 1 Listener)")
-  public void testSimpleStackCreation()
-      throws PeerUnavailableException, InvalidArgumentException, TransportNotSupportedException,
-          ObjectInUseException, TooManyListenersException {
+  public void testSimpleStackCreation() throws Exception {
 
     SipFactory mockFactory = mock(SipFactory.class);
     Properties mockProps = mock(Properties.class);
-    SipStack mockStack = mock(SipStack.class);
+    SipStackImpl mockStack = mock(SipStackImpl.class);
     ListeningPoint mockLp = mock(ListeningPoint.class);
     SipProvider mockSp = mock(SipProvider.class);
     SipListener mockListener = mock(SipListener.class);
-
+    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    DsbNetworkLayer networkLayer = new DsbNetworkLayer();
+    networkLayer.init(trustManager, keyManager);
     when(mockFactory.createSipStack(mockProps)).thenReturn(mockStack);
     when(mockStack.createListeningPoint(anyString(), anyInt(), anyString())).thenReturn(mockLp);
     when(mockStack.createSipProvider(mockLp)).thenReturn(mockSp);
+    when(mockStack.getNetworkLayer()).thenReturn(networkLayer);
 
     SipStack simpleStack =
         JainStackInitializer.getSimpleStack(
@@ -125,7 +142,9 @@ public class JainStackInitializerTest {
             5060,
             "tcp",
             mockListener,
-            executorService);
+            executorService,
+            trustManager,
+            keyManager);
     Assert.assertEquals(simpleStack, mockStack);
   }
 }
