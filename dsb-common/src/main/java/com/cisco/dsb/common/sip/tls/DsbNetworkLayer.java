@@ -21,6 +21,7 @@ import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -46,6 +47,8 @@ public class DsbNetworkLayer implements NetworkLayer {
   public void init(@NotNull TrustManager trustManager, @NotNull KeyManager keyManager)
       throws Exception {
 
+    Objects.requireNonNull(trustManager, "trustManager must not be null");
+    Objects.requireNonNull(keyManager, "keyManager must not be null");
     SecureRandom secureRandom = new SecureRandom();
     secureRandom.nextInt();
 

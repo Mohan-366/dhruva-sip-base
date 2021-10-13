@@ -142,4 +142,10 @@ public class DsbTrustManagerTest {
     X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
     ((X509TrustManager) tm).checkClientTrusted(certs, "");
   }
+
+  @Test(description="testing for null keymanager and trustManager", expectedExceptions = {IllegalArgumentException.class})
+  public void testForNullValues() throws Exception {
+    DsbNetworkLayer dsbNetworkLayer = new DsbNetworkLayer();
+    dsbNetworkLayer.init(null, null);
+  }
 }
