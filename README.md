@@ -147,19 +147,19 @@ A test keystore.kjs file is present in dsb-common/src/test/resources/ along with
 
         dsb.clientAuthType = “Enabled” (by default this is “Disabled”)
 
-     - As a result, the default trustManager will have this config.
+      - As a result, the default trustManager will have above config.
 
-   - There are three different types of truststores possible. 
+    - There are three different types of truststores possible. 
 
-	- SystemTrustStore with MTLS/SERVER authentication enabled as per the above config. 
-	- CertTrustManager used to talk to cert service for authentication
-	- Permissive TrustStore which allows everything (any certificate).
+	 - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config. 
+	 - CertTrustManager used to talk to cert service for authentication
+	 - Permissive TrustStore which allows everything (any certificate).
 
-   - Every stack can choose from one of the above. 
-      - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”. 
-      - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
-      - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in json as follows:
-         `[{`                    
+    - Every stack can choose from one of the above. 
+         - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”. 
+         - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
+         - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in json as follows:
+                           `[{`                    
                                `"name": "<networkName>",`
                                `"hostIPAddress": "<IP of machine where DSB runs",`
                                `"transport": "TLS",`
@@ -167,6 +167,6 @@ A test keystore.kjs file is present in dsb-common/src/test/resources/ along with
                                `"recordRoute": true`
                                `"tlsAuthType"`: "NONE"`
                            `}] `
-      -	In order to get CertTrustManager set property dsb.enableCertService to true.
+         - In order to get CertTrustManager set property ```dsb.enableCertService``` to true.
 
 
