@@ -151,9 +151,9 @@ A test keystore.kjs file is present in dsb-common/src/test/resources/ along with
 
     - There are three different types of truststores possible. 
 
-	 - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config. 
-	 - CertTrustManager used to talk to cert service for authentication
-	 - Permissive TrustStore which allows everything (any certificate).
+         - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config. 
+         - CertTrustManager used to talk to cert service for authentication
+         - Permissive TrustStore which allows everything (any certificate).
 
     - Every stack can choose from one of the above. 
          - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”. 
