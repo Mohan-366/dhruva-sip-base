@@ -127,18 +127,23 @@ dynamicServerGroup:
 #### Using TLS in DSB
 
 - Add TLS ListenPoint as follows:
-[{ “name”: “TLSNetwork”, “hostIPAddress”: “10.65.57.150”, “transport”: “TLS”, “port”: 5060, “recordRoute”: true }]
-
+    `[{`
+                               `"name": "<networkName>",`
+                               `"hostIPAddress": "<IP of machine where DSB runs",`
+                               `"transport": "TLS",`
+                               `"port": <port>,`
+                               `"recordRoute": true`
+                           `}] `
 - Test keystore and certs added
 A test keystore.kjs file is present in dsb-common/src/test/resources/ along with server.crt.pem and server.key.pem which have been added to the keystore.jks. These can be used to make TLS sipp calls through the application. 
 
 - Config Changes
     - Please note, to run TLS you will have to specify keystore and truststore location in provide env as follows
 
-      -Ddsb.tlsKeyStoreFilePath=/tmp/keystore.jks -Ddsb.tlsKeyStorePassword=dsb123
-      -Ddsb.tlsTrustStoreFilePath=/tmp/keystore.jks -Ddsb.tlsTrustStorePassword=dsb123
+      ```-Ddsb.tlsKeyStoreFilePath=/tmp/keystore.jks -Ddsb.tlsKeyStorePassword=dsb123```
+      ```-Ddsb.tlsTrustStoreFilePath=/tmp/keystore.jks -Ddsb.tlsTrustStorePassword=dsb123```
 
-      - By default, the TLS authentication type is set to SERVER type in Jain. If you wish to enable MTLS and specifically client authentication too then set the following property in env. 
+      - By default, the TLS authentication type is set to ```SERVER``` type in Jain. If you wish to enable MTLS (server and client authentication) then set the following property in env. 
 
         dsb.clientAuthType = “Enabled” (by default this is “Disabled”)
 
@@ -154,7 +159,14 @@ A test keystore.kjs file is present in dsb-common/src/test/resources/ along with
       - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”. 
       - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
       - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in json as follows:
-	[{ “name”: “TLSNetwork”, “hostIPAddress”: “10.65.57.150”, “transport”: “TLS”, “port”: 5060, “recordRoute”: true, tlsAuthType: “NONE” }]
+         `[{`                    
+                               `"name": "<networkName>",`
+                               `"hostIPAddress": "<IP of machine where DSB runs",`
+                               `"transport": "TLS",`
+                               `"port": <port>,`
+                               `"recordRoute": true`
+                               `"tlsAuthType"`: "NONE"`
+                           `}] `
       -	In order to get CertTrustManager set property dsb.enableCertService to true.
 
 
