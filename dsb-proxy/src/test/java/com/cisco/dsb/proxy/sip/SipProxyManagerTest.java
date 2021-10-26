@@ -7,6 +7,7 @@ import static org.testng.Assert.assertNull;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
@@ -54,6 +55,7 @@ public class SipProxyManagerTest {
   @Mock ControllerConfig controllerConfig;
   @Mock DhruvaExecutorService dhruvaExecutorService;
   @Mock TrunkService trunkService;
+  @Mock MetricService metricService;
 
   @BeforeClass
   public void init() {
@@ -378,7 +380,8 @@ public class SipProxyManagerTest {
     ServerTransaction st = mock(ServerTransaction.class);
     SipProvider sp = mock(SipProvider.class);
 
-    SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
+    SipProxyManager proxyManager =
+        new SipProxyManager(proxyControllerFactory, controllerConfig, metricService);
 
     Request request = RequestHelper.getDOInvite("abcd:shrihran@cisco.com");
     ProxySIPRequest proxyRequest = proxyManager.createProxySipRequest().apply(request, st, sp);
@@ -403,7 +406,8 @@ public class SipProxyManagerTest {
   public void passMaxForwardsCheck() throws InvalidArgumentException {
 
     SIPRequest req = mock(SIPRequest.class);
-    SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
+    SipProxyManager proxyManager =
+        new SipProxyManager(proxyControllerFactory, controllerConfig, metricService);
 
     when(req.getHeader(MaxForwardsHeader.NAME)).thenReturn(null);
     Assert.assertFalse(proxyManager.maxForwardsCheckFailure.test(req));
@@ -434,7 +438,8 @@ public class SipProxyManagerTest {
     MaxForwardsHeader mf = (MaxForwardsHeader) request.getHeader(MaxForwardsHeader.NAME);
     mf.setMaxForwards(0);
 
-    SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
+    SipProxyManager proxyManager =
+        new SipProxyManager(proxyControllerFactory, controllerConfig, metricService);
     ProxySIPRequest proxyRequest = proxyManager.createProxySipRequest().apply(request, st, sp);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
@@ -455,7 +460,8 @@ public class SipProxyManagerTest {
               + "(or) header is available with supported features")
   public void passProxyRequireCheck() throws Exception {
 
-    SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
+    SipProxyManager proxyManager =
+        new SipProxyManager(proxyControllerFactory, controllerConfig, metricService);
     Request request = RequestHelper.getInviteRequest();
 
     Assert.assertNull(request.getHeader(ProxyRequireHeader.NAME));
@@ -495,7 +501,8 @@ public class SipProxyManagerTest {
         JainSipHelper.getHeaderFactory().createProxyRequireHeader("feature2");
     request.addHeader(proxyRequire2);
 
-    SipProxyManager proxyManager = new SipProxyManager(proxyControllerFactory, controllerConfig);
+    SipProxyManager proxyManager =
+        new SipProxyManager(proxyControllerFactory, controllerConfig, metricService);
     ProxySIPRequest proxyRequest = proxyManager.createProxySipRequest().apply(request, st, sp);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);

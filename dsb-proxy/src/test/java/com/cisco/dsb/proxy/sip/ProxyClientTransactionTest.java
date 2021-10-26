@@ -159,7 +159,8 @@ public class ProxyClientTransactionTest {
     // Case 2: state = PROV_RECVD; send CANCEL
     proxyClientTransaction.setState(ProxyClientTransaction.STATE_PROV_RECVD);
 
-    Request cancelReq = mock(Request.class);
+    // Request cancelReq = mock(Request.class);
+    Request cancelReq = mock(SIPRequest.class);
     ClientTransaction cancelTransaction = mock(ClientTransaction.class);
     when(clientTransaction.createCancel()).thenReturn(cancelReq);
     when(sipProvider.getNewClientTransaction(cancelReq)).thenReturn(cancelTransaction);

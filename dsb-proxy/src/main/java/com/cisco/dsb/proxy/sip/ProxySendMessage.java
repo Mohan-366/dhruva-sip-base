@@ -2,6 +2,8 @@ package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.util.LMAUtill;
+import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -32,6 +34,16 @@ public class ProxySendMessage {
                     JainSipHelper.getMessageFactory().createResponse(responseID, request);
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
+
+                LMAUtill.emitSipMessageEvent(
+                    sipProvider,
+                    (SIPResponse) response,
+                    Event.MESSAGE_TYPE.RESPONSE,
+                    Event.DIRECTION.OUT,
+                    true,
+                    false,
+                    0L);
+
                 logger.info("Successfully sent response for  {}", responseID);
               } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -52,6 +64,17 @@ public class ProxySendMessage {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
       logger.info("Successfully sent response for  {}", responseID);
+
+      // LMA
+      LMAUtill.emitSipMessageEvent(
+          sipProvider,
+          (SIPResponse) response,
+          Event.MESSAGE_TYPE.RESPONSE,
+          Event.DIRECTION.OUT,
+          true,
+          false,
+          0L);
+
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -63,6 +86,16 @@ public class ProxySendMessage {
     try {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
+
+      LMAUtill.emitSipMessageEvent(
+          sipProvider,
+          (SIPResponse) response,
+          Event.MESSAGE_TYPE.RESPONSE,
+          Event.DIRECTION.OUT,
+          true,
+          false,
+          0L);
+
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -73,6 +106,10 @@ public class ProxySendMessage {
       throws DhruvaException {
     try {
       serverTransaction.sendResponse(response);
+
+      LMAUtill.emitSipMessageEvent(
+          null, response, Event.MESSAGE_TYPE.RESPONSE, Event.DIRECTION.OUT, true, false, 0L);
+
     } catch (Exception e) {
       logger.error("Exception occurred while trying to send  response {}", e.getMessage());
       throw new DhruvaException(e);
@@ -85,6 +122,18 @@ public class ProxySendMessage {
     try {
       if (clientTransaction != null) clientTransaction.sendRequest();
       else sipProvider.sendRequest(request);
+
+      // Generating Sip Message Event
+
+      LMAUtill.emitSipMessageEvent(
+          sipProvider,
+          (SIPRequest) request,
+          Event.MESSAGE_TYPE.REQUEST,
+          Event.DIRECTION.OUT,
+          true,
+          ProxyUtils.isMidDialogRequest((SIPRequest) request),
+          0L);
+
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -109,6 +158,16 @@ public class ProxySendMessage {
               } else {
                 provider.sendRequest(proxySIPRequest.getRequest());
               }
+
+              LMAUtill.emitSipMessageEvent(
+                  provider,
+                  proxySIPRequest.getRequest(),
+                  Event.MESSAGE_TYPE.REQUEST,
+                  Event.DIRECTION.OUT,
+                  true,
+                  ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
+                  0L);
+
               return proxySIPRequest;
             })
         .subscribeOn(Schedulers.boundedElastic());

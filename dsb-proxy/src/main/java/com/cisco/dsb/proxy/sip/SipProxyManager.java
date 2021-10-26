@@ -4,13 +4,16 @@ import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipPredicates;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.LMAUtill;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.common.util.log.LogUtils;
+import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -52,12 +55,16 @@ public class SipProxyManager {
 
   ProxyControllerFactory proxyControllerFactory;
   ControllerConfig config;
+  MetricService metricService;
 
   @Autowired
   public SipProxyManager(
-      ProxyControllerFactory proxyControllerFactory, ControllerConfig controllerConfig) {
+      ProxyControllerFactory proxyControllerFactory,
+      ControllerConfig controllerConfig,
+      MetricService metricService) {
     this.proxyControllerFactory = proxyControllerFactory;
     this.config = controllerConfig;
+    this.metricService = metricService;
   }
 
   /**
@@ -482,6 +489,35 @@ public class SipProxyManager {
       (requestEvent -> {
         SIPRequest sipRequest = (SIPRequest) requestEvent.getRequest();
         SipProvider sipProvider = (SipProvider) requestEvent.getSource();
+
+        /*
+         * Generate Event and Metrics for Sip Message
+         *
+         * */
+
+        Transport transportType = LMAUtill.getTransportType(sipProvider);
+
+        LMAUtill.emitSipMessageEvent(
+            sipProvider,
+            sipRequest,
+            Event.MESSAGE_TYPE.REQUEST,
+            Event.DIRECTION.IN,
+            false,
+            ProxyUtils.isMidDialogRequest(sipRequest),
+            0L);
+
+        metricService.sendSipMessageMetric(
+            sipRequest.getMethod(),
+            sipRequest.getCallId().getCallId(),
+            sipRequest.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.REQUEST,
+            transportType,
+            Event.DIRECTION.IN,
+            ProxyUtils.isMidDialogRequest(sipRequest),
+            false, // internally generated
+            0L,
+            String.valueOf(sipRequest.getRequestURI()));
+
         logger.info(
             "received incoming request {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",
             LogUtils.obfuscateObject(sipRequest.getRequestLine(), false),
@@ -499,6 +535,37 @@ public class SipProxyManager {
       (responseEvent -> {
         SIPResponse sipResponse = (SIPResponse) responseEvent.getResponse();
         SipProvider sipProvider = (SipProvider) responseEvent.getSource();
+
+        /*
+        Generate Event and metrics for sip messages.
+         */
+
+        Transport transportType = LMAUtill.getTransportType(sipProvider);
+
+        // BindingInfo messageBindingInfo = LMAUtill.populateBindingInfo(sipResponse,
+        // transportType);
+
+        LMAUtill.emitSipMessageEvent(
+            sipProvider,
+            sipResponse,
+            Event.MESSAGE_TYPE.RESPONSE,
+            Event.DIRECTION.IN,
+            false,
+            false,
+            0L);
+
+        metricService.sendSipMessageMetric(
+            String.valueOf(sipResponse.getStatusCode()),
+            sipResponse.getCallId().getCallId(),
+            sipResponse.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.RESPONSE,
+            transportType,
+            Event.DIRECTION.IN,
+            false, // false -- ProxyUtils.isMidDialogRequest(sipRequest)
+            false, // internally generated
+            0L,
+            String.valueOf(sipResponse.getStatusCode()));
+
         logger.info(
             "received incoming response: {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",
             sipResponse.getStatusLine(),
