@@ -9,6 +9,7 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -16,10 +17,8 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -73,18 +72,26 @@ public class ProxyClientTransactionTest {
   @DataProvider
   public Object[] getNetwork() throws JsonProcessingException, DhruvaException {
 
-    String jsonUDP =
-        "{ \"name\": \"test_net_proxyclient\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"UDP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     SIPListenPoint sipListenPoint =
-        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonUDP);
+        SIPListenPoint.SIPListenPointBuilder()
+            .setName("test_net_proxyclient")
+            .setHostIPAddress("3.3.3.3")
+            .setPort(5080)
+            .setTransport(Transport.UDP)
+            .setAttachExternalIP(false)
+            .setRecordRoute(true)
+            .build();
     testNetwork1 = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
     DhruvaNetwork.setSipProvider(testNetwork1.getName(), sipProvider);
-    String jsonTCP =
-        "{ \"name\": \"test_net_proxyclient_tcp\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"TCP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
     SIPListenPoint sipListenPointTCP =
-        new ObjectMapper().readerFor(SIPListenPoint.class).readValue(jsonTCP);
+        SIPListenPoint.SIPListenPointBuilder()
+            .setName("test_net_proxyclient_tcp")
+            .setHostIPAddress("3.3.3.3")
+            .setPort(5080)
+            .setTransport(Transport.TCP)
+            .setAttachExternalIP(false)
+            .setRecordRoute(true)
+            .build();
     testNetwork2 = DhruvaNetwork.createNetwork("test_net_proxyclient_tcp", sipListenPointTCP);
     DhruvaNetwork.setSipProvider(testNetwork2.getName(), sipProvider);
 
@@ -113,7 +120,7 @@ public class ProxyClientTransactionTest {
       enabled = false,
       description = "dhruva should send an ACK for error response recieved in client transaction")
   public void testAckForErrorResponse()
-      throws ParseException, IOException, InvalidArgumentException, SipException {
+      throws ParseException, InvalidArgumentException, SipException {
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
     ProxySIPRequest proxyRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
@@ -138,7 +145,7 @@ public class ProxyClientTransactionTest {
   @Test(
       description = "test a client transaction cancellation based on the transaction state",
       dataProvider = "getNetwork")
-  public void testCancel(DhruvaNetwork network) throws SipException, ParseException, IOException {
+  public void testCancel(DhruvaNetwork network) throws SipException, ParseException {
 
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
 

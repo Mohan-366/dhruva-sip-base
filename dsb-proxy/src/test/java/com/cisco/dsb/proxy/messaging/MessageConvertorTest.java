@@ -2,7 +2,7 @@ package com.cisco.dsb.proxy.messaging;
 
 import static org.mockito.Mockito.mock;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -29,7 +29,7 @@ public class MessageConvertorTest {
   @BeforeClass
   void init() {
     defaultListenPoint =
-        new SIPListenPoint.SIPListenPointBuilder()
+        SIPListenPoint.SIPListenPointBuilder()
             .setName("Default")
             .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.UDP)
@@ -41,12 +41,13 @@ public class MessageConvertorTest {
   @Test
   public void validateConvertJainSipRequestMessageToDhruvaMessage() throws Exception {
 
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
     List<SIPListenPoint> listenPointList = new ArrayList<>();
     listenPointList.add(defaultListenPoint);
-    Mockito.when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+    Mockito.when(commonConfigurationProperties.getListenPoints()).thenReturn(listenPointList);
 
     SIPRequest request =
         SIPRequestBuilder.createRequest(
@@ -75,12 +76,13 @@ public class MessageConvertorTest {
 
   @Test(expectedExceptions = {Exception.class})
   public void shouldFailSIPToDhruvaMessageWithNullContext() throws Exception {
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
     List<SIPListenPoint> listenPointList = new ArrayList<>();
     listenPointList.add(defaultListenPoint);
-    Mockito.when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+    Mockito.when(commonConfigurationProperties.getListenPoints()).thenReturn(listenPointList);
 
     SIPRequest request =
         SIPRequestBuilder.createRequest(
@@ -92,12 +94,13 @@ public class MessageConvertorTest {
 
   @Test(expectedExceptions = {Exception.class})
   public void shouldFailSIPToDhruvaMessageWithInvalidInput() throws IOException {
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
     List<SIPListenPoint> listenPointList = new ArrayList<>();
     listenPointList.add(defaultListenPoint);
-    Mockito.when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+    Mockito.when(commonConfigurationProperties.getListenPoints()).thenReturn(listenPointList);
 
     SIPRequest request = null;
     ProxySIPRequest msg =
@@ -108,12 +111,13 @@ public class MessageConvertorTest {
   @Test
   public void validateDhruvaToSIPRequestConversion() throws Exception {
 
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
     List<SIPListenPoint> listenPointList = new ArrayList<>();
     listenPointList.add(defaultListenPoint);
-    Mockito.when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(listenPointList);
+    Mockito.when(commonConfigurationProperties.getListenPoints()).thenReturn(listenPointList);
 
     ExecutionContext context = new ExecutionContext();
     SIPRequest request =

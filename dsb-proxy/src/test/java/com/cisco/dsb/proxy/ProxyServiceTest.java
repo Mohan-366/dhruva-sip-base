@@ -4,7 +4,7 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.config.DhruvaConfig;
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
@@ -50,7 +50,7 @@ import reactor.test.StepVerifier;
 
 public class ProxyServiceTest {
 
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
 
   @Mock MetricService metricsService;
@@ -105,20 +105,20 @@ public class ProxyServiceTest {
     when(dhruvaExecutorService.getScheduledExecutorThreadPool(any()))
         .thenReturn(scheduledThreadPoolExecutor);
     when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
-    when(dhruvaSIPConfigProperties.getKeepAlivePeriod()).thenReturn(5000L);
-    when(dhruvaSIPConfigProperties.getClientAuthType()).thenReturn("Enabled");
-    when(dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout()).thenReturn("25");
-    when(dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
+    when(commonConfigurationProperties.getKeepAlivePeriod()).thenReturn(5000L);
+    when(commonConfigurationProperties.getClientAuthType()).thenReturn("Enabled");
+    when(commonConfigurationProperties.getReliableKeepAlivePeriod()).thenReturn("25");
+    when(commonConfigurationProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
 
     keystorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
-    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
-    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
-    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
+    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
+    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
+    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
+    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
+    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
     udpListenPoint1 =
-        new SIPListenPoint.SIPListenPointBuilder()
+        SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")
             .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.UDP)
@@ -128,7 +128,7 @@ public class ProxyServiceTest {
             .build();
 
     udpListenPoint2 =
-        new SIPListenPoint.SIPListenPointBuilder()
+        SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork2")
             .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.UDP)
@@ -138,7 +138,7 @@ public class ProxyServiceTest {
             .build();
 
     tcpListenPoint3 =
-        new SIPListenPoint.SIPListenPointBuilder()
+        SIPListenPoint.SIPListenPointBuilder()
             .setName("TCPNetwork1")
             .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.TCP)
@@ -147,7 +147,7 @@ public class ProxyServiceTest {
             .setAttachExternalIP(false)
             .build();
     tlsListenPoint4 =
-        new SIPListenPoint.SIPListenPointBuilder()
+        SIPListenPoint.SIPListenPointBuilder()
             .setName("TLSNetwork1")
             .setHostIPAddress("127.0.0.1")
             .setTransport(Transport.TLS)
@@ -162,7 +162,7 @@ public class ProxyServiceTest {
     sipListenPointList.add(tcpListenPoint3);
     sipListenPointList.add(tlsListenPoint4);
 
-    when(dhruvaSIPConfigProperties.getListeningPoints()).thenReturn(sipListenPointList);
+    when(commonConfigurationProperties.getListenPoints()).thenReturn(sipListenPointList);
 
     doNothing()
         .when(controllerConfig)

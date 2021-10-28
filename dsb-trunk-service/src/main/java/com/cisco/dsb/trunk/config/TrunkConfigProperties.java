@@ -1,7 +1,7 @@
 package com.cisco.dsb.trunk.config;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.util.JSONUtilityException;
 import com.cisco.dsb.common.util.JsonSchemaValidator;
 import com.cisco.dsb.common.util.JsonUtilFactory;
@@ -12,7 +12,6 @@ import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import java.io.IOException;
 import java.util.*;
 import lombok.CustomLog;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -35,7 +34,12 @@ public class TrunkConfigProperties {
   public static final String DYNAMIC_SCHEMA = "dynamicServerGroupSchema";
   @Autowired private ApplicationContext context;
   @Autowired private Environment env;
-  @Autowired @Getter private List<SIPListenPoint> listenPoints;
+  private CommonConfigurationProperties commonConfigurationProperties;
+
+  @Autowired
+  public void setCommonConfigurationProperties(CommonConfigurationProperties properties) {
+    this.commonConfigurationProperties = properties;
+  }
 
   @Bean(name = "staticServers")
   public List<StaticServer> getServerGroups() {
@@ -120,12 +124,9 @@ public class TrunkConfigProperties {
 
   public void validateNetwork(List<StaticServer> staticServers) throws DhruvaException {
 
-    if (listenPoints.isEmpty()) {
-      throw new DhruvaException("No listenPoints configures");
-    }
-
     for (StaticServer staticServer : staticServers) {
-      if (listenPoints.stream().noneMatch(e -> e.getName().equals(staticServer.getNetworkName())))
+      if (commonConfigurationProperties.getListenPoints().stream()
+          .noneMatch(e -> e.getName().equals(staticServer.getNetworkName())))
         throw new DhruvaException("wrong network name, does not exist");
     }
   }

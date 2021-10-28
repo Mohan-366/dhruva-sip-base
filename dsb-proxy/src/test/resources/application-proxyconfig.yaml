@@ -1,0 +1,8 @@
+proxy:
+  sip-proxy:
+    errorAggregator: true
+    createDNSServerGroup: true
+    processRouteHeader: true
+    processRegisterRequest: true
+    timerCIntervalInMilliSec: 10000
+  allowed-methods: "INVITE,ACK,BYE"

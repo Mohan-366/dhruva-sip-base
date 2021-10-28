@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.config;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dns.DnsInjectionService;
 import com.cisco.dsb.common.dns.DnsLookup;
 import com.cisco.dsb.common.dns.DnsMetricsReporter;
@@ -34,11 +34,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConditionalOnWebApplication
 @EnableAsync
 @EnableScheduling
-@DependsOn("dhruvaSIPConfigProperties")
 @CustomLog
 public class DhruvaConfig extends Wx2ConfigAdapter {
 
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
 
   @Autowired private Environment env;
@@ -122,7 +121,8 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   @Bean
   public SipServerLocatorService sipServerLocatorService() {
     return new SipServerLocatorService(
-        dhruvaSIPConfigProperties, getApplicationContext().getBean(DhruvaExecutorService.class));
+        commonConfigurationProperties,
+        getApplicationContext().getBean(DhruvaExecutorService.class));
   }
 
   @Bean
@@ -133,9 +133,9 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   @Bean
   public DnsLookup dnsLookup() {
     return DnsResolvers.newBuilder()
-        .cacheSize(dhruvaSIPConfigProperties.getDhruvaDnsCacheMaxSize())
-        .dnsLookupTimeoutMillis(dhruvaSIPConfigProperties.dnsLookupTimeoutMillis())
-        .retentionDurationMillis(dhruvaSIPConfigProperties.dnsCacheRetentionTimeMillis())
+        .cacheSize(commonConfigurationProperties.getDnsCacheSize())
+        .dnsLookupTimeoutMillis(commonConfigurationProperties.getDnsLookupTimeoutMillis())
+        .retentionDurationMillis(commonConfigurationProperties.getTimeOutDnsCache())
         .metered(dnsMetricsReporter())
         .build();
   }
@@ -146,7 +146,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   }
 
   @Bean
-  public KeyManager keyManager(DhruvaSIPConfigProperties sipProperties) {
+  public KeyManager keyManager(CommonConfigurationProperties sipProperties) {
     return DsbNetworkLayer.createKeyManager(sipProperties);
   }
 

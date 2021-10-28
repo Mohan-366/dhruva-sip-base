@@ -4,7 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.dto.Hop;
@@ -30,12 +30,12 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
 
   SipServerLocator locator;
   DhruvaExecutorService executorService;
-  DhruvaSIPConfigProperties props;
+  CommonConfigurationProperties props;
   SipServerLocatorService sipServerLocatorService;
   // @Autowired private SipServerLocatorService locatorService;
   @BeforeTest
   public void setup() {
-    props = mock(DhruvaSIPConfigProperties.class);
+    props = mock(CommonConfigurationProperties.class);
     executorService = mock(DhruvaExecutorService.class);
     sipServerLocatorService = new SipServerLocatorService(props, executorService);
     when(executorService.getExecutorThreadPool(ExecutorType.DNS_LOCATOR_SERVICE))

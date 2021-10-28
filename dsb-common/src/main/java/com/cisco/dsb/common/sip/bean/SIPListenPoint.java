@@ -1,76 +1,39 @@
 package com.cisco.dsb.common.sip.bean;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 // TODO: extend ListenPoint class
-
-@JsonDeserialize(builder = SIPListenPoint.SIPListenPointBuilder.class)
+@Getter
+@Setter
+@Builder(builderMethodName = "SIPListenPointBuilder", setterPrefix = "set")
+@AllArgsConstructor
+@NoArgsConstructor
 public class SIPListenPoint {
 
-  private String name;
+  @Builder.Default private String name = CommonConfigurationProperties.DEFAULT_NETWORK_NAME;
 
-  private String hostIPAddress;
+  @Builder.Default private String hostIPAddress = CommonConfigurationProperties.DEFAULT_HOST_IP;
 
-  private Transport transport;
+  @Builder.Default private Transport transport = CommonConfigurationProperties.DEFAULT_TRANSPORT;
 
-  private int port;
+  @Builder.Default private int port = CommonConfigurationProperties.DEFAULT_PORT;
 
-  private boolean recordRoute;
+  @Builder.Default
+  private boolean recordRoute = CommonConfigurationProperties.DEFAULT_RECORD_ROUTE_ENABLED;
 
-  private boolean attachExternalIP;
+  @Builder.Default
+  private boolean attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
 
-  private TLSAuthenticationType tlsAuthType;
+  @Builder.Default
+  private TLSAuthenticationType tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
 
-  private boolean enableCertService;
-
-  private SIPListenPoint(SIPListenPointBuilder listenPointBuilder) {
-    this.name = listenPointBuilder.name;
-    this.hostIPAddress = listenPointBuilder.hostIPAddress;
-    this.transport = listenPointBuilder.transport;
-    this.port = listenPointBuilder.port;
-    this.recordRoute = listenPointBuilder.recordRoute;
-    this.attachExternalIP = listenPointBuilder.attachExternalIP;
-    this.tlsAuthType = listenPointBuilder.tlsAuthType;
-    this.enableCertService = listenPointBuilder.enableCertService;
-  }
-
-  public String getHostIPAddress() {
-    return hostIPAddress;
-  }
-
-  public boolean isCertServiceEnabled() {
-    return enableCertService;
-  }
-
-  public Transport getTransport() {
-    return transport;
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public boolean isRecordRoute() {
-    return recordRoute;
-  }
-
-  public boolean shouldAttachExternalIP() {
-    return attachExternalIP;
-  }
-
-  public TLSAuthenticationType getTlsAuthType() {
-    return tlsAuthType;
-  }
+  @Builder.Default
+  private boolean enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
 
   public String toString() {
     StringBuilder sipListenPointString =
@@ -111,9 +74,9 @@ public class SIPListenPoint {
         .append(port, otherListenPoint.getPort())
         .append(transport, otherListenPoint.getTransport())
         .append(recordRoute, otherListenPoint.isRecordRoute())
-        .append(attachExternalIP, otherListenPoint.shouldAttachExternalIP())
+        .append(attachExternalIP, otherListenPoint.isAttachExternalIP())
         .append(tlsAuthType, otherListenPoint.getTlsAuthType())
-        .append(enableCertService, ((SIPListenPoint) other).isCertServiceEnabled())
+        .append(enableCertService, ((SIPListenPoint) other).isEnableCertService())
         .isEquals();
   }
 
@@ -127,79 +90,5 @@ public class SIPListenPoint {
         .append(recordRoute)
         .append(attachExternalIP)
         .toHashCode();
-  }
-
-  public static class SIPListenPointBuilder {
-
-    @JsonProperty private String name;
-
-    @JsonProperty private String hostIPAddress;
-
-    @JsonProperty private Transport transport;
-
-    @JsonProperty private int port;
-
-    @JsonProperty private boolean recordRoute;
-
-    @JsonProperty private boolean attachExternalIP;
-
-    @JsonProperty private TLSAuthenticationType tlsAuthType;
-
-    @JsonProperty private boolean enableCertService;
-
-    public SIPListenPointBuilder() {
-      this.name = "TCPNetwork";
-      this.hostIPAddress = "127.0.0.1";
-      this.transport = DhruvaSIPConfigProperties.DEFAULT_TRANSPORT;
-      this.port = DhruvaSIPConfigProperties.DEFAULT_PORT;
-      this.recordRoute = DhruvaSIPConfigProperties.DEFAULT_RECORD_ROUTE_ENABLED;
-      this.attachExternalIP = DhruvaSIPConfigProperties.DEFAULT_ATTACH_EXTERNAL_IP;
-      this.tlsAuthType = DhruvaSIPConfigProperties.DEFAULT_TLS_AUTH_TYPE;
-      this.enableCertService = DhruvaSIPConfigProperties.DEFAULT_ENABLE_CERT_SERVICE;
-    }
-
-    public SIPListenPointBuilder setHostIPAddress(String hostIPAddress) {
-      this.hostIPAddress = hostIPAddress;
-      return this;
-    }
-
-    public SIPListenPointBuilder setTransport(Transport transport) {
-      this.transport = transport;
-      return this;
-    }
-
-    public SIPListenPointBuilder setPort(int port) {
-      this.port = port;
-      return this;
-    }
-
-    public SIPListenPointBuilder setName(String name) {
-      this.name = name;
-      return this;
-    }
-
-    public SIPListenPointBuilder setRecordRoute(boolean recordRoute) {
-      this.recordRoute = recordRoute;
-      return this;
-    }
-
-    public SIPListenPointBuilder setAttachExternalIP(boolean attachExternalIP) {
-      this.attachExternalIP = attachExternalIP;
-      return this;
-    }
-
-    public SIPListenPointBuilder setTlsAuthType(TLSAuthenticationType tlsAuthType) {
-      this.tlsAuthType = tlsAuthType;
-      return this;
-    }
-
-    public SIPListenPointBuilder setCertServiceEnable(boolean enableCertService) {
-      this.enableCertService = enableCertService;
-      return this;
-    }
-
-    public SIPListenPoint build() {
-      return new SIPListenPoint(this);
-    }
   }
 }

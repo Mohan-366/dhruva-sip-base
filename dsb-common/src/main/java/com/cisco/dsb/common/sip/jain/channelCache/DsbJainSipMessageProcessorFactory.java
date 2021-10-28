@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import gov.nist.javax.sip.stack.MessageProcessor;
 import gov.nist.javax.sip.stack.MessageProcessorFactory;
@@ -12,7 +12,7 @@ import javax.sip.ListeningPoint;
 
 public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactory {
 
-  private DhruvaSIPConfigProperties sipProperties;
+  private CommonConfigurationProperties sipProperties;
   private DhruvaExecutorService executorService;
 
   @Override
@@ -46,7 +46,7 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
   }
 
   public void initFromApplication(
-      DhruvaSIPConfigProperties sipProperties, DhruvaExecutorService executorService) {
+      CommonConfigurationProperties sipProperties, DhruvaExecutorService executorService) {
     this.sipProperties = sipProperties;
     this.executorService = executorService;
   }

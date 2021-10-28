@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.service;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.dto.Hop;
@@ -32,7 +32,7 @@ public class SipServerLocatorService {
 
   private static final Logger logger = DhruvaLoggerFactory.getLogger(SipServerLocatorService.class);
 
-  @Autowired DhruvaSIPConfigProperties props;
+  @Autowired CommonConfigurationProperties props;
 
   @Autowired protected SipServerLocator locator;
 
@@ -40,7 +40,7 @@ public class SipServerLocatorService {
 
   @Autowired
   public SipServerLocatorService(
-      DhruvaSIPConfigProperties props, DhruvaExecutorService executorService) {
+      CommonConfigurationProperties props, DhruvaExecutorService executorService) {
     this.props = props;
     this.executorService = executorService;
     executorService.startExecutorService(

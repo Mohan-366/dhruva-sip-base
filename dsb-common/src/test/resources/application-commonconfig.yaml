@@ -1,0 +1,49 @@
+common:
+  enable-cert-service: true
+  use-redis-as-cache: true
+  tls-auth-type: mtls
+  sip-certificate: "sipCertificate"
+  sip-private-key: "sipPrivateKey"
+  udp-eventloop-thread-count: 10
+  tls-eventloop-thread-count: 10
+  connection-idle-timeout: 36000
+  tls-ciphers:
+    - "Cipher1"
+    - "Cipher2"
+  host-port-enabled: true
+  host-info: "testHost"
+  accepted-issuers-enabled: true
+  tls-hand-shake-time-out-milli-seconds: 10000
+  connection-write-timeout-in-mllis: 10000
+  tls-ocsp-response-timeout-in-seconds: 10
+  tls-trust-store-file-path: "/path/to/truststore"
+  tls-trust-store-type: "pkcs12"
+  tls-trust-store-password: "trustPass"
+  tls-cert-revocation-enable-soft-fail: true
+  tls-cert-enable-ocsp: true
+  client-auth-type: "Enabled"
+  nio-enabled: true
+  keep-alive-period: 10
+  reliable-keep-alive-period: 10
+  min-keep-alive-time-seconds: 10
+  log-keep-alives-enabled: true
+  trusted-sip-sources: "trusted.sip.source"
+  required-trusted-sip-sources: true
+  socket-connection-timeout: 10000
+  dhruva-user-agent: "TestAgent"
+  tls-protocols:
+    - "TLSv1.2"
+    - "TLSv1.1"
+  listen-points:
+    - name: "testNetwork"
+      port: 5061
+      transport: UDP
+      hostIPAddress: "1.1.1.1"
+      recordRoute: false
+      attachExternalIP: true
+      tlsAuthType: client
+      enableCertService: true
+    - name: "defaultNetwork"
+  dns-cache-size: 100
+  timeOutDnsCache: 10000
+  timeOutDns: 1000

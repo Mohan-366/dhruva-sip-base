@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.sip.bean;
+package com.cisco.dsb.proxy.sip;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -9,14 +9,13 @@ public class SIPProxyTest {
   public void testSIPProxyObjectCreation() {
 
     SIPProxy sipProxy =
-        new SIPProxy.SIPProxyBuilder()
-            .setErrorAggregator(true)
-            .setCreateDNSServergroup(true)
-            .setProcessRouteHeader(true)
-            .setProcessRegisterRequest(true)
-            .setTimerCIntervalInMilliSec(60000)
+        SIPProxy.builder()
+            .errorAggregator(true)
+            .createDNSServerGroup(true)
+            .processRouteHeader(true)
+            .processRegisterRequest(true)
+            .timerCIntervalInMilliSec(60000)
             .build();
-
     Assert.assertNotNull(sipProxy);
     Assert.assertTrue(sipProxy.isErrorAggregator());
     Assert.assertTrue(sipProxy.isCreateDNSServerGroup());

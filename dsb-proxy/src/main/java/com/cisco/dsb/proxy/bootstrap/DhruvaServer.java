@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.bootstrap;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
@@ -12,7 +12,7 @@ import javax.sip.SipListener;
 
 public interface DhruvaServer {
   public CompletableFuture startListening(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
+      CommonConfigurationProperties commonConfigurationProperties,
       Transport transportType,
       InetAddress address,
       int port,

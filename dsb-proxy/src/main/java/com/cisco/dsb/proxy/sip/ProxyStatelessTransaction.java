@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -524,7 +524,7 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
   }
 
   /**
-   * If <CODE>{@link DhruvaSIPConfigProperties}</CODE> has processVia set, remove the top via
+   * If <CODE>{@link CommonConfigurationProperties}</CODE> has processVia set, remove the top via
    * header, if no more Via is found return false, else return true.
    *
    * @return

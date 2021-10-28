@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.bootstrap.proxyserver;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.DhruvaServerLogger;
@@ -34,7 +34,7 @@ public class SipServer implements Server {
   private DhruvaNetwork networkConfig;
   private MetricService metricService;
   private DhruvaExecutorService executorService;
-  private DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  private CommonConfigurationProperties commonConfigurationProperties;
   private TrustManager trustManager;
   private KeyManager keyManager;
 
@@ -43,12 +43,12 @@ public class SipServer implements Server {
       SipListener handler,
       DhruvaExecutorService executorService,
       MetricService metricService,
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
+      CommonConfigurationProperties commonConfigurationProperties) {
     this.transport = transport;
     this.metricService = metricService;
     this.sipListener = handler;
     this.executorService = executorService;
-    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+    this.commonConfigurationProperties = commonConfigurationProperties;
   }
 
   @Override
@@ -65,7 +65,7 @@ public class SipServer implements Server {
     try {
       SipStack sipStack =
           JainStackInitializer.getSimpleStack(
-              this.dhruvaSIPConfigProperties,
+              this.commonConfigurationProperties,
               sipFactory,
               sipFactory.getPathName(),
               getStackProperties(),
@@ -79,7 +79,7 @@ public class SipServer implements Server {
       if (sipStack instanceof SipStackImpl) {
         SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
         ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-            .initFromApplication(dhruvaSIPConfigProperties, executorService);
+            .initFromApplication(commonConfigurationProperties, executorService);
       }
       serverStartFuture.complete(sipStack);
     } catch (Exception e) {
@@ -117,15 +117,16 @@ public class SipServer implements Server {
         DsbJainSipMessageProcessorFactory.class.getName());
     //    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
     stackProps.setProperty(
-        "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE", dhruvaSIPConfigProperties.getClientAuthType());
+        "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE",
+        commonConfigurationProperties.getClientAuthType());
     stackProps.setProperty("gov.nist.javax.sip.NETWORK_LAYER", DsbNetworkLayer.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
     stackProps.setProperty(
         "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT",
-        dhruvaSIPConfigProperties.getReliableConnectionKeepAliveTimeout());
+        commonConfigurationProperties.getReliableKeepAlivePeriod());
     stackProps.setProperty(
         "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
-        dhruvaSIPConfigProperties.getMinKeepAliveTimeSeconds());
+        commonConfigurationProperties.getMinKeepAliveTimeSeconds());
 
     return stackProps;
   }

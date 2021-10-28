@@ -3,6 +3,7 @@ package com.cisco.dsb.trunk.dto;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertThrows;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
@@ -24,7 +25,7 @@ import org.testng.annotations.Test;
 
 public class TrunkConfigStaticServerGroupsTest {
   @Mock Environment env = new MockEnvironment();
-
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Spy List<SIPListenPoint> listenPoints;
   @InjectMocks TrunkConfigProperties trunkConfigProperties;
 
@@ -51,6 +52,7 @@ public class TrunkConfigStaticServerGroupsTest {
             .networkName("net_me_tls")
             .elements(serverGroupElementList)
             .build();
+    when(commonConfigurationProperties.getListenPoints()).thenReturn(listenPoints);
   }
 
   @Test
@@ -62,7 +64,7 @@ public class TrunkConfigStaticServerGroupsTest {
 
     List<SIPListenPoint> ss = new ArrayList<>();
     SIPListenPoint listenPoint =
-        new SIPListenPoint.SIPListenPointBuilder().setName("net_me_tls").build();
+        SIPListenPoint.SIPListenPointBuilder().setName("net_me_tls").build();
     ss.add(listenPoint);
     Stream<SIPListenPoint> streamOfArray = Stream.of(listenPoint);
     when(listenPoints.stream()).thenReturn(streamOfArray);
@@ -93,7 +95,7 @@ public class TrunkConfigStaticServerGroupsTest {
   public void validNetworkTest() throws DhruvaException {
     List<SIPListenPoint> ss = new ArrayList<>();
     SIPListenPoint listenPoint =
-        new SIPListenPoint.SIPListenPointBuilder().setName("DhruvaUDP").build();
+        SIPListenPoint.SIPListenPointBuilder().setName("DhruvaUDP").build();
     ss.add(listenPoint);
     Stream<SIPListenPoint> streamOfArray = Stream.of(listenPoint);
     when(listenPoints.stream()).thenReturn(streamOfArray);
@@ -112,7 +114,7 @@ public class TrunkConfigStaticServerGroupsTest {
 
     List<SIPListenPoint> ss = new ArrayList<>();
     SIPListenPoint listenPoint =
-        new SIPListenPoint.SIPListenPointBuilder().setName("DhruvaUDP").build();
+        SIPListenPoint.SIPListenPointBuilder().setName("DhruvaUDP").build();
     ss.add(listenPoint);
 
     Stream<SIPListenPoint> streamOfArray = Stream.of(listenPoint);

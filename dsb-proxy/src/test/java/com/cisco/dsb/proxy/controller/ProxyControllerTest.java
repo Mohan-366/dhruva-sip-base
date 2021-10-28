@@ -4,7 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -13,7 +13,6 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.bean.SIPProxy;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
@@ -23,6 +22,7 @@ import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.ControllerInterface;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.DhruvaSipRequestMessage;
@@ -32,6 +32,7 @@ import com.cisco.dsb.proxy.sip.ProxyFactory;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
+import com.cisco.dsb.proxy.sip.SIPProxy;
 import com.cisco.dsb.proxy.util.QuadFunction;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
 import com.cisco.dsb.trunk.dto.Destination;
@@ -77,7 +78,8 @@ public class ProxyControllerTest {
   DhruvaNetwork tcpNetworkOutgoing;
   DhruvaNetwork tlsNetworkOutgoing;
 
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock ProxyConfigurationProperties proxyConfigurationProperties;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
 
   @Mock SipServerLocatorService sipServerLocatorService;
 
@@ -132,7 +134,7 @@ public class ProxyControllerTest {
     testNetwork = DhruvaNetwork.createNetwork("test_net", sipListenPoint3);
 
     proxyFactory = new ProxyFactory();
-    controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
+    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
     // dhruvaSIPConfigProperties = new DhruvaSIPConfigProperties();
     dhruvaExecutorService = mock(DhruvaExecutorService.class);
     scheduledExecutor = mock(ScheduledThreadPoolExecutor.class);
@@ -181,7 +183,7 @@ public class ProxyControllerTest {
 
     proxyControllerFactory =
         new ProxyControllerFactory(
-            dhruvaSIPConfigProperties,
+            proxyConfigurationProperties,
             controllerConfig,
             proxyFactory,
             dhruvaExecutorService,
@@ -191,12 +193,12 @@ public class ProxyControllerTest {
     incomingSipProvider = mock(SipProvider.class);
     outgoingSipProvider = mock(SipProvider.class);
 
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
-    when(dhruvaSIPConfigProperties.isHostPortEnabled()).thenReturn(false);
+    when(commonConfigurationProperties.isHostPortEnabled()).thenReturn(false);
     SIPProxy sipProxy = mock(SIPProxy.class);
     when(sipProxy.getTimerCIntervalInMilliSec()).thenReturn((long) 2);
-    when(dhruvaSIPConfigProperties.getSIPProxy()).thenReturn(sipProxy);
+    when(proxyConfigurationProperties.getSipProxy()).thenReturn(sipProxy);
 
     springApplicationContext = new SpringApplicationContext();
     ApplicationContext context = mock(ApplicationContext.class);
@@ -235,25 +237,37 @@ public class ProxyControllerTest {
     return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
   }
 
-  public SIPListenPoint createIncomingTCPSipListenPoint() throws JsonProcessingException {
-    String json =
-        "{ \"name\": \"net_sp_tcp\", \"hostIPAddress\": \"1.1.1.1\", \"port\": 5060, \"transport\": \"TCP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  public SIPListenPoint createIncomingTCPSipListenPoint() {
+    return SIPListenPoint.SIPListenPointBuilder()
+        .setName("net_sp_tcp")
+        .setHostIPAddress("1.1.1.1")
+        .setPort(5060)
+        .setTransport(Transport.TCP)
+        .setAttachExternalIP(false)
+        .setRecordRoute(true)
+        .build();
   }
 
-  public SIPListenPoint createOutgoingTCPSipListenPoint() throws JsonProcessingException {
-    String json =
-        "{ \"name\": \"net_internal_tcp\", \"hostIPAddress\": \"2.2.2.2\", \"port\": 5080, \"transport\": \"TCP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  public SIPListenPoint createOutgoingTCPSipListenPoint() {
+    return SIPListenPoint.SIPListenPointBuilder()
+        .setName("net_internal_tcp")
+        .setHostIPAddress("2.2.2.2")
+        .setPort(5080)
+        .setTransport(Transport.TCP)
+        .setAttachExternalIP(false)
+        .setRecordRoute(true)
+        .build();
   }
 
-  public SIPListenPoint createTestSipListenPoint() throws JsonProcessingException {
-    String json =
-        "{ \"name\": \"test_net\", \"hostIPAddress\": \"3.3.3.3\", \"port\": 5080, \"transport\": \"TCP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  public SIPListenPoint createTestSipListenPoint() {
+    return SIPListenPoint.SIPListenPointBuilder()
+        .setName("test_net")
+        .setHostIPAddress("3.3.3.3")
+        .setPort(5080)
+        .setTransport(Transport.TCP)
+        .setAttachExternalIP(false)
+        .setRecordRoute(true)
+        .build();
   }
 
   public ProxySIPRequest getProxySipRequest(
@@ -1114,7 +1128,7 @@ public class ProxyControllerTest {
     System.out.println("SIP Request :  " + proxySIPRequest.getRequest());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
-    when(dhruvaSIPConfigProperties.getSIPProxy()).thenReturn(sipProxy);
+    when(proxyConfigurationProperties.getSipProxy()).thenReturn(sipProxy);
     when(sipProxy.isProcessRegisterRequest()).thenReturn(processRegisterRequest);
 
     if (processRegisterRequest)
@@ -1137,7 +1151,7 @@ public class ProxyControllerTest {
               .concat(",")
               .concat(Request.REFER);
 
-      when(dhruvaSIPConfigProperties.getAllowedMethods()).thenReturn(allowedMethods);
+      when(proxyConfigurationProperties.getAllowedMethods()).thenReturn(allowedMethods);
 
       ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
 
@@ -1263,7 +1277,7 @@ public class ProxyControllerTest {
 
     SupportedExtensions.addExtension("feature1");
 
-    when(dhruvaSIPConfigProperties.getAllowedMethods()).thenReturn(allowedMethods);
+    when(proxyConfigurationProperties.getAllowedMethods()).thenReturn(allowedMethods);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
 
@@ -1734,7 +1748,7 @@ public class ProxyControllerTest {
     // Get our own controller factory with mocked proxy factory
     ProxyControllerFactory proxyControllerFactoryMock =
         new ProxyControllerFactory(
-            dhruvaSIPConfigProperties,
+            proxyConfigurationProperties,
             controllerConfig,
             proxyFactoryMock,
             dhruvaExecutorService,

@@ -2,7 +2,7 @@ package com.cisco.dsb.proxy.sip;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ControllerInterface;
@@ -38,7 +38,7 @@ public class ProxyServerTransactionTest {
     MockitoAnnotations.initMocks(this);
     when(proxyTransaction.getController()).thenReturn(controllerInterface);
     when(controllerInterface.getControllerConfig()).thenReturn(controllerConfig);
-    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
+    DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
   }
 
   @BeforeMethod

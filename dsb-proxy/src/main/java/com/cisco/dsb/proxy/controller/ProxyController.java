@@ -1,7 +1,6 @@
 package com.cisco.dsb.proxy.controller;
 
 import com.cisco.dsb.common.CommonContext;
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -18,6 +17,7 @@ import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ControllerInterface;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.controller.util.ParseProxyParamUtil;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
@@ -71,7 +71,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Getter private final ServerTransaction serverTransaction;
   private final SipProvider sipProvider;
-  @Getter private final DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Getter private final ProxyConfigurationProperties proxyConfigurationProperties;
   @Getter private final ProxyFactory proxyFactory;
   @Getter @Setter private ControllerConfig controllerConfig;
 
@@ -110,7 +110,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       ServerTransaction serverTransaction,
       @NonNull SipProvider sipProvider,
       @NonNull ProxyAppConfig proxyAppConfig,
-      @NonNull DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
+      @NonNull ProxyConfigurationProperties proxyConfigurationProperties,
       @NonNull ProxyFactory proxyFactory,
       @NonNull ControllerConfig controllerConfig,
       @NonNull DhruvaExecutorService dhruvaExecutorService,
@@ -118,7 +118,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     this.serverTransaction = serverTransaction;
     this.sipProvider = sipProvider;
     this.proxyAppConfig = proxyAppConfig;
-    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+    this.proxyConfigurationProperties = proxyConfigurationProperties;
     this.proxyFactory = proxyFactory;
     this.controllerConfig = controllerConfig;
     this.dhruvaExecutorService = dhruvaExecutorService;
@@ -786,7 +786,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
       switch (requestType) {
         case Request.REGISTER:
-          if (getDhruvaSIPConfigProperties().getSIPProxy().isProcessRegisterRequest()) {
+          if (getProxyConfigurationProperties().getSipProxy().isProcessRegisterRequest()) {
             // proxy behaviour on processing REGISTER - nothing at this point
             logger.debug("Proxy processing incoming REGISTER");
             return proxySIPRequest;
@@ -797,7 +797,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               Response sipResponse =
                   JainSipHelper.getMessageFactory()
                       .createResponse(Response.METHOD_NOT_ALLOWED, sipRequest);
-              addAllowHeader(getDhruvaSIPConfigProperties().getAllowedMethods(), sipResponse);
+              addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
               ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
             } catch (Exception e) {
               throw new DhruvaRuntimeException(
@@ -828,7 +828,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             logger.info("Processing OPTIONS request & responding with 200 OK");
             Response sipResponse =
                 JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
-            addAllowHeader(getDhruvaSIPConfigProperties().getAllowedMethods(), sipResponse);
+            addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
             addSupportedHeader(SupportedExtensions.getExtensions(), sipResponse);
             addAcceptHeader(sipResponse);
             // TODO: if we know the data for 'Accept-Language' & 'AcceptEncoding' headers, add them

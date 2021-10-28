@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
@@ -36,7 +36,7 @@ import lombok.CustomLog;
 @CustomLog
 public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
-  private final DhruvaSIPConfigProperties sipProperties;
+  private final CommonConfigurationProperties sipProperties;
 
   private final MessageChannelCache channelCache;
   private boolean logKeepAlives;
@@ -49,7 +49,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
 
   public KeepAliveTimerTask(
       MessageChannelCache channelCache,
-      DhruvaSIPConfigProperties sipProperties,
+      CommonConfigurationProperties sipProperties,
       DhruvaExecutorService executorService) {
     Preconditions.checkNotNull(channelCache);
     // If the following condition checks fail, it's probably because

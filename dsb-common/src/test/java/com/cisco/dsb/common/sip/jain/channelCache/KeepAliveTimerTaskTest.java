@@ -7,7 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
@@ -27,7 +27,7 @@ public class KeepAliveTimerTaskTest {
   @Mock Environment env = new MockEnvironment();
 
   DhruvaExecutorService dhruvaExecutorService;
-  @Mock DhruvaSIPConfigProperties sipProperties;
+  @Mock CommonConfigurationProperties sipProperties;
   MetricRegistry metricRegistry;
 
   private ConnectionOrientedMessageChannel channel1;

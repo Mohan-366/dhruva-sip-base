@@ -1,8 +1,8 @@
 package com.cisco.dsb.proxy.controller;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.util.TriFunction;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.sip.ProxyFactory;
 import com.cisco.dsb.trunk.service.TrunkService;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProxyControllerFactory {
 
-  DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  ProxyConfigurationProperties proxyConfigurationProperties;
 
   ControllerConfig controllerConfig;
 
@@ -27,12 +27,12 @@ public class ProxyControllerFactory {
 
   @Autowired
   public ProxyControllerFactory(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
+      ProxyConfigurationProperties proxyConfigurationProperties,
       ControllerConfig controllerConfig,
       ProxyFactory proxyFactory,
       DhruvaExecutorService dhruvaExecutorService,
       TrunkService trunkService) {
-    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+    this.proxyConfigurationProperties = proxyConfigurationProperties;
     this.controllerConfig = controllerConfig;
     this.proxyFactory = proxyFactory;
     this.dhruvaExecutorService = dhruvaExecutorService;
@@ -51,7 +51,7 @@ public class ProxyControllerFactory {
         serverTransaction,
         sipProvider,
         proxyAppConfig,
-        dhruvaSIPConfigProperties,
+        proxyConfigurationProperties,
         proxyFactory,
         controllerConfig,
         dhruvaExecutorService,

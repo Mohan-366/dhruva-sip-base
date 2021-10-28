@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.tls;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import gov.nist.core.net.NetworkLayer;
@@ -21,7 +21,6 @@ import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
-import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -39,14 +38,13 @@ public class DsbNetworkLayer implements NetworkLayer {
   private SSLServerSocketFactory sslServerSocketFactory;
   private static int trafficClass = 0x60; // Match traffic classification as CUCM
   // Default connection timeout milliseconds.
-  private int connectionTimeout = DhruvaSIPConfigProperties.getSocketConnectionTimeout();
+  private int connectionTimeout = CommonConfigurationProperties.getSocketConnectionTimeout();
   protected SIPTransactionStack sipStack;
 
   public DsbNetworkLayer() {}
 
   public void init(@NotNull TrustManager trustManager, @NotNull KeyManager keyManager)
       throws Exception {
-
     if (trustManager == null || keyManager == null) {
       throw new IllegalArgumentException("trustManager and keyManager cannot be null");
     }
@@ -84,12 +82,12 @@ public class DsbNetworkLayer implements NetworkLayer {
   @SuppressFBWarnings(
       value = {"HARD_CODE_PASSWORD", "PATH_TRAVERSAL_IN"},
       justification = "baseline suppression")
-  public static KeyStoreInfo createKeyStore(DhruvaSIPConfigProperties props) {
+  public static KeyStoreInfo createKeyStore(CommonConfigurationProperties props) {
     // Key store loaded from key store file (or base 64 encoded file loaded in environment variable)
     // Production deployment should use key store file (PKCS12 or JKS), base 64 encoded
-    final String keyStoreFilename = props.getKeyStoreFilePath();
-    final String keyStorePassword = props.getKeyStorePassword();
-    final String keyStoreType = props.getKeyStoreType();
+    final String keyStoreFilename = props.getTlsKeyStoreFilePath();
+    final String keyStorePassword = props.getTlsKeyStorePassword();
+    final String keyStoreType = props.getTlsKeyStoreType();
 
     KeyStoreInfo keyStoreLoadedFromFile = null;
     if (!Strings.isNullOrEmpty(keyStoreFilename)
@@ -117,7 +115,7 @@ public class DsbNetworkLayer implements NetworkLayer {
     return keyStoreLoadedFromFile;
   }
 
-  public static KeyManager createKeyManager(DhruvaSIPConfigProperties sipProperties) {
+  public static KeyManager createKeyManager(CommonConfigurationProperties sipProperties) {
     DsbNetworkLayer.KeyStoreInfo info = DsbNetworkLayer.createKeyStore(sipProperties);
     if (info == null) {
       logger.error("Could not create keymanager as keystore is null. Returning null");

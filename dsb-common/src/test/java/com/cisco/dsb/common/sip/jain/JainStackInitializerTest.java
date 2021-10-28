@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 
 public class JainStackInitializerTest {
 
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Mock DhruvaExecutorService executorService;
   @Mock TrustManager trustManager;
   @Mock KeyManager keyManager;
@@ -38,7 +38,7 @@ public class JainStackInitializerTest {
   @BeforeClass
   public void before() {
     MockitoAnnotations.initMocks(this);
-    when(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()).thenReturn(1);
+    when(commonConfigurationProperties.getTlsOcspResponseTimeoutInSeconds()).thenReturn(1);
   }
 
   @Test(
@@ -124,7 +124,7 @@ public class JainStackInitializerTest {
     ListeningPoint mockLp = mock(ListeningPoint.class);
     SipProvider mockSp = mock(SipProvider.class);
     SipListener mockListener = mock(SipListener.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
     DsbNetworkLayer networkLayer = new DsbNetworkLayer();
     networkLayer.init(trustManager, keyManager);
     when(mockFactory.createSipStack(mockProps)).thenReturn(mockStack);
@@ -134,7 +134,7 @@ public class JainStackInitializerTest {
 
     SipStack simpleStack =
         JainStackInitializer.getSimpleStack(
-            dhruvaSIPConfigProperties,
+            commonConfigurationProperties,
             mockFactory,
             "gov.nist",
             mockProps,

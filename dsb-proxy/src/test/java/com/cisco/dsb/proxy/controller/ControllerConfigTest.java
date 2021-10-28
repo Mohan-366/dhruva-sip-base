@@ -2,10 +2,11 @@ package com.cisco.dsb.proxy.controller;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.util.HeaderHelper;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.RecordRoute;
@@ -24,17 +25,17 @@ import org.testng.annotations.Test;
 public class ControllerConfigTest {
   ControllerConfig controllerConfig;
   @Mock SipServerLocatorService sipServerLocatorService;
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock ProxyConfigurationProperties proxyConfigurationProperties;
 
   @BeforeTest
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
+    DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
   }
 
   @Test(description = "Record route Interface stateful")
   public void testSetRecordRouteInterface() throws ParseException {
-    controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
+    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
     // setup
     SIPResponse sipResponse = mock(SIPResponse.class);
     RecordRouteList rrl = new RecordRouteList();
@@ -53,7 +54,7 @@ public class ControllerConfigTest {
     recordRouteMap.put("test_network_in", rr_in);
     recordRouteMap.put("test_network_out", recordRoute);
     controllerConfig.setRecordRoutesMap(recordRouteMap);
-    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
+    DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
     // call
     controllerConfig.setRecordRouteInterface(sipResponse, false, 1);
 
@@ -67,7 +68,7 @@ public class ControllerConfigTest {
 
   @Test
   public void testSetRecordRouteInterfaceStateless() throws ParseException {
-    controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
+    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
     SIPResponse sipResponse = mock(SIPResponse.class);
     RecordRouteList rrl = new RecordRouteList();
     RecordRoute rr1 = HeaderHelper.getRecordRoute("do not change", "10.10.10.10", 5060, "tcp");
@@ -107,7 +108,7 @@ public class ControllerConfigTest {
             })
         .when(sipResponse)
         .setApplicationData(eq("test_network_in"));
-    DhruvaNetwork.setDhruvaConfigProperties(mock(DhruvaSIPConfigProperties.class));
+    DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
     // call
     controllerConfig.setRecordRouteInterface(sipResponse, true, -1);
 

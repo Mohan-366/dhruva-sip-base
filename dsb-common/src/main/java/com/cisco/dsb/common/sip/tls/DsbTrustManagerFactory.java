@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.tls;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.wx2.certs.client.CertsClientFactory;
 import com.cisco.wx2.certs.common.util.CRLRevocationCache;
 import com.cisco.wx2.certs.common.util.OCSPRevocationCache;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DsbTrustManagerFactory {
 
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired CertTrustManagerProperties certTrustManagerProperties;
 
   public DsbTrustManager getDsbTrsutManager() throws Exception {
@@ -43,7 +43,7 @@ public class DsbTrustManagerFactory {
     DsbTrustManager trustManager;
     TLSAuthenticationType authenticationType;
     if (tlsAuthenticationType == null) {
-      authenticationType = dhruvaSIPConfigProperties.getTlsAuthType();
+      authenticationType = commonConfigurationProperties.getTlsAuthType();
     } else {
       authenticationType = tlsAuthenticationType;
     }
@@ -52,7 +52,7 @@ public class DsbTrustManagerFactory {
           "Using PermissiveInstance for TrustManager. No certificate validation will be performed.");
       trustManager = DsbTrustManager.getTrustAllCertsInstance();
     } else if (authenticationType == TLSAuthenticationType.MTLS
-        && dhruvaSIPConfigProperties.getEnableCertService()) {
+        && commonConfigurationProperties.isEnableCertService()) {
 
       logger.info("Certs Service URL = {}", certTrustManagerProperties.getCertsApiServiceUrl());
 
@@ -81,14 +81,14 @@ public class DsbTrustManagerFactory {
               certTrustManagerProperties.getOrgCertCacheSize());
     } else {
       logger.info("System trust store will be used as source of trust.");
-      trustManager = DsbTrustManager.getSystemTrustManager(dhruvaSIPConfigProperties);
+      trustManager = DsbTrustManager.getSystemTrustManager(commonConfigurationProperties);
     }
 
     // setting to default for now which means this feature is disabled and we are not rejecting any
     // source.
     trustManager.setRequireTrustedSipSources(
-        dhruvaSIPConfigProperties.getRequiredTrustedSipSources());
-    trustManager.setTrustedSipSources(dhruvaSIPConfigProperties.getTrustedSipSources());
+        commonConfigurationProperties.isRequiredTrustedSipSources());
+    trustManager.setTrustedSipSources(commonConfigurationProperties.getTrustedSipSources());
     return trustManager;
   }
 

@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.DhruvaConfig;
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.CertUtil;
 import com.cisco.wx2.certs.client.CertsX509TrustManager;
@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 
 public class DsbTrustManagerTest {
 
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
   @Mock CertsX509TrustManager mockCertsX509TrustManager;
   private String keystorePath;
@@ -39,7 +39,7 @@ public class DsbTrustManagerTest {
 
     dsbTrustManagerFactory = spy(new DsbTrustManagerFactory());
     MockitoAnnotations.initMocks(this);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
     keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
   }
 
@@ -47,13 +47,13 @@ public class DsbTrustManagerTest {
       description =
           "fetch system trust manager of a trust manager factory and check for valid certificate in keystore")
   public void testSystemTrustManager() throws Exception {
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
-    when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
-    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
-    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
-    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
+    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
+    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
+    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
+    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
+    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
+    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
     TrustManager tm = dhruvaConfig.dsbTrustManager();
     Assert.assertNotNull(tm);
     Assert.assertTrue(tm instanceof DsbTrustManager);
@@ -69,13 +69,13 @@ public class DsbTrustManagerTest {
       description = "get systemTrustManager and check for invalid date in cert in keystore",
       expectedExceptions = {CertificateException.class})
   public void testSystemTrustManagerForInvalidDateInCertificate() throws Exception {
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
-    when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
-    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
-    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
-    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
+    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
+    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
+    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
+    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
+    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
+    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
     TrustManager tm = dhruvaConfig.dsbTrustManager();
     Assert.assertNotNull(tm);
     Assert.assertTrue(tm instanceof DsbTrustManager);
@@ -90,13 +90,13 @@ public class DsbTrustManagerTest {
       description = "get systemTrustManager and check for certificate not in keystore",
       expectedExceptions = {CertificateException.class})
   public void testSystemTrustManagerForUntrustedCertificate() throws Exception {
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
-    when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
-    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
-    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
-    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
+    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
+    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
+    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
+    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
+    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
+    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
     TrustManager tm = dhruvaConfig.dsbTrustManager();
     Assert.assertNotNull(tm);
     Assert.assertTrue(tm instanceof DsbTrustManager);
@@ -109,13 +109,13 @@ public class DsbTrustManagerTest {
 
   @Test(description = "getCertTrustManager ")
   public void testCertTrustManager() throws Exception {
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(dhruvaSIPConfigProperties.getTrustStoreFilePath()).thenReturn(keystorePath);
-    when(dhruvaSIPConfigProperties.getTrustStoreType()).thenReturn("jks");
-    when(dhruvaSIPConfigProperties.getTrustStorePassword()).thenReturn("dsb123");
-    when(dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled()).thenReturn(true);
-    when(dhruvaSIPConfigProperties.isTlsOcspEnabled()).thenReturn(true);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(true);
+    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
+    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
+    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
+    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
+    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
+    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
     CertTrustManagerFactory.setCertsX509TrustManager(mockCertsX509TrustManager);
     System.setProperty(DHRUVA_SERVICE_PASS, "dummyPass");
     System.setProperty(DHRUVA_SERVICE_USER, "dummyUserId");
@@ -132,8 +132,8 @@ public class DsbTrustManagerTest {
 
   @Test(description = "test permissive trust manager creation")
   public void testPermissiveTrustManager() throws Exception {
-    when(dhruvaSIPConfigProperties.getEnableCertService()).thenReturn(false);
-    when(dhruvaSIPConfigProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.NONE);
+    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
+    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.NONE);
 
     TrustManager tm = dhruvaConfig.dsbTrustManager();
     Assert.assertNotNull(tm);

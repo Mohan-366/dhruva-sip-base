@@ -3,7 +3,7 @@ package com.cisco.dsb.proxy.sip.hostPort;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -12,9 +12,8 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.ListenIf;
 import com.cisco.dsb.common.sip.util.ListenInterface;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import javax.sip.address.SipURI;
@@ -27,7 +26,7 @@ public class HostPortUtilTest {
   ControllerConfig controllerConfig;
   @Mock SipServerLocatorService sipServerLocatorService;
 
-  @Mock DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Mock ProxyConfigurationProperties proxyConfigurationProperties;
 
   DhruvaNetwork dsNetwork, externalIpEnabledNetwork;
   SipURI privateNetworkInfo,
@@ -45,7 +44,7 @@ public class HostPortUtilTest {
   @BeforeClass
   void init() throws Exception {
     MockitoAnnotations.initMocks(this);
-    controllerConfig = new ControllerConfig(sipServerLocatorService, dhruvaSIPConfigProperties);
+    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
 
     SIPListenPoint sipListenPointInternal = createInternalSipListenPoint();
     SIPListenPoint sipListenPointExternal = createExternalSipListenPoint();
@@ -70,18 +69,26 @@ public class HostPortUtilTest {
     }
   }
 
-  public SIPListenPoint createInternalSipListenPoint() throws JsonProcessingException {
-    String json =
-        "{ \"name\": \"Default\", \"hostIPAddress\": \"127.0.0.1\", \"port\": 5060, \"transport\": \"UDP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  public SIPListenPoint createInternalSipListenPoint() {
+    return SIPListenPoint.SIPListenPointBuilder()
+        .setName("Default")
+        .setHostIPAddress("127.0.0.1")
+        .setPort(5060)
+        .setTransport(Transport.UDP)
+        .setAttachExternalIP(false)
+        .setRecordRoute(true)
+        .build();
   }
 
-  public SIPListenPoint createExternalSipListenPoint() throws JsonProcessingException {
-    String json =
-        "{ \"name\": \"External_IP_enabled\", \"hostIPAddress\": \"127.0.0.1\", \"port\": 5061, \"transport\": \"UDP\", "
-            + "\"attachExternalIP\": \"false\", \"recordRoute\": \"true\"}";
-    return new ObjectMapper().readerFor(SIPListenPoint.class).readValue(json);
+  public SIPListenPoint createExternalSipListenPoint() {
+    return SIPListenPoint.SIPListenPointBuilder()
+        .setName("External_IP_enabled")
+        .setHostIPAddress("127.0.0.1")
+        .setPort(5061)
+        .setTransport(Transport.UDP)
+        .setAttachExternalIP(false)
+        .setRecordRoute(true)
+        .build();
   }
 
   @BeforeMethod
@@ -177,14 +184,14 @@ public class HostPortUtilTest {
   }
 
   @Test(dataProvider = "getUriAndExpectedIpForLocalToHost")
-  public void testLocalIpToHostInfoConversion(HostPortTestDataProvider input)
-      throws UnknownHostException {
+  public void testLocalIpToHostInfoConversion(HostPortTestDataProvider input) {
 
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
-    doReturn(input.isHostPortEnabled).when(dhruvaSIPConfigProperties).isHostPortEnabled();
-    doReturn(input.hostInfoFromProps).when(dhruvaSIPConfigProperties).getHostInfo();
+    doReturn(input.isHostPortEnabled).when(commonConfigurationProperties).isHostPortEnabled();
+    doReturn(input.hostInfoFromProps).when(commonConfigurationProperties).getHostInfo();
 
     Assert.assertEquals(
         HostPortUtil.convertLocalIpToHostInfo(controllerConfig, input.uri), input.expectedIp);
@@ -207,10 +214,11 @@ public class HostPortUtilTest {
   @Test(dataProvider = "getUriAndExpectedIpForHostToLocal")
   public void testHostInfoToLocalIpConversion(HostPortTestDataProvider input) {
 
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
-    doReturn(input.isHostPortEnabled).when(dhruvaSIPConfigProperties).isHostPortEnabled();
+    doReturn(input.isHostPortEnabled).when(commonConfigurationProperties).isHostPortEnabled();
 
     Assert.assertEquals(
         HostPortUtil.reverseHostInfoToLocalIp(controllerConfig, input.uri), input.expectedIp);
@@ -244,11 +252,12 @@ public class HostPortUtilTest {
   @Test(dataProvider = "getListenInterfaceAndExpectedIpForLocalToHost")
   public void testLocalIpToHostInfoUsingListenInterface(HostPortTestDataProvider input) {
 
-    DhruvaSIPConfigProperties dhruvaSIPConfigProperties = mock(DhruvaSIPConfigProperties.class);
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    CommonConfigurationProperties commonConfigurationProperties =
+        mock(CommonConfigurationProperties.class);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
 
-    doReturn(input.isHostPortEnabled).when(dhruvaSIPConfigProperties).isHostPortEnabled();
-    doReturn(input.hostInfoFromProps).when(dhruvaSIPConfigProperties).getHostInfo();
+    doReturn(input.isHostPortEnabled).when(commonConfigurationProperties).isHostPortEnabled();
+    doReturn(input.hostInfoFromProps).when(commonConfigurationProperties).getHostInfo();
 
     Assert.assertEquals(HostPortUtil.convertLocalIpToHostInfo(input.listenIf), input.expectedIp);
   }

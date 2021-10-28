@@ -4,7 +4,6 @@
 
 package com.cisco.dsb.proxy.controller;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.dto.Hop;
@@ -22,6 +21,7 @@ import com.cisco.dsb.common.sip.util.SipRouteFixInterface;
 import com.cisco.dsb.common.sip.util.ViaListenIf;
 import com.cisco.dsb.common.sip.util.ViaListenInterface;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyUtils;
 import com.cisco.dsb.proxy.sip.hostPort.HostPortUtil;
@@ -49,7 +49,7 @@ import org.springframework.stereotype.Component;
 public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterface, Cloneable {
 
   protected SipServerLocatorService sipLocator;
-  DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  ProxyConfigurationProperties proxyConfigurationProperties;
   public static final byte UDP = (byte) Transport.UDP.getValue();
   public static final byte TCP = (byte) Transport.TCP.getValue();
   public static final byte NONE = (byte) Transport.NONE.getValue();
@@ -68,9 +68,9 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   @Autowired
   public ControllerConfig(
       SipServerLocatorService sipServerLocatorService,
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
+      ProxyConfigurationProperties commonConfigurationProperties) {
     this.sipLocator = sipServerLocatorService;
-    this.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+    this.proxyConfigurationProperties = commonConfigurationProperties;
   }
 
   /**
@@ -393,7 +393,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   @Override
   public long getRequestTimeout() {
-    return dhruvaSIPConfigProperties.getSIPProxy().getTimerCIntervalInMilliSec();
+    return proxyConfigurationProperties.getSipProxy().getTimerCIntervalInMilliSec();
   }
 
   @Override

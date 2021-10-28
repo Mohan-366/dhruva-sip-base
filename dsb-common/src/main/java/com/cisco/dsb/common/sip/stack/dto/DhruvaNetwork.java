@@ -3,7 +3,7 @@
 
 package com.cisco.dsb.common.sip.stack.dto;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
@@ -19,7 +19,7 @@ import lombok.NonNull;
 @CustomLog
 public class DhruvaNetwork implements Cloneable {
 
-  private static DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  private static CommonConfigurationProperties commonConfigurationProperties;
 
   public static final String NONE = "none";
 
@@ -41,7 +41,7 @@ public class DhruvaNetwork implements Cloneable {
 
   public static synchronized DhruvaNetwork getDefault() {
     if (DEFAULT == null) {
-      SIPListenPoint defaultListenPoint = dhruvaSIPConfigProperties.getListeningPoints().get(0);
+      SIPListenPoint defaultListenPoint = commonConfigurationProperties.getListenPoints().get(0);
       DEFAULT =
           networkMap.computeIfAbsent(
               STR_DEFAULT, (network) -> new DhruvaNetwork(defaultListenPoint));
@@ -50,44 +50,44 @@ public class DhruvaNetwork implements Cloneable {
   }
 
   public static void setDhruvaConfigProperties(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) {
-    DhruvaNetwork.dhruvaSIPConfigProperties = dhruvaSIPConfigProperties;
+      CommonConfigurationProperties commonConfigurationProperties) {
+    DhruvaNetwork.commonConfigurationProperties = commonConfigurationProperties;
   }
 
-  public static DhruvaSIPConfigProperties getDhruvaSIPConfigProperties() {
-    return dhruvaSIPConfigProperties;
+  public static CommonConfigurationProperties getDhruvaSIPConfigProperties() {
+    return commonConfigurationProperties;
   }
 
   public static long getConnectionWriteTimeoutInMilliSeconds() {
-    return dhruvaSIPConfigProperties.getConnectionWriteTimeoutInMilliSeconds();
+    return commonConfigurationProperties.getConnectionWriteTimeoutInMllis();
   }
 
   public static int getOcspResponseTimeoutSeconds() {
-    return dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds();
+    return commonConfigurationProperties.getTlsOcspResponseTimeoutInSeconds();
   }
 
   public static boolean getIsAcceptedIssuersEnabled() {
-    return dhruvaSIPConfigProperties.getIsAcceptedIssuersEnabled();
+    return commonConfigurationProperties.isAcceptedIssuersEnabled();
   }
 
   public static String getTrustStoreFilePath() {
-    return dhruvaSIPConfigProperties.getTrustStoreFilePath();
+    return commonConfigurationProperties.getTlsTrustStoreFilePath();
   }
 
   public static String getTrustStoreType() {
-    return dhruvaSIPConfigProperties.getTrustStoreType();
+    return commonConfigurationProperties.getTlsTrustStoreType();
   }
 
   public static String getTrustStorePassword() {
-    return dhruvaSIPConfigProperties.getTrustStorePassword();
+    return commonConfigurationProperties.getTlsTrustStorePassword();
   }
 
   public static boolean isTlsCertRevocationSoftFailEnabled() {
-    return dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled();
+    return commonConfigurationProperties.isTlsCertRevocationEnableSoftFail();
   }
 
   public static boolean isTlsOcspEnabled() {
-    return dhruvaSIPConfigProperties.isTlsOcspEnabled();
+    return commonConfigurationProperties.isTlsCertEnableOcsp();
   }
 
   public static Optional<Transport> getTransport(String networkName) {

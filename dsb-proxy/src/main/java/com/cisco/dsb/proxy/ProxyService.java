@@ -4,7 +4,7 @@
 
 package com.cisco.dsb.proxy;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -49,7 +49,7 @@ import reactor.core.publisher.Mono;
 @CustomLog
 public class ProxyService {
 
-  @Autowired DhruvaSIPConfigProperties dhruvaSIPConfigProperties;
+  @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   @Autowired SipServerLocatorService resolver;
 
@@ -82,9 +82,9 @@ public class ProxyService {
 
   @PostConstruct
   public void init() throws Exception {
-    List<SIPListenPoint> sipListenPoints = dhruvaSIPConfigProperties.getListeningPoints();
+    List<SIPListenPoint> sipListenPoints = commonConfigurationProperties.getListenPoints();
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
-    DhruvaNetwork.setDhruvaConfigProperties(dhruvaSIPConfigProperties);
+    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
 
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
@@ -93,7 +93,7 @@ public class ProxyService {
       Transport transport = sipListenPoint.getTransport();
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
-              dhruvaSIPConfigProperties,
+              commonConfigurationProperties,
               transport,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
@@ -129,7 +129,7 @@ public class ProxyService {
                     sipListenPoint.getPort(),
                     sipListenPoint.getTransport(),
                     InetAddress.getByName(sipListenPoint.getHostIPAddress()),
-                    sipListenPoint.shouldAttachExternalIP());
+                    sipListenPoint.isAttachExternalIP());
 
                 if (sipListenPoint.isRecordRoute()) {
                   controllerConfig.addRecordRouteInterface(
@@ -310,7 +310,7 @@ public class ProxyService {
 
   private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType)
       throws Exception {
-    if (tlsAuthenticationType != dhruvaSIPConfigProperties.getTlsAuthType()) {
+    if (tlsAuthenticationType != commonConfigurationProperties.getTlsAuthType()) {
       return dsbTrustManagerFactory.getDsbTrsutManager(tlsAuthenticationType);
     } else {
       return dsbTrustManager;

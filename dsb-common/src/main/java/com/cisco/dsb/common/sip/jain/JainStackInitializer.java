@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.jain;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
@@ -171,7 +171,7 @@ public class JainStackInitializer {
    *     listener is possible
    */
   public static SipStack getSimpleStack(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties,
+      CommonConfigurationProperties commonConfigurationProperties,
       SipFactory sipFactory,
       String path,
       Properties properties,
@@ -189,7 +189,7 @@ public class JainStackInitializer {
         && ((SipStackImpl) sipStack).messageProcessorFactory != null) {
       SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
       ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-          .initFromApplication(dhruvaSIPConfigProperties, executorService);
+          .initFromApplication(commonConfigurationProperties, executorService);
     }
     NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
     if (transport.equals(Transport.TLS.name()) && networkLayer instanceof DsbNetworkLayer) {

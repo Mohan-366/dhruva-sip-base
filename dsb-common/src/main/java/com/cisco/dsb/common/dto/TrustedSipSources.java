@@ -101,4 +101,13 @@ public class TrustedSipSources {
   public String toString() {
     return trustedSipSources.toString();
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof TrustedSipSources) {
+      TrustedSipSources obj_t = (TrustedSipSources) obj;
+      return obj_t.trustedSipSources.equals(this.trustedSipSources);
+    }
+    return false;
+  }
 }

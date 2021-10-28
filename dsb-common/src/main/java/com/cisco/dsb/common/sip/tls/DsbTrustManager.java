@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.tls;
 
-import com.cisco.dsb.common.config.sip.DhruvaSIPConfigProperties;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
@@ -58,16 +58,16 @@ public class DsbTrustManager implements X509TrustManager {
   }
 
   public static synchronized DsbTrustManager getSystemTrustManager(
-      DhruvaSIPConfigProperties dhruvaSIPConfigProperties) throws Exception {
+      CommonConfigurationProperties commonConfigurationProperties) throws Exception {
     if (systemTrustManager == null) {
       System.setProperty(
           "com.sun.security.ocsp.timeout",
-          String.valueOf(dhruvaSIPConfigProperties.getOcspResponseTimeoutSeconds()));
-      trustStoreFile = dhruvaSIPConfigProperties.getTrustStoreFilePath();
-      trustStoreType = dhruvaSIPConfigProperties.getTrustStoreType();
-      trustStorePassword = dhruvaSIPConfigProperties.getTrustStorePassword();
-      softFailEnabled = dhruvaSIPConfigProperties.isTlsCertRevocationSoftFailEnabled();
-      enableOcsp = dhruvaSIPConfigProperties.isTlsOcspEnabled();
+          String.valueOf(commonConfigurationProperties.getTlsOcspResponseTimeoutInSeconds()));
+      trustStoreFile = commonConfigurationProperties.getTlsTrustStoreFilePath();
+      trustStoreType = commonConfigurationProperties.getTlsTrustStoreType();
+      trustStorePassword = commonConfigurationProperties.getTlsTrustStorePassword();
+      softFailEnabled = commonConfigurationProperties.isTlsCertRevocationEnableSoftFail();
+      enableOcsp = commonConfigurationProperties.isTlsCertEnableOcsp();
       javaHome = System.getProperty("java.home");
       systemTrustManager = createSystemTrustManager();
     }
