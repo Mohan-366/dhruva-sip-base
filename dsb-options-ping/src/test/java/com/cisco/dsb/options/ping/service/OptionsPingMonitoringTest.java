@@ -15,6 +15,7 @@ import org.mockito.Spy;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+
 @Ignore
 public class OptionsPingMonitoringTest {
 
@@ -81,7 +82,8 @@ public class OptionsPingMonitoringTest {
     map.put(server1.getServerGroupName(), server1);
     //    map.put(server2.getServerGroupName(), server2);
 
-    optionsPingMonitor.init(map);
-//    Thread.sleep(10000);
+    //    optionsPingMonitor.init(map);
+    //    Thread.sleep(10000);
   }
+
 }

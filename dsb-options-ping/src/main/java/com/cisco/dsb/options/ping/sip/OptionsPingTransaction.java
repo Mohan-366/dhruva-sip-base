@@ -15,18 +15,26 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptionsPingTransaction {
 
-  //  private Map<ClientTransaction, CompletableFuture<SIPResponse>> responseMap = new HashMap<>();
-
-  public synchronized CompletableFuture<SIPResponse> proxySendOutBoundRequest(
+  public CompletableFuture<SIPResponse> proxySendOutBoundRequest(
       SIPRequest sipRequest, DhruvaNetwork dhruvaNetwork, SipProvider sipProvider)
       throws SipException {
     CompletableFuture<SIPResponse> responseFuture = new CompletableFuture<>();
-
-    ClientTransaction clientTrans = null;
-    clientTrans = sipProvider.getNewClientTransaction(sipRequest);
-
+    ClientTransaction clientTrans = sipProvider.getNewClientTransaction(sipRequest);
+    CompletableFuture.runAsync(
+        () -> {
+          try {
+            clientTrans.sendRequest();
+          } catch (SipException e) {
+            logger.info(
+                "Error Sending OPTIONS request to {}:{} on network {} ",
+                ((SIPRequest) clientTrans.getRequest()).getRemoteAddress(),
+                ((SIPRequest) clientTrans.getRequest()).getRemotePort(),
+                dhruvaNetwork.getName());
+            responseFuture.completeExceptionally(e);
+          }
+        });
+    // storing future response in the application data of clientTransaction for future mapping.
     clientTrans.setApplicationData(responseFuture);
-    clientTrans.sendRequest();
     return responseFuture;
   }
 
