@@ -148,7 +148,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                         Duration.ofMillis(downInterval),
                         Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
     Flux.merge(upElements, downElements)
-        .concatMap(
+        .flatMap(
             element -> {
               Boolean status = elementStatus.get(element.hashCode());
               if (status == null || status) {
