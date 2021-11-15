@@ -284,8 +284,6 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
 
   @Override
   public void processResponse(ResponseEvent responseEvent) {
-
-    SIPResponse response = (SIPResponse) responseEvent.getResponse();
     optionsPingTransaction.processResponse(responseEvent);
   }
 }
