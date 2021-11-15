@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -44,7 +45,11 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired DhruvaExecutorService dhruvaExecutorService;
-  Map<Integer, Boolean> elementStatus = new HashMap<>();
+  protected Map<Integer, Boolean> elementStatus = new HashMap<>();
+  private static final int THREAD_CAP = 80;
+  private static final int QUEUE_TASK_CAP = 100;
+  private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
+  Scheduler optionsPingScheduler;
 
   @PostConstruct
   public void initOptionsPing() {
@@ -90,13 +95,15 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
 
   public void init(Map<String, StaticServer> map, List<Integer> failoverCodes) {
     proxyPacketProcessor.registerOptionsListener(this);
+    optionsPingScheduler =
+        Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
     startMonitoring(map, failoverCodes);
   }
 
   private void startMonitoring(Map<String, StaticServer> map, List<Integer> failoverCodes) {
     Iterator<Entry<String, StaticServer>> itr = map.entrySet().iterator();
 
-    logger.info("Starting pings!!");
+    logger.info("Starting OPTIONS pings!!");
     while (itr.hasNext()) {
       Map.Entry<String, StaticServer> entry = itr.next();
       pingPipeLine(
@@ -116,6 +123,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
       int downInterval,
       int pingTimeOut,
       List<Integer> failoverCodes) {
+
     Flux<ServerGroupElement> upElements =
         Flux.fromIterable(list)
             .filter(
@@ -128,9 +136,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                 })
             .repeatWhen(
                 completed ->
-                    completed.delayElements(
-                        Duration.ofMillis(upInterval),
-                        Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
+                    completed.delayElements(Duration.ofMillis(upInterval), optionsPingScheduler));
 
     Flux<ServerGroupElement> downElements =
         Flux.fromIterable(list)
@@ -144,15 +150,13 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                 })
             .repeatWhen(
                 completed ->
-                    completed.delayElements(
-                        Duration.ofMillis(downInterval),
-                        Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
+                    completed.delayElements(Duration.ofMillis(downInterval), optionsPingScheduler));
     Flux.merge(upElements, downElements)
         .flatMap(
             element -> {
               Boolean status = elementStatus.get(element.hashCode());
               if (status == null || status) {
-                logger.info("Sending ping to up element");
+                logger.debug("Sending ping to UP element: {}", element);
                 return sendPingRequestToUpElement(
                     network,
                     (ServerGroupElement) element,
@@ -160,14 +164,12 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                     pingTimeOut,
                     failoverCodes);
               } else {
-                logger.info("Sending ping to down element");
+                logger.debug("Sending ping to DOWN element: {}", element);
                 return sendPingRequestToDownElement(
                     network, (ServerGroupElement) element, pingTimeOut, failoverCodes);
               }
             })
-        .subscribe(
-            response ->
-                logger.info("KALPA: {} Resposne: {}", Thread.currentThread().getName(), response));
+        .subscribe();
   }
 
   /**
@@ -187,7 +189,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
         .doOnError(
             throwable -> {
               logger.error(
-                  "KALPA: error {} happened for element: {}. Element will be retried ",
+                  "Error happened for UP element: {}. Element will be retried: {}",
                   element,
                   throwable.getMessage());
             })
@@ -197,7 +199,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
         .onErrorResume(
             throwable -> {
               logger.info(
-                  "KALPA: All Ping attempts failed for element {}. Error: {} Marking status as down.",
+                  "All Ping attempts failed for UP element: {}. Marking status as DOWN. Error: {} ",
                   element,
                   throwable.getMessage());
               elementStatus.put(key, false);
@@ -207,12 +209,9 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
             n -> {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
                 elementStatus.put(key, false);
-                logger.info("503 received for element {}. Marking it as down.", element);
+                logger.info("503 received for UP element: {}. Marking it as DOWN.", element);
               } else if (status == null) {
-                logger.info(
-                    "KALPA: {} : Adding status as up for element {}",
-                    Thread.currentThread().getName(),
-                    element);
+                logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
               }
             });
@@ -232,7 +231,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
         .onErrorResume(
             throwable -> {
               logger.info(
-                  "Error {} happened for element: {}. Error: {} Keeping status as down.",
+                  "Error happened for element: {}. Error: {} Keeping status as DOWN.",
                   element,
                   throwable.getMessage());
               return Mono.empty();
@@ -240,10 +239,10 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
         .doOnNext(
             n -> {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
-                logger.info("503 received for element {}. Keeping status as down.", element);
+                logger.info("503 received for element: {}. Keeping status as DOWN.", element);
               } else {
                 logger.info(
-                    "Making status as up for element {}",
+                    "Marking status as UP for element: {}",
                     Thread.currentThread().getName(),
                     element);
                 elementStatus.put(key, true);
@@ -287,7 +286,6 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
   public void processResponse(ResponseEvent responseEvent) {
 
     SIPResponse response = (SIPResponse) responseEvent.getResponse();
-    logger.info("Received OPTIONS Ping response {} from {} ", response, responseEvent.getSource());
     optionsPingTransaction.processResponse(responseEvent);
   }
 }
