@@ -14,8 +14,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import gov.nist.javax.sip.header.CSeq;
 import gov.nist.javax.sip.message.SIPMessage;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Map;
 import java.util.Optional;
+import javax.sip.header.Header;
 import javax.sip.message.Message;
 
 public class Event {
@@ -28,6 +31,7 @@ public class Event {
   public static String REMOTEPORT = "remotePort";
   public static String LOCALIP = "localIp";
   public static String LOCALPORT = "localPort";
+  public static final String CSEQ_HEADER_REGEX = "CSeq: ";
 
   private static Logger logger = DhruvaLoggerFactory.getLogger(Event.class);
 
@@ -69,34 +73,39 @@ public class Event {
   }
 
   public static void emitMessageEvent(
-      BindingInfo messageBindingInfo,
-      Message message,
-      DIRECTION direction,
-      MESSAGE_TYPE sipMessageType,
-      boolean isInternallyGenerated,
-      String sipMethod,
-      String requestUri,
-      boolean isMidDialog,
-      long dhruvaProcessingDelayInMillis) {
+          BindingInfo messageBindingInfo,
+          Message message,
+          DIRECTION direction,
+          MESSAGE_TYPE sipMessageType,
+          boolean isInternallyGenerated,
+          String sipMethod,
+          String requestUri,
+          boolean isMidDialog,
+          long dhruvaProcessingDelayInMillis) {
     Map<String, String> messageInfoMap =
-        Maps.newHashMap(
-            ImmutableMap.of(
-                "sipMessageType",
-                sipMessageType.name(),
-                "sipMethod",
-                sipMethod,
-                "cseqMethod",
-                String.valueOf(message.getHeader(CSeq.NAME)),
-                "requestUri",
-                requestUri,
-                Event.REMOTEIP,
-                messageBindingInfo.getRemoteAddressStr()));
+            Maps.newHashMap(
+                    ImmutableMap.of(
+                            "sipMessageType",
+                            sipMessageType.name(),
+                            "sipMethod",
+                            sipMethod,
+                            "requestUri",
+                            requestUri,
+                            Event.REMOTEIP,
+                            messageBindingInfo.getRemoteAddressStr()));
+
+    Header hdr = message.getHeader(CSeq.NAME);
+    // replaceAll() should not throw nullpointerExcp
+    String cseqHeaderValue = StringUtils.isEmpty(String.valueOf(hdr)) ? "" : String.valueOf(hdr);
+    messageInfoMap.put("cseqMethod", cseqHeaderValue.replaceAll(CSEQ_HEADER_REGEX, ""));
+
     messageInfoMap.put(Event.REMOTEPORT, String.valueOf(messageBindingInfo.getRemotePort()));
     messageInfoMap.put(Event.DIRECTION_KEY, direction.name());
+
     String localHostAddress =
-        messageBindingInfo.getLocalAddress() != null
-            ? Optional.ofNullable(messageBindingInfo.getLocalAddress().getHostAddress()).orElse("")
-            : "";
+            messageBindingInfo.getLocalAddress() != null
+                    ? Optional.ofNullable(messageBindingInfo.getLocalAddress().getHostAddress()).orElse("")
+                    : "";
     messageInfoMap.put(Event.LOCALIP, localHostAddress);
     messageInfoMap.put(Event.LOCALPORT, String.valueOf(messageBindingInfo.getLocalPort()));
     messageInfoMap.put(Event.ISMIDDIALOG, String.valueOf(isMidDialog));
@@ -104,14 +113,14 @@ public class Event {
     messageInfoMap.put(Event.ISINTERNALLYGENERATED, String.valueOf(isInternallyGenerated));
     if (direction == OUT) {
       messageInfoMap.put(
-          Event.DHRUVA_PROCESSING_DELAY_IN_MILLIS, String.valueOf(dhruvaProcessingDelayInMillis));
+              Event.DHRUVA_PROCESSING_DELAY_IN_MILLIS, String.valueOf(dhruvaProcessingDelayInMillis));
     }
 
     logger.emitEvent(
-        EventType.SIPMESSAGE,
-        null,
-        LogUtils.obfuscateObject((SIPMessage) message, false),
-        messageInfoMap);
+            EventType.SIPMESSAGE,
+            null,
+            LogUtils.obfuscateObject((SIPMessage) message, false),
+            messageInfoMap);
     // DSB TODO
     //    SipMessageWrapper sipMsg = new SipMessageWrapper(message, direction);
     //    Consumer<SipMessageWrapper> consumer1 = DiagnosticsUtil::sendCDSEvents;
