@@ -169,7 +169,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                     network, (ServerGroupElement) element, pingTimeOut, failoverCodes);
               }
             })
-        .subscribe();
+        .subscribe(error -> logger.error("Error in OPTIONS Ping subscriber: {}", error));
   }
 
   /**
@@ -225,7 +225,6 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
       String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
 
     Integer key = element.hashCode();
-    Boolean status = elementStatus.get(key);
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))
         .onErrorResume(
