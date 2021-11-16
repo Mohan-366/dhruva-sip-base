@@ -28,7 +28,7 @@ public class Event {
   public static String REMOTEPORT = "remotePort";
   public static String LOCALIP = "localIp";
   public static String LOCALPORT = "localPort";
-  public static final String CSEQ_HEADER_REGEX = "CSeq: ";
+
 
   private static Logger logger = DhruvaLoggerFactory.getLogger(Event.class);
 
