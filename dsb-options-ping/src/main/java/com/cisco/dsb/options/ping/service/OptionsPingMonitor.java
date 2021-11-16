@@ -17,7 +17,6 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -64,23 +63,18 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
   }
 
   private Map<String, StaticServer> getServerGroupMap() {
-    ServerGroupElement sge1 =
-        com.cisco.dsb.common.sip.stack.dto.ServerGroupElement.builder()
-            .ipAddress("10.78.98.54")
-            .port(5061)
-            .qValue(0.9f)
-            .weight(-1)
-            .transport(Transport.TCP)
-            .build();
-    ServerGroupElement sge2 =
-        ServerGroupElement.builder()
-            .ipAddress("10.78.98.54")
-            .port(5062)
-            .qValue(0.9f)
-            .weight(-1)
-            .transport(Transport.TCP)
-            .build();
-    List<ServerGroupElement> sgeList = Arrays.asList(sge1, sge2);
+
+    List<ServerGroupElement> sgeList = new ArrayList<>();
+    for (int i = 5061; i < 5066; i++) {
+      sgeList.add(
+          ServerGroupElement.builder()
+              .ipAddress("10.78.98.54")
+              .port(i)
+              .qValue(0.9f)
+              .weight(-1)
+              .transport(Transport.TCP)
+              .build());
+    }
     StaticServer server1 =
         StaticServer.builder()
             .networkName("TCPNetwork")
@@ -88,6 +82,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
             .elements(sgeList)
             .sgPolicy("global")
             .build();
+
     Map<String, StaticServer> map = new HashMap<>();
     map.put(server1.getServerGroupName(), server1);
     return map;
@@ -169,7 +164,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
                     network, (ServerGroupElement) element, pingTimeOut, failoverCodes);
               }
             })
-        .subscribe(error -> logger.error("Error in OPTIONS Ping subscriber: {}", error));
+        .subscribe();
   }
 
   /**
@@ -242,7 +237,6 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
               } else {
                 logger.info(
                     "Marking status as UP for element: {}",
-                    Thread.currentThread().getName(),
                     element);
                 elementStatus.put(key, true);
               }

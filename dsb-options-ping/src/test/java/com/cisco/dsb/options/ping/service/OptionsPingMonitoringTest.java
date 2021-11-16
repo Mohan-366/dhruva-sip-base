@@ -15,7 +15,6 @@ import org.mockito.Spy;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-
 @Ignore
 public class OptionsPingMonitoringTest {
 
@@ -85,5 +84,4 @@ public class OptionsPingMonitoringTest {
     //    optionsPingMonitor.init(map);
     //    Thread.sleep(10000);
   }
-
 }
