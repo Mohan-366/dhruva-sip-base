@@ -27,7 +27,11 @@ public class ProxyPacketProcessor implements SipListenerExt {
   @Override
   public void processResponse(ResponseEvent responseEvent) {
     if (((SIPResponse) responseEvent.getResponse()).getCSeq().getMethod().contains("OPTIONS")) {
-      logger.info("OPTIONS Response received: {}", ((SIPResponse) responseEvent.getResponse()));
+      logger.info("OPTIONS Response received: {}", responseEvent.getResponse());
+      if (optionsPingResponseListener == null) {
+        logger.error("No listener registered for OPTIONS Ping Response. Dropping it.");
+        return;
+      }
       optionsPingResponseListener.processResponse(responseEvent);
     } else {
       logger.debug("received response event from sip stack");
