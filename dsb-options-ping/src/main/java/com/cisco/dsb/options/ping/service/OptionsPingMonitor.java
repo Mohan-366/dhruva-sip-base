@@ -3,12 +3,12 @@ package com.cisco.dsb.options.ping.service;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.options.ping.sip.OptionsPingTransaction;
 import com.cisco.dsb.options.ping.util.OptionsUtil;
-import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.trunk.dto.StaticServer;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -24,9 +24,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
-import javax.sip.ResponseEvent;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
@@ -40,12 +42,12 @@ import reactor.util.retry.Retry;
 
 @CustomLog
 @Component
-public class OptionsPingMonitor implements OptionsPingResponseListener {
+public class OptionsPingMonitor {
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
-  @Autowired DhruvaExecutorService dhruvaExecutorService;
-  protected Map<Integer, Boolean> elementStatus = new HashMap<>();
-  private static final int THREAD_CAP = 80;
+
+  protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
+  private static final int THREAD_CAP = 20;
   private static final int QUEUE_TASK_CAP = 100;
   private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
   Scheduler optionsPingScheduler;
@@ -89,7 +91,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
   }
 
   public void init(Map<String, StaticServer> map, List<Integer> failoverCodes) {
-    proxyPacketProcessor.registerOptionsListener(this);
+    proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     optionsPingScheduler =
         Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
     startMonitoring(map, failoverCodes);
@@ -97,7 +99,6 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
 
   private void startMonitoring(Map<String, StaticServer> map, List<Integer> failoverCodes) {
     Iterator<Entry<String, StaticServer>> itr = map.entrySet().iterator();
-
     logger.info("Starting OPTIONS pings!!");
     while (itr.hasNext()) {
       Map.Entry<String, StaticServer> entry = itr.next();
@@ -235,9 +236,7 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
                 logger.info("503 received for element: {}. Keeping status as DOWN.", element);
               } else {
-                logger.info(
-                    "Marking status as UP for element: {}",
-                    element);
+                logger.info("Marking status as UP for element: {}", element);
                 elementStatus.put(key, true);
               }
             });
@@ -273,10 +272,5 @@ public class OptionsPingMonitor implements OptionsPingResponseListener {
       errResponse.completeExceptionally(e);
       return errResponse;
     }
-  }
-
-  @Override
-  public void processResponse(ResponseEvent responseEvent) {
-    optionsPingTransaction.processResponse(responseEvent);
   }
 }
