@@ -8,7 +8,6 @@ import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.ClientTransaction;
@@ -24,14 +23,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptionsPingTransaction implements OptionsPingResponseListener {
 
-  @Autowired
-  DhruvaExecutorService dhruvaExecutorService;
+  @Autowired DhruvaExecutorService dhruvaExecutorService;
 
-  public OptionsPingTransaction () {
-    dhruvaExecutorService.startExecutorService(
-        ExecutorType.OPTIONS_PING, 20);
+  public OptionsPingTransaction() {
+    dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING, 20);
   }
-
 
   public CompletableFuture<SIPResponse> proxySendOutBoundRequest(
       @NonNull SIPRequest sipRequest,
@@ -57,7 +53,8 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
                 dhruvaNetwork.getName());
             responseFuture.completeExceptionally(e);
           }
-        }, dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
+        },
+        dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
     // storing future response in the application data of clientTransaction for future mapping.
     clientTrans.setApplicationData(responseFuture);
     return responseFuture;

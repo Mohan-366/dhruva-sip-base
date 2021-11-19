@@ -2,8 +2,6 @@ package com.cisco.dsb.options.ping.service;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
@@ -26,7 +24,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
