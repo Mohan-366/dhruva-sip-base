@@ -2,7 +2,6 @@ package com.cisco.dsb.options.ping.service;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
@@ -49,7 +48,7 @@ public class OptionsPingMonitor {
   @Autowired OptionsPingTransaction optionsPingTransaction;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
-  private static final int THREAD_CAP = 20;
+  private static final int THREAD_CAP = 20; // TODO: add these as config properties
   private static final int QUEUE_TASK_CAP = 100;
   private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
   Scheduler optionsPingScheduler;
