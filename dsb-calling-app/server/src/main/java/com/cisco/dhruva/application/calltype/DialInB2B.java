@@ -72,6 +72,10 @@ public class DialInB2B implements CallType {
                   logger.error("Exception while processing request, rejecting the call", err);
                   o_proxySipRequest.reject(Response.SERVER_INTERNAL_ERROR);
                 });
+    /*
+    trunkmanager.handleIngress(Beech,proxysiprequest)
+    trunkmanager.handleEgress(Calling,proxysiprequest)
+     */
   }
 
   public Function<Mono<ProxySIPRequest>, Mono<ProxySIPRequest>> requestPipeline() {

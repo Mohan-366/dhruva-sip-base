@@ -1,12 +1,11 @@
 package com.cisco.dsb.trunk.dto;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertThrows;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.JsonSchemaValidator;
 import com.cisco.dsb.trunk.config.TrunkConfigProperties;
@@ -16,7 +15,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import org.testng.Assert;

@@ -1,6 +1,9 @@
 package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.servergroup.SGPolicy;
+import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
@@ -96,6 +99,8 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
+  @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
@@ -118,5 +123,38 @@ public class CommonConfigurationProperties {
       trustedSipSources.remove(errorInfo.getDescription());
     }
     return trustedSipSources;
+  }
+
+  public void setSgPolicy(Map<String, SGPolicy> sgPolicyMap) {
+    this.serverGroups
+        .values()
+        .forEach(
+            serverGroup -> {
+              SGPolicy sgPolicy = sgPolicyMap.get(serverGroup.getSgPolicyConfig());
+              if (sgPolicy == null)
+                throw new DhruvaRuntimeException(
+                    "SGName: "
+                        + serverGroup.getName()
+                        + "; SGPolicy \""
+                        + serverGroup.getSgPolicyConfig()
+                        + "\" not present");
+              serverGroup.setSgPolicyFromConfig(sgPolicy);
+            });
+    this.sgPolicyMap = sgPolicyMap;
+  }
+
+  public void setServerGroups(Map<String, ServerGroup> serverGroups) {
+    this.serverGroups = serverGroups;
+    this.serverGroups
+        .values()
+        .forEach(
+            sg -> {
+              String network = sg.getNetworkName();
+              if (listenPoints.stream().noneMatch(lp -> lp.getName().equals(network))) {
+                throw new DhruvaRuntimeException(
+                    "SGName: " + sg.getName() + "; listenPoint: \"" + network + "\" not found");
+              }
+              // No Validation for transport type as it's redundant for now
+            });
   }
 }

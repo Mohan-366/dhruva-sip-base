@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.sip.stack.dto;
+package com.cisco.dsb.trunk.dto;
 
 import com.cisco.dsb.common.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonProperty;

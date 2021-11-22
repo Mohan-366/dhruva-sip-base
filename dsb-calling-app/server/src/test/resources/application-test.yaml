@@ -1,0 +1,4 @@
+app:
+  networkPSTN: "net_sp"
+  networkB2B: "net_beech"
+  networkCallingCore: "net_cc"

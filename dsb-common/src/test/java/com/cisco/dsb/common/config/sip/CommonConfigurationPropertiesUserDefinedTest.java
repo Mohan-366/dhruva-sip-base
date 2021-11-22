@@ -1,13 +1,20 @@
 package com.cisco.dsb.common.config.sip;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
+import com.cisco.dsb.common.loadbalancer.LBType;
+import com.cisco.dsb.common.servergroup.SGPolicy;
+import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +46,39 @@ public class CommonConfigurationPropertiesUserDefinedTest extends AbstractTestNG
                 .setEnableCertService(true)
                 .build(),
             SIPListenPoint.SIPListenPointBuilder().setName("defaultNetwork").build());
+    Map<String, SGPolicy> sgpolicy = new HashMap<>();
+    sgpolicy.put(
+        "policy1",
+        SGPolicy.builder()
+            .setName("policy1")
+            .setFailoverResponseCodes(Arrays.asList(501, 502))
+            .build());
+    Map<String, ServerGroup> serverGroups = new HashMap<>();
+    List<ServerGroupElement> sg1Elements =
+        Arrays.asList(
+            ServerGroupElement.builder()
+                .setIpAddress("1.1.1.1")
+                .setPort(5060)
+                .setQValue(0.9f)
+                .setWeight(10)
+                .setTransport(Transport.UDP)
+                .build(),
+            ServerGroupElement.builder()
+                .setIpAddress("2.2.2.2")
+                .setPort(5070)
+                .setQValue(0.9f)
+                .setWeight(10)
+                .setTransport(Transport.UDP)
+                .build());
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setName("SG1")
+            .setLbType(LBType.HIGHEST_Q)
+            .setNetworkName("testNetwork")
+            .setElements(sg1Elements)
+            .setSgPolicy(sgpolicy.get("policy1"))
+            .build();
+    serverGroups.put(sg1.getName(), sg1);
     assertTrue(commonConfigurationProperties.isEnableCertService());
     assertTrue(commonConfigurationProperties.isUseRedisAsCache());
     assertEquals(commonConfigurationProperties.getTlsAuthType(), TLSAuthenticationType.MTLS);
@@ -77,5 +117,7 @@ public class CommonConfigurationPropertiesUserDefinedTest extends AbstractTestNG
     assertEquals(commonConfigurationProperties.getDnsCacheSize(), 100);
     assertEquals(commonConfigurationProperties.getTimeOutDnsCache(), 10_000);
     assertEquals(commonConfigurationProperties.getTimeOutDns(), 1_000);
+    assertEquals(commonConfigurationProperties.getServerGroups(), serverGroups);
+    assertEquals(commonConfigurationProperties.getSgPolicyMap(), sgpolicy);
   }
 }

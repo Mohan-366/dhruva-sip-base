@@ -29,7 +29,6 @@ public class Event {
   public static String LOCALIP = "localIp";
   public static String LOCALPORT = "localPort";
 
-
   private static Logger logger = DhruvaLoggerFactory.getLogger(Event.class);
 
   public enum EventType {
@@ -86,13 +85,14 @@ public class Event {
                 sipMessageType.name(),
                 "sipMethod",
                 sipMethod,
+                "cseqMethod",
+                String.valueOf(message.getHeader(CSeq.NAME)),
                 "requestUri",
                 requestUri,
                 Event.REMOTEIP,
                 messageBindingInfo.getRemoteAddressStr()));
 
     CSeq cseqHeaderValue = (CSeq) message.getHeader(CSeq.NAME);
-
 
     if (cseqHeaderValue != null) {
       messageInfoMap.put("cseqMethod", cseqHeaderValue.encodeBody());
