@@ -2,9 +2,11 @@ package com.cisco.dsb.options.ping.service;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.options.ping.sip.OptionsPingTransaction;
 import com.cisco.dsb.options.ping.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
@@ -30,6 +32,7 @@ import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -39,9 +42,12 @@ import reactor.util.retry.Retry;
 
 @CustomLog
 @Component
+@DependsOn("dhruvaExecutorService")
 public class OptionsPingMonitor {
+
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
+  @Autowired DhruvaExecutorService dhruvaExecutorService;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20;
@@ -167,6 +173,13 @@ public class OptionsPingMonitor {
 
   /**
    * Separate methods to ping up elements and retries will be performed only in case of up elements.
+   *
+   * @param network
+   * @param element
+   * @param downInterval
+   * @param pingTimeout
+   * @param failoverCodes
+   * @return
    */
   private Mono<SIPResponse> sendPingRequestToUpElement(
       String network,
@@ -195,6 +208,13 @@ public class OptionsPingMonitor {
                   "All Ping attempts failed for UP element: {}. Marking status as DOWN. Error: {} ",
                   element,
                   throwable.getMessage());
+              Event.emitSGElementDownEvent(
+                  null,
+                  "All Ping attempts failed for element",
+                  element.getIpAddress(),
+                  element.getPort(),
+                  element.getTransport(),
+                  network);
               elementStatus.put(key, false);
               return Mono.empty();
             })
@@ -202,7 +222,18 @@ public class OptionsPingMonitor {
             n -> {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
                 elementStatus.put(key, false);
-                logger.info("503 received for UP element: {}. Marking it as DOWN.", element);
+                logger.info(
+                    "{} received for UP element: {}. Marking it as DOWN.",
+                    n.getStatusCode(),
+                    element);
+                Event.emitSGElementDownEvent(
+                    n.getStatusCode(),
+                    "Error response received for element",
+                    element.getIpAddress(),
+                    element.getPort(),
+                    element.getTransport(),
+                    network);
+                elementStatus.put(key, false);
               } else if (status == null) {
                 logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
@@ -213,6 +244,12 @@ public class OptionsPingMonitor {
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
+   *
+   * @param network
+   * @param element
+   * @param pingTimeout
+   * @param failoverCodes
+   * @return
    */
   private Mono<SIPResponse> sendPingRequestToDownElement(
       String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
