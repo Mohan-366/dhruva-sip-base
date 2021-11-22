@@ -47,7 +47,6 @@ public class OptionsPingMonitor {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
-  @Autowired DhruvaExecutorService dhruvaExecutorService;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20;
@@ -57,7 +56,6 @@ public class OptionsPingMonitor {
 
   @PostConstruct
   public void initOptionsPing() {
-    logger.info("Initializing the OPTIONS Ping module");
     init(getServerGroupMap(), getFailoverCodes());
   }
 

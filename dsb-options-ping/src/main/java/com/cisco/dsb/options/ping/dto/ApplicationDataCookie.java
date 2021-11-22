@@ -3,8 +3,6 @@ package com.cisco.dsb.options.ping.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-
-
 public class ApplicationDataCookie {
 
   @Getter @Setter Type payloadType;
