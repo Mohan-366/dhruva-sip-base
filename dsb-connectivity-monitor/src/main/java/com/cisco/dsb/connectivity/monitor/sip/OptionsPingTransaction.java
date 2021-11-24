@@ -46,7 +46,6 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     CompletableFuture.runAsync(
         () -> {
           try {
-
             clientTrans.sendRequest();
           } catch (SipException e) {
             logger.info(
