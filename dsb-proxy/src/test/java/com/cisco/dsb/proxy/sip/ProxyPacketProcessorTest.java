@@ -2,6 +2,7 @@ package com.cisco.dsb.proxy.sip;
 
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
@@ -18,6 +19,8 @@ import org.testng.annotations.Test;
 
 public class ProxyPacketProcessorTest {
   @Mock ProxyEventListener proxyEventListener;
+
+  @Mock OptionsPingResponseListener optionsPingResponseListener;
 
   @InjectMocks ProxyPacketProcessor proxyPacketProcessor;
 
@@ -55,6 +58,23 @@ public class ProxyPacketProcessorTest {
 
     ArgumentCaptor<ResponseEvent> argumentCaptor = ArgumentCaptor.forClass(ResponseEvent.class);
     verify(proxyEventListener, times(1)).response(argumentCaptor.capture());
+    ResponseEvent responseEventTest = argumentCaptor.getValue();
+    Assert.assertEquals(responseEvent, responseEventTest);
+  }
+
+  @Test
+  public void testResponseEventForOptions() {
+    ResponseEvent responseEvent = mock(ResponseEvent.class);
+    SIPResponse response = mock(SIPResponse.class);
+    CSeqHeader header = mock(CSeqHeader.class);
+    when(header.getMethod()).thenReturn("OPTIONS");
+    when(responseEvent.getResponse()).thenReturn(response);
+    when(response.getCSeq()).thenReturn(header);
+    doNothing().when(optionsPingResponseListener).processResponse(responseEvent);
+    proxyPacketProcessor.processResponse(responseEvent);
+
+    ArgumentCaptor<ResponseEvent> argumentCaptor = ArgumentCaptor.forClass(ResponseEvent.class);
+    verify(optionsPingResponseListener, times(1)).processResponse(argumentCaptor.capture());
     ResponseEvent responseEventTest = argumentCaptor.getValue();
     Assert.assertEquals(responseEvent, responseEventTest);
   }
