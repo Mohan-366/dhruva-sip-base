@@ -1,17 +1,16 @@
-package com.cisco.dsb.options.ping.sip;
+package com.cisco.dsb.connectivity.monitor.sip;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.options.ping.dto.ApplicationDataCookie;
-import com.cisco.dsb.options.ping.dto.ApplicationDataCookie.Type;
+import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
+import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.concurrent.CompletableFuture;
-import javax.annotation.PostConstruct;
 import javax.sip.ClientTransaction;
 import javax.sip.ResponseEvent;
 import javax.sip.SipException;
@@ -25,12 +24,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptionsPingTransaction implements OptionsPingResponseListener {
 
-  @Autowired DhruvaExecutorService dhruvaExecutorService;
+  private DhruvaExecutorService dhruvaExecutorService;
 
-  public OptionsPingTransaction() {}
-
-  @PostConstruct
-  public void init() {
+  @Autowired
+  public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService) {
+    this.dhruvaExecutorService = dhruvaExecutorService;
     dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING, 20);
   }
 
@@ -60,6 +58,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
           }
         },
         dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
+
     // storing future response as  AppDataCookie in the application data of
     // clientTransaction for future mapping.
     clientTrans.setApplicationData(getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture));

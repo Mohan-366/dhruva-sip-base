@@ -1,13 +1,14 @@
-package com.cisco.dsb.options.ping.service;
+package com.cisco.dsb.connectivity.monitor.service;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
-import com.cisco.dsb.options.ping.sip.OptionsPingTransaction;
-import com.cisco.dsb.options.ping.util.OptionsUtil;
+import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
+import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.trunk.dto.StaticServer;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -46,6 +47,7 @@ public class OptionsPingMonitor {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
+  @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
@@ -134,6 +136,13 @@ public class OptionsPingMonitor {
                 completed ->
                     completed.delayElements(Duration.ofMillis(upInterval), optionsPingScheduler));
 
+    Flux<SIPResponse> upElementsResponse =
+        upElements.flatMap(
+            element -> {
+              return sendPingRequestToUpElement(
+                  network, element, downInterval, pingTimeOut, failoverCodes);
+            });
+
     Flux<ServerGroupElement> downElements =
         Flux.fromIterable(list)
             .filter(
@@ -147,25 +156,14 @@ public class OptionsPingMonitor {
             .repeatWhen(
                 completed ->
                     completed.delayElements(Duration.ofMillis(downInterval), optionsPingScheduler));
-    Flux.merge(upElements, downElements)
-        .flatMap(
+
+    Flux<SIPResponse> downElementsResponse =
+        downElements.flatMap(
             element -> {
-              Boolean status = elementStatus.get(element.hashCode());
-              if (status == null || status) {
-                logger.debug("Sending ping to UP element: {}", element);
-                return sendPingRequestToUpElement(
-                    network,
-                    (ServerGroupElement) element,
-                    downInterval,
-                    pingTimeOut,
-                    failoverCodes);
-              } else {
-                logger.debug("Sending ping to DOWN element: {}", element);
-                return sendPingRequestToDownElement(
-                    network, (ServerGroupElement) element, pingTimeOut, failoverCodes);
-              }
-            })
-        .subscribe();
+              return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
+            });
+
+    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
   /**
@@ -185,6 +183,7 @@ public class OptionsPingMonitor {
       int pingTimeout,
       List<Integer> failoverCodes) {
 
+    logger.info("Sending ping to UP element: {}", element);
     Integer key = element.hashCode();
     Boolean status = elementStatus.get(key);
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
@@ -250,7 +249,7 @@ public class OptionsPingMonitor {
    */
   private Mono<SIPResponse> sendPingRequestToDownElement(
       String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
-
+    logger.info("Sending ping to DOWN element: {}", element);
     Integer key = element.hashCode();
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))

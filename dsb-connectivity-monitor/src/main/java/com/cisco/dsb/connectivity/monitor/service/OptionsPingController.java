@@ -1,4 +1,4 @@
-package com.cisco.dsb.options.ping.service;
+package com.cisco.dsb.connectivity.monitor.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

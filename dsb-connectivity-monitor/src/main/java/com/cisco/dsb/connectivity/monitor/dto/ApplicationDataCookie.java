@@ -1,4 +1,4 @@
-package com.cisco.dsb.options.ping.dto;
+package com.cisco.dsb.connectivity.monitor.dto;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package com.cisco.dsb.options.ping.util;
+package com.cisco.dsb.connectivity.monitor.util;
 
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
