@@ -1,6 +1,6 @@
 package com.cisco.dsb.trunk.servergroups;
 
-import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
+import com.cisco.dsb.trunk.dto.ServerGroupElement;
 import com.cisco.dsb.trunk.dto.StaticServer;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupElementInterface;
 import com.cisco.dsb.trunk.loadbalancer.ServerGroupInterface;

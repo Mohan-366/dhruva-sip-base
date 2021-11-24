@@ -1,8 +1,8 @@
 package com.cisco.dsb.connectivity.monitor.util;
 
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;

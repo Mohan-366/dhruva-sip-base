@@ -3,21 +3,19 @@ package com.cisco.dsb.connectivity.monitor.service;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
-import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
-import com.cisco.dsb.trunk.dto.StaticServer;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +43,12 @@ import reactor.util.retry.Retry;
 @DependsOn("dhruvaExecutorService")
 public class OptionsPingMonitor {
 
-  @Autowired ProxyPacketProcessor proxyPacketProcessor;
-  @Autowired OptionsPingTransaction optionsPingTransaction;
-  @Autowired CommonConfigurationProperties commonConfigurationProperties;
+  @Autowired
+  ProxyPacketProcessor proxyPacketProcessor;
+  @Autowired
+  OptionsPingTransaction optionsPingTransaction;
+  @Autowired
+  CommonConfigurationProperties commonConfigurationProperties;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
@@ -57,7 +58,7 @@ public class OptionsPingMonitor {
 
   @PostConstruct
   public void initOptionsPing() {
-    init(getServerGroupMap(), getFailoverCodes());
+    init(commonConfigurationProperties.getServerGroups(), getFailoverCodes());
   }
 
   private List<Integer> getFailoverCodes() {
@@ -66,51 +67,27 @@ public class OptionsPingMonitor {
     return failoverCodes;
   }
 
-  private Map<String, StaticServer> getServerGroupMap() {
-
-    List<ServerGroupElement> sgeList = new ArrayList<>();
-    for (int i = 5061; i < 5066; i++) {
-      sgeList.add(
-          ServerGroupElement.builder()
-              .ipAddress("10.78.98.54")
-              .port(i)
-              .qValue(0.9f)
-              .weight(-1)
-              .transport(Transport.TCP)
-              .build());
-    }
-    StaticServer server1 =
-        StaticServer.builder()
-            .networkName("TCPNetwork")
-            .serverGroupName("SG1")
-            .elements(sgeList)
-            .sgPolicy("global")
-            .build();
-
-    Map<String, StaticServer> map = new HashMap<>();
-    map.put(server1.getServerGroupName(), server1);
-    return map;
-  }
-
-  public void init(Map<String, StaticServer> map, List<Integer> failoverCodes) {
+  public void init(Map<String, ServerGroup> map, List<Integer> failoverCodes) {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     optionsPingScheduler =
         Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
-    startMonitoring(map, failoverCodes);
+    startMonitoring(map, failoverCodes); // failover codes will be eventually be picked from opPolicy per sg.
   }
 
-  private void startMonitoring(Map<String, StaticServer> map, List<Integer> failoverCodes) {
-    Iterator<Entry<String, StaticServer>> itr = map.entrySet().iterator();
+  private void startMonitoring(Map<String, ServerGroup> map, List<Integer> failoverCodes) {
+    Iterator<Entry<String, ServerGroup>> itr = map.entrySet().iterator();
     logger.info("Starting OPTIONS pings!!");
     while (itr.hasNext()) {
-      Map.Entry<String, StaticServer> entry = itr.next();
-      pingPipeLine(
-          entry.getValue().getNetworkName(),
-          entry.getValue().getElements(),
-          30000,
-          5000,
-          500,
-          failoverCodes);
+      Map.Entry<String, ServerGroup> entry = itr.next();
+      if (entry.getValue().isPingOn()) {
+        pingPipeLine(
+            entry.getValue().getNetworkName(),
+            entry.getValue().getElements(),
+            30000, // up and down intervals will be eventually picked from opPolicy
+            5000,
+            500,
+            failoverCodes);
+      }
     }
   }
 
@@ -163,11 +140,13 @@ public class OptionsPingMonitor {
               return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
             });
 
-    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+    Flux.merge(upElementsResponse, downElementsResponse)
+        .subscribe();
   }
 
   /**
-   * Separate methods to ping up elements and retries will be performed only in case of up elements.
+   * Separate methods to ping up elements and retries will be performed only in case of up
+   * elements.
    *
    * @param network
    * @param element
@@ -267,6 +246,8 @@ public class OptionsPingMonitor {
                 logger.info("503 received for element: {}. Keeping status as DOWN.", element);
               } else {
                 logger.info("Marking status as UP for element: {}", element);
+                Event.emitSGElementUpEvent(element.getIpAddress(), element.getPort(),
+                    element.getTransport(), network);
                 elementStatus.put(key, true);
               }
             });

@@ -1,0 +1,4 @@
+common:
+  listen-points:
+    - name: "test-network-override"
+      transport: UDP

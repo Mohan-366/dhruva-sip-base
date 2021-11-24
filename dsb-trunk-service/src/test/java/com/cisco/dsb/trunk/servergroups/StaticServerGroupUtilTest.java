@@ -3,8 +3,8 @@ package com.cisco.dsb.trunk.servergroups;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.*;
 
-import com.cisco.dsb.common.sip.stack.dto.ServerGroupElement;
 import com.cisco.dsb.trunk.config.TrunkConfigProperties;
+import com.cisco.dsb.trunk.dto.ServerGroupElement;
 import com.cisco.dsb.trunk.dto.StaticServer;
 import java.util.Arrays;
 import java.util.List;

@@ -3,18 +3,20 @@ common:
     SG1:
       name: SG1
       networkName: TCPNetwork
-      lbType: callid
+      lbType: HIGHEST_Q
       elements:
         - ipAddress: "10.78.98.54"
           port: 5061
           transport: TCP
           qValue: 0.9
           weight: 10
+          pingOn: true
         - ipAddress: "10.78.98.54"
           port: 5062
           transport: TCP
           qValue: 0.9
           weight: 10
+          pingOn: true
       sgPolicy: policy1
   listen-points:
     - name: "TCPNetwork"

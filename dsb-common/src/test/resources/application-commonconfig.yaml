@@ -34,6 +34,28 @@ common:
   tls-protocols:
     - "TLSv1.2"
     - "TLSv1.1"
+  dns-cache-size: 100
+  timeOutDnsCache: 10000
+  timeOutDns: 1000
+  serverGroups:
+    SG1:
+      name: SG1
+      networkName: testNetwork
+      lbType: highest_q
+      elements:
+        - ipAddress: "1.1.1.1"
+          port: 5060
+          transport: UDP
+          qValue: 0.9
+          weight: 10
+        - ipAddress: "2.2.2.2"
+          port: 5070
+          transport: UDP
+          qValue: 0.9
+          weight: 10
+      sgPolicy: policy1
+      qValue: 0.9
+      weight: 10
   listen-points:
     - name: "testNetwork"
       port: 5061
@@ -44,6 +66,10 @@ common:
       tlsAuthType: client
       enableCertService: true
     - name: "defaultNetwork"
-  dns-cache-size: 100
-  timeOutDnsCache: 10000
-  timeOutDns: 1000
+  sgPolicy:
+    policy1:
+      name: policy1
+      failoverResponseCodes:
+        - 501
+        - 502
+

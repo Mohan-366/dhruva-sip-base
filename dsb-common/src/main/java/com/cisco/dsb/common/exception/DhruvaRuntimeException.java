@@ -5,6 +5,10 @@ import lombok.Getter;
 public class DhruvaRuntimeException extends RuntimeException {
   @Getter private ErrorCode errCode;
 
+  public DhruvaRuntimeException(String message) {
+    super(message);
+  }
+
   public DhruvaRuntimeException(ErrorCode errCode, String message) {
     super(message);
     this.errCode = errCode;

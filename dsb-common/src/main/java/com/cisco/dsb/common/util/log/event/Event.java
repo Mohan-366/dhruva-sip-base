@@ -88,6 +88,8 @@ public class Event {
                 sipMessageType.name(),
                 "sipMethod",
                 sipMethod,
+                "cseqMethod",
+                String.valueOf(message.getHeader(CSeq.NAME)),
                 "requestUri",
                 requestUri,
                 Event.REMOTEIP,
@@ -126,6 +128,23 @@ public class Event {
     //    consumer1.accept(sipMsg);
   }
 
+  public static void emitSGElementUpEvent (
+    String elementAddress,
+    int elementPort,
+    Transport transport,
+    String networkName) {
+      Map<String, String> eventInfoMap =
+          Maps.newHashMap(
+              ImmutableMap.of(
+                  Event.REMOTEIP,
+                  elementAddress,
+                  Event.REMOTEPORT,
+                  String.valueOf(elementPort),
+                  "network",
+                  networkName));
+
+    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, "ServerGroup Element UP", eventInfoMap);
+  }
   public static void emitSGElementDownEvent(
       Integer errorCode,
       String errorReason,
