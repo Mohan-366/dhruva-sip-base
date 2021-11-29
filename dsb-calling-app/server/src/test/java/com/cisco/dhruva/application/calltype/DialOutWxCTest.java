@@ -12,6 +12,7 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
 import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -39,11 +40,15 @@ public class DialOutWxCTest {
   public void testAddCallType() {
     SIPRequest sipRequest = mock(SIPRequest.class);
     ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
-    DialOutWxC dialOutWxC = new DialOutWxC(new RuleListenerImpl(), new AddOpnDpnRule());
+    DialOutWxC dialOutWxC =
+        new DialOutWxC(
+            new RuleListenerImpl(),
+            new AddOpnDpnRule(SipParamConstants.DPN_OUT, SipParamConstants.OPN_OUT));
     SipUri sipUri = new SipUri();
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
+    when(proxySIPRequest.getCookie()).thenReturn(mock(ProxyCookieImpl.class));
     doAnswer(
             invocationOnMock -> {
               Destination destination = invocationOnMock.getArgument(0);
@@ -55,10 +60,8 @@ public class DialOutWxCTest {
 
     dialOutWxC.processRequest().accept(Mono.just(proxySIPRequest));
 
-    assertEquals(
-        sipUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.X_CISCO_OPN_VALUE);
-    assertEquals(
-        sipUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.X_CISCO_DPN_VALUE);
+    assertEquals(sipUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.OPN_OUT);
+    assertEquals(sipUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.DPN_OUT);
     assertEquals(sipUri.getParameter(SipParamConstants.CALLTYPE), SipParamConstants.DIAL_OUT_TAG);
   }
 }
