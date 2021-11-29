@@ -194,12 +194,18 @@ public class ProxySendMessage {
       serverTransaction.sendResponse(response);
 
       LMAUtill.emitSipMessageEvent(
-          null, response, Event.MESSAGE_TYPE.RESPONSE, Event.DIRECTION.OUT, true, false, 0L);
+          null,
+              response,
+              Event.MESSAGE_TYPE.RESPONSE,
+              Event.DIRECTION.OUT,
+              false,
+              false,
+              0L);
 
       Transport transportType = LMAUtill.getTransportTypeFromDhruvaNetwork((SIPMessage) response);
       SIPResponse sipResponse = (SIPResponse) response;
 
-      // Check internallyGenerated
+
       if (SpringApplicationContext.getAppContext() != null
           && SpringApplicationContext.getAppContext().getBean(MetricService.class) != null) {
         SpringApplicationContext.getAppContext()
@@ -212,7 +218,7 @@ public class ProxySendMessage {
                 transportType,
                 Event.DIRECTION.OUT,
                 false,
-                true, // internally generated
+                false, // not internally generated
                 0L,
                 String.valueOf(sipResponse.getStatusCode()));
       }
@@ -230,10 +236,8 @@ public class ProxySendMessage {
       if (clientTransaction != null) clientTransaction.sendRequest();
       else sipProvider.sendRequest(request);
 
-      // Generating Sip Message Event
 
       SIPRequest sipRequest = (SIPRequest) request;
-
       Transport transportType = LMAUtill.getTransportType(sipProvider);
 
       LMAUtill.emitSipMessageEvent(
