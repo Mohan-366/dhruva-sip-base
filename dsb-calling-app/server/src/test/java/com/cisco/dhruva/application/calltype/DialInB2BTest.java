@@ -86,8 +86,8 @@ public class DialInB2BTest {
     DialInB2B dialInB2B = new DialInB2B(new RuleListenerImpl(), normRule);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
     sipUri.setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG);
     if (testCall) sipUri.setParameter(SipParamConstants.TEST_CALL, null);
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
@@ -130,8 +130,8 @@ public class DialInB2BTest {
   public void testNonInvite() throws ParseException {
     DialInB2B dialInB2B = new DialInB2B(new RuleListenerImpl(), normRule);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
     sipUri.setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG);
 
     To toHeader = new To();
@@ -164,8 +164,8 @@ public class DialInB2BTest {
   public void testRequestException() throws ParseException, DhruvaException {
     DialInB2B dialInB2B = new DialInB2B(new RuleListenerImpl(), normRule);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
     sipUri.setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG);
     sipUri.setParameter(SipParamConstants.TEST_CALL, null);
     DhruvaNetwork.removeNetwork(SIPConfig.NETWORK_CALLING_CORE);

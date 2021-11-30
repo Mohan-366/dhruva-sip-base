@@ -21,12 +21,13 @@ import org.jeasy.rules.api.Facts;
     description = "Normalisation policy that adds opn,dpn params to reqUri")
 public class AddOpnDpnRule {
 
-  private static ImmutableMap<String, String> paramsToBeAdded =
-      ImmutableMap.of(
-          SipParamConstants.X_CISCO_DPN,
-          SipParamConstants.X_CISCO_DPN_VALUE,
-          SipParamConstants.X_CISCO_OPN,
-          SipParamConstants.X_CISCO_OPN_VALUE);
+  private ImmutableMap<String, String> params;
+
+  public AddOpnDpnRule(String dpnValue, String opnValue) {
+    params =
+        ImmutableMap.of(
+            SipParamConstants.X_CISCO_DPN, dpnValue, SipParamConstants.X_CISCO_OPN, opnValue);
+  }
 
   @Condition
   public boolean isInvite(@Fact("proxyRequest") ProxySIPRequest fact) {
@@ -43,7 +44,7 @@ public class AddOpnDpnRule {
 
     logger.debug("R-URI before modification: {}", reqUri);
     UriNormalisationImpl uriNorm = new UriNormalisationImpl(reqUri);
-    reqUri = uriNorm.setParams(paramsToBeAdded).getUri();
+    reqUri = uriNorm.setParams(params).getUri();
     logger.debug("R-URI after modification: {}", reqUri);
   }
 }

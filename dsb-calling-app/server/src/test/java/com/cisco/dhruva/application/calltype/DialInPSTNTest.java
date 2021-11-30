@@ -38,7 +38,7 @@ public class DialInPSTNTest {
     MockitoAnnotations.initMocks(this);
     when(sipListenPoint.getName()).thenReturn(SIPConfig.NETWORK_B2B);
     DhruvaNetwork.createNetwork(SIPConfig.NETWORK_B2B, sipListenPoint);
-    normRule = new AddOpnDpnRule();
+    normRule = new AddOpnDpnRule(SipParamConstants.DPN_IN, SipParamConstants.OPN_IN);
   }
 
   @AfterTest
@@ -74,10 +74,8 @@ public class DialInPSTNTest {
     dialInPSTN.processRequest().accept(Mono.just(proxySIPRequest));
 
     SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
-    Assert.assertEquals(
-        rUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.X_CISCO_DPN_VALUE);
-    Assert.assertEquals(
-        rUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.X_CISCO_OPN_VALUE);
+    Assert.assertEquals(rUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.DPN_IN);
+    Assert.assertEquals(rUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.OPN_IN);
     Assert.assertEquals(
         rUri.getParameter(SipParamConstants.CALLTYPE), SipParamConstants.DIAL_IN_TAG);
 
@@ -106,10 +104,8 @@ public class DialInPSTNTest {
     dialInPSTN.processRequest().accept(Mono.just(proxySIPRequest));
 
     SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
-    Assert.assertEquals(
-        rUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.X_CISCO_DPN_VALUE);
-    Assert.assertEquals(
-        rUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.X_CISCO_OPN_VALUE);
+    Assert.assertEquals(rUri.getParameter(SipParamConstants.X_CISCO_DPN), SipParamConstants.DPN_IN);
+    Assert.assertEquals(rUri.getParameter(SipParamConstants.X_CISCO_OPN), SipParamConstants.OPN_IN);
     Assert.assertEquals(
         rUri.getParameter(SipParamConstants.CALLTYPE), SipParamConstants.DIAL_IN_TAG);
 
