@@ -7,6 +7,7 @@ package com.cisco.dsb.common.util.log.event;
 import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.cisco.dsb.common.util.log.Logger;
@@ -33,7 +34,8 @@ public class Event {
 
   public enum EventType {
     CONNECTION,
-    SIPMESSAGE
+    SIPMESSAGE,
+    SERVERGROUP_EVENT
   }
 
   public enum MESSAGE_TYPE {
@@ -65,7 +67,8 @@ public class Event {
     ConnectionError,
     BufferSizeExceeded,
     SslHandShakeFailed,
-    ConnectionInActive
+    ConnectionInActive,
+    ServerGroupElementDown
   }
 
   public static void emitMessageEvent(
@@ -123,5 +126,50 @@ public class Event {
     //    SipMessageWrapper sipMsg = new SipMessageWrapper(message, direction);
     //    Consumer<SipMessageWrapper> consumer1 = DiagnosticsUtil::sendCDSEvents;
     //    consumer1.accept(sipMsg);
+  }
+
+  public static void emitSGElementUpEvent (
+    String elementAddress,
+    int elementPort,
+    Transport transport,
+    String networkName) {
+      Map<String, String> eventInfoMap =
+          Maps.newHashMap(
+              ImmutableMap.of(
+                  Event.REMOTEIP,
+                  elementAddress,
+                  Event.REMOTEPORT,
+                  String.valueOf(elementPort),
+                  "network",
+                  networkName));
+
+    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, "ServerGroup Element UP", eventInfoMap);
+  }
+  public static void emitSGElementDownEvent(
+      Integer errorCode,
+      String errorReason,
+      String elementAddress,
+      int elementPort,
+      Transport transport,
+      String networkName) {
+    Map<String, String> eventInfoMap =
+        Maps.newHashMap(
+            ImmutableMap.of(
+                "errorType",
+                ErrorType.ServerGroupElementDown.name(),
+                "errorReason",
+                errorReason,
+                Event.REMOTEIP,
+                elementAddress,
+                Event.REMOTEPORT,
+                String.valueOf(elementPort),
+                "network",
+                networkName));
+    if (errorCode != null) {
+      eventInfoMap.put("errorCode", String.valueOf(errorCode));
+    }
+    eventInfoMap.put("transport", transport.name());
+
+    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, "ServerGroup Element Down", eventInfoMap);
   }
 }

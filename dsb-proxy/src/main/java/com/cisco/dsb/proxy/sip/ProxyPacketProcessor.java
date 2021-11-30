@@ -1,9 +1,11 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.DialogTimeoutEvent;
 import gov.nist.javax.sip.IOExceptionEventExt;
 import gov.nist.javax.sip.IOExceptionEventExt.Reason;
 import gov.nist.javax.sip.SipListenerExt;
+import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.*;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class ProxyPacketProcessor implements SipListenerExt {
 
   @Autowired ProxyEventListener proxyEventListener;
+  private OptionsPingResponseListener optionsPingResponseListener;
 
   @Override
   public void processRequest(RequestEvent requestEvent) {
@@ -23,8 +26,20 @@ public class ProxyPacketProcessor implements SipListenerExt {
 
   @Override
   public void processResponse(ResponseEvent responseEvent) {
-    logger.debug("received response event from sip stack");
-    proxyEventListener.response(responseEvent);
+    if (((SIPResponse) responseEvent.getResponse())
+        .getCSeq()
+        .getMethod()
+        .equalsIgnoreCase("OPTIONS")) {
+      logger.info("OPTIONS Response received: {}", responseEvent.getResponse());
+      if (optionsPingResponseListener == null) {
+        logger.error("No listener registered for OPTIONS Ping Response. Dropping it.");
+        return;
+      }
+      optionsPingResponseListener.processResponse(responseEvent);
+    } else {
+      logger.debug("received response event from sip stack");
+      proxyEventListener.response(responseEvent);
+    }
   }
 
   @Override
@@ -63,5 +78,9 @@ public class ProxyPacketProcessor implements SipListenerExt {
   @Override
   public void processDialogTimeout(DialogTimeoutEvent timeoutEvent) {
     logger.info("received dialog timeout event from sip stack");
+  }
+
+  public void registerOptionsListener(OptionsPingResponseListener listener) {
+    this.optionsPingResponseListener = listener;
   }
 }

@@ -7,7 +7,8 @@ public enum ExecutorType {
   PROXY_CLIENT_TIMEOUT(2),
   PROXY_SEND_MESSAGE(20),
   PROXY_PROCESSOR(),
-  KEEP_ALIVE_SERVICE;
+  KEEP_ALIVE_SERVICE,
+  OPTIONS_PING;
 
   ExecutorType(int val) {}
 
