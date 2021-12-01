@@ -26,6 +26,9 @@ import reactor.core.scheduler.Schedulers;
 @CustomLog
 public class ProxySendMessage {
 
+  private static MetricService metricServiceBean =
+      SpringApplicationContext.getAppContext().getBean(MetricService.class);
+
   public static Mono<Void> sendResponseAsync(
       int responseID,
       SipProvider sipProvider,
@@ -51,22 +54,19 @@ public class ProxySendMessage {
                     false,
                     0L);
 
-                if (SpringApplicationContext.getAppContext() != null
-                    && SpringApplicationContext.getAppContext().getBean(MetricService.class)
-                        != null) {
-                  SpringApplicationContext.getAppContext()
-                      .getBean(MetricService.class)
-                      .sendSipMessageMetric(
-                          String.valueOf(sipResponse.getStatusCode()),
-                          sipResponse.getCallId().getCallId(),
-                          sipResponse.getCSeq().getMethod(),
-                          Event.MESSAGE_TYPE.RESPONSE,
-                          transportType,
-                          Event.DIRECTION.OUT,
-                          false,
-                          true, // internally generated
-                          0L,
-                          String.valueOf(sipResponse.getStatusCode()));
+
+                if (metricServiceBean != null) {
+                  metricServiceBean.sendSipMessageMetric(
+                      String.valueOf(sipResponse.getStatusCode()),
+                      sipResponse.getCallId().getCallId(),
+                      sipResponse.getCSeq().getMethod(),
+                      Event.MESSAGE_TYPE.RESPONSE,
+                      transportType,
+                      Event.DIRECTION.OUT,
+                      false,
+                      true, // internally generated
+                      0L,
+                      String.valueOf(sipResponse.getStatusCode()));
                 }
                 logger.info("Successfully sent response for  {}", responseID);
               } catch (Exception e) {
@@ -111,21 +111,19 @@ public class ProxySendMessage {
           true,
           false,
           0L);
-      if (SpringApplicationContext.getAppContext() != null
-          && SpringApplicationContext.getAppContext().getBean(MetricService.class) != null) {
-        SpringApplicationContext.getAppContext()
-            .getBean(MetricService.class)
-            .sendSipMessageMetric(
-                String.valueOf(sipResponse.getStatusCode()),
-                sipResponse.getCallId().getCallId(),
-                sipResponse.getCSeq().getMethod(),
-                Event.MESSAGE_TYPE.RESPONSE,
-                transportType,
-                Event.DIRECTION.OUT,
-                false,
-                true, // internally generated
-                0L,
-                String.valueOf(sipResponse.getStatusCode()));
+
+      if (metricServiceBean != null) {
+        metricServiceBean.sendSipMessageMetric(
+            String.valueOf(sipResponse.getStatusCode()),
+            sipResponse.getCallId().getCallId(),
+            sipResponse.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.RESPONSE,
+            transportType,
+            Event.DIRECTION.OUT,
+            false,
+            true, // internally generated
+            0L,
+            String.valueOf(sipResponse.getReasonPhrase()));
       }
     } catch (Exception e) {
       throw new DhruvaException(e);
@@ -158,21 +156,20 @@ public class ProxySendMessage {
           true,
           false,
           0L);
-      if (SpringApplicationContext.getAppContext() != null
-          && SpringApplicationContext.getAppContext().getBean(MetricService.class) != null) {
-        SpringApplicationContext.getAppContext()
-            .getBean(MetricService.class)
-            .sendSipMessageMetric(
-                String.valueOf(sipResponse.getStatusCode()),
-                sipResponse.getCallId().getCallId(),
-                sipResponse.getCSeq().getMethod(),
-                Event.MESSAGE_TYPE.RESPONSE,
-                transportType,
-                Event.DIRECTION.OUT,
-                false,
-                true, // internally generated
-                0L,
-                String.valueOf(sipResponse.getStatusCode()));
+
+
+      if (metricServiceBean != null) {
+        metricServiceBean.sendSipMessageMetric(
+            String.valueOf(sipResponse.getStatusCode()),
+            sipResponse.getCallId().getCallId(),
+            sipResponse.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.RESPONSE,
+            transportType,
+            Event.DIRECTION.OUT,
+            false,
+            true, // internally generated
+            0L,
+            String.valueOf(sipResponse.getReasonPhrase()));
       }
 
     } catch (Exception e) {
@@ -194,33 +191,23 @@ public class ProxySendMessage {
       serverTransaction.sendResponse(response);
 
       LMAUtill.emitSipMessageEvent(
-          null,
-              response,
-              Event.MESSAGE_TYPE.RESPONSE,
-              Event.DIRECTION.OUT,
-              false,
-              false,
-              0L);
+          null, response, Event.MESSAGE_TYPE.RESPONSE, Event.DIRECTION.OUT, false, false, 0L);
 
       Transport transportType = LMAUtill.getTransportTypeFromDhruvaNetwork((SIPMessage) response);
       SIPResponse sipResponse = (SIPResponse) response;
 
-
-      if (SpringApplicationContext.getAppContext() != null
-          && SpringApplicationContext.getAppContext().getBean(MetricService.class) != null) {
-        SpringApplicationContext.getAppContext()
-            .getBean(MetricService.class)
-            .sendSipMessageMetric(
-                String.valueOf(sipResponse.getStatusCode()),
-                sipResponse.getCallId().getCallId(),
-                sipResponse.getCSeq().getMethod(),
-                Event.MESSAGE_TYPE.RESPONSE,
-                transportType,
-                Event.DIRECTION.OUT,
-                false,
-                false, // not internally generated
-                0L,
-                String.valueOf(sipResponse.getStatusCode()));
+      if (metricServiceBean != null) {
+        metricServiceBean.sendSipMessageMetric(
+            String.valueOf(sipResponse.getStatusCode()),
+            sipResponse.getCallId().getCallId(),
+            sipResponse.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.RESPONSE,
+            transportType,
+            Event.DIRECTION.OUT,
+            false,
+            false, // not internally generated
+            0L,
+            String.valueOf(sipResponse.getReasonPhrase()));
       }
 
     } catch (Exception e) {
@@ -236,7 +223,6 @@ public class ProxySendMessage {
       if (clientTransaction != null) clientTransaction.sendRequest();
       else sipProvider.sendRequest(request);
 
-
       SIPRequest sipRequest = (SIPRequest) request;
       Transport transportType = LMAUtill.getTransportType(sipProvider);
 
@@ -245,25 +231,22 @@ public class ProxySendMessage {
           (SIPRequest) request,
           Event.MESSAGE_TYPE.REQUEST,
           Event.DIRECTION.OUT,
-          false,
+          true,
           ProxyUtils.isMidDialogRequest((SIPRequest) request),
           0L);
 
-      if (SpringApplicationContext.getAppContext() != null
-          && SpringApplicationContext.getAppContext().getBean(MetricService.class) != null) {
-        SpringApplicationContext.getAppContext()
-            .getBean(MetricService.class)
-            .sendSipMessageMetric(
-                sipRequest.getMethod(),
-                sipRequest.getCallId().getCallId(),
-                sipRequest.getCSeq().getMethod(),
-                Event.MESSAGE_TYPE.REQUEST,
-                transportType,
-                Event.DIRECTION.OUT,
-                ProxyUtils.isMidDialogRequest(sipRequest),
-                false, // not generated
-                0L,
-                String.valueOf(sipRequest.getRequestURI()));
+      if (metricServiceBean != null) {
+        metricServiceBean.sendSipMessageMetric(
+            sipRequest.getMethod(),
+            sipRequest.getCallId().getCallId(),
+            sipRequest.getCSeq().getMethod(),
+            Event.MESSAGE_TYPE.REQUEST,
+            transportType,
+            Event.DIRECTION.OUT,
+            ProxyUtils.isMidDialogRequest(sipRequest),
+            true, // not generated
+            0L,
+            String.valueOf(sipRequest.getRequestURI()));
       }
 
     } catch (Exception e) {
@@ -302,22 +285,19 @@ public class ProxySendMessage {
                   ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
                   0L);
 
-              if (SpringApplicationContext.getAppContext() != null
-                  && SpringApplicationContext.getAppContext().getBean(MetricService.class)
-                      != null) {
-                SpringApplicationContext.getAppContext()
-                    .getBean(MetricService.class)
-                    .sendSipMessageMetric(
-                        proxySIPRequest.getRequest().getMethod(),
-                        proxySIPRequest.getRequest().getCallId().getCallId(),
-                        proxySIPRequest.getRequest().getCSeq().getMethod(),
-                        Event.MESSAGE_TYPE.REQUEST,
-                        transportType,
-                        Event.DIRECTION.OUT,
-                        ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
-                        false, // not generated
-                        0L,
-                        String.valueOf(proxySIPRequest.getRequest().getRequestURI()));
+
+              if (metricServiceBean != null) {
+                metricServiceBean.sendSipMessageMetric(
+                    proxySIPRequest.getRequest().getMethod(),
+                    proxySIPRequest.getRequest().getCallId().getCallId(),
+                    proxySIPRequest.getRequest().getCSeq().getMethod(),
+                    Event.MESSAGE_TYPE.REQUEST,
+                    transportType,
+                    Event.DIRECTION.OUT,
+                    ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
+                    false, // not generated
+                    0L,
+                    String.valueOf(proxySIPRequest.getRequest().getRequestURI()));
               }
               return proxySIPRequest;
             })
