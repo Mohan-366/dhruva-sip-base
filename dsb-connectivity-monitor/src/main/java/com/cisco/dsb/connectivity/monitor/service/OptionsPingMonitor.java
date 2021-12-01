@@ -43,12 +43,9 @@ import reactor.util.retry.Retry;
 @DependsOn("dhruvaExecutorService")
 public class OptionsPingMonitor {
 
-  @Autowired
-  ProxyPacketProcessor proxyPacketProcessor;
-  @Autowired
-  OptionsPingTransaction optionsPingTransaction;
-  @Autowired
-  CommonConfigurationProperties commonConfigurationProperties;
+  @Autowired ProxyPacketProcessor proxyPacketProcessor;
+  @Autowired OptionsPingTransaction optionsPingTransaction;
+  @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
@@ -71,7 +68,8 @@ public class OptionsPingMonitor {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     optionsPingScheduler =
         Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
-    startMonitoring(map, failoverCodes); // failover codes will be eventually be picked from opPolicy per sg.
+    startMonitoring(
+        map, failoverCodes); // failover codes will be eventually be picked from opPolicy per sg.
   }
 
   private void startMonitoring(Map<String, ServerGroup> map, List<Integer> failoverCodes) {
@@ -84,14 +82,51 @@ public class OptionsPingMonitor {
             entry.getValue().getNetworkName(),
             entry.getValue().getElements(),
             30000, // up and down intervals will be eventually picked from opPolicy
-            5000,
+            500,
             500,
             failoverCodes);
       }
     }
   }
 
-  private void pingPipeLine(
+  protected Flux<ServerGroupElement> upElementsFlux(List<ServerGroupElement> list, int upInterval) {
+    return Flux.fromIterable(list)
+        .filter(
+            e -> {
+              Boolean status = elementStatus.get(e.hashCode());
+
+              if (status == null || status) {
+                return true;
+              }
+              return false;
+            })
+        .repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(upInterval),
+                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
+  }
+
+  protected Flux<ServerGroupElement> downElementsFlux(
+      List<ServerGroupElement> list, int downInterval) {
+    return Flux.fromIterable(list)
+        .filter(
+            e -> {
+              Boolean status = elementStatus.get(e.hashCode());
+              if (status != null && !status) {
+                return true;
+              }
+              return false;
+            })
+        .repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(downInterval),
+                    // Schedulers.boundedElastic()
+                    Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
+  }
+
+  protected void pingPipeLine(
       String network,
       List<ServerGroupElement> list,
       int upInterval,
@@ -99,54 +134,26 @@ public class OptionsPingMonitor {
       int pingTimeOut,
       List<Integer> failoverCodes) {
 
-    Flux<ServerGroupElement> upElements =
-        Flux.fromIterable(list)
-            .filter(
-                e -> {
-                  Boolean status = elementStatus.get(e.hashCode());
-                  if (status == null || status) {
-                    return true;
-                  }
-                  return false;
-                })
-            .repeatWhen(
-                completed ->
-                    completed.delayElements(Duration.ofMillis(upInterval), optionsPingScheduler));
-
     Flux<SIPResponse> upElementsResponse =
-        upElements.flatMap(
-            element -> {
-              return sendPingRequestToUpElement(
-                  network, element, downInterval, pingTimeOut, failoverCodes);
-            });
-
-    Flux<ServerGroupElement> downElements =
-        Flux.fromIterable(list)
-            .filter(
-                e -> {
-                  Boolean status = elementStatus.get(e.hashCode());
-                  if (status != null && !status) {
-                    return true;
-                  }
-                  return false;
-                })
-            .repeatWhen(
-                completed ->
-                    completed.delayElements(Duration.ofMillis(downInterval), optionsPingScheduler));
+        upElementsFlux(list, upInterval)
+            .flatMap(
+                element -> {
+                  return sendPingRequestToUpElement(
+                      network, element, downInterval, pingTimeOut, failoverCodes);
+                });
 
     Flux<SIPResponse> downElementsResponse =
-        downElements.flatMap(
-            element -> {
-              return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
-            });
+        downElementsFlux(list, downInterval)
+            .flatMap(
+                element -> {
+                  return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
+                });
 
-    Flux.merge(upElementsResponse, downElementsResponse)
-        .subscribe();
+    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
   /**
-   * Separate methods to ping up elements and retries will be performed only in case of up
-   * elements.
+   * Separate methods to ping up elements and retries will be performed only in case of up elements.
    *
    * @param network
    * @param element
@@ -155,7 +162,7 @@ public class OptionsPingMonitor {
    * @param failoverCodes
    * @return
    */
-  private Mono<SIPResponse> sendPingRequestToUpElement(
+  protected Mono<SIPResponse> sendPingRequestToUpElement(
       String network,
       ServerGroupElement element,
       int downInterval,
@@ -226,7 +233,7 @@ public class OptionsPingMonitor {
    * @param failoverCodes
    * @return
    */
-  private Mono<SIPResponse> sendPingRequestToDownElement(
+  protected Mono<SIPResponse> sendPingRequestToDownElement(
       String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
     logger.info("Sending ping to DOWN element: {}", element);
     Integer key = element.hashCode();
@@ -234,7 +241,7 @@ public class OptionsPingMonitor {
         .timeout(Duration.ofMillis(pingTimeout))
         .onErrorResume(
             throwable -> {
-              logger.info(
+              logger.error(
                   "Error happened for element: {}. Error: {} Keeping status as DOWN.",
                   element,
                   throwable.getMessage());
@@ -246,14 +253,14 @@ public class OptionsPingMonitor {
                 logger.info("503 received for element: {}. Keeping status as DOWN.", element);
               } else {
                 logger.info("Marking status as UP for element: {}", element);
-                Event.emitSGElementUpEvent(element.getIpAddress(), element.getPort(),
-                    element.getTransport(), network);
+                Event.emitSGElementUpEvent(
+                    element.getIpAddress(), element.getPort(), element.getTransport(), network);
                 elementStatus.put(key, true);
               }
             });
   }
 
-  private CompletableFuture<SIPResponse> createAndSendRequest(
+  protected CompletableFuture<SIPResponse> createAndSendRequest(
       String network, ServerGroupElement element) {
     Optional<DhruvaNetwork> optionalDhruvaNetwork = DhruvaNetwork.getNetwork(network);
     DhruvaNetwork dhruvaNetwork = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);

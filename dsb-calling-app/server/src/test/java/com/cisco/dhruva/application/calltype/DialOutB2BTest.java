@@ -63,8 +63,8 @@ public class DialOutB2BTest {
     DialOutB2B dialOutB2B = new DialOutB2B(new RuleListenerImpl(), normRule);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
     sipUri.setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_OUT_TAG);
     sipUri.setParameter(SipParamConstants.DTG, "CcpFusionUS");
     To toHeader = new To();
@@ -104,8 +104,8 @@ public class DialOutB2BTest {
     DialOutB2B dialOutB2B = new DialOutB2B(new RuleListenerImpl(), normRule);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
 
     // call
@@ -121,8 +121,8 @@ public class DialOutB2BTest {
     DialOutB2B dialOutB2B = new DialOutB2B(new RuleListenerImpl(), normRule);
     when(sipRequest.getMethod()).thenReturn(Request.INVITE);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
     sipUri.setParameter(SipParamConstants.DTG, "Invalid");
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
 
@@ -138,8 +138,8 @@ public class DialOutB2BTest {
   public void testRequestException() throws ParseException, DhruvaException {
     DialOutB2B dialOutB2B = new DialOutB2B(new RuleListenerImpl(), normRule);
     SipUri sipUri = new SipUri();
-    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.X_CISCO_DPN_VALUE);
-    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.X_CISCO_OPN_VALUE);
+    sipUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
+    sipUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
     sipUri.setParameter(SipParamConstants.TEST_CALL, null);
     DhruvaNetwork.removeNetwork(SIPConfig.NETWORK_PSTN);
     when(sipRequest.getRequestURI()).thenReturn(sipUri);

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class OptionsPingTransaction implements OptionsPingResponseListener {
 
   private DhruvaExecutorService dhruvaExecutorService;
+  protected ApplicationDataCookie applicationDataCookie;
 
   @Autowired
   public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService) {
@@ -60,7 +61,8 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
 
     // storing future response as  AppDataCookie in the application data of
     // clientTransaction for future mapping.
-    clientTrans.setApplicationData(getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture));
+    applicationDataCookie = getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture);
+    clientTrans.setApplicationData(applicationDataCookie);
     return responseFuture;
   }
 
