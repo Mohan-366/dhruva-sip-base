@@ -83,6 +83,7 @@ public abstract class ProxyResponseGenerator {
     SIPResponse response = createRedirectResponse(contactHeaders, request);
 
     // send the response.
+    trans.setInternallyGenerated(true);
     trans.respond(response);
     Log.debug("Leaving sendRedirectResponse()");
   }
@@ -155,6 +156,7 @@ public abstract class ProxyResponseGenerator {
       toHeader.setTag(SipTag.generateTag());
     }
 
+    trans.setInternallyGenerated(true);
     trans.respond(response);
     Log.debug("Leaving sendServerInternalErrorResponse()");
   }
@@ -185,6 +187,7 @@ public abstract class ProxyResponseGenerator {
   public static void sendNotFoundResponse(SIPRequest request, ProxyTransaction trans)
       throws DhruvaException, ParseException {
     Log.debug("Entering sendNotFoundResponse()");
+    trans.setInternallyGenerated(true);
     trans.respond(createNotFoundResponse(request));
     Log.debug("Leaving sendNotFoundResponse()");
   }
@@ -195,6 +198,7 @@ public abstract class ProxyResponseGenerator {
     SIPResponse response =
         (SIPResponse) JainSipHelper.getMessageFactory().createResponse(Response.TRYING, request);
 
+    trans.setInternallyGenerated(true);
     trans.respond(response);
   }
 
@@ -202,6 +206,7 @@ public abstract class ProxyResponseGenerator {
     Log.debug("Entering sendResponse()");
 
     if (trans != null) {
+      trans.setInternallyGenerated(true);
       trans.respond(response);
       Log.debug("Sent response:" + NL + response);
     } else {

@@ -564,7 +564,7 @@ public class SipProxyManager {
             false, // false -- ProxyUtils.isMidDialogRequest(sipRequest)
             false, // internally generated
             0L,
-            String.valueOf(sipResponse.getStatusCode()));
+            String.valueOf(sipResponse.getReasonPhrase()));
 
         logger.info(
             "received incoming response: {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",

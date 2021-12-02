@@ -54,7 +54,6 @@ public class ProxySendMessage {
                     false,
                     0L);
 
-
                 if (metricServiceBean != null) {
                   metricServiceBean.sendSipMessageMetric(
                       String.valueOf(sipResponse.getStatusCode()),
@@ -157,7 +156,6 @@ public class ProxySendMessage {
           false,
           0L);
 
-
       if (metricServiceBean != null) {
         metricServiceBean.sendSipMessageMetric(
             String.valueOf(sipResponse.getStatusCode()),
@@ -178,20 +176,28 @@ public class ProxySendMessage {
   }
 
   /**
-   * API to be used for forwarding response messages to next layer
+   * API to be used for forwarding response messages to next layer, also generates response messages
    *
    * @param serverTransaction
    * @param response
    * @throws DhruvaException
    */
   public static void sendResponse(
-      @NonNull ServerTransaction serverTransaction, @NonNull SIPResponse response)
+      @NonNull ServerTransaction serverTransaction,
+      @NonNull SIPResponse response,
+      boolean isInternallyGeneratedResponse)
       throws DhruvaException {
     try {
       serverTransaction.sendResponse(response);
 
       LMAUtill.emitSipMessageEvent(
-          null, response, Event.MESSAGE_TYPE.RESPONSE, Event.DIRECTION.OUT, false, false, 0L);
+          null,
+          response,
+          Event.MESSAGE_TYPE.RESPONSE,
+          Event.DIRECTION.OUT,
+          isInternallyGeneratedResponse,
+          false,
+          0L);
 
       Transport transportType = LMAUtill.getTransportTypeFromDhruvaNetwork((SIPMessage) response);
       SIPResponse sipResponse = (SIPResponse) response;
@@ -205,7 +211,7 @@ public class ProxySendMessage {
             transportType,
             Event.DIRECTION.OUT,
             false,
-            false, // not internally generated
+            isInternallyGeneratedResponse,
             0L,
             String.valueOf(sipResponse.getReasonPhrase()));
       }
@@ -284,7 +290,6 @@ public class ProxySendMessage {
                   false, // not generated
                   ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
                   0L);
-
 
               if (metricServiceBean != null) {
                 metricServiceBean.sendSipMessageMetric(
