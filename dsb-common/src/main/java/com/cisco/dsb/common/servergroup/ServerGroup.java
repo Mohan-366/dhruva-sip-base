@@ -19,6 +19,8 @@ public class ServerGroup implements LBElement, LoadBalancable {
   private List<ServerGroupElement> elements;
   private SGPolicy sgPolicy;
   private String sgPolicyConfig;
+  private OptionsPingPolicy optionsPingPolicy;
+  private String optionsPingPolicyConfig;
   private float qValue;
   private int weight;
 
@@ -37,6 +39,14 @@ public class ServerGroup implements LBElement, LoadBalancable {
 
   public void setSgPolicyFromConfig(SGPolicy sgPolicy) {
     this.sgPolicy = sgPolicy;
+  }
+
+  public void setOptionsPingPolicy(String optionsPingPolicy) {
+    this.optionsPingPolicyConfig = optionsPingPolicy;
+  }
+
+  public void setOptionsPingPolicyFromConfig(OptionsPingPolicy optionsPingPolicy) {
+    this.optionsPingPolicy = optionsPingPolicy;
   }
 
   /**
