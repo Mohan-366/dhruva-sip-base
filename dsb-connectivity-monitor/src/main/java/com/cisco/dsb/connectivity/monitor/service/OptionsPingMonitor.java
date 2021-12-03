@@ -15,7 +15,6 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;

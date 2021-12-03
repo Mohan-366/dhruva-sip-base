@@ -107,13 +107,14 @@ public class OptionsPingMonitorTest {
         }
       }
       List<Integer> failoverCodes = Arrays.asList(503);
-      OptionsPingPolicy optionsPingPolicy = OptionsPingPolicy.builder()
-          .setName("opPolicy1")
-          .setFailoverResponseCodes(failoverCodes)
-          .setUpTimeInterval(30000)
-          .setDownTimeInterval(500)
-          .setPingTimeOut(500)
-          .build();
+      OptionsPingPolicy optionsPingPolicy =
+          OptionsPingPolicy.builder()
+              .setName("opPolicy1")
+              .setFailoverResponseCodes(failoverCodes)
+              .setUpTimeInterval(30000)
+              .setDownTimeInterval(500)
+              .setPingTimeOut(500)
+              .build();
       ServerGroup sg =
           ServerGroup.builder()
               .setNetworkName("net" + i)
