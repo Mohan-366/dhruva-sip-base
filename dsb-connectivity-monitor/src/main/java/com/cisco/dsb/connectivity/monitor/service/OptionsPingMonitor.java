@@ -82,7 +82,7 @@ public class OptionsPingMonitor {
             entry.getValue().getNetworkName(),
             entry.getValue().getElements(),
             30000, // up and down intervals will be eventually picked from opPolicy
-            500,
+            5000,
             500,
             failoverCodes);
       }
