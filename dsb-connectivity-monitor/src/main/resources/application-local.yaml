@@ -22,7 +22,7 @@ common:
     - name: "TCPNetwork"
       port: 5061
       transport: TCP
-      hostIPAddress: "10.227.233.14"
+      hostIPAddress: "127.0.0.1"
       recordRoute: false
       attachExternalIP: true
       tlsAuthType: client
