@@ -494,8 +494,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
             null);
         return;
       } else if (getStrayStatus() == NOT_STRAY) {
-        // set internallyGenerated flag
-        getServerTransaction().setInternallyGeneratedResponse(this.isInternallyGenerated());
         getServerTransaction().respond(response);
         controller.onResponseSuccess(this, getServerTransaction());
         assert response != null;
@@ -523,7 +521,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           "No final response received so far!",
           null);
     } else {
-      this.setInternallyGenerated(false);
       respond(bestResponse.getResponse());
     }
   }

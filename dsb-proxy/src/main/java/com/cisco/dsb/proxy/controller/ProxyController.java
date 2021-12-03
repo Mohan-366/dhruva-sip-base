@@ -165,7 +165,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     } catch (ParseException e) {
       logger.error("Unable to create SipResponse for responseCode {}", responseCode);
     }
-    ((ProxyTransaction) proxyTransaction).setInternallyGenerated(true);
+    // ((ProxyTransaction) proxyTransaction).setInternallyGenerated(true); // ankabane
+    Optional.ofNullable(((ProxyTransaction) proxyTransaction).getServerTransaction())
+        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+
     ((ProxyTransaction) proxyTransaction).respond((SIPResponse) response);
   }
 
@@ -1094,7 +1097,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               sipProvider,
               proxyClientTransaction == null ? null : proxyClientTransaction.getBranch(),
               new ExecutionContext());
-      proxy.setInternallyGenerated(true); // verify
+      // proxy.setInternallyGenerated(true); // verify
+      Optional.ofNullable(proxy.getServerTransaction())
+          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+      //  proxy.getServerTransaction().setInternallyGeneratedResponse(true);
       proxy.updateBestResponse(proxySIPResponse);
       if (errorCode.getAction().equals(ErrorCode.Action.SEND_ERR_RESPONSE)
           || !tryNextEndPoint(proxy, cookie, sipResponse.getStatusCode())) {
