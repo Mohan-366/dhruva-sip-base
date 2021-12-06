@@ -211,7 +211,8 @@ public abstract class ProxyResponseGenerator {
     Log.debug("Entering sendResponse()");
 
     if (trans != null) {
-      trans.setInternallyGenerated(true);
+      Optional.ofNullable(trans.getServerTransaction())
+          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
       trans.respond(response);
       Log.debug("Sent response:" + NL + response);
     } else {

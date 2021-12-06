@@ -56,8 +56,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   /** best response received so far */
   @Setter private ProxySIPResponse bestResponse = null;
 
-  @Getter @Setter private boolean internallyGenerated = false;
-
   /**
    * this indicates whether all branches have completed with a final response or timeout. More
    * specifically, this is the number of uncompleted branches
@@ -688,7 +686,10 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       SIPResponse response =
           ProxyResponseGenerator.createResponse(Response.NOT_FOUND, getOriginalRequest());
       ProxySIPResponse proxySIPResponse = new ProxySIPResponse(null, null, response, trans);
-      this.setInternallyGenerated(true);
+
+      Optional.ofNullable(this.getServerTransaction())
+          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+
       updateBestResponse(proxySIPResponse);
     } catch (DhruvaException | ParseException e) {
       logger.error("Error generating response in ICMP", e);

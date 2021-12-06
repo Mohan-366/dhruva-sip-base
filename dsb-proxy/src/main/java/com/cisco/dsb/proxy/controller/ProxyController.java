@@ -1097,10 +1097,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               sipProvider,
               proxyClientTransaction == null ? null : proxyClientTransaction.getBranch(),
               new ExecutionContext());
-      // proxy.setInternallyGenerated(true); // verify
+
       Optional.ofNullable(proxy.getServerTransaction())
           .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
-      //  proxy.getServerTransaction().setInternallyGeneratedResponse(true);
+
       proxy.updateBestResponse(proxySIPResponse);
       if (errorCode.getAction().equals(ErrorCode.Action.SEND_ERR_RESPONSE)
           || !tryNextEndPoint(proxy, cookie, sipResponse.getStatusCode())) {
