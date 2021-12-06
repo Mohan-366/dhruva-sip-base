@@ -518,7 +518,9 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           ErrorCode.INVALID_STATE,
           "No final response received so far!",
           null);
-    } else respond(bestResponse.getResponse());
+    } else {
+      respond(bestResponse.getResponse());
+    }
   }
 
   /** this should only be called when ack is for non-200 OK response */
@@ -684,6 +686,10 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       SIPResponse response =
           ProxyResponseGenerator.createResponse(Response.NOT_FOUND, getOriginalRequest());
       ProxySIPResponse proxySIPResponse = new ProxySIPResponse(null, null, response, trans);
+
+      Optional.ofNullable(this.getServerTransaction())
+          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+
       updateBestResponse(proxySIPResponse);
     } catch (DhruvaException | ParseException e) {
       logger.error("Error generating response in ICMP", e);

@@ -27,12 +27,7 @@ public class LMAUtill {
     Transport transportType;
 
     if (sipProvider == null) {
-      String network = String.valueOf(message.getApplicationData());
-      transportType =
-          (!StringUtils.isEmpty(network)
-                  && DhruvaNetwork.getProviderFromNetwork(network).isPresent())
-              ? getTransportType(DhruvaNetwork.getProviderFromNetwork(network).get())
-              : Transport.NONE;
+      transportType = getTransportTypeFromDhruvaNetwork(message);
 
     } else {
       transportType = getTransportType(sipProvider);
@@ -68,6 +63,16 @@ public class LMAUtill {
             0L);
       }
     }
+  }
+
+  public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {
+    Transport transportType;
+    String network = String.valueOf(message.getApplicationData());
+    transportType =
+        (!StringUtils.isEmpty(network) && DhruvaNetwork.getProviderFromNetwork(network).isPresent())
+            ? getTransportType(DhruvaNetwork.getProviderFromNetwork(network).get())
+            : Transport.NONE;
+    return transportType;
   }
 
   public static BindingInfo populateBindingInfo(

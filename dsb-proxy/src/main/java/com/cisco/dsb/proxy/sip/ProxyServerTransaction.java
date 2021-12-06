@@ -12,7 +12,9 @@ import javax.sip.InvalidArgumentException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipException;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 /**
  * This class represents the ServerTransaction on the receiving side of ProxyTransaction. Note that
@@ -24,6 +26,7 @@ public class ProxyServerTransaction {
   private ServerTransaction serverTransaction;
   private ProxyTransaction proxy;
   private ControllerConfig controllerConfig;
+  @Getter @Setter private boolean isInternallyGeneratedResponse = false;
 
   /** request received */
   private SIPRequest request;
@@ -82,7 +85,8 @@ public class ProxyServerTransaction {
         else controllerConfig.setRecordRouteInterface(response, true, rrIndexFromEnd);
       }
 
-      ProxySendMessage.sendResponse(serverTransaction, response);
+      ProxySendMessage.sendResponse(
+          serverTransaction, response, this.isInternallyGeneratedResponse());
       // TODO there can be multiple responses associated with single serverTransaction, so this
       // should be a list?
       this.response = response;
