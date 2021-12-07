@@ -15,13 +15,7 @@ import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
 import javax.sip.SipProvider;
 import javax.sip.address.SipURI;
-import javax.sip.header.CSeqHeader;
-import javax.sip.header.CallIdHeader;
-import javax.sip.header.FromHeader;
-import javax.sip.header.HeaderFactory;
-import javax.sip.header.MaxForwardsHeader;
-import javax.sip.header.ToHeader;
-import javax.sip.header.ViaHeader;
+import javax.sip.header.*;
 import javax.sip.message.Request;
 
 public class OptionsUtil {
@@ -54,8 +48,13 @@ public class OptionsUtil {
             "xyz");
 
     sb.append("dsb@" + element.getIpAddress() + ":" + element.getPort());
-    SipURI contactURI = JainSipHelper.createSipURI(sb.toString());
-    sb.setLength(0);
+
+    ContactHeader contactHeader =
+        JainSipHelper.createContactHeader(
+            "dsb",
+            "dsb",
+            dhruvaNetwork.getListenPoint().getHostIPAddress(),
+            dhruvaNetwork.getListenPoint().getPort());
 
     CallIdHeader callIdHeader = sipProvider.getNewCallId();
 
@@ -80,6 +79,7 @@ public class OptionsUtil {
     sipRequest.setRequestURI(requestUri);
     sipRequest.setCSeq(cSeqHeader);
     sipRequest.setMethod(Request.OPTIONS);
+    sipRequest.addHeader(contactHeader);
     sipRequest.setMaxForwards(maxForwards);
     sipRequest.setVia(viaHeaders);
     sipRequest.setRemoteAddress(InetAddress.getByName(element.getIpAddress()));

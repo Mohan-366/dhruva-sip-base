@@ -187,7 +187,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.init(initmap);
 
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
-    Thread.sleep(500);
+    Thread.sleep(1000);
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
     optionsPingMonitor = null;
