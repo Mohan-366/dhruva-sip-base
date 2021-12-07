@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -19,7 +20,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import javax.sip.SipException;
 import javax.sip.SipProvider;
 import javax.sip.header.CallIdHeader;
 import javax.sip.header.Header;
@@ -32,7 +32,6 @@ import reactor.test.StepVerifier;
 
 public class OptionsPingMonitorTest {
 
-
   Map<String, ServerGroup> initmap = new HashMap<>();
   Map<String, ServerGroup> map;
   ServerGroupElement sge1;
@@ -44,7 +43,6 @@ public class OptionsPingMonitorTest {
 
   List<ServerGroup> serverGroups = new ArrayList<>();
   @Spy SipProvider sipProvider;
-
 
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor;
 
@@ -108,12 +106,22 @@ public class OptionsPingMonitorTest {
             }
         }
       }
+      List<Integer> failoverCodes = Arrays.asList(503);
+      OptionsPingPolicy optionsPingPolicy =
+          OptionsPingPolicy.builder()
+              .setName("opPolicy1")
+              .setFailoverResponseCodes(failoverCodes)
+              .setUpTimeInterval(30000)
+              .setDownTimeInterval(500)
+              .setPingTimeOut(500)
+              .build();
       ServerGroup sg =
           ServerGroup.builder()
               .setNetworkName("net" + i)
               .setName("SGName" + i)
               .setElements(sgeList)
               .setPingOn(true)
+              .setOptionsPingPolicy(optionsPingPolicy)
               .build();
 
       serverGroups.add(sg);
@@ -175,12 +183,11 @@ public class OptionsPingMonitorTest {
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
   void testOptionsPingMultipleElements() throws InterruptedException {
     this.createMultipleServerGroupElements();
-    List<Integer> failOverCode = Arrays.asList(503);
-    optionsPingMonitor.init(initmap, failOverCode);
+
+    optionsPingMonitor.init(initmap);
 
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(500);
-
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
     optionsPingMonitor = null;
@@ -268,7 +275,6 @@ public class OptionsPingMonitorTest {
     StepVerifier.create(response).expectNextCount(1).verifyComplete();
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
   }
-
 
   @Test(description = "test UP element with failOver ->  OptionPing")
   public void testUpIntervalFailOver() {
@@ -363,5 +369,4 @@ public class OptionsPingMonitorTest {
         optionsPingMonitor.createAndSendRequest("net_sp_tcp", sge1);
     Assert.assertTrue(responseCompletableFuture.isCompletedExceptionally());
   }
-
 }

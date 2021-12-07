@@ -2,6 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -101,6 +102,7 @@ public class CommonConfigurationProperties {
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
   @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
+  @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
@@ -141,6 +143,25 @@ public class CommonConfigurationProperties {
               serverGroup.setSgPolicyFromConfig(sgPolicy);
             });
     this.sgPolicyMap = sgPolicyMap;
+  }
+
+  public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
+    this.serverGroups
+        .values()
+        .forEach(
+            serverGroup -> {
+              OptionsPingPolicy optionsPingPolicy =
+                  optionsPingPolicyMap.get(serverGroup.getOptionsPingPolicyConfig());
+              if (optionsPingPolicy == null)
+                throw new DhruvaRuntimeException(
+                    "SGName: "
+                        + serverGroup.getName()
+                        + "; OPTIONSPingPolicy \""
+                        + serverGroup.getOptionsPingPolicyConfig()
+                        + "\" not present");
+              serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
+            });
+    this.optionsPingPolicyMap = optionsPingPolicyMap;
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {

@@ -15,7 +15,6 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,24 +54,17 @@ public class OptionsPingMonitor {
 
   @PostConstruct
   public void initOptionsPing() {
-    init(commonConfigurationProperties.getServerGroups(), getFailoverCodes());
+    init(commonConfigurationProperties.getServerGroups());
   }
 
-  private List<Integer> getFailoverCodes() {
-    List<Integer> failoverCodes = new ArrayList<>();
-    failoverCodes.add(503);
-    return failoverCodes;
-  }
-
-  public void init(Map<String, ServerGroup> map, List<Integer> failoverCodes) {
+  public void init(Map<String, ServerGroup> map) {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     optionsPingScheduler =
         Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
-    startMonitoring(
-        map, failoverCodes); // failover codes will be eventually be picked from opPolicy per sg.
+    startMonitoring(map);
   }
 
-  private void startMonitoring(Map<String, ServerGroup> map, List<Integer> failoverCodes) {
+  private void startMonitoring(Map<String, ServerGroup> map) {
     Iterator<Entry<String, ServerGroup>> itr = map.entrySet().iterator();
     logger.info("Starting OPTIONS pings!!");
     while (itr.hasNext()) {
@@ -81,10 +73,10 @@ public class OptionsPingMonitor {
         pingPipeLine(
             entry.getValue().getNetworkName(),
             entry.getValue().getElements(),
-            30000, // up and down intervals will be eventually picked from opPolicy
-            500,
-            500,
-            failoverCodes);
+            entry.getValue().getOptionsPingPolicy().getUpTimeInterval(),
+            entry.getValue().getOptionsPingPolicy().getDownTimeInterval(),
+            entry.getValue().getOptionsPingPolicy().getPingTimeOut(),
+            entry.getValue().getOptionsPingPolicy().getFailoverResponseCodes());
       }
     }
   }

@@ -4,20 +4,20 @@ common:
       name: SG1
       networkName: TCPNetwork
       lbType: HIGHEST_Q
+      pingOn: true
       elements:
         - ipAddress: "10.78.98.54"
           port: 5061
           transport: TCP
           qValue: 0.9
           weight: 10
-          pingOn: true
         - ipAddress: "10.78.98.54"
           port: 5062
           transport: TCP
           qValue: 0.9
           weight: 10
-          pingOn: true
       sgPolicy: policy1
+      optionsPingPolicy: policyOP1
   listen-points:
     - name: "TCPNetwork"
       port: 5061
@@ -34,3 +34,13 @@ common:
         - 501
         - 502
         - 503
+  optionsPingPolicy:
+    policyOP1:
+      name: policyOP1
+      failoverResponseCodes:
+        - 501
+        - 502
+        - 503
+      upTimeInterval: 30000
+      downTimeInterval: 5000
+      pingTimeOut: 500
