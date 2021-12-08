@@ -6,18 +6,13 @@ import com.cisco.dsb.common.sip.stack.util.SipTag;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
-import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.Utils;
 import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.ContactList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import javax.sip.address.Address;
-import javax.sip.address.URI;
 import javax.sip.header.ContactHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
@@ -34,7 +29,7 @@ public abstract class ProxyResponseGenerator {
 
   public static final String NL = System.getProperty("line.separator");
 
-  public static SIPResponse createRedirectResponse(ArrayList locations, SIPRequest request)
+  /*  public static SIPResponse createRedirectResponse(ArrayList locations, SIPRequest request)
       throws Exception {
     Log.debug("Entering createRedirectResponse()");
     ContactList contactHeaders = new ContactList();
@@ -63,7 +58,7 @@ public abstract class ProxyResponseGenerator {
     }
     Log.debug("Leaving createRedirectResponse()");
     return createRedirectResponse(contactHeaders, request);
-  }
+  }*/
 
   /**
    * This is a utility method that sends a redirect Response depending on the number of contact
@@ -84,8 +79,6 @@ public abstract class ProxyResponseGenerator {
     SIPResponse response = createRedirectResponse(contactHeaders, request);
 
     // send the response.
-    Optional.ofNullable(trans.getServerTransaction())
-        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
     trans.respond(response);
     Log.debug("Leaving sendRedirectResponse()");
   }
@@ -158,8 +151,6 @@ public abstract class ProxyResponseGenerator {
       toHeader.setTag(SipTag.generateTag());
     }
 
-    Optional.ofNullable(trans.getServerTransaction())
-        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
     trans.respond(response);
     Log.debug("Leaving sendServerInternalErrorResponse()");
   }
@@ -190,8 +181,6 @@ public abstract class ProxyResponseGenerator {
   public static void sendNotFoundResponse(SIPRequest request, ProxyTransaction trans)
       throws DhruvaException, ParseException {
     Log.debug("Entering sendNotFoundResponse()");
-    Optional.ofNullable(trans.getServerTransaction())
-        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
     trans.respond(createNotFoundResponse(request));
     Log.debug("Leaving sendNotFoundResponse()");
   }
@@ -202,8 +191,6 @@ public abstract class ProxyResponseGenerator {
     SIPResponse response =
         (SIPResponse) JainSipHelper.getMessageFactory().createResponse(Response.TRYING, request);
 
-    Optional.ofNullable(trans.getServerTransaction())
-        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
     trans.respond(response);
   }
 
@@ -211,8 +198,6 @@ public abstract class ProxyResponseGenerator {
     Log.debug("Entering sendResponse()");
 
     if (trans != null) {
-      Optional.ofNullable(trans.getServerTransaction())
-          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
       trans.respond(response);
       Log.debug("Sent response:" + NL + response);
     } else {

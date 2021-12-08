@@ -133,27 +133,27 @@ public class LoadBalancerTest {
     ServerGroup serverGroup =
         ServerGroup.builder().setElements(sgelements).setLbType(lbType).build();
 
-    int[] count = {0, 0, 0}; // 100 is 0,50 is 1, 10 is 2
+    int[] count = {0, 0, 0}; // 50 is 0, 30 is 1, 30 is 2
     // distribution for 1000 calls is ~ { 625+-=~4%, 312+-~5% , 63+=~10% } (error allowance in %)
     int test = 0;
     while (test < 1000) {
       switch (LoadBalancer.of(serverGroup).getCurrentElement().getWeight()) {
-        case 60:
+        case 50:
           count[0]++;
           break;
         case 30:
           count[1]++;
           break;
-        case 10:
+        case 20:
           count[2]++;
           break;
       }
       test++;
     }
     System.out.println(Arrays.toString(count));
-    Assert.assertTrue(570 <= count[0] && count[0] <= 630); // 5%
+    Assert.assertTrue(450 <= count[0] && count[0] <= 550); // 5%
     Assert.assertTrue(270 <= count[1] && count[1] <= 330); // 10%
-    Assert.assertTrue(85 <= count[2] && count[2] <= 115); // 15%
+    Assert.assertTrue(150 <= count[2] && count[2] <= 250); // ~15%
   }
 
   private List<ServerGroupElement> getServerGroupElements(int count, boolean sameQ) {
@@ -163,7 +163,7 @@ public class LoadBalancerTest {
     if (sameQ) qValues = new int[] {10};
     else qValues = new int[] {10, 20, 30};
 
-    int[] weights = {60, 30, 10};
+    int[] weights = {50, 30, 20};
     for (int i = 0; i < count; i++) {
       String ipAddress =
           random.nextInt(255)
@@ -183,7 +183,7 @@ public class LoadBalancerTest {
               .setIpAddress(ipAddress)
               .setPort(port)
               .setTransport(transport)
-              .setQValue(qvalue)
+              .setPriority(qvalue)
               .setWeight(weight)
               .build();
       sgeList.add(element);
@@ -201,7 +201,7 @@ public class LoadBalancerTest {
       int weight = weights[random.nextInt(3)];
       ServerGroup sg = new ServerGroup();
       sg.setName(name);
-      sg.setQValue(qValue);
+      sg.setPriority(qValue);
       sg.setWeight(weight);
       serverGroups.add(sg);
     }
@@ -211,7 +211,7 @@ public class LoadBalancerTest {
   private Comparator<LBElement> weightComparator() {
     return (o1, o2) -> {
       int compare;
-      if ((compare = Float.compare(o2.getQValue(), o1.getQValue())) != 0) {
+      if ((compare = Float.compare(o2.getPriority(), o1.getPriority())) != 0) {
         return compare;
       }
       return Integer.compare(o2.getWeight(), o1.getWeight());
@@ -222,7 +222,7 @@ public class LoadBalancerTest {
 class LbWeightRetryAnalyser implements IRetryAnalyzer {
 
   int counter = 0;
-  int retryLimit = 3;
+  int retryLimit = 5;
 
   @Override
   public boolean retry(ITestResult iTestResult) {

@@ -72,4 +72,3 @@ common:
       failoverResponseCodes:
         - 501
         - 502
-

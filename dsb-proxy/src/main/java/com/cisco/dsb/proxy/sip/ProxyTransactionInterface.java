@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 
 public interface ProxyTransactionInterface {
 
-  ProxySIPRequest proxyTo(ProxySIPRequest request);
+  ProxySIPRequest proxyPostProcess(ProxySIPRequest request);
 
   void addProxyRecordRoute(ProxySIPRequest request) throws SipException, ParseException;
 

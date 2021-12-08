@@ -3,6 +3,7 @@ package com.cisco.dsb.common.servergroup;
 import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
+import com.cisco.dsb.common.transport.Transport;
 import java.util.List;
 import lombok.*;
 
@@ -10,26 +11,27 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(setterPrefix = "set")
+@Builder(setterPrefix = "set", toBuilder = true)
 public class ServerGroup implements LBElement, LoadBalancable {
   private String name;
   private String networkName;
-  private LBType lbType = LBType.HIGHEST_Q;
+  @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
   private boolean pingOn = false;
   private List<ServerGroupElement> elements;
   private SGPolicy sgPolicy;
   private String sgPolicyConfig;
   private OptionsPingPolicy optionsPingPolicy;
-  private String optionsPingPolicyConfig;
-  private float qValue;
+  private int priority;
   private int weight;
+  @Builder.Default private SGType sgType = SGType.STATIC;
+  @Builder.Default private Transport transport = Transport.UDP;
+  private int port;
 
   @Override
   public boolean equals(Object a) {
     if (a instanceof ServerGroup) {
       return ((ServerGroup) a).name.equals(name);
     }
-
     return false;
   }
 
@@ -39,14 +41,6 @@ public class ServerGroup implements LBElement, LoadBalancable {
 
   public void setSgPolicyFromConfig(SGPolicy sgPolicy) {
     this.sgPolicy = sgPolicy;
-  }
-
-  public void setOptionsPingPolicy(String optionsPingPolicy) {
-    this.optionsPingPolicyConfig = optionsPingPolicy;
-  }
-
-  public void setOptionsPingPolicyFromConfig(OptionsPingPolicy optionsPingPolicy) {
-    this.optionsPingPolicy = optionsPingPolicy;
   }
 
   /**
@@ -62,7 +56,7 @@ public class ServerGroup implements LBElement, LoadBalancable {
   @Override
   public int compareTo(Object obj) throws ClassCastException {
     int compare;
-    if ((compare = Float.compare(((ServerGroup) obj).qValue, this.qValue)) != 0) return compare;
+    if ((compare = Float.compare(this.priority, ((ServerGroup) obj).priority)) != 0) return compare;
     if ((compare = Integer.compare(((ServerGroup) obj).weight, this.weight)) != 0) return compare;
     if ((compare = ((ServerGroup) obj).name.compareTo(this.name)) != 0) return compare;
     return 0;
@@ -76,6 +70,14 @@ public class ServerGroup implements LBElement, LoadBalancable {
   @Override
   public String toString() {
     return String.format(
-        "( name=%s ;network=%s ;qValue=%f ;weight=%d )", name, networkName, qValue, weight);
+        "( name=%s ;network=%s ;priority=%d ;weight=%d )", name, networkName, priority, weight);
+  }
+
+  @Override
+  public List<ServerGroupElement> getElements() {
+    if (elements != null) return elements;
+    /*SpringApplicationContext.getAppContext().getBean(SipServerLocatorService.class)
+    .locateDestinationAsync()*/
+    return null;
   }
 }

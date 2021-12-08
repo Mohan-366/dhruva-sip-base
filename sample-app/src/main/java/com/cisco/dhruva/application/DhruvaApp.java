@@ -7,7 +7,6 @@ import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
-import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
@@ -34,29 +33,11 @@ public class DhruvaApp {
             .accept(Mono.just(proxySIPRequest));
       };
 
-  private Consumer<ProxySIPResponse> responseConsumer =
-      proxySIPResponse -> {
-        logger.info(
-            "-------App: Got SIPMessage->Type:SIPResponse->CallId {}------",
-            proxySIPResponse.getCallId());
-        CallType callType =
-            (CallType)
-                proxySIPResponse
-                    .getContext()
-                    .getOrDefault(proxySIPResponse.getCallId(), defaultCallType);
-        callType.processResponse().accept(Mono.just(proxySIPResponse));
-      };
-
   @PostConstruct
   public void init() {
     // TODO change to single method register(res,req)
     ProxyAppConfig appConfig =
-        ProxyAppConfig.builder()
-            ._2xx(true)
-            ._4xx(true)
-            .requestConsumer(requestConsumer)
-            .responseConsumer(responseConsumer)
-            .build();
+        ProxyAppConfig.builder()._2xx(true)._4xx(true).requestConsumer(requestConsumer).build();
     proxyService.register(appConfig);
 
     // register for interested CallTypes

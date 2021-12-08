@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy.sip;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtill;
 import com.cisco.dsb.common.util.SpringApplicationContext;
@@ -238,7 +239,7 @@ public class ProxySendMessage {
           Event.MESSAGE_TYPE.REQUEST,
           Event.DIRECTION.OUT,
           true,
-          ProxyUtils.isMidDialogRequest((SIPRequest) request),
+          SipUtils.isMidDialogRequest((SIPRequest) request),
           0L);
 
       if (metricServiceBean != null) {
@@ -249,7 +250,7 @@ public class ProxySendMessage {
             Event.MESSAGE_TYPE.REQUEST,
             transportType,
             Event.DIRECTION.OUT,
-            ProxyUtils.isMidDialogRequest(sipRequest),
+            SipUtils.isMidDialogRequest(sipRequest),
             true, // not generated
             0L,
             String.valueOf(sipRequest.getRequestURI()));
@@ -288,7 +289,7 @@ public class ProxySendMessage {
                   Event.MESSAGE_TYPE.REQUEST,
                   Event.DIRECTION.OUT,
                   false, // not generated
-                  ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
+                  SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
                   0L);
 
               if (metricServiceBean != null) {
@@ -299,7 +300,7 @@ public class ProxySendMessage {
                     Event.MESSAGE_TYPE.REQUEST,
                     transportType,
                     Event.DIRECTION.OUT,
-                    ProxyUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
+                    SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
                     false, // not generated
                     0L,
                     String.valueOf(proxySIPRequest.getRequest().getRequestURI()));

@@ -6,11 +6,13 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
 @Component
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "proxy")
+@RefreshScope
 public class ProxyConfigurationProperties {
   public static final boolean DEFAULT_PROXY_ERROR_AGGREGATOR_ENABLED = false;
   public static final boolean DEFAULT_PROXY_CREATE_DNSSERVERGROUP_ENABLED = false;

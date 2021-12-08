@@ -128,6 +128,8 @@ public class SipServer implements Server {
         "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
         commonConfigurationProperties.getMinKeepAliveTimeSeconds());
 
+    stackProps.setProperty("gov.nist.javax.sip.ALWAYS_ADD_RPORT", "true");
+
     return stackProps;
   }
 }

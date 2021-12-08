@@ -288,4 +288,15 @@ public final class SipUtils {
     String host = matcher.group(4);
     return host.split(";")[0];
   }
+
+  public static boolean isMidDialogRequest(SIPRequest request) {
+    if (request == null) {
+      return false;
+    }
+
+    String tag = request.getToTag();
+
+    // If there is a To Tag, then this is a mid dialog request.
+    return (tag != null) && (tag.length() > 0);
+  }
 }

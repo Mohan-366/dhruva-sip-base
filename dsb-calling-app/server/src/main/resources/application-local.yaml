@@ -1,4 +1,141 @@
+app:
+  networkPSTN: &netsp "net_sp"
+  networkB2B: &netb2b "net_antares"
+  networkCallingCore: &netcc "net_cc"
+  b2b-egress: "Antares"
+  calling-egress: "NS"
+  pstn-ingress: "CcpFusionUS"
 common:
-  listen-points:
-    - name: "test-network-override"
+  listenPoints:
+    - name: *netsp
+      port: 5060
       transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netb2b
+      port: 5070
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netcc
+      port: 5080
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+  serverGroups:
+    UsPoolA:
+      name: &UsPoolA UsPoolA
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6060
+          transport: UDP
+          priority: 10
+          weight: 100
+        - ipAddress: "127.0.0.1"
+          port: 6061
+          transport: UDP
+          priority: 5
+          weight: 100
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+    UsPoolB:
+      name: &UsPoolB UsPoolB
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6062
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      priority: 20
+      weight: 100
+    InPoolA:
+      name: &InPoolA InPoolA
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6062
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+    Antares:
+      name: "test.beech.com"
+      networkName: *netb2b
+      lbType: weight
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+      sgType: A_RECORD
+      port: 7060
+      transport: UDP
+    NS1:
+      name: "ns1.cc.com"
+      networkName: *netcc
+      lbType: weight
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+      sgType: A_RECORD
+      port: 8060
+      transport: UDP
+    NS2:
+      name: "ns2.cc.com"
+      networkName: *netcc
+      lbType: weight
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+      sgType: A_RECORD
+      port: 8060
+      transport: UDP
+  sgPolicy:
+    policy1:
+      name: policy1
+      failoverResponseCodes:
+        - 501
+        - 502
+
+trunk:
+  PSTN:
+    CcpFusionUS:
+      name: CcpFusionUS
+      ingress:
+        name: ingress1
+      egress:
+        lbType: weight
+        serverGroups:
+          - *UsPoolA
+          - *UsPoolB
+    CcpFusionIN:
+      name: CcpFusionIN
+      ingress:
+        name: ingress1
+      egress:
+        lbType: weight
+        serverGroups:
+          - *InPoolA
+  B2B:
+    Antares:
+      name: Antares
+      ingress:
+        name: antares_ig
+      egress:
+        lbType: ONCE
+        serverGroups:
+          - Antares
+  CallingCore:
+    NS:
+      name: NS
+      ingress:
+        name: ns_ig
+      egress:
+        lbType: ONCE
+        serverGroups:
+          - NS1
+          - NS2

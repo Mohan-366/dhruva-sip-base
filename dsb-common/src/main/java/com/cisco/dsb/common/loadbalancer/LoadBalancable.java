@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.loadbalancer;
 
-import java.util.List;
+import java.util.Collection;
 
 /** Any Object that needs to loadbalance it's elements should implement this interface */
 public interface LoadBalancable {
@@ -9,7 +9,7 @@ public interface LoadBalancable {
    *
    * @return elements to load balance
    */
-  List<? extends LBElement> getElements();
+  Collection<? extends LBElement> getElements();
 
   /**
    * Returns a type of load balancer to use while creating LoadBalancer

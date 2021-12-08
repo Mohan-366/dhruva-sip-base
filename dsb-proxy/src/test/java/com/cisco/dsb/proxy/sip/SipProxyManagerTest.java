@@ -23,19 +23,15 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
-import com.cisco.dsb.trunk.dto.Destination;
-import com.cisco.dsb.trunk.service.TrunkService;
 import gov.nist.javax.sip.SipProviderImpl;
-import gov.nist.javax.sip.header.MaxForwards;
-import gov.nist.javax.sip.header.Unsupported;
-import gov.nist.javax.sip.header.Via;
-import gov.nist.javax.sip.header.ViaList;
+import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -54,7 +50,6 @@ public class SipProxyManagerTest {
   @Mock ProxyControllerFactory proxyControllerFactory;
   @Mock ControllerConfig controllerConfig;
   @Mock DhruvaExecutorService dhruvaExecutorService;
-  @Mock TrunkService trunkService;
   @Mock MetricService metricService;
 
   @BeforeClass
@@ -566,9 +561,7 @@ public class SipProxyManagerTest {
     verify(pt, Mockito.times(1)).timeOut(st);
   }
 
-  @Test(
-      description =
-          "test various scenarios for initial and mid dialog messages and control whether to send to app or not")
+  @Test(description = "app interested in mid-dialog")
   public void processProxyAppControllerTest() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
@@ -595,24 +588,57 @@ public class SipProxyManagerTest {
     // Mock proxy interface
     ProxyInterface proxyInterface = mock(ProxyInterface.class);
     proxySIPRequestAck.setProxyInterface(proxyInterface);
-    doNothing()
-        .when(proxyInterface)
-        .proxyRequest(any(ProxySIPRequest.class), any(Destination.class));
     doNothing().when(proxyInterface).sendRequestToApp(any(boolean.class));
 
-    ProxySIPRequest proxySIPRequestAckRetVal =
-        sipProxyManager.proxyAppController(false).apply(proxySIPRequestAck);
-
-    // For mid dialog messages, proxy client is invoked directly, hence return null to drop from
-    // pipeline
-    Assert.assertNull(proxySIPRequestAckRetVal);
-
     // App is interested in mid dialog messages
-    ProxySIPRequest proxySIPRequestAckRetVal1 =
+    ProxySIPRequest proxySIPRequestAckRetVal =
         sipProxyManager.proxyAppController(true).apply(proxySIPRequestAck);
 
-    Assert.assertNotNull(proxySIPRequestAckRetVal1);
-    Assert.assertEquals(proxySIPRequestAckRetVal1, proxySIPRequestAck);
+    Assert.assertNotNull(proxySIPRequestAckRetVal);
+    Assert.assertEquals(proxySIPRequestAckRetVal, proxySIPRequestAck);
+  }
+
+  @Test(description = "route mid-dialog based on route header ACK")
+  public void testMidDialogAck() {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxySIPRequest proxySIPRequestAck =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    SIPRequest ack = proxySIPRequestAck.getRequest();
+    ack.setToTag("testackmiddialog");
+    ProxyInterface proxyInterface = mock(ProxyInterface.class);
+    when(proxyInterface.proxyRequest(proxySIPRequestAck))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    proxySIPRequestAck.setProxyInterface(proxyInterface);
+    proxySIPRequestAck.setOutgoingNetwork(
+        "net_internal_udp_spmtest"); // this will be set by controller.onNewRequest
+    ProxySIPRequest proxySIPRequestRetVal =
+        sipProxyManager.proxyAppController(false).apply(proxySIPRequestAck);
+
+    verify(proxyInterface).proxyRequest(eq(proxySIPRequestAck));
+    assertNull(proxySIPRequestRetVal);
+  }
+
+  @Test(description = "route mid-dialog based on route header Bye")
+  public void testMidDialogBye() throws InterruptedException {
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxySIPRequest proxySIPRequestBye =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.BYE, serverTransaction);
+    ProxySIPResponse proxySIPResponse_200 = mock(ProxySIPResponse.class);
+    SIPRequest bye = proxySIPRequestBye.getRequest();
+    bye.setToTag("testackmiddialog");
+    ProxyInterface proxyInterface = mock(ProxyInterface.class);
+    when(proxyInterface.proxyRequest(proxySIPRequestBye))
+        .thenReturn(CompletableFuture.completedFuture(proxySIPResponse_200));
+    proxySIPRequestBye.setProxyInterface(proxyInterface);
+    proxySIPRequestBye.setOutgoingNetwork(
+        "net_internal_udp_spmtest"); // this will be set by controller.onNewRequest
+    ProxySIPRequest proxySIPRequestRetVal =
+        sipProxyManager.proxyAppController(false).apply(proxySIPRequestBye);
+    Thread.sleep(50);
+    verify(proxyInterface).proxyRequest(eq(proxySIPRequestBye));
+    assertNull(proxySIPRequestRetVal);
+    verify(proxySIPResponse_200, times(1)).proxy();
   }
 
   @Test(
@@ -698,7 +724,7 @@ public class SipProxyManagerTest {
       }
 
       @Override
-      public void setSentBy(String s) throws ParseException {}
+      public void setSentBy(String s) {}
 
       @Override
       public String getSentBy() {

@@ -1,7 +1,6 @@
 package com.cisco.dsb.proxy.dto;
 
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
-import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import java.util.Objects;
 import java.util.function.Consumer;
 import lombok.Builder;
@@ -11,7 +10,6 @@ import lombok.Getter;
 @Getter
 public class ProxyAppConfig {
   Consumer<ProxySIPRequest> requestConsumer;
-  Consumer<ProxySIPResponse> responseConsumer;
   @Builder.Default boolean midDialog = false;
   @Builder.Default boolean _1xx = false;
   @Builder.Default boolean _2xx = false;

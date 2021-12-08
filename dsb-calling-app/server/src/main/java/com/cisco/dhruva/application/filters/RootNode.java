@@ -1,6 +1,6 @@
 package com.cisco.dhruva.application.filters;
 
-import com.cisco.dhruva.application.calltype.CallType;
+import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class RootNode extends FilterNode {
     return null;
   }
 
-  public void insertCallType(CallType.CallTypes callType) throws FilterTreeException {
+  public void insertCallType(CallTypeEnum callType) throws FilterTreeException {
     // clone the filters as we are going to modify this list
     List<FilterId> filterIds = new ArrayList<>(callType.getFilters());
     insert(filterIds, callType);

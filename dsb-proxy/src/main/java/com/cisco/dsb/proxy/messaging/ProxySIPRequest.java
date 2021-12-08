@@ -10,11 +10,11 @@ import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
-import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -23,10 +23,8 @@ import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
-import javax.sip.message.Response;
 import lombok.CustomLog;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @CustomLog
@@ -34,7 +32,6 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   @Getter @Setter private ProxyStatelessTransaction proxyStatelessTransaction;
   @Getter @Setter private ProxyInterface proxyInterface;
   @Getter @Setter private String network;
-  @Getter @Setter private Destination destination;
   @Getter @Setter private String outgoingNetwork = null;
   @Getter private final ProxyCookie cookie;
   @Getter @Setter private ProxyParamsInterface params;
@@ -60,9 +57,8 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     this.proxyStatelessTransaction = proxySIPRequest.proxyStatelessTransaction;
     this.proxyInterface = proxySIPRequest.proxyInterface;
     this.network = proxySIPRequest.network;
-    this.destination = proxySIPRequest.destination;
     this.outgoingNetwork = proxySIPRequest.outgoingNetwork;
-    this.cookie = proxySIPRequest.cookie;
+    this.cookie = proxySIPRequest.cookie.clone();
     this.params = proxySIPRequest.params;
     this.statefulClientTransaction = proxySIPRequest.statefulClientTransaction;
     this.proxyClientTransaction = proxySIPRequest.proxyClientTransaction;
@@ -73,23 +69,8 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     this.cache = proxySIPRequest.cache;
   }
 
-  public void proxy(@NonNull Destination destination) {
-    if (this.proxyInterface == null) {
-      throw new RuntimeException("proxy interface not set, unable to forward the request");
-    }
-    this.proxyInterface.proxyRequest(this, destination);
-  }
-
-  /**
-   * Call this method only when Destination is set on the request. If not, the request will be
-   * rejected with SERVER_INTERNAL_ERROR(500)
-   */
-  public void proxy() {
-    if (destination != null) proxy(destination);
-    else {
-      logger.error("Destination not set, rejecting the message");
-      reject(Response.SERVER_INTERNAL_ERROR);
-    }
+  public CompletableFuture<ProxySIPResponse> proxy(EndPoint endPoint) {
+    return this.proxyInterface.proxyRequest(this, endPoint);
   }
 
   public void reject(int responseCode) {

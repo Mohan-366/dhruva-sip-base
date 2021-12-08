@@ -4,10 +4,12 @@ import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipPredicates;
+import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtill;
@@ -21,7 +23,6 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.trunk.dto.Destination;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
@@ -398,7 +399,7 @@ public class SipProxyManager {
     return proxySIPRequest -> {
       SIPRequest request = proxySIPRequest.getRequest();
       Header hasRoute = request.getHeader(RouteHeader.NAME);
-      boolean isMidDialog = ProxyUtils.isMidDialogRequest(request);
+      boolean isMidDialog = SipUtils.isMidDialogRequest(request);
       if (puntMidDialogMessages || hasRoute == null || !isMidDialog) {
         logger.info(
             "sending the request {} to app layer for further processing. \n "
@@ -410,14 +411,21 @@ public class SipProxyManager {
             proxySIPRequest.getNetwork());
         return proxySIPRequest;
       } else {
-        logger.info("Route call based on Req-uri (or) route");
-        Destination destination =
-            Destination.builder().uri(proxySIPRequest.getRequest().getRequestURI()).build();
-        // To be set in case of mid dialog request and by pass application
-        destination.setDestinationType(Destination.DestinationType.DEFAULT_SIP);
+        logger.info("Route call based on route");
         ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
-        proxyInterface.sendRequestToApp(puntMidDialogMessages);
-        proxyInterface.proxyRequest(proxySIPRequest, destination);
+        proxyInterface.sendRequestToApp(false);
+        // for now only IP:port is supported. Route based routing
+        proxyInterface
+            .proxyRequest(proxySIPRequest)
+            .whenComplete(
+                (proxySIPResponse, throwable) -> {
+                  if (proxySIPResponse != null) proxySIPResponse.proxy();
+                  if (throwable != null) {
+                    logger.error(
+                        "Error while sending out mid dialog request based on route", throwable);
+                    proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                  }
+                });
 
         return null;
       }
@@ -495,6 +503,15 @@ public class SipProxyManager {
          *
          * */
 
+        // Capture the start time for new incoming request for latency metrics
+        if (!SipUtils.isMidDialogRequest(sipRequest)) {
+          new SipMetricsContext(
+              metricService,
+              SipMetricsContext.State.latencyIncomingNewRequestStart,
+              sipRequest.getCallId().getCallId(),
+              true);
+        }
+
         Transport transportType = LMAUtill.getTransportType(sipProvider);
 
         LMAUtill.emitSipMessageEvent(
@@ -503,7 +520,7 @@ public class SipProxyManager {
             Event.MESSAGE_TYPE.REQUEST,
             Event.DIRECTION.IN,
             false,
-            ProxyUtils.isMidDialogRequest(sipRequest),
+            SipUtils.isMidDialogRequest(sipRequest),
             0L);
 
         metricService.sendSipMessageMetric(
@@ -513,7 +530,7 @@ public class SipProxyManager {
             Event.MESSAGE_TYPE.REQUEST,
             transportType,
             Event.DIRECTION.IN,
-            ProxyUtils.isMidDialogRequest(sipRequest),
+            SipUtils.isMidDialogRequest(sipRequest),
             false, // internally generated
             0L,
             String.valueOf(sipRequest.getRequestURI()));

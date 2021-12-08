@@ -63,7 +63,7 @@ public class OptionsPingMonitorTest {
             ServerGroupElement.builder()
                 .setIpAddress("127.0.0.1")
                 .setPort(portCounter)
-                .setQValue(0.9f)
+                .setPriority(10)
                 .setWeight(10)
                 .setTransport(Transport.TCP)
                 .build();
@@ -136,7 +136,7 @@ public class OptionsPingMonitorTest {
         ServerGroupElement.builder()
             .setIpAddress("10.78.98.54")
             .setPort(5060)
-            .setQValue(0.9f)
+            .setPriority(10)
             .setWeight(-1)
             .setTransport(Transport.TLS)
             .build();
@@ -144,7 +144,7 @@ public class OptionsPingMonitorTest {
         ServerGroupElement.builder()
             .setIpAddress("10.78.98.54")
             .setPort(5061)
-            .setQValue(0.9f)
+            .setPriority(10)
             .setWeight(-1)
             .setTransport(Transport.TLS)
             .build();
@@ -153,7 +153,7 @@ public class OptionsPingMonitorTest {
         ServerGroupElement.builder()
             .setIpAddress("3.3.3.3")
             .setPort(5061)
-            .setQValue(0.9f)
+            .setPriority(10)
             .setWeight(-1)
             .setTransport(Transport.TLS)
             .build();
@@ -161,7 +161,7 @@ public class OptionsPingMonitorTest {
         ServerGroupElement.builder()
             .setIpAddress("4.4.4.4")
             .setPort(5061)
-            .setQValue(0.9f)
+            .setPriority(10)
             .setWeight(-1)
             .setTransport(Transport.TLS)
             .build();

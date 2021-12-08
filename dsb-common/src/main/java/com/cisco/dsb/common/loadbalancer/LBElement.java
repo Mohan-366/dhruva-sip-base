@@ -3,18 +3,18 @@ package com.cisco.dsb.common.loadbalancer;
 public interface LBElement extends Comparable {
 
   /**
-   * Sets the q-value.
+   * Sets priority, the lowest value will have the highest preference
    *
-   * @param qValue the q-value
+   * @param priority
    */
-  void setQValue(float qValue);
+  void setPriority(int priority);
 
   /**
-   * Gets the q-value of this object.
+   * Gets priority of this object
    *
-   * @return the q-value of this object.
+   * @return the priority of this object.
    */
-  float getQValue();
+  int getPriority();
 
   /**
    * sets the weight of this element

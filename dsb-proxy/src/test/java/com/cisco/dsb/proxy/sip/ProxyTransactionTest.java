@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.util.TriFunction;
-import com.cisco.dsb.proxy.ControllerInterface;
+import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -20,9 +20,7 @@ import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -31,7 +29,7 @@ import org.testng.annotations.Test;
 public class ProxyTransactionTest {
 
   ProxyTransaction proxyTransaction;
-  @Mock ControllerInterface controllerInterface;
+  @Mock ProxyController controllerInterface;
   @Mock ProxyParamsInterface proxyParamsInterface;
   @Mock ServerTransaction serverTransaction;
   @Mock SIPRequest sipRequest;
@@ -69,11 +67,13 @@ public class ProxyTransactionTest {
     proxyTransaction.setM_isForked(false);
     // test behaviour when proxyClientTransaction is null
     proxyTransaction.setM_originalProxyClientTrans(null);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     proxyTransaction.provisionalResponse(proxySIPResponse);
 
     verify(sipResponse, never()).removeFirst(ViaHeader.NAME);
     verify(proxyClientTransaction, never()).gotResponse(proxySIPResponse);
-    verify(controllerInterface, never()).onProvisionalResponse(any(), any(), any(), any());
+    verify(controllerInterface, never())
+        .onProvisionalResponse(any(ProxyCookie.class), any(ProxySIPResponse.class));
 
     // Test for proxyTransaction with ProxyClientTransaction
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
@@ -81,7 +81,8 @@ public class ProxyTransactionTest {
 
     verify(sipResponse).removeFirst(ViaHeader.NAME);
     verify(proxyClientTransaction).gotResponse(proxySIPResponse);
-    verify(controllerInterface).onProvisionalResponse(any(), any(), any(), any());
+    verify(controllerInterface)
+        .onProvisionalResponse(any(ProxyCookie.class), any(ProxySIPResponse.class));
 
     reset(sipResponse, proxyClientTransaction, controllerInterface);
 
@@ -93,7 +94,8 @@ public class ProxyTransactionTest {
 
     verify(sipResponse).removeFirst(ViaHeader.NAME);
     verify(proxyClientTransaction, never()).gotResponse(proxySIPResponse);
-    verify(controllerInterface, never()).onProvisionalResponse(any(), any(), any(), any());
+    verify(controllerInterface, never())
+        .onProvisionalResponse(any(ProxyCookie.class), any(ProxySIPResponse.class));
     verify(controllerInterface)
         .onResponseFailure(
             any(),
@@ -128,14 +130,14 @@ public class ProxyTransactionTest {
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxySIPResponse.getResponseClass()).thenReturn(2);
     when(proxyClientTransaction.getState()).thenReturn(ProxyClientTransaction.STATE_FINAL_RECVD);
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
     // verify
     verify(controllerInterface).onResponse(proxySIPResponse);
     verify(sipResponse).removeFirst(ViaHeader.NAME);
-    assert proxyTransaction.getBestResponse() == proxySIPResponse;
     verify(proxyClientTransaction).gotResponse(proxySIPResponse);
-    verify(controllerInterface).onSuccessResponse(eq(proxyTransaction), eq(proxySIPResponse));
+    verify(controllerInterface).onFinalResponse(any(ProxyCookie.class), eq(proxySIPResponse));
 
     //
   }
@@ -146,15 +148,13 @@ public class ProxyTransactionTest {
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxySIPResponse.getResponseClass()).thenReturn(4);
     when(proxyClientTransaction.isInvite()).thenReturn(true);
-
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
 
     // verify
     // ACK is sent by JAIN stack
-    verify(controllerInterface)
-        .onFailureResponse(
-            eq(proxyTransaction), any(), eq(proxyClientTransaction), eq(proxySIPResponse));
+    verify(controllerInterface).onFinalResponse(any(ProxyCookie.class), eq(proxySIPResponse));
   }
 
   @Test(description = "Handling 6xx Response in ProxyTransaction")
@@ -163,38 +163,13 @@ public class ProxyTransactionTest {
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     when(proxySIPResponse.getResponseClass()).thenReturn(6);
     when(proxyClientTransaction.isInvite()).thenReturn(true);
-
+    when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
 
     // verify
     // ACK is sent by JAIN stack
-    verify(controllerInterface).onGlobalFailureResponse(eq(proxyTransaction));
-  }
-
-  @Test(description = "test to send out best response received so far")
-  public void testBestRespond() {
-    // Test scenario 1:when best response is null
-    // call
-    proxyTransaction.respond();
-    // verify
-    verify(controllerInterface)
-        .onResponseFailure(
-            eq(proxyTransaction),
-            eq(proxyServerTransaction),
-            ArgumentMatchers.eq(ErrorCode.INVALID_STATE),
-            eq("No final response received so far!"),
-            eq(null));
-
-    // Test scenario 2:when best response is not null
-    // setup
-    proxyTransaction = Mockito.spy(proxyTransaction);
-    proxyTransaction.setBestResponse(proxySIPResponse);
-
-    // call
-    proxyTransaction.respond();
-    // verify
-    verify(proxyTransaction).respond(sipResponse);
+    verify(controllerInterface).onFinalResponse(any(ProxyCookie.class), eq(proxySIPResponse));
   }
 
   @Test(description = "test to send out SIPResponse for NOT_STRAY request")
@@ -304,10 +279,7 @@ public class ProxyTransactionTest {
     proxyTransaction.timeOut(clientTransaction, sipProvider);
 
     verify(controllerInterface, never())
-        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
-
-    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
-    Assert.assertNull(bestResponse);
+        .onFinalResponse(any(ProxyCookie.class), any(ProxySIPResponse.class));
   }
 
   @Test(
@@ -330,11 +302,6 @@ public class ProxyTransactionTest {
     proxyTransaction.timeOut(clientTransaction, sipProvider);
 
     verify(proxyClientTransaction, never()).timedOut();
-    verify(controllerInterface, never())
-        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
-
-    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
-    Assert.assertNull(bestResponse);
   }
 
   @Test(
@@ -357,11 +324,6 @@ public class ProxyTransactionTest {
     proxyTransaction.timeOut(clientTransaction, sipProvider);
 
     verify(proxyClientTransaction, never()).timedOut();
-    verify(controllerInterface, never())
-        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
-
-    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
-    Assert.assertNull(bestResponse);
   }
 
   @DataProvider
@@ -403,11 +365,6 @@ public class ProxyTransactionTest {
     }
 
     verify(proxyClientTransaction).timedOut();
-    verify(controllerInterface)
-        .onRequestTimeOut(eq(proxyTransaction), any(ProxyCookie.class), eq(proxyClientTransaction));
-
-    ProxySIPResponse bestResponse = proxyTransaction.getBestResponse();
-    Assert.assertEquals(bestResponse.getStatusCode(), Response.REQUEST_TIMEOUT);
   }
 
   @Test(description = "Handling time out event for server transaction")

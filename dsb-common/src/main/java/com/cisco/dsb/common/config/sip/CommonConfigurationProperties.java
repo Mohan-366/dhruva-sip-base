@@ -2,7 +2,6 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
-import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -17,12 +16,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
 @Component
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "common")
 @CustomLog
+@RefreshScope
 public class CommonConfigurationProperties {
   // Defaults for listenPoint builder and sipProxy builder
   public static final String DEFAULT_NETWORK_NAME = "TCPNetwork";
@@ -100,9 +101,8 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
-  @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
-  @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
-  @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
+  @Getter private final Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private final Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
@@ -128,6 +128,7 @@ public class CommonConfigurationProperties {
   }
 
   public void setSgPolicy(Map<String, SGPolicy> sgPolicyMap) {
+    logger.info("Configuring ServerGroups");
     this.serverGroups
         .values()
         .forEach(
@@ -140,32 +141,15 @@ public class CommonConfigurationProperties {
                         + "; SGPolicy \""
                         + serverGroup.getSgPolicyConfig()
                         + "\" not present");
+              logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
               serverGroup.setSgPolicyFromConfig(sgPolicy);
             });
-    this.sgPolicyMap = sgPolicyMap;
-  }
-
-  public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
-    this.serverGroups
-        .values()
-        .forEach(
-            serverGroup -> {
-              OptionsPingPolicy optionsPingPolicy =
-                  optionsPingPolicyMap.get(serverGroup.getOptionsPingPolicyConfig());
-              if (optionsPingPolicy == null)
-                throw new DhruvaRuntimeException(
-                    "SGName: "
-                        + serverGroup.getName()
-                        + "; OPTIONSPingPolicy \""
-                        + serverGroup.getOptionsPingPolicyConfig()
-                        + "\" not present");
-              serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
-            });
-    this.optionsPingPolicyMap = optionsPingPolicyMap;
+    updateMap(this.sgPolicyMap, sgPolicyMap);
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {
-    this.serverGroups = serverGroups;
+    // update SG map
+    updateMap(this.serverGroups, serverGroups);
     this.serverGroups
         .values()
         .forEach(
@@ -175,7 +159,13 @@ public class CommonConfigurationProperties {
                 throw new DhruvaRuntimeException(
                     "SGName: " + sg.getName() + "; listenPoint: \"" + network + "\" not found");
               }
-              // No Validation for transport type as it's redundant for now
             });
+  }
+
+  private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
+    Set<K> removeKeys = new HashSet<>();
+    oldMap.putAll(newMap);
+    oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
+    removeKeys.stream().forEach(oldMap::remove);
   }
 }

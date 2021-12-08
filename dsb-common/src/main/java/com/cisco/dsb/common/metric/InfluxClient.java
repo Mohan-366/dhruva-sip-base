@@ -9,6 +9,7 @@ import com.cisco.wx2.server.InfluxDBClientHelper;
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 public class InfluxClient implements MetricClient {
@@ -31,5 +32,10 @@ public class InfluxClient implements MetricClient {
     if (!influxPoints.isEmpty()) {
       influxDBClientHelper.writePoints(influxPoints);
     }
+  }
+
+  @PreDestroy
+  private void destroy() {
+    influxDBClientHelper.shutdown();
   }
 }
