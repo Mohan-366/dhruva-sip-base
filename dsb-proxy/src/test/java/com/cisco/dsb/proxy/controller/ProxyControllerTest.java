@@ -789,7 +789,7 @@ public class ProxyControllerTest {
     proxyController.onNewRequest(proxySIPRequest);
 
     proxyController.proxyRequest(proxySIPRequest);
-    Thread.sleep(100);
+    Thread.sleep(200);
     ArgumentCaptor<SIPRequest> requestArgumentCaptor = ArgumentCaptor.forClass(SIPRequest.class);
     verify(outgoingSipProvider, times(1)).sendRequest(requestArgumentCaptor.capture());
     Assert.assertNull(requestArgumentCaptor.getValue().getRouteHeaders());
@@ -815,7 +815,7 @@ public class ProxyControllerTest {
     proxyController.onNewRequest(proxySIPRequest);
 
     proxyController.proxyRequest(proxySIPRequest);
-    Thread.sleep(100);
+    Thread.sleep(200);
     ArgumentCaptor<SIPRequest> requestArgumentCaptor = ArgumentCaptor.forClass(SIPRequest.class);
     verify(outgoingSipProvider, times(1)).sendRequest(requestArgumentCaptor.capture());
     Assert.assertEquals(
@@ -859,7 +859,7 @@ public class ProxyControllerTest {
     CompletableFuture<ProxySIPResponse> responseCF =
         proxyController.proxyRequest(proxySIPRequest, endPoint);
 
-    Thread.sleep(100);
+    Thread.sleep(200);
     assert ((ProxyCookieImpl) proxySIPRequest.getCookie()).getResponseCF() == responseCF;
     assert proxySIPRequest.getProxyClientTransaction() != null;
     assert proxySIPRequest.getProxyStatelessTransaction() != null;

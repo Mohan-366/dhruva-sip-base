@@ -89,7 +89,7 @@ public class LMAUtill {
   }
 
   public static Transport getTransportType(SipProvider sipProvider) {
-    return sipProvider.getListeningPoints() != null
+    return sipProvider != null && sipProvider.getListeningPoints() != null
         ? Transport.getTypeFromString(
                 sipProvider.getListeningPoints()[0].getTransport().toUpperCase(Locale.ROOT))
             .orElse(Transport.NONE)

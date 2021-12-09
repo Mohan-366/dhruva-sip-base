@@ -9,9 +9,9 @@ import com.cisco.dsb.common.util.LMAUtill;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
-import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPServerTransactionImpl;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -28,7 +28,9 @@ import reactor.core.scheduler.Schedulers;
 public class ProxySendMessage {
 
   private static MetricService metricServiceBean =
-      SpringApplicationContext.getAppContext().getBean(MetricService.class);
+      SpringApplicationContext.getAppContext() == null
+          ? null
+          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
 
   public static Mono<Void> sendResponseAsync(
       int responseID,
@@ -191,8 +193,14 @@ public class ProxySendMessage {
     try {
       serverTransaction.sendResponse(response);
 
+      //get provider to derive the transport
+      SipProvider sipProvider =
+          (serverTransaction instanceof SIPServerTransactionImpl)
+              ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
+              : null;
+
       LMAUtill.emitSipMessageEvent(
-          null,
+          sipProvider,
           response,
           Event.MESSAGE_TYPE.RESPONSE,
           Event.DIRECTION.OUT,
@@ -200,7 +208,7 @@ public class ProxySendMessage {
           false,
           0L);
 
-      Transport transportType = LMAUtill.getTransportTypeFromDhruvaNetwork((SIPMessage) response);
+      Transport transportType = LMAUtill.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
 
       if (metricServiceBean != null) {
