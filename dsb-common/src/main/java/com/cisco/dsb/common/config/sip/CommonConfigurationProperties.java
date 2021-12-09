@@ -103,6 +103,7 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
   @Getter private final Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private final Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
   @Getter private final Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
 
   public void setDnsCacheSize(int size) {
@@ -166,7 +167,7 @@ public class CommonConfigurationProperties {
               logger.info("SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
               serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
             });
-    updateMap(this.sgPolicyMap, sgPolicyMap);
+    updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {
