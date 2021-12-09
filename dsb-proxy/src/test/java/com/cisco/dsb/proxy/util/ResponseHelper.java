@@ -4,9 +4,12 @@ import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import javax.sip.message.Request;
+import lombok.CustomLog;
+import lombok.NonNull;
 
+@CustomLog
 public class ResponseHelper {
-
+  @NonNull
   public static SIPResponse getSipResponse() {
     try {
       String response =
@@ -33,9 +36,9 @@ public class ResponseHelper {
       // return MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(sipResponse,
       // mock(SipProvider.class), null, new ExecutionContext());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      logger.error("Error generating response", ex);
+      throw new RuntimeException(ex);
     }
-    return null;
   }
 
   public static SIPResponse getSipResponse(int responseCode, Request sipRequest) {

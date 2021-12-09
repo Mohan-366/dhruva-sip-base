@@ -5,12 +5,11 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
+import java.net.*;
+import java.util.Enumeration;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import java.net.*;
-import java.util.Enumeration;
 
 // TODO: extend ListenPoint class
 @Getter
@@ -56,34 +55,32 @@ public class SIPListenPoint {
     this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
   }
 
-  public void setHostInterface(String hostInterface){
+  public void setHostInterface(String hostInterface) {
     this.hostInterface = hostInterface;
     try {
       NetworkInterface networkInterface = NetworkInterface.getByName(hostInterface);
-      if(networkInterface == null){
-        logger.error("Network interface {} not found",hostInterface);
-        throw new DhruvaRuntimeException(ErrorCode.INIT,"Network interface not found");
+      if (networkInterface == null) {
+        logger.error("Network interface {} not found", hostInterface);
+        throw new DhruvaRuntimeException(ErrorCode.INIT, "Network interface not found");
       }
       String ipv4Addr = null;
       Enumeration<InetAddress> interfaces = networkInterface.getInetAddresses();
-      while(interfaces.hasMoreElements()){
+      while (interfaces.hasMoreElements()) {
         InetAddress inetAddress = interfaces.nextElement();
-        if(inetAddress instanceof Inet6Address)
-          continue;
+        if (inetAddress instanceof Inet6Address) continue;
         ipv4Addr = inetAddress.getHostAddress();
         break;
       }
-      if(ipv4Addr == null){
-        logger.error("No ipv4 address associated with interface {}",hostInterface);
-        throw new DhruvaRuntimeException(ErrorCode.INIT,"No ipv4 address attached to interface");
+      if (ipv4Addr == null) {
+        logger.error("No ipv4 address associated with interface {}", hostInterface);
+        throw new DhruvaRuntimeException(ErrorCode.INIT, "No ipv4 address attached to interface");
       }
-      logger.info("Choosing {} as IPaddr for interface {}",ipv4Addr,hostInterface);
+      logger.info("Choosing {} as IPaddr for interface {}", ipv4Addr, hostInterface);
       this.hostIPAddress = ipv4Addr;
     } catch (SocketException e) {
-      logger.error("Unable to bind to interface {}",hostInterface,e);
-      throw new DhruvaRuntimeException(ErrorCode.INIT,e.getMessage());
+      logger.error("Unable to bind to interface {}", hostInterface, e);
+      throw new DhruvaRuntimeException(ErrorCode.INIT, e.getMessage());
     }
-
   }
 
   public String toString() {

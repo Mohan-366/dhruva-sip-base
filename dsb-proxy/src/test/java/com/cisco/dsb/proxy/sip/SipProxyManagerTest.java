@@ -606,6 +606,7 @@ public class SipProxyManagerTest {
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
     SIPRequest ack = proxySIPRequestAck.getRequest();
     ack.setToTag("testackmiddialog");
+    ack.getRouteHeaders().clear();
     ProxyInterface proxyInterface = mock(ProxyInterface.class);
     when(proxyInterface.proxyRequest(proxySIPRequestAck))
         .thenReturn(CompletableFuture.completedFuture(null));

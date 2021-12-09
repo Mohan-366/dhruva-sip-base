@@ -193,7 +193,7 @@ public class ProxySendMessage {
     try {
       serverTransaction.sendResponse(response);
 
-      //get provider to derive the transport
+      // get provider to derive the transport
       SipProvider sipProvider =
           (serverTransaction instanceof SIPServerTransactionImpl)
               ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()

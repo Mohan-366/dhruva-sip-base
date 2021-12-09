@@ -145,7 +145,9 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .switchIfEmpty(
             Mono.error(
                 new DhruvaRuntimeException(
-                    ErrorCode.APP_REQ_PROC, " Unhandled Exception while sending to proxy")));
+                    ErrorCode.APP_REQ_PROC,
+                    " No response Received, maybe request was handled statelessly(ACK) or"
+                        + " exception sendinout message!!!")));
   }
 
   private boolean shouldFailover(ProxySIPResponse proxySIPResponse, TrunkCookie cookie) {

@@ -42,7 +42,6 @@ import javax.sip.SipProvider;
 import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.header.MaxForwardsHeader;
-import javax.sip.header.RouteHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
@@ -274,7 +273,7 @@ public class SipProxyManager {
         } catch (DhruvaException e) {
           throw new DhruvaRuntimeException(
               ErrorCode.SEND_RESPONSE_ERR,
-              String.format("Error sending {} response: {}", Response.UNSUPPORTED_URI_SCHEME, e),
+              String.format("Error sending %s response", Response.UNSUPPORTED_URI_SCHEME),
               e);
         }
         return null;
@@ -289,7 +288,7 @@ public class SipProxyManager {
         } catch (DhruvaException e) {
           throw new DhruvaRuntimeException(
               ErrorCode.SEND_RESPONSE_ERR,
-              String.format("Error sending {} response: {}", Response.TOO_MANY_HOPS, e),
+              String.format("Error sending %s response", Response.TOO_MANY_HOPS),
               e);
         }
         return null;
@@ -309,7 +308,7 @@ public class SipProxyManager {
           } catch (DhruvaException | ParseException e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
-                String.format("Error sending {} response: {}", Response.BAD_EXTENSION, e),
+                String.format("Error sending %s response", Response.BAD_EXTENSION),
                 e);
           }
           return null;
@@ -349,7 +348,6 @@ public class SipProxyManager {
         return;
       }
       if (Objects.isNull(myVia.getHost())
-          || Objects.isNull(myVia.getPort())
           || Objects.isNull(myVia.getTransport())
           || !config.recognize(
               myVia.getHost(),
@@ -398,20 +396,18 @@ public class SipProxyManager {
       boolean puntMidDialogMessages) {
     return proxySIPRequest -> {
       SIPRequest request = proxySIPRequest.getRequest();
-      Header hasRoute = request.getHeader(RouteHeader.NAME);
       boolean isMidDialog = SipUtils.isMidDialogRequest(request);
-      if (puntMidDialogMessages || hasRoute == null || !isMidDialog) {
+      if (puntMidDialogMessages || !isMidDialog) {
         logger.info(
             "sending the request {} to app layer for further processing. \n "
-                + "isMidDialog: {}; hasRoute: {}; puntMidDialogMsgs: {}; request Network Name: {}",
+                + "isMidDialog: {}; puntMidDialogMsgs: {}; request Network Name: {}",
             request.getMethod(),
             isMidDialog,
-            hasRoute,
             puntMidDialogMessages,
             proxySIPRequest.getNetwork());
         return proxySIPRequest;
       } else {
-        logger.info("Route call based on route");
+        logger.info("Mid-dialog Call: Route call based on request");
         ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
         proxyInterface.sendRequestToApp(false);
         // for now only IP:port is supported. Route based routing
@@ -419,10 +415,13 @@ public class SipProxyManager {
             .proxyRequest(proxySIPRequest)
             .whenComplete(
                 (proxySIPResponse, throwable) -> {
-                  if (proxySIPResponse != null) proxySIPResponse.proxy();
+                  if (proxySIPResponse != null) {
+                    proxySIPResponse.proxy();
+                    return;
+                  }
                   if (throwable != null) {
                     logger.error(
-                        "Error while sending out mid dialog request based on route", throwable);
+                        "Error while sending out mid dialog request based on request", throwable);
                     proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
                   }
                 });

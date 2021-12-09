@@ -189,6 +189,6 @@ public class CommonConfigurationProperties {
     Set<K> removeKeys = new HashSet<>();
     oldMap.putAll(newMap);
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
-    removeKeys.stream().forEach(oldMap::remove);
+    removeKeys.forEach(oldMap::remove);
   }
 }
