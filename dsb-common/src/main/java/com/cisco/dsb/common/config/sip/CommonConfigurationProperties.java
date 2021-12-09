@@ -2,6 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -143,6 +144,27 @@ public class CommonConfigurationProperties {
                         + "\" not present");
               logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
               serverGroup.setSgPolicyFromConfig(sgPolicy);
+            });
+    updateMap(this.sgPolicyMap, sgPolicyMap);
+  }
+
+  public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
+    logger.info("Configuring ServerGroups");
+    this.serverGroups
+        .values()
+        .forEach(
+            serverGroup -> {
+              OptionsPingPolicy optionsPingPolicy =
+                  optionsPingPolicyMap.get(serverGroup.getOptionsPingPolicyConfig());
+              if (optionsPingPolicy == null)
+                throw new DhruvaRuntimeException(
+                    "SGName: "
+                        + serverGroup.getName()
+                        + "; OptionsPingPolicy \""
+                        + serverGroup.getOptionsPingPolicyConfig()
+                        + "\" not present");
+              logger.info("SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
+              serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
             });
     updateMap(this.sgPolicyMap, sgPolicyMap);
   }
