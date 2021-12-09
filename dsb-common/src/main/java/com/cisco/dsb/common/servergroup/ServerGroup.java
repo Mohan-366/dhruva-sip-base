@@ -21,6 +21,7 @@ public class ServerGroup implements LBElement, LoadBalancable {
   private SGPolicy sgPolicy;
   private String sgPolicyConfig;
   private OptionsPingPolicy optionsPingPolicy;
+  private String optionsPingPolicyConfig;
   private int priority;
   private int weight;
   @Builder.Default private SGType sgType = SGType.STATIC;
@@ -41,6 +42,14 @@ public class ServerGroup implements LBElement, LoadBalancable {
 
   public void setSgPolicyFromConfig(SGPolicy sgPolicy) {
     this.sgPolicy = sgPolicy;
+  }
+
+  public void setOptionsPingPolicy(String optionsPingPolicy) {
+    this.optionsPingPolicyConfig = optionsPingPolicy;
+  }
+
+  public void setOptionsPingPolicyFromConfig(OptionsPingPolicy optionsPingPolicy) {
+    this.optionsPingPolicy = optionsPingPolicy;
   }
 
   /**

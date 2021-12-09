@@ -2,6 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -102,6 +103,7 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
   @Getter private final Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private final Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
   @Getter private final Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
 
   public void setDnsCacheSize(int size) {
@@ -145,6 +147,27 @@ public class CommonConfigurationProperties {
               serverGroup.setSgPolicyFromConfig(sgPolicy);
             });
     updateMap(this.sgPolicyMap, sgPolicyMap);
+  }
+
+  public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
+    logger.info("Configuring ServerGroups");
+    this.serverGroups
+        .values()
+        .forEach(
+            serverGroup -> {
+              OptionsPingPolicy optionsPingPolicy =
+                  optionsPingPolicyMap.get(serverGroup.getOptionsPingPolicyConfig());
+              if (optionsPingPolicy == null)
+                throw new DhruvaRuntimeException(
+                    "SGName: "
+                        + serverGroup.getName()
+                        + "; OptionsPingPolicy \""
+                        + serverGroup.getOptionsPingPolicyConfig()
+                        + "\" not present");
+              logger.info("SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
+              serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
+            });
+    updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {
