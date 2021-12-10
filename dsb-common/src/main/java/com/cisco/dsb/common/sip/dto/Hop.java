@@ -12,6 +12,7 @@ public class Hop {
   @Getter private int port = -1;
   @Getter private final Transport transport;
   @Getter private final Integer priority;
+  @Getter private final Integer weight;
   @Getter private DNSRecordSource source;
 
   @JsonCreator
@@ -21,20 +22,22 @@ public class Hop {
       @JsonProperty("transport") Transport transport,
       @JsonProperty("port") int port,
       @JsonProperty("priority") Integer priority,
+      @JsonProperty("weight") Integer weight,
       @JsonProperty("source") DNSRecordSource source) {
     this.hostname = hostname;
     this.host = host;
     this.transport = transport;
     this.port = port;
     this.priority = priority;
+    this.weight = weight;
     this.source = source;
   }
 
   @Override
   public String toString() {
     return String.format(
-        "{ hostname=\"%s\" host=\"%s\" transport=%s port=%s priority=%s source=%s }",
-        hostname, host, transport, port, priority, source.toString());
+        "{ hostname=\"%s\" host=\"%s\" transport=%s port=%s priority=%s weight=%s source=%s }",
+        hostname, host, transport, port, priority, weight, source.toString());
   }
 
   public String toShortString() {
@@ -60,6 +63,7 @@ public class Hop {
         && com.google.common.base.Objects.equal(transport, that.transport)
         && com.google.common.base.Objects.equal(port, that.port)
         && com.google.common.base.Objects.equal(priority, that.priority)
+        && com.google.common.base.Objects.equal(weight, that.weight)
         && com.google.common.base.Objects.equal(source, that.source);
   }
 
@@ -67,6 +71,12 @@ public class Hop {
   public int hashCode() {
     // Guava has hash, but it's deprecated, recommends use java.util instead.
     return java.util.Objects.hash(
-        hostname != null ? hostname.toLowerCase() : null, host, transport, port, priority, source);
+        hostname != null ? hostname.toLowerCase() : null,
+        host,
+        transport,
+        port,
+        priority,
+        weight,
+        source);
   }
 }

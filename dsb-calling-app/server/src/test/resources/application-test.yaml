@@ -2,3 +2,6 @@ app:
   networkPSTN: "net_sp"
   networkB2B: "net_beech"
   networkCallingCore: "net_cc"
+  b2bEgress: "antares"
+  callingEgress: "NS"
+  pstnIngress: "CcpFusionUS"

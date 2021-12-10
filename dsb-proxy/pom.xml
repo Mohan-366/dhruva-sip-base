@@ -15,7 +15,7 @@
 
     <dependency>
       <groupId>com.cisco</groupId>
-      <artifactId>dsb-trunk-service</artifactId>
+      <artifactId>dsb-common</artifactId>
       <version>1.0-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
@@ -64,32 +64,6 @@
               <goal>build-maven-archive</goal>
             </goals>
             <phase>package</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- jacoco -->
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>${jacoco.version}</version>
-        <executions>
-          <execution>
-            <id>default-prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <excludes>
-                <exclude>**/integration/*</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-          <execution>
-            <id>default-report</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

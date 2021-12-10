@@ -37,7 +37,6 @@
         <module>dsb-calling-app</module>
         <module>dsb-proxy</module>
         <module>sample-app</module>
-        <module>dsb-trunk-service</module>
         <module>dsb-connectivity-monitor</module>
         <module>dsb-trunk-service-new</module>
     </modules>
@@ -181,15 +180,35 @@
             </plugin>
             <!-- jacoco -->
             <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>${jacoco.version}</version>
-            <configuration>
-                <includes>
-                    <include>com/cisco/dsb/**/*</include>
-                    <include>com/cisco/dhruva/**/*</include>
-                </includes>
-            </configuration>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <configuration>
+                    <includes>
+                        <include>com/cisco/dsb/**/*</include>
+                        <include>com/cisco/dhruva/**/*</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/integration/*</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

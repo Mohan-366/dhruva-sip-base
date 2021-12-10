@@ -1,15 +1,14 @@
 package com.cisco.dhruva.application.filters;
 
-import com.cisco.dhruva.application.calltype.CallType;
+import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.*;
 import java.util.function.Predicate;
 import lombok.CustomLog;
 import lombok.Getter;
-import org.springframework.stereotype.Component;
 
-@Component
 @CustomLog
 public abstract class FilterNode {
   @Getter private final FilterId filterId;
@@ -36,7 +35,7 @@ public abstract class FilterNode {
       };
   protected List<FilterNode> children = new ArrayList<>();
   private boolean isRoot;
-  private CallType.CallTypes callType = null;
+  private CallTypeEnum callType = null;
   private int depth;
 
   protected FilterNode(FilterId filterId) {
@@ -50,7 +49,7 @@ public abstract class FilterNode {
 
   public abstract Predicate<ProxySIPRequest> filter();
 
-  public CallType.CallTypes getCallType(ProxySIPRequest proxySIPRequest) {
+  public CallTypeEnum getCallType(ProxySIPRequest proxySIPRequest) {
     Boolean result;
     // calculate the result of current Node
     if (!isRoot) {
@@ -59,7 +58,7 @@ public abstract class FilterNode {
       if (!result) return null;
     }
     // if result = true iterate children
-    CallType.CallTypes calltype;
+    CallTypeEnum calltype;
     for (FilterNode child : children) {
       calltype = child.getCallType(proxySIPRequest);
       if (calltype != null) return calltype;
@@ -68,7 +67,7 @@ public abstract class FilterNode {
     return this.callType;
   }
 
-  int insert(List<FilterId> filterIds, CallType.CallTypes callType) throws FilterTreeException {
+  int insert(List<FilterId> filterIds, CallTypeEnum callType) throws FilterTreeException {
     if (filterIds.size() == 0) {
       if (children.size() != 0) {
         logger.error("can't add calltype to non-leaf node");
@@ -90,7 +89,10 @@ public abstract class FilterNode {
       childNode = children.get(indexOfChildNode);
     } else {
       // add FilterNode from Filter
-      childNode = FilterFactory.getFilterNode(childId.id);
+      childNode =
+          SpringApplicationContext.getAppContext()
+              .getBean(FilterFactory.class)
+              .getFilterNode(childId.id);
       children.add(childNode);
     }
     filterIds.remove(0);

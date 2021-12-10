@@ -1,21 +1,21 @@
 package com.cisco.dhruva.application;
 
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
 
 import com.cisco.dhruva.application.calltype.CallType;
+import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
+import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
-import com.cisco.dsb.common.dns.DnsInjectionService;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import javax.sip.message.Response;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -25,7 +25,6 @@ import org.testng.annotations.Test;
 public class DhruvaCallingAppTest {
   @Mock ProxyService proxyService;
   @Mock Filter filter;
-  @Mock DnsInjectionService dnsInjectionService;
   @InjectMocks DhruvaCallingApp dhruvaCallingApp;
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock ProxySIPResponse proxySIPResponse;
@@ -45,15 +44,14 @@ public class DhruvaCallingAppTest {
 
   @Test
   public void testAppInitialization() throws FilterTreeException {
-    ImmutableList<CallType.CallTypes> calltypes_expected =
+    ImmutableList<CallTypeEnum> calltypes_expected =
         ImmutableList.of(
-            CallType.CallTypes.DIAL_IN_PSTN,
-            CallType.CallTypes.DIAL_IN_B2B,
-            CallType.CallTypes.DIAL_OUT_WXC,
-            CallType.CallTypes.DIAL_OUT_B2B);
+            com.cisco.dhruva.application.calltype.CallTypeEnum.DIAL_IN_PSTN,
+            com.cisco.dhruva.application.calltype.CallTypeEnum.DIAL_IN_B2B,
+            com.cisco.dhruva.application.calltype.CallTypeEnum.DIAL_OUT_WXC,
+            com.cisco.dhruva.application.calltype.CallTypeEnum.DIAL_OUT_B2B);
     ArgumentCaptor<ProxyAppConfig> proxyAppConfig = ArgumentCaptor.forClass(ProxyAppConfig.class);
-    ArgumentCaptor<List<CallType.CallTypes>> interestedCallTypes =
-        ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<CallTypeEnum>> interestedCallTypes = ArgumentCaptor.forClass(List.class);
     InOrder order = inOrder(filter, proxyService);
     order.verify(filter, Mockito.times(1)).register(interestedCallTypes.capture());
     order.verify(proxyService, Mockito.times(1)).register(proxyAppConfig.capture());
@@ -65,77 +63,27 @@ public class DhruvaCallingAppTest {
   @Test(
       description = "Request which has matching calltype",
       dependsOnMethods = {"testAppInitialization"})
-  public void testRequestConsumer_1() {
+  public void testRequestConsumer_1() throws InvalidCallTypeException {
     Consumer<ProxySIPRequest> requestConsumer = proxyAppConfig.getRequestConsumer();
     Assert.assertNotNull(requestConsumer);
-    optionalCallType = Optional.of(callType);
-    when(filter.filter(proxySIPRequest)).thenReturn(optionalCallType);
-    when(proxySIPRequest.getCallId()).thenReturn("TestCall");
-    when(callType.getOutBoundNetwork()).thenReturn("NetOut");
-    when(callType.processRequest())
-        .thenReturn(
-            proxySIPRequestMono -> {
-              proxySIPRequestMono.subscribe(
-                  request -> {
-                    // verify request was sent to calltype
-                    assertEquals(request, proxySIPRequest);
-                  });
-            });
+    when(filter.filter(proxySIPRequest)).thenReturn(callType);
+
     requestConsumer.accept(proxySIPRequest);
+
+    verify(callType, times(1)).processRequest(proxySIPRequest);
   }
 
   @Test(
       description = "No calltype found",
       dependsOnMethods = {"testAppInitialization"})
-  public void testRequestConsumer_2() {
+  public void testRequestConsumer_2() throws InvalidCallTypeException {
     Consumer<ProxySIPRequest> requestConsumer = proxyAppConfig.getRequestConsumer();
     Assert.assertNotNull(requestConsumer);
 
-    when(filter.filter(proxySIPRequest)).thenReturn(Optional.empty());
+    when(filter.filter(proxySIPRequest)).thenThrow(InvalidCallTypeException.class);
 
     requestConsumer.accept(proxySIPRequest);
 
-    verifyNoInteractions(proxySIPRequest);
-  }
-
-  @Test(
-      description = "Response, corresponding calltype found",
-      dependsOnMethods = {"testAppInitialization"})
-  public void testResponseConsumer_1() {
-    Consumer<ProxySIPResponse> responseConsumer = proxyAppConfig.getResponseConsumer();
-    Assert.assertNotNull(responseConsumer);
-    // using these values from testRequestConsumer_1
-    ProxyCookieImpl cookie = mock(ProxyCookieImpl.class);
-    when(cookie.getCalltype()).thenReturn(callType);
-    when(proxySIPResponse.getCookie()).thenReturn(cookie);
-    when(callType.processResponse())
-        .thenReturn(
-            proxySIPResponseMono -> {
-              proxySIPResponseMono.subscribe(
-                  response -> {
-                    // verify request was sent to calltype
-                    assertEquals(response, proxySIPResponse);
-                  });
-            });
-    responseConsumer.accept(proxySIPResponse);
-    verify(callType, Mockito.times(1)).processResponse();
-  }
-
-  @Test(
-      description = "Response, no cookie set or no calltype found",
-      dependsOnMethods = {"testAppInitialization"})
-  public void testResponseConsumer_2() {
-    Consumer<ProxySIPResponse> responseConsumer = proxyAppConfig.getResponseConsumer();
-    Assert.assertNotNull(responseConsumer);
-    // Key not found
-    when(proxySIPResponse.getCookie()).thenReturn(null);
-    responseConsumer.accept(proxySIPResponse);
-    verify(proxySIPResponse, times(1)).proxy();
-
-    reset(proxySIPResponse);
-
-    when(proxySIPResponse.getCookie()).thenReturn(mock(ProxyCookieImpl.class));
-    responseConsumer.accept(proxySIPResponse);
-    verify(proxySIPResponse, times(1)).proxy();
+    verify(proxySIPRequest, times(1)).reject(Response.NOT_FOUND);
   }
 }

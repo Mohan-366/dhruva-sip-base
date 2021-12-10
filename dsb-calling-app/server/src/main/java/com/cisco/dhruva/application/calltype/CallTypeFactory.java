@@ -1,28 +1,46 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dhruva.application.constants.SipParamConstants;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
-import com.cisco.dhruva.normalisation.RuleListenerImpl;
-import com.cisco.dhruva.normalisation.rules.AddOpnDpnRule;
-import com.cisco.dhruva.normalisation.rules.RemoveOpnDpnCallTypeRule;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CallTypeFactory {
-  public CallType getCallType(CallType.CallTypes callTypes) throws InvalidCallTypeException {
-    switch (callTypes) {
+  private DialInPSTN dialInPSTN;
+  private DialInB2B dialInB2B;
+  private DialOutWxC dialOutWxC;
+  private DialOutB2B dialOutB2B;
+
+  @Autowired
+  public void setDialInPSTN(DialInPSTN dialInPSTN) {
+    this.dialInPSTN = dialInPSTN;
+  }
+
+  @Autowired
+  public void setDialInB2B(DialInB2B dialInB2B) {
+    this.dialInB2B = dialInB2B;
+  }
+
+  @Autowired
+  public void setDialOutWxC(DialOutWxC dialOutWxC) {
+    this.dialOutWxC = dialOutWxC;
+  }
+
+  @Autowired
+  public void setDialOutB2B(DialOutB2B dialOutB2B) {
+    this.dialOutB2B = dialOutB2B;
+  }
+
+  public CallType getCallType(CallTypeEnum callTypeEnum) throws InvalidCallTypeException {
+    switch (callTypeEnum) {
       case DIAL_IN_PSTN:
-        return new DialInPSTN(
-            new RuleListenerImpl(),
-            new AddOpnDpnRule(SipParamConstants.DPN_IN, SipParamConstants.OPN_IN));
+        return dialInPSTN;
       case DIAL_IN_B2B:
-        return new DialInB2B(new RuleListenerImpl(), new RemoveOpnDpnCallTypeRule());
+        return dialInB2B;
       case DIAL_OUT_WXC:
-        return new DialOutWxC(
-            new RuleListenerImpl(),
-            new AddOpnDpnRule(SipParamConstants.DPN_OUT, SipParamConstants.OPN_OUT));
+        return dialOutWxC;
       case DIAL_OUT_B2B:
-        return new DialOutB2B(new RuleListenerImpl(), new RemoveOpnDpnCallTypeRule());
+        return dialOutB2B;
       default:
         throw new InvalidCallTypeException();
     }

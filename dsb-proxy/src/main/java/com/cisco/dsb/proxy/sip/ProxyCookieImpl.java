@@ -5,7 +5,8 @@ package com.cisco.dsb.proxy.sip;
  * <code>ProxyController</code> as the cookie object to the proxy core.
  */
 
-import com.cisco.dsb.trunk.dto.Destination;
+import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,13 +14,19 @@ import lombok.Setter;
 @Setter
 public class ProxyCookieImpl implements ProxyCookie {
 
-  protected Destination destination;
   private Object calltype;
   private Object requestTo;
-
-  public ProxyCookieImpl(Destination destination) {
-    this.destination = destination;
-  }
+  private CompletableFuture<ProxySIPResponse> responseCF;
 
   public ProxyCookieImpl() {};
+
+  public ProxyCookieImpl(ProxyCookieImpl proxyCookie) {
+    this.calltype = proxyCookie.calltype;
+    this.requestTo = proxyCookie.requestTo;
+  }
+
+  @Override
+  public ProxyCookie clone() {
+    return new ProxyCookieImpl(this);
+  }
 }

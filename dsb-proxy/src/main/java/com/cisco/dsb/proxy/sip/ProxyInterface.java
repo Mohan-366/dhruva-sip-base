@@ -1,8 +1,9 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.trunk.dto.Destination;
+import java.util.concurrent.CompletableFuture;
 
 public interface ProxyInterface {
 
@@ -10,7 +11,17 @@ public interface ProxyInterface {
 
   void respond(int responseCode, ProxySIPRequest proxySIPRequest);
 
-  void proxyRequest(ProxySIPRequest proxySIPRequest, Destination destination);
-
   void sendRequestToApp(boolean send);
+
+  CompletableFuture<ProxySIPResponse> proxyRequest(
+      ProxySIPRequest proxySIPRequest, EndPoint endPoint);
+
+  /**
+   * Use this for mid dialog for routing based on route header. It's assumed that outbound network
+   * is set before invoking this method else default network will be used
+   *
+   * @param proxySIPRequest
+   * @return
+   */
+  CompletableFuture<ProxySIPResponse> proxyRequest(ProxySIPRequest proxySIPRequest);
 }

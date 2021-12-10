@@ -10,9 +10,9 @@ import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
 import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyFactoryInterface;
 import com.cisco.dsb.proxy.sip.ProxyServerTransaction;
-import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import gov.nist.javax.sip.message.SIPRequest;
+import javax.annotation.Nullable;
 
 /**
  * This interface is used to control a proxy. The proxy will invoke the various public methods of
@@ -44,28 +44,22 @@ public interface ControllerInterface {
    * onProxySuccess callback first and then OnProxyFailure. This will happen when the error is
    * reported asynchronously to the Proxy Core
    *
-   * @param proxy ProxyTransaction object
-   * @param cookie cookie object passed to proxyTo()
-   * @param trans newly created DsProxyClientTransaction
+   * @param proxySIPRequest request that was sent out successfully.
    */
-  void onProxySuccess(
-      ProxyStatelessTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
+  void onProxySuccess(ProxySIPRequest proxySIPRequest);
 
   /**
    * This callback is invoked when there was a synchronous exception forwarding a request and
    * DsProxyClientTransaction object could not be created
    *
-   * @param proxy ProxyTransaction object
+   * @param proxyClientTransaction proxyClientTransaction if any created while sending out this
+   *     response
    * @param cookie cookie object passed to proxyTo()
-   * @param errorCode identifies the exception thrown when forwarding request
-   * @param errorPhrase the String from the exception
    * @param exception exception that caused the error; null if not available
    */
   void onProxyFailure(
-      ProxyStatelessTransaction proxy,
+      @Nullable ProxyClientTransaction proxyClientTransaction,
       ProxyCookie cookie,
-      ErrorCode errorCode,
-      String errorPhrase,
       Throwable exception);
 
   /**
@@ -96,79 +90,22 @@ public interface ControllerInterface {
   /* =============================================================== */
 
   /**
-   * This method is invoked by the proxy when a 4xx or 5xx response to a proxied request is received
+   * This method is invoked by the proxy when a final response, i.e 2xx-6xx, to a proxied request is
+   * received
    *
-   * @param proxy ProxyTransaction object
    * @param cookie cookie object passed to proxyTo()
-   * @param trans DsProxyClientTransaction representing the branch that the response was received on
    * @param response Response message that was received. Note that the top Via header will be
    *     stripped off before its passed.
    */
-  void onFailureResponse(
-      ProxyTransaction proxy,
-      ProxyCookie cookie,
-      ProxyClientTransaction trans,
-      ProxySIPResponse response);
-
-  /**
-   * This method is invoked by the proxy when a 3xx response to a proxied request is received. Its a
-   * good opportunity to perform recursion if needed.
-   *
-   * @param response The redirect response that was received.
-   */
-  void onRedirectResponse(ProxySIPResponse response);
-
-  /**
-   * This method is invoked by the proxy when a 2xx response to a proxied request is received.
-   *
-   * @param response The response that was received.
-   * @param proxy The ProxyTransaction object.
-   */
-  void onSuccessResponse(ProxyTransaction proxy, ProxySIPResponse response);
-
-  /**
-   * This method is invoked by the proxy when a 6xx response to a proxied request is received.
-   *
-   * @param proxy The ProxyTransaction object.
-   */
-  void onGlobalFailureResponse(ProxyTransaction proxy);
+  void onFinalResponse(ProxyCookie cookie, ProxySIPResponse response);
 
   /**
    * This method is invoked by the proxy when a 1xx response to a proxied request is received.
    *
    * @param response The response that was received.
-   * @param proxy The proxy object.
-   * @param cookie cookie object passed to proxyTo()
-   * @param trans DsProxyClientTransaction representing the branch that the response was received on
-   */
-  void onProvisionalResponse(
-      ProxyTransaction proxy,
-      ProxyCookie cookie,
-      ProxyClientTransaction trans,
-      ProxySIPResponse response);
-
-  /**
-   * This method is invoked when the proxy receives a response it would like to send.
-   *
-   * @param proxy The proxy object Note: this interface will need to be changed to handle multiple
-   *     200 OKs. My understanding is that Low Level API currently drops all 200 OKs after the first
-   *     one so I didn't bother to define a controller API for this as well
-   */
-
-  //   * @param trans The server transaction on which this response
-  //   * needs to be sent. This is only relevant for multiple 200 OK
-  //   * responses.
-
-  void onBestResponse(ProxyTransaction proxy);
-
-  /**
-   * This method is invoked whenever a ClientTransaction times out before receiving a response
-   *
-   * @param proxy The proxy object
-   * @param trans DsProxyClientTransaction where the timeout occurred
    * @param cookie cookie object passed to proxyTo()
    */
-  void onRequestTimeOut(ProxyTransaction proxy, ProxyCookie cookie, ProxyClientTransaction trans);
+  void onProvisionalResponse(ProxyCookie cookie, ProxySIPResponse response);
 
   /**
    * This method is invoked whenever a ServerTransaction times out, i.e., no ACK is received within

@@ -272,7 +272,7 @@ public class JainSipHelper {
       String displayName, String user, @Nonnull String host, String tag) throws ParseException {
     Objects.requireNonNull(host, "Host not provided");
     Address fromNameAddress = createAddress(displayName, user, host);
-    return headerFactory.createFromHeader(fromNameAddress, "12345");
+    return headerFactory.createFromHeader(fromNameAddress, tag);
   }
 
   public static ToHeader createToHeader(

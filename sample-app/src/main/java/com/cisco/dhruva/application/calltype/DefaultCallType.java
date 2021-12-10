@@ -1,10 +1,11 @@
 package com.cisco.dhruva.application.calltype;
 
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.trunk.dto.Destination;
+import gov.nist.javax.sip.address.SipUri;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -43,21 +44,20 @@ public class DefaultCallType implements CallType {
               proxySIPRequest -> {
                 logger.info("Sending to APP from leaf for callid: {}", proxySIPRequest.getCallId());
                 try {
-                  Destination destination =
-                      Destination.builder()
-                          .uri(proxySIPRequest.getRequest().getRequestURI())
-                          .build();
+                  String network = proxySIPRequest.getNetwork();
+                  String host = ((SipUri) proxySIPRequest.getRequest().getRequestURI()).getHost();
+                  int port = ((SipUri) proxySIPRequest.getRequest().getRequestURI()).getPort();
+                  port = port == 0 ? 5060 : port;
+                  Transport transport = Transport.UDP;
+                  EndPoint endPoint = new EndPoint(network, host, port, transport);
                   // Ideally location object should hold the outgoing network based on config
                   // This is temp solution
                   // TODO: Use Optional.ifPresent() instead
-                  if (DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).isPresent()) {
-                    destination.setNetwork(
-                        DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
-                  }
+
                   // loc.setNetwork(DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
                   // processRoute is set to true only in case , app inserts Route Header pointing to
                   // new destination
-                  proxySIPRequest.proxy(destination);
+                  proxySIPRequest.proxy(endPoint);
                 } catch (Exception exception) {
                   logger.error("Unable to set any interface to forward the request");
                   exception.printStackTrace();

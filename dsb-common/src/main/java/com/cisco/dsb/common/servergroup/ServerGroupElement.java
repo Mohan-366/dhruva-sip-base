@@ -21,7 +21,7 @@ public class ServerGroupElement implements LBElement {
 
   @NotBlank private Transport transport;
 
-  @NotBlank private float qValue;
+  @NotBlank private int priority;
 
   @NotBlank private int weight;
 
@@ -33,7 +33,7 @@ public class ServerGroupElement implements LBElement {
           .append(ipAddress, b.ipAddress)
           .append(port, b.port)
           .append(transport, b.transport)
-          .append(qValue, b.qValue)
+          .append(priority, b.priority)
           .append(weight, b.weight)
           .isEquals();
     }
@@ -55,7 +55,7 @@ public class ServerGroupElement implements LBElement {
   public int compareTo(Object obj) throws ClassCastException {
     int compare;
     ServerGroupElement b = ((ServerGroupElement) obj);
-    if ((compare = Float.compare(b.qValue, this.qValue)) != 0) {
+    if ((compare = Float.compare(this.priority, b.priority)) != 0) {
       return compare;
     }
     if ((compare = Integer.compare(b.weight, this.weight)) != 0) {

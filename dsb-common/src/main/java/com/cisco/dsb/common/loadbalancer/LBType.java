@@ -35,10 +35,10 @@ public enum LBType {
   }
 
   private static List<LBElement> getHighestQElements(TreeSet<LBElement> elementsToSelect) {
-    float highestQValue = elementsToSelect.first().getQValue();
+    float highestQValue = elementsToSelect.first().getPriority();
     ArrayList<LBElement> highestQvalueElements = new ArrayList<>();
     for (LBElement element : elementsToSelect) {
-      if (Float.compare(highestQValue, element.getQValue()) == 0)
+      if (Float.compare(highestQValue, element.getPriority()) == 0)
         highestQvalueElements.add(element);
       else break;
     }

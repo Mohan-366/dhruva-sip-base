@@ -27,12 +27,7 @@ public class LMAUtill {
     Transport transportType;
 
     if (sipProvider == null) {
-      String network = String.valueOf(message.getApplicationData());
-      transportType =
-          (!StringUtils.isEmpty(network)
-                  && DhruvaNetwork.getProviderFromNetwork(network).isPresent())
-              ? getTransportType(DhruvaNetwork.getProviderFromNetwork(network).get())
-              : Transport.NONE;
+      transportType = getTransportTypeFromDhruvaNetwork(message);
 
     } else {
       transportType = getTransportType(sipProvider);
@@ -70,6 +65,16 @@ public class LMAUtill {
     }
   }
 
+  public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {
+    Transport transportType;
+    String network = String.valueOf(message.getApplicationData());
+    transportType =
+        (!StringUtils.isEmpty(network) && DhruvaNetwork.getProviderFromNetwork(network).isPresent())
+            ? getTransportType(DhruvaNetwork.getProviderFromNetwork(network).get())
+            : Transport.NONE;
+    return transportType;
+  }
+
   public static BindingInfo populateBindingInfo(
       @NotNull SIPMessage sipMessage, Transport transportType) {
     return new BindingInfo.BindingInfoBuilder()
@@ -84,7 +89,7 @@ public class LMAUtill {
   }
 
   public static Transport getTransportType(SipProvider sipProvider) {
-    return sipProvider.getListeningPoints() != null
+    return sipProvider != null && sipProvider.getListeningPoints() != null
         ? Transport.getTypeFromString(
                 sipProvider.getListeningPoints()[0].getTransport().toUpperCase(Locale.ROOT))
             .orElse(Transport.NONE)

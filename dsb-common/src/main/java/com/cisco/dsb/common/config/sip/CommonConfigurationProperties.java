@@ -17,12 +17,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
 @Component
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "common")
 @CustomLog
+@RefreshScope
 public class CommonConfigurationProperties {
   // Defaults for listenPoint builder and sipProxy builder
   public static final String DEFAULT_NETWORK_NAME = "TCPNetwork";
@@ -104,6 +106,7 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
+
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
   }
@@ -128,6 +131,7 @@ public class CommonConfigurationProperties {
   }
 
   public void setSgPolicy(Map<String, SGPolicy> sgPolicyMap) {
+    logger.info("Configuring ServerGroups");
     this.serverGroups
         .values()
         .forEach(
@@ -140,12 +144,14 @@ public class CommonConfigurationProperties {
                         + "; SGPolicy \""
                         + serverGroup.getSgPolicyConfig()
                         + "\" not present");
+              logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
               serverGroup.setSgPolicyFromConfig(sgPolicy);
             });
-    this.sgPolicyMap = sgPolicyMap;
+    updateMap(this.sgPolicyMap, sgPolicyMap);
   }
 
   public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
+    logger.info("Configuring ServerGroups");
     this.serverGroups
         .values()
         .forEach(
@@ -156,16 +162,18 @@ public class CommonConfigurationProperties {
                 throw new DhruvaRuntimeException(
                     "SGName: "
                         + serverGroup.getName()
-                        + "; OPTIONSPingPolicy \""
+                        + "; OptionsPingPolicy \""
                         + serverGroup.getOptionsPingPolicyConfig()
                         + "\" not present");
+              logger.info("SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
               serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
             });
-    this.optionsPingPolicyMap = optionsPingPolicyMap;
+    updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {
-    this.serverGroups = serverGroups;
+    // update SG map
+    updateMap(this.serverGroups, serverGroups);
     this.serverGroups
         .values()
         .forEach(
@@ -175,7 +183,13 @@ public class CommonConfigurationProperties {
                 throw new DhruvaRuntimeException(
                     "SGName: " + sg.getName() + "; listenPoint: \"" + network + "\" not found");
               }
-              // No Validation for transport type as it's redundant for now
             });
+  }
+
+  private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
+    Set<K> removeKeys = new HashSet<>();
+    oldMap.putAll(newMap);
+    oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
+    removeKeys.forEach(oldMap::remove);
   }
 }

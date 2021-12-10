@@ -1,8 +1,12 @@
 package com.cisco.dsb.common.sip.bean;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
+import java.net.*;
+import java.util.Enumeration;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -12,7 +16,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @Setter
 @Builder(builderMethodName = "SIPListenPointBuilder", setterPrefix = "set")
 @AllArgsConstructor
-@NoArgsConstructor
+@CustomLog
 public class SIPListenPoint {
 
   @Builder.Default private String name = CommonConfigurationProperties.DEFAULT_NETWORK_NAME;
@@ -34,6 +38,50 @@ public class SIPListenPoint {
 
   @Builder.Default
   private boolean enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
+
+  private String hostInterface;
+
+  public SIPListenPoint() {
+    this.name = CommonConfigurationProperties.DEFAULT_NETWORK_NAME;
+    this.hostIPAddress =
+        System.getenv("POD_IP") == null
+            ? CommonConfigurationProperties.DEFAULT_HOST_IP
+            : System.getenv("POD_IP");
+    this.transport = CommonConfigurationProperties.DEFAULT_TRANSPORT;
+    this.port = CommonConfigurationProperties.DEFAULT_PORT;
+    this.recordRoute = CommonConfigurationProperties.DEFAULT_RECORD_ROUTE_ENABLED;
+    this.attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
+    this.tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
+    this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
+  }
+
+  public void setHostInterface(String hostInterface) {
+    this.hostInterface = hostInterface;
+    try {
+      NetworkInterface networkInterface = NetworkInterface.getByName(hostInterface);
+      if (networkInterface == null) {
+        logger.error("Network interface {} not found", hostInterface);
+        throw new DhruvaRuntimeException(ErrorCode.INIT, "Network interface not found");
+      }
+      String ipv4Addr = null;
+      Enumeration<InetAddress> interfaces = networkInterface.getInetAddresses();
+      while (interfaces.hasMoreElements()) {
+        InetAddress inetAddress = interfaces.nextElement();
+        if (inetAddress instanceof Inet6Address) continue;
+        ipv4Addr = inetAddress.getHostAddress();
+        break;
+      }
+      if (ipv4Addr == null) {
+        logger.error("No ipv4 address associated with interface {}", hostInterface);
+        throw new DhruvaRuntimeException(ErrorCode.INIT, "No ipv4 address attached to interface");
+      }
+      logger.info("Choosing {} as IPaddr for interface {}", ipv4Addr, hostInterface);
+      this.hostIPAddress = ipv4Addr;
+    } catch (SocketException e) {
+      logger.error("Unable to bind to interface {}", hostInterface, e);
+      throw new DhruvaRuntimeException(ErrorCode.INIT, e.getMessage());
+    }
+  }
 
   public String toString() {
     StringBuilder sipListenPointString =

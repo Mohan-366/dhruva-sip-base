@@ -60,7 +60,13 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
             new LocateSIPServersResponse(
                 Collections.singletonList(
                     new Hop(
-                        "test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, DNSRecordSource.DNS)),
+                        "test.cisco.com",
+                        "1.2.3.4",
+                        Transport.TLS,
+                        5061,
+                        1,
+                        1000,
+                        DNSRecordSource.DNS)),
                 null,
                 null,
                 null,
@@ -71,7 +77,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     LocateSIPServersResponse response = responseCF.join();
     assertEquals(
         response.getHops().get(0),
-        new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, DNSRecordSource.DNS));
+        new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
   }
 
   @Test(

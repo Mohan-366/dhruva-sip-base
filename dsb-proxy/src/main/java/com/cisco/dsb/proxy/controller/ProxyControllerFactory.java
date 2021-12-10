@@ -5,7 +5,6 @@ import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.sip.ProxyFactory;
-import com.cisco.dsb.trunk.service.TrunkService;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,20 +22,16 @@ public class ProxyControllerFactory {
 
   DhruvaExecutorService dhruvaExecutorService;
 
-  TrunkService trunkService;
-
   @Autowired
   public ProxyControllerFactory(
       ProxyConfigurationProperties proxyConfigurationProperties,
       ControllerConfig controllerConfig,
       ProxyFactory proxyFactory,
-      DhruvaExecutorService dhruvaExecutorService,
-      TrunkService trunkService) {
+      DhruvaExecutorService dhruvaExecutorService) {
     this.proxyConfigurationProperties = proxyConfigurationProperties;
     this.controllerConfig = controllerConfig;
     this.proxyFactory = proxyFactory;
     this.dhruvaExecutorService = dhruvaExecutorService;
-    this.trunkService = trunkService;
   }
 
   @Bean
@@ -54,7 +49,6 @@ public class ProxyControllerFactory {
         proxyConfigurationProperties,
         proxyFactory,
         controllerConfig,
-        dhruvaExecutorService,
-        trunkService);
+        dhruvaExecutorService);
   }
 }

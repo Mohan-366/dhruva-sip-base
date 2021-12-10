@@ -1,5 +1,7 @@
 package com.cisco.dsb.common.sip.util;
 
+import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import lombok.*;
 
@@ -52,12 +54,20 @@ public class EndPoint implements Cloneable {
   }
 
   public EndPoint(String network, String host, int port, Transport protocol) {
-    logger.debug("Entering EndPoint()");
     this.network = network;
     this.host = host;
     if (port > 0) this.port = port;
     if (protocol != null) this.protocol = protocol;
     createKey();
+  }
+
+  public EndPoint(ServerGroup serverGroup, ServerGroupElement serverGroupElement) {
+    this(
+        serverGroup.getNetworkName(),
+        serverGroupElement.getIpAddress(),
+        serverGroupElement.getPort(),
+        serverGroupElement.getTransport(),
+        serverGroup.getName());
   }
 
   /** our equals implementation */

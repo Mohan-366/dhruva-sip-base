@@ -117,7 +117,8 @@ public class SipServerLocator implements SipResolver {
       int portScrubbed = ensurePort(port, optTransport.get());
 
       ArrayList<Hop> hopList = new ArrayList<Hop>();
-      hopList.add(new Hop(null, name, optTransport.get(), portScrubbed, 0, DNSRecordSource.DNS));
+      hopList.add(
+          new Hop(null, name, optTransport.get(), portScrubbed, 1, 100, DNSRecordSource.DNS));
       response.setHops(hopList);
       response.setType(LocateSIPServersResponse.Type.IP);
       return response;
@@ -315,6 +316,7 @@ public class SipServerLocator implements SipResolver {
                           transport,
                           srvRecord.getPort(),
                           srvRecord.getPriority(),
+                          srvRecord.getWeight(),
                           source);
                     })
                 .collect(Collectors.toList());
@@ -366,7 +368,8 @@ public class SipServerLocator implements SipResolver {
                           r.getRecord().getAddress(),
                           transport,
                           port,
-                          0,
+                          1,
+                          100,
                           r.getSource()))
               .distinct()
               .collect(Collectors.toList()));

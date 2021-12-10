@@ -22,7 +22,10 @@ public enum ErrorCode {
   SEND_RESPONSE_ERR(0),
   UNKNOWN_ERROR_RES(0),
   APP_REQ_PROC(500, Action.SEND_ERR_RESPONSE),
-  NOT_FOUND(404, Action.SEND_ERR_RESPONSE);
+  NOT_FOUND(404, Action.SEND_ERR_RESPONSE),
+  TRUNK_RETRY_NEXT(0),
+  TRUNK_NO_RETRY(0),
+  INIT(0);
 
   @Getter private final int responseCode;
   @Getter private final Action action;

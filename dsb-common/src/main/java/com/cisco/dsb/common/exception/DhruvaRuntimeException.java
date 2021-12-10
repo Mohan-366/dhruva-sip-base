@@ -3,10 +3,11 @@ package com.cisco.dsb.common.exception;
 import lombok.Getter;
 
 public class DhruvaRuntimeException extends RuntimeException {
-  @Getter private ErrorCode errCode;
+  @Getter private final ErrorCode errCode;
 
   public DhruvaRuntimeException(String message) {
     super(message);
+    this.errCode = ErrorCode.UNKNOWN_ERROR_REQ;
   }
 
   public DhruvaRuntimeException(ErrorCode errCode, String message) {
