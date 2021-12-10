@@ -24,8 +24,10 @@ public class InfluxClient implements MetricClient {
   @Override
   public void sendMetric(Metric metric) {
     metric.timestamp(Instant.now());
+    metric.tag(INSTANCE_NAME_KEY, getInstanceName());
     influxDBClientHelper.writePointAsync((InfluxPoint) metric.get());
   }
+
 
   @Override
   public void sendMetrics(Set<Metric> metrics) {
