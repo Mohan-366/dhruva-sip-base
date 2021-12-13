@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
+import javax.annotation.PostConstruct;
+
 /**
  * Properties that are specific to the dhruva service.
  *
@@ -34,6 +36,15 @@ public class DhruvaProperties extends ConfigProperties {
 
   @Getter private String podNameEnvVar;
 
+
+  @PostConstruct
+  public void init(){
+    /* Pod name can be in form of dhruva-abc-0, dhruva-xyz-1 where 0,1 are the unique ordinal indexes of the stateful set in k8s env */
+    this.podNameEnvVar =
+            StringUtils.isBlank(System.getenv(POD_NAME_ENV_VAR_KEY))
+                    ? String.valueOf(0)
+                    : System.getenv(POD_NAME_ENV_VAR_KEY);
+  }
   public enum Env {
     integration,
     production
@@ -47,12 +58,6 @@ public class DhruvaProperties extends ConfigProperties {
 
   @Override
   public int getApplicationInstanceIndex() {
-
-    /* Pod name can be in form of dhruva-abc-0, dhruva-xyz-1 where 0,1 are the unique ordinal indexes of the stateful set in k8s env */
-    this.podNameEnvVar =
-        StringUtils.isBlank(System.getenv(POD_NAME_ENV_VAR_KEY))
-            ? String.valueOf(0)
-            : System.getenv(POD_NAME_ENV_VAR_KEY);
 
     int instanceIndex = 0;
 
