@@ -28,7 +28,6 @@ public class InfluxClient implements MetricClient {
     influxDBClientHelper.writePointAsync((InfluxPoint) metric.get());
   }
 
-
   @Override
   public void sendMetrics(Set<Metric> metrics) {
     Set<InfluxPoint> influxPoints =
