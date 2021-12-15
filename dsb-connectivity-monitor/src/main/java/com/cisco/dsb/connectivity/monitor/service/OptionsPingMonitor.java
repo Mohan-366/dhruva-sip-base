@@ -114,7 +114,6 @@ public class OptionsPingMonitor {
             completed ->
                 completed.delayElements(
                     Duration.ofMillis(downInterval),
-                    // Schedulers.boundedElastic()
                     Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
   }
 

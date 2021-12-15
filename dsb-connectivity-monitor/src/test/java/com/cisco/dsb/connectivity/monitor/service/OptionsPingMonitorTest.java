@@ -190,6 +190,7 @@ public class OptionsPingMonitorTest {
     Thread.sleep(1000);
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
+
     optionsPingMonitor = null;
   }
 
