@@ -2,6 +2,7 @@ package com.cisco.dsb.common.executor;
 
 /** Enum hold the list of all possible services requiring executor service */
 public enum ExecutorType {
+  HEALTH_MONITOR_SERVICE,
   METRIC_SERVICE(6),
   DNS_LOCATOR_SERVICE(8),
   PROXY_CLIENT_TIMEOUT(2),

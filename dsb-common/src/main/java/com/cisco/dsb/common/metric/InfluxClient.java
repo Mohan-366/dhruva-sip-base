@@ -4,6 +4,7 @@
 
 package com.cisco.dsb.common.metric;
 
+import com.cisco.dsb.common.config.DhruvaProperties;
 import com.cisco.wx2.metrics.InfluxPoint;
 import com.cisco.wx2.server.InfluxDBClientHelper;
 import java.time.Instant;
@@ -11,14 +12,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 
 public class InfluxClient implements MetricClient {
 
   @Inject private InfluxDBClientHelper influxDBClientHelper;
+  @Inject private DhruvaProperties dhruvaProperties;
+
+  public static final String INSTANCE_NAME_KEY = "instanceName";
 
   @Override
   public void sendMetric(Metric metric) {
     metric.timestamp(Instant.now());
+    metric.tag(INSTANCE_NAME_KEY, getInstanceName());
     influxDBClientHelper.writePointAsync((InfluxPoint) metric.get());
   }
 
@@ -32,6 +38,21 @@ public class InfluxClient implements MetricClient {
     if (!influxPoints.isEmpty()) {
       influxDBClientHelper.writePoints(influxPoints);
     }
+  }
+
+  private String getInstanceName() {
+
+    StringBuilder instanceName = new StringBuilder();
+
+    if (StringUtils.isNotBlank(dhruvaProperties.getEnvironment())) {
+      instanceName.append(dhruvaProperties.getEnvironment());
+    }
+    if (StringUtils.isNotBlank(dhruvaProperties.getPodNameEnvVar())) {
+      instanceName.append("-");
+      instanceName.append(dhruvaProperties.getPodNameEnvVar());
+    }
+
+    return (instanceName == null) ? "" : instanceName.toString();
   }
 
   @PreDestroy

@@ -15,6 +15,8 @@ import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
 import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
+import com.cisco.wx2.dto.health.ServiceHealth;
+import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.util.Token;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -40,6 +42,7 @@ public class MetricService {
 
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
+  private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
   private final ScheduledThreadPoolExecutor scheduledExecutor;
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
@@ -88,6 +91,36 @@ public class MetricService {
       metrics.forEach(metric -> metric.measurement(prefixDhruvaToMeasurementName(measurement)));
       sendMetric(metrics);
     };
+  }
+
+  public void emitServiceHealth(ServiceHealth health, boolean includeUpstreamService) {
+    sendServiceHealthMetric("service.health", health);
+
+    if (includeUpstreamService && health.getUpstreamServices() != null) {
+      for (ServiceHealth upstreamHealth : health.getUpstreamServices()) {
+        sendUpstreamHealthMetric(upstreamHealth);
+      }
+    }
+  }
+
+  public void sendUpstreamHealthMetric(ServiceHealth upstreamServiceHealth) {
+    this.sendServiceHealthMetric(
+        this.UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME, upstreamServiceHealth);
+  }
+
+  public void sendServiceHealthMetric(String measurementName, ServiceHealth serviceHealth) {
+    Metric metric =
+        Metrics.newMetric()
+            .measurement(measurementName)
+            .tag("state", serviceHealth.getServiceState().toString())
+            .field("message", serviceHealth.getMessage())
+            .tag("name", serviceHealth.getServiceName())
+            .field(
+                "availability",
+                serviceHealth.getServiceState() == ServiceState.ONLINE ? 100.0 : 0.0)
+            .field("optional", serviceHealth.isOptional());
+
+    sendMetric(metric);
   }
 
   public void sendConnectionMetric(
