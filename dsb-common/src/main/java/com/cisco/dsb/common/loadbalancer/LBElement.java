@@ -47,6 +47,4 @@ public interface LBElement extends Comparable {
    * @throws ClassCastException
    */
   int compareTo(Object obj) throws ClassCastException;
-
-  boolean isActive();
 }

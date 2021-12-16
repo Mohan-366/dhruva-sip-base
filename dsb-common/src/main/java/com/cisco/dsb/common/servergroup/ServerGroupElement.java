@@ -13,7 +13,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 @Builder(setterPrefix = "set")
 @NoArgsConstructor
 @AllArgsConstructor
-public class ServerGroupElement implements LBElement {
+public class ServerGroupElement implements LBElement, Pingable {
 
   @NotBlank private String ipAddress;
 
@@ -68,11 +68,6 @@ public class ServerGroupElement implements LBElement {
     if ((compare = Integer.compare(b.transport.getValue(), this.transport.getValue())) != 0)
       return compare;
     return 0;
-  }
-
-  @Override
-  public boolean isActive() {
-    return true;
   }
 
   /**

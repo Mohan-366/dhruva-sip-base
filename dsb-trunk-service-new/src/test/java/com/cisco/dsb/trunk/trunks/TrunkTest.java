@@ -16,6 +16,7 @@ import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkTestUtil;
@@ -29,10 +30,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sip.message.Response;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -113,6 +111,7 @@ public class TrunkTest {
   @Test(description = "single SG with A record")
   public void testSingleARecord() throws ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
+
     ServerGroup sg1 =
         ServerGroup.builder()
             .setName("test.akg.com")
@@ -207,6 +206,72 @@ public class TrunkTest {
     verify(clonedUri, times(3)).setHost(eq(sg1.getName()));
   }
 
+  @Test(description = "pick based on availability")
+  public void testStaticAvailability() {
+    AntaresTrunk antaresTrunk = new AntaresTrunk();
+
+    OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setName("static1")
+            .setSgType(SGType.STATIC)
+            .setWeight(100)
+            .setPriority(10)
+            .setSgPolicy(sgPolicy)
+            .setNetworkName("testNetwork")
+            .build();
+
+    antaresTrunk.setOptionsPingController(optionsPingController);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
+    List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(3, true);
+    sg1.setElements(serverGroupElements);
+
+    when(optionsPingController.getStatus(sg1)).thenReturn(true);
+
+    when(optionsPingController.getStatus(serverGroupElements.get(0))).thenReturn(true);
+    when(optionsPingController.getStatus(serverGroupElements.get(1))).thenReturn(true);
+    when(optionsPingController.getStatus(serverGroupElements.get(2))).thenReturn(false);
+
+    ProxySIPResponse bestResponse = mock(ProxySIPResponse.class);
+    AtomicInteger state =
+        new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
+    doAnswer(
+            invocationOnMock -> {
+              if (state.get() == 0) {
+                state.getAndIncrement();
+                when(failedProxySIPResponse.getStatusCode())
+                    .thenReturn(Response.SERVICE_UNAVAILABLE);
+                return CompletableFuture.completedFuture(failedProxySIPResponse);
+              } else if (state.get() == 1) {
+                state.getAndIncrement();
+                when(bestResponse.getStatusCode()).thenReturn(Response.SERVER_INTERNAL_ERROR);
+                return CompletableFuture.completedFuture(bestResponse);
+              } else {
+                state.getAndIncrement();
+                when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.BAD_GATEWAY);
+                return CompletableFuture.completedFuture(failedProxySIPResponse);
+              }
+            })
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(bestResponse)
+        .verifyComplete();
+    when(optionsPingController.getStatus(sg1)).thenReturn(false);
+
+    when(optionsPingController.getStatus(serverGroupElements.get(0))).thenReturn(false);
+    when(optionsPingController.getStatus(serverGroupElements.get(1))).thenReturn(false);
+    when(optionsPingController.getStatus(serverGroupElements.get(2))).thenReturn(false);
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectErrorMatches(
+            err ->
+                err instanceof DhruvaRuntimeException
+                    && ((DhruvaRuntimeException) err).getErrCode().equals(ErrorCode.APP_REQ_PROC))
+        .verify();
+  }
+
   @Test(description = "combination of static and dynamic")
   public void testStaticAndDynamic() throws ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
@@ -287,6 +352,7 @@ public class TrunkTest {
 
   @Test(description = "multiple static sg")
   public void testMultipleStatic() throws ParseException {
+
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()

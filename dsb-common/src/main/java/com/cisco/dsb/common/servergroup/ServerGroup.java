@@ -12,7 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(setterPrefix = "set", toBuilder = true)
-public class ServerGroup implements LBElement, LoadBalancable {
+public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   private String name;
   private String networkName;
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
@@ -69,11 +69,6 @@ public class ServerGroup implements LBElement, LoadBalancable {
     if ((compare = Integer.compare(((ServerGroup) obj).weight, this.weight)) != 0) return compare;
     if ((compare = ((ServerGroup) obj).name.compareTo(this.name)) != 0) return compare;
     return 0;
-  }
-
-  @Override
-  public boolean isActive() {
-    return true;
   }
 
   @Override

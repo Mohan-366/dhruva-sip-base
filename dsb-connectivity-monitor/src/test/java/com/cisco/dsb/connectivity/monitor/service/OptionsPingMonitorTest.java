@@ -194,6 +194,7 @@ public class OptionsPingMonitorTest {
 
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
+
     optionsPingMonitor = null;
   }
 
