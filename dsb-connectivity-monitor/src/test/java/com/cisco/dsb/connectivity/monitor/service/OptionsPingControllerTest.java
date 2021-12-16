@@ -92,13 +92,13 @@ public class OptionsPingControllerTest {
     optionsPingMonitor.elementStatus.put(sge3.hashCode(), true);
     //  optionsPingMonitor.elementStatus.put(sge3.hashCode(), false);
 
-    Assert.assertTrue(optionsPingController.getStatus(sge1));
-    Assert.assertFalse(optionsPingController.getStatus(sge2));
+    assertTrue(optionsPingController.getStatus(sge1));
+    assertFalse(optionsPingController.getStatus(sge2));
 
-    Assert.assertTrue(optionsPingController.getStatus(sge3));
+    assertTrue(optionsPingController.getStatus(sge3));
 
     // if no such element is present in statusMap , return true
-    Assert.assertTrue(optionsPingController.getStatus(sge4));
+    assertTrue(optionsPingController.getStatus(sge4));
   }
 
   @Test(description = "test status of ServerGroup")
@@ -118,7 +118,7 @@ public class OptionsPingControllerTest {
     optionsPingMonitor.elementStatus.put(sge4.hashCode(), true);
 
     //
-    Assert.assertTrue(optionsPingController.getStatus(server1));
+    assertTrue(optionsPingController.getStatus(server1));
 
     // if no such element is present in statusMap , return true
 
@@ -127,7 +127,7 @@ public class OptionsPingControllerTest {
   @Test (description = "Negative case when a non SG or SGE element status is requested")
   public void testWhenNotSGOrSGEGetStatus() {
 
-    Assert.assertFalse(optionsPingController.getStatus(new NewPingable()));
+    assertFalse(optionsPingController.getStatus(new NewPingable()));
   }
 
   class NewPingable implements Pingable {
