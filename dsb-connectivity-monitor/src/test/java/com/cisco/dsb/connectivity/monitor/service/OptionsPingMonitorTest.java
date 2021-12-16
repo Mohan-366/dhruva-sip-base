@@ -391,8 +391,16 @@ public class OptionsPingMonitorTest {
     when(mockSipProvider.getNewCallId()).thenReturn(callIdHeader);
 
     DhruvaNetwork.setSipProvider("network_tcp", mockSipProvider);
-    createMultipleServerGroupElements();
-    optionsPingMonitor.createAndSendRequest("network_tcp" ,serverGroups.get(0).getElements().get(0));
+    ServerGroupElement sge =
+        ServerGroupElement.builder()
+            .setIpAddress("127.0.0.1")
+            .setPort(5060)
+            .setPriority(10)
+            .setWeight(10)
+            .setTransport(Transport.TCP)
+            .build();
+
+    optionsPingMonitor.createAndSendRequest("network_tcp" , sge);
     verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
 
   }

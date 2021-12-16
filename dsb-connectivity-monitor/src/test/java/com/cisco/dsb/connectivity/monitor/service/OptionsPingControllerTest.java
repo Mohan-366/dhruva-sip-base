@@ -4,6 +4,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.servergroup.Pingable;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
@@ -121,5 +122,15 @@ public class OptionsPingControllerTest {
 
     // if no such element is present in statusMap , return true
 
+  }
+
+  @Test (description = "Negative case when a non SG or SGE element status is requested")
+  public void testWhenNotSGOrSGEGetStatus() {
+
+    Assert.assertFalse(optionsPingController.getStatus(new NewPingable()));
+  }
+
+  class NewPingable implements Pingable {
+    public NewPingable() {}
   }
 }
