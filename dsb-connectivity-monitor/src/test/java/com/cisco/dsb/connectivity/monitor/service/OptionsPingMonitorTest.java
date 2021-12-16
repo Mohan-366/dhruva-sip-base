@@ -15,11 +15,14 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
+import gov.nist.javax.sip.header.CallID;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.text.ParseException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import javax.sip.SipException;
 import javax.sip.SipProvider;
 import javax.sip.header.CallIdHeader;
 import javax.sip.header.Header;
@@ -369,5 +372,27 @@ public class OptionsPingMonitorTest {
     CompletableFuture<SIPResponse> responseCompletableFuture =
         optionsPingMonitor.createAndSendRequest("net_sp_tcp", sge1);
     Assert.assertTrue(responseCompletableFuture.isCompletedExceptionally());
+  }
+
+  @Test
+  public void testCreateAndSendRequest() throws DhruvaException, SipException, ParseException {
+    SIPListenPoint sipListenPoint = SIPListenPoint.SIPListenPointBuilder()
+        .setHostIPAddress("1.1.1.1")
+        .setPort(5060)
+        .setTransport(Transport.TCP)
+        .setName("network_tcp")
+        .build();
+    DhruvaNetwork network = DhruvaNetwork.createNetwork("network_tcp", sipListenPoint);
+    CallID callID = new CallID();
+    callID.setCallId(new String ("my-call-id"));
+    CallIdHeader callIdHeader = (CallIdHeader) callID;
+    SipProvider mockSipProvider = mock(SipProvider.class);
+    when(mockSipProvider.getNewCallId()).thenReturn(callIdHeader);
+
+    DhruvaNetwork.setSipProvider("network_tcp", mockSipProvider);
+    createMultipleServerGroupElements();
+    optionsPingMonitor.createAndSendRequest("network_tcp" ,serverGroups.get(0).getElements().get(0));
+    verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
+
   }
 }
