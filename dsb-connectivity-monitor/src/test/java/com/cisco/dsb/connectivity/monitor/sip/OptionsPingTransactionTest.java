@@ -117,12 +117,26 @@ public class OptionsPingTransactionTest {
   }
 
   @Test(expectedExceptions = {NullPointerException.class})
-  void testNullParameters() throws SipException {
+  void testNullSIPRequest() throws SipException {
     OptionsPingTransaction optionsPingTransaction =
         new OptionsPingTransaction(dhruvaExecutorService);
     optionsPingTransaction.proxySendOutBoundRequest(null, null, null);
-
   }
+
+  @Test(expectedExceptions = {NullPointerException.class})
+  void testNullNetwork() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), null, null);
+  }
+
+  @Test(expectedExceptions = {NullPointerException.class})
+  void testNullSipProvider() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), DhruvaNetwork.getDefault(), null);
+  }
+
 
   @Test
   public void testNullClientTransaction() {
