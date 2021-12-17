@@ -160,10 +160,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
             .getSgPolicy().getFailoverResponseCodes().stream()
                 .anyMatch((failOverRespCode) -> failOverRespCode.equals(currentRespCode));
 
-    // update the best response
-    ProxySIPResponse bestResponse = cookie.getBestResponse();
-    if (bestResponse == null || bestResponse.getStatusCode() > currentRespCode) {
-      cookie.setBestResponse(proxySIPResponse);
+    // update the best response for non-3xx
+    if (!(this.enableRedirection() && proxySIPResponse.getResponseClass() == 3)) {
+      ProxySIPResponse bestResponse = cookie.getBestResponse();
+      if (bestResponse == null || bestResponse.getStatusCode() > currentRespCode) {
+        cookie.setBestResponse(proxySIPResponse);
+      }
     }
 
     return failOver;
