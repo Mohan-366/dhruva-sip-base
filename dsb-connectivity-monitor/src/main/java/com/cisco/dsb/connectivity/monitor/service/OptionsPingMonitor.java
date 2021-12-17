@@ -69,14 +69,15 @@ public class OptionsPingMonitor {
     logger.info("Starting OPTIONS pings!!");
     while (itr.hasNext()) {
       Map.Entry<String, ServerGroup> entry = itr.next();
+      ServerGroup serverGroup = entry.getValue();
       if (entry.getValue().isPingOn()) {
         pingPipeLine(
-            entry.getValue().getNetworkName(),
-            entry.getValue().getElements(),
-            entry.getValue().getOptionsPingPolicy().getUpTimeInterval(),
-            entry.getValue().getOptionsPingPolicy().getDownTimeInterval(),
-            entry.getValue().getOptionsPingPolicy().getPingTimeOut(),
-            entry.getValue().getOptionsPingPolicy().getFailoverResponseCodes());
+            serverGroup.getNetworkName(),
+            serverGroup.getElements(),
+            serverGroup.getOptionsPingPolicy().getUpTimeInterval(),
+            serverGroup.getOptionsPingPolicy().getDownTimeInterval(),
+            serverGroup.getOptionsPingPolicy().getPingTimeOut(),
+            serverGroup.getOptionsPingPolicy().getFailoverResponseCodes());
       }
     }
   }

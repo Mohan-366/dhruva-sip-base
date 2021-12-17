@@ -4,6 +4,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.servergroup.Pingable;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
@@ -91,13 +92,13 @@ public class OptionsPingControllerTest {
     optionsPingMonitor.elementStatus.put(sge3.hashCode(), true);
     //  optionsPingMonitor.elementStatus.put(sge3.hashCode(), false);
 
-    Assert.assertTrue(optionsPingController.getStatus(sge1));
-    Assert.assertFalse(optionsPingController.getStatus(sge2));
+    assertTrue(optionsPingController.getStatus(sge1));
+    assertFalse(optionsPingController.getStatus(sge2));
 
-    Assert.assertTrue(optionsPingController.getStatus(sge3));
+    assertTrue(optionsPingController.getStatus(sge3));
 
     // if no such element is present in statusMap , return true
-    Assert.assertTrue(optionsPingController.getStatus(sge4));
+    assertTrue(optionsPingController.getStatus(sge4));
   }
 
   @Test(description = "test status of ServerGroup")
@@ -117,9 +118,19 @@ public class OptionsPingControllerTest {
     optionsPingMonitor.elementStatus.put(sge4.hashCode(), true);
 
     //
-    Assert.assertTrue(optionsPingController.getStatus(server1));
+    assertTrue(optionsPingController.getStatus(server1));
 
     // if no such element is present in statusMap , return true
 
+  }
+
+  @Test (description = "Negative case when a non SG or SGE element status is requested")
+  public void testWhenNotSGOrSGEGetStatus() {
+
+    assertFalse(optionsPingController.getStatus(new NewPingable()));
+  }
+
+  class NewPingable implements Pingable {
+    public NewPingable() {}
   }
 }

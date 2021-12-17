@@ -7,6 +7,8 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
+import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.concurrent.CompletableFuture;
@@ -112,5 +114,53 @@ public class OptionsPingTransactionTest {
     request.setLocalPort(5888);
     optionsPingTransaction.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
     Assert.assertTrue(request.getLocalPort() == 5999);
+  }
+
+  @Test(expectedExceptions = {NullPointerException.class})
+  void testNullSIPRequest() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    optionsPingTransaction.proxySendOutBoundRequest(null, null, null);
+  }
+
+  @Test(expectedExceptions = {NullPointerException.class})
+  void testNullNetwork() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), null, null);
+  }
+
+  @Test(expectedExceptions = {NullPointerException.class})
+  void testNullSipProvider() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), DhruvaNetwork.getDefault(), null);
+  }
+
+
+  @Test
+  public void testNullClientTransaction() {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    SIPResponse sipResponse = new SIPResponse();
+    Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(null, sipResponse ));
+  }
+
+  @Test
+  public void testCorruptedApplicationDataInClientTransaction() {
+    ApplicationDataCookie applicationDataCookie = new ApplicationDataCookie();
+    applicationDataCookie.setPayloadType(Type.DEFAULT);
+    ClientTransaction mockClientTransaction = mock(ClientTransaction.class);
+    when(mockClientTransaction.getApplicationData()).thenReturn(applicationDataCookie);
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(mockClientTransaction, new SIPResponse()));
+  }
+
+  @Test
+  public void testDefaultValueForApplicationDataCookie() {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService);
+    Assert.assertNull(optionsPingTransaction.getApplicationDataCookie(Type.DEFAULT, null));
   }
 }

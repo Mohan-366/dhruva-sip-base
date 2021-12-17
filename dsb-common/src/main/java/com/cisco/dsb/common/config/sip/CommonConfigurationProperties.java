@@ -102,9 +102,10 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
-  @Getter private final Map<String, ServerGroup> serverGroups = new HashMap<>();
-  @Getter private final Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
-  @Getter private final Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
+  @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
+  @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
+
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
