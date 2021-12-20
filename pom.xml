@@ -78,6 +78,10 @@
     </dependencyManagement>
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.ciscospark</groupId>
             <artifactId>cisco-spark-starter-server</artifactId>
             <exclusions>
