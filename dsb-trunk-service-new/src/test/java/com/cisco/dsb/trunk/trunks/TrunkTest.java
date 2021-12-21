@@ -86,7 +86,7 @@ public class TrunkTest {
     Egress egrees = new Egress();
     ServerGroup serverGroup =
         ServerGroup.builder()
-            .setName("alpha.webex.com")
+            .setHostName("alpha.webex.com")
             .setTransport(Transport.TCP)
             .setSgType(SGType.SRV)
             .setLbType(LBType.WEIGHT)
@@ -95,7 +95,7 @@ public class TrunkTest {
             .build();
     Map<String, ServerGroup> serverGroupMap = egrees.getServerGroupMap();
     egrees.setLbType(LBType.WEIGHT);
-    serverGroupMap.put(serverGroup.getName(), serverGroup);
+    serverGroupMap.put(serverGroup.getHostName(), serverGroup);
     antaresTrunk.setEgress(egrees);
     // dnsServerGroupUtil is not set, which will throw NPE. Since this fails before sending request
     // to proxy,
@@ -114,7 +114,7 @@ public class TrunkTest {
 
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test.akg.com")
+            .setHostName("test.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -153,7 +153,7 @@ public class TrunkTest {
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getName()));
+    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
   }
 
   @Test(description = "single static sg")
@@ -161,7 +161,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("static1")
+            .setHostName("static1")
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
@@ -203,7 +203,7 @@ public class TrunkTest {
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(4)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(3)).setHost(eq(sg1.getName()));
+    verify(clonedUri, times(3)).setHost(eq(sg1.getHostName()));
   }
 
   @Test(description = "pick based on availability")
@@ -213,7 +213,7 @@ public class TrunkTest {
     OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("static1")
+            .setHostName("static1")
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
@@ -277,7 +277,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("static1")
+            .setHostName("static1")
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
@@ -289,7 +289,7 @@ public class TrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("test.akg.com")
+            .setHostName("test.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -346,8 +346,8 @@ public class TrunkTest {
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "multiple static sg")
@@ -356,7 +356,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("static1")
+            .setHostName("static1")
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
@@ -368,7 +368,7 @@ public class TrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("static2")
+            .setHostName("static2")
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
@@ -414,8 +414,8 @@ public class TrunkTest {
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "multiple dynamic sg")
@@ -423,7 +423,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test1.akg.com")
+            .setHostName("test1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -434,14 +434,14 @@ public class TrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("test2.akg.com")
+            .setHostName("test2.akg.com")
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
             .setSgPolicy(sgPolicy)
             .setNetworkName("testNetwork")
             .build();
-    ServerGroup sg3 = sg2.toBuilder().setName("test3.akg.com").setPriority(20).build();
+    ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
     trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk);
 
     AtomicInteger state =
@@ -495,8 +495,8 @@ public class TrunkTest {
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
+    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "DNS lookup failure")
@@ -504,7 +504,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test1.akg.com")
+            .setHostName("test1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -515,7 +515,7 @@ public class TrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("test2.akg.com")
+            .setHostName("test2.akg.com")
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
@@ -572,8 +572,8 @@ public class TrunkTest {
     verify(proxySIPRequest, atLeast(3)).clone();
     verify(proxySIPRequest, atMost(4)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(0)).setHost(eq(sg1.getName()));
-    verify(clonedUri, times(2)).setHost(eq(sg2.getName()));
+    verify(clonedUri, times(0)).setHost(eq(sg1.getHostName()));
+    verify(clonedUri, times(2)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "test overall timeout")
@@ -581,7 +581,7 @@ public class TrunkTest {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test1.akg.com")
+            .setHostName("test1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -592,14 +592,14 @@ public class TrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("test2.akg.com")
+            .setHostName("test2.akg.com")
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
             .setSgPolicy(sgPolicy)
             .setNetworkName("testNetwork")
             .build();
-    ServerGroup sg3 = sg2.toBuilder().setName("test3.akg.com").setPriority(20).build();
+    ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
     trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk);
     ProxySIPResponse bestResponse = mock(ProxySIPResponse.class);
     AtomicInteger state =
@@ -674,7 +674,7 @@ public class TrunkTest {
     PSTNTrunk pstnTrunk = new PSTNTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test.akg.com")
+            .setHostName("test.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -712,7 +712,7 @@ public class TrunkTest {
     verify(rUri, times(1)).removeParameter(SipParamConstants.DTG);
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getName()));
+    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
   }
 
   @Test
@@ -728,7 +728,7 @@ public class TrunkTest {
     CallingTrunk callingTrunk = new CallingTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("test.akg.com")
+            .setHostName("test.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -765,6 +765,6 @@ public class TrunkTest {
     // verification
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getName()));
+    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
   }
 }

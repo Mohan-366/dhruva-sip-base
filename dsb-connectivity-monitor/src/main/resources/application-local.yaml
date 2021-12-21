@@ -1,7 +1,7 @@
 common:
   serverGroups:
     SG1:
-      name: SG1
+      hostName: SG1
       networkName: TCPNetwork
       lbType: HIGHEST_Q
       pingOn: true

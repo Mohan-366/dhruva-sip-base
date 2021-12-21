@@ -12,6 +12,8 @@ import com.cisco.wx2.dto.ErrorInfo;
 import com.cisco.wx2.dto.ErrorList;
 import java.security.KeyStore;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -106,7 +108,6 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
-
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
   }
@@ -140,7 +141,7 @@ public class CommonConfigurationProperties {
               if (sgPolicy == null)
                 throw new DhruvaRuntimeException(
                     "SGName: "
-                        + serverGroup.getName()
+                        + serverGroup.getHostName()
                         + "; SGPolicy \""
                         + serverGroup.getSgPolicyConfig()
                         + "\" not present");
@@ -161,7 +162,7 @@ public class CommonConfigurationProperties {
               if (optionsPingPolicy == null)
                 throw new DhruvaRuntimeException(
                     "SGName: "
-                        + serverGroup.getName()
+                        + serverGroup.getHostName()
                         + "; OptionsPingPolicy \""
                         + serverGroup.getOptionsPingPolicyConfig()
                         + "\" not present");
@@ -171,7 +172,12 @@ public class CommonConfigurationProperties {
     updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
-  public void setServerGroups(Map<String, ServerGroup> serverGroups) {
+
+  public void setServerGroups(List<ServerGroup> serverGroupsList) {
+    Map<String, ServerGroup> serverGroups =
+        serverGroupsList.stream()
+            .collect(Collectors.toMap(ServerGroup::getName, Function.identity()));
+
     // update SG map
     updateMap(this.serverGroups, serverGroups);
     this.serverGroups
@@ -181,7 +187,7 @@ public class CommonConfigurationProperties {
               String network = sg.getNetworkName();
               if (listenPoints.stream().noneMatch(lp -> lp.getName().equals(network))) {
                 throw new DhruvaRuntimeException(
-                    "SGName: " + sg.getName() + "; listenPoint: \"" + network + "\" not found");
+                    "SGName: " + sg.getHostName() + "; listenPoint: \"" + network + "\" not found");
               }
             });
   }

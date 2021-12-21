@@ -74,14 +74,14 @@ public class OptionsPingControllerTest {
 
     server1 =
         ServerGroup.builder()
-            .setName("net1")
+            .setHostName("net1")
             .setElements(sgeList)
             .setSgPolicyConfig("global")
             .setPingOn(true)
             .build();
 
     map = new HashMap<>();
-    map.put(server1.getName(), server1);
+    map.put(server1.getHostName(), server1);
   }
 
   @Test(description = "test status of SGE")

@@ -68,7 +68,7 @@ public class TrunkTestUtil {
     serverGroups.stream()
         .forEach(
             sg -> {
-              serverGroupMap.put(sg.getName(), sg);
+              serverGroupMap.put(sg.getHostName(), sg);
             });
     abstractTrunk.setEgress(egrees);
     abstractTrunk.setDnsServerGroupUtil(dnsServerGroupUtil);
@@ -81,7 +81,7 @@ public class TrunkTestUtil {
       int rand = random.nextInt(255) + 1;
       Hop hop =
           new Hop(
-              sg1.getName(),
+              sg1.getHostName(),
               rand + "." + rand + "." + rand + "." + rand,
               sg1.getTransport(),
               srv ? rand * 30 : sg1.getPort(),

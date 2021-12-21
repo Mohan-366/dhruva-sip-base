@@ -27,7 +27,7 @@ public class DnsServerGroupUtil {
 
   public Mono<ServerGroup> createDNSServerGroup(ServerGroup serverGroup, String userId) {
 
-    String hostname = serverGroup.getName();
+    String hostname = serverGroup.getHostName();
     int port = serverGroup.getPort();
     User userInject = null;
     if (userId != null) userInject = User.builder().id(UUID.fromString(userId)).build();

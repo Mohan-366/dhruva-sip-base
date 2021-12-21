@@ -30,8 +30,8 @@ trunk:
           - Antares2
 common:
   serverGroups:
-    SG1:
-      name: SG1
+    - name: &SG1 SG1
+      hostName: SG1
       networkName: testNetwork
       lbType: weight
       elements:
@@ -48,8 +48,8 @@ common:
       sgPolicy: policy1
       qValue: 0.9
       weight: 100
-    SG2:
-      name: SG2
+    - name: &SG2 SG2
+      hostName: SG2
       networkName: testNetwork
       lbType: weight
       elements:
@@ -66,8 +66,8 @@ common:
       sgPolicy: policy1
       qValue: 0.9
       weight: 50
-    Antares1:
-      name: Antares1
+    - name: &Antares1 Antares1
+      hostName: Antares1
       networkName: testNetwork
       lbType: weight
       elements:
@@ -82,8 +82,8 @@ common:
           qValue: 0.9
           weight: 10
       sgPolicy: policy1
-    Antares2:
-      name: Antares2
+    - name: &Antares2 Antares2
+      hostName: Antares2
       networkName: testNetwork
       lbType: weight
       elements:
