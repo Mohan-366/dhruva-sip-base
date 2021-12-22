@@ -7,6 +7,7 @@ import java.net.URI;
 import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -33,17 +34,17 @@ public class DhruvaProperties extends ConfigProperties {
   private static BuildInfo buildInfo;
   private final Environment env;
 
-  @Getter private String podNameEnvVar;
-
+  @Getter @Setter private String podNameEnvVar;
 
   @PostConstruct
-  public void init(){
+  public void init() {
     /* Pod name can be in form of dhruva-abc-0, dhruva-xyz-1 where 0,1 are the unique ordinal indexes of the stateful set in k8s env */
     this.podNameEnvVar =
-            StringUtils.isBlank(System.getenv(POD_NAME_ENV_VAR_KEY))
-                    ? String.valueOf(0)
-                    : System.getenv(POD_NAME_ENV_VAR_KEY);
+        StringUtils.isBlank(System.getenv(POD_NAME_ENV_VAR_KEY))
+            ? String.valueOf(0)
+            : System.getenv(POD_NAME_ENV_VAR_KEY);
   }
+
   public enum Env {
     integration,
     production
@@ -55,14 +56,7 @@ public class DhruvaProperties extends ConfigProperties {
     this.env = env;
   }
 
-  @Override
-  public int getApplicationInstanceIndex() {
 
-    int instanceIndex = 0;
-
-    logger.debug("Instance Index is: {} ", String.valueOf(instanceIndex));
-    return instanceIndex;
-  }
 
   public static String createUserAgentString(String uaType, Environment env) {
     String userAgent = uaType;
