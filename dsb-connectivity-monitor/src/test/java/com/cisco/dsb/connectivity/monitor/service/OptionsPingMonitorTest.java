@@ -15,11 +15,14 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
+import gov.nist.javax.sip.header.CallID;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.text.ParseException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import javax.sip.SipException;
 import javax.sip.SipProvider;
 import javax.sip.header.CallIdHeader;
 import javax.sip.header.Header;
@@ -118,14 +121,14 @@ public class OptionsPingMonitorTest {
       ServerGroup sg =
           ServerGroup.builder()
               .setNetworkName("net" + i)
-              .setName("SGName" + i)
+              .setHostName("SGName" + i)
               .setElements(sgeList)
               .setPingOn(true)
               .setOptionsPingPolicy(optionsPingPolicy)
               .build();
 
       serverGroups.add(sg);
-      initmap.put(sg.getName(), sg);
+      initmap.put(sg.getHostName(), sg);
     }
   }
 
@@ -170,14 +173,14 @@ public class OptionsPingMonitorTest {
 
     ServerGroup server1 =
         ServerGroup.builder()
-            .setName("net1")
+            .setHostName("net1")
             .setElements(sgeList)
             .setSgPolicyConfig("global")
             .setPingOn(true)
             .build();
 
     map = new HashMap<>();
-    map.put(server1.getName(), server1);
+    map.put(server1.getHostName(), server1);
   }
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
@@ -189,7 +192,9 @@ public class OptionsPingMonitorTest {
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
+
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
+
     optionsPingMonitor = null;
   }
 
@@ -368,5 +373,35 @@ public class OptionsPingMonitorTest {
     CompletableFuture<SIPResponse> responseCompletableFuture =
         optionsPingMonitor.createAndSendRequest("net_sp_tcp", sge1);
     Assert.assertTrue(responseCompletableFuture.isCompletedExceptionally());
+  }
+
+  @Test
+  public void testCreateAndSendRequest() throws DhruvaException, SipException, ParseException {
+    SIPListenPoint sipListenPoint = SIPListenPoint.SIPListenPointBuilder()
+        .setHostIPAddress("1.1.1.1")
+        .setPort(5060)
+        .setTransport(Transport.TCP)
+        .setName("network_tcp")
+        .build();
+    DhruvaNetwork network = DhruvaNetwork.createNetwork("network_tcp", sipListenPoint);
+    CallID callID = new CallID();
+    callID.setCallId(new String ("my-call-id"));
+    CallIdHeader callIdHeader = (CallIdHeader) callID;
+    SipProvider mockSipProvider = mock(SipProvider.class);
+    when(mockSipProvider.getNewCallId()).thenReturn(callIdHeader);
+
+    DhruvaNetwork.setSipProvider("network_tcp", mockSipProvider);
+    ServerGroupElement sge =
+        ServerGroupElement.builder()
+            .setIpAddress("127.0.0.1")
+            .setPort(5060)
+            .setPriority(10)
+            .setWeight(10)
+            .setTransport(Transport.TCP)
+            .build();
+
+    optionsPingMonitor.createAndSendRequest("network_tcp" , sge);
+    verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
+
   }
 }

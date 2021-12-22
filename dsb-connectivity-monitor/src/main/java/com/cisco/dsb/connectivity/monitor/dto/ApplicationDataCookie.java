@@ -9,6 +9,7 @@ public class ApplicationDataCookie {
   @Getter @Setter Object payload;
 
   public enum Type {
-    OPTIONS_RESPONSE;
+    OPTIONS_RESPONSE,
+    DEFAULT;
   }
 }

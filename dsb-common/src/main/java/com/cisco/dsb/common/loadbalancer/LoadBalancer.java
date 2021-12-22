@@ -68,8 +68,7 @@ public final class LoadBalancer {
    * @param lbElements - Elements to be loadbalanced
    */
   private void initialiseTreeSet(Collection<? extends LBElement> lbElements) {
-    elementsToTry = new TreeSet<>();
-    lbElements.stream().filter(LBElement::isActive).forEach(elementsToTry::add);
+    elementsToTry = new TreeSet<>(lbElements);
   }
 
   public TreeSet<? extends LBElement> getElementsToTry() {

@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 public class PSTNTrunk extends AbstractTrunk {
   @Builder(setterPrefix = "set")
   public PSTNTrunk(String name, Ingress ingress, Egress egress) {
-    super(name, ingress, egress, null);
+    super(name, ingress, egress, null, null);
   }
 
   @Override
@@ -45,7 +45,7 @@ public class PSTNTrunk extends AbstractTrunk {
   protected void doPostRouteNorm(TrunkCookie cookie) {
     SipUri rUri = ((SipUri) cookie.getClonedRequest().getRequest().getRequestURI());
     try {
-      rUri.setHost(((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getName());
+      rUri.setHost(((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getHostName());
     } catch (ParseException e) {
       throw new DhruvaRuntimeException(
           ErrorCode.APP_REQ_PROC,

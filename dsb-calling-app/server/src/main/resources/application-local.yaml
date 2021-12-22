@@ -20,8 +20,8 @@ common:
       transport: UDP
       hostIPAddress: "127.0.0.1"
   serverGroups:
-    UsPoolA:
-      name: &UsPoolA UsPoolA
+    - name: &UsPoolA UsPoolA
+      hostName: "UsPoolA"
       networkName: *netsp
       lbType: weight
       elements:
@@ -36,10 +36,11 @@ common:
           priority: 5
           weight: 100
       sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
-    UsPoolB:
-      name: &UsPoolB UsPoolB
+    - name: &UsPoolB UsPoolB
+      hostName: "UsPoolB"
       networkName: *netsp
       lbType: weight
       elements:
@@ -49,10 +50,11 @@ common:
           priority: 10
           weight: 100
       sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
       priority: 20
       weight: 100
-    InPoolA:
-      name: &InPoolA InPoolA
+    - name: &InPoolA InPoolA
+      hostName: "InPoolA"
       networkName: *netsp
       lbType: weight
       elements:
@@ -62,10 +64,11 @@ common:
           priority: 10
           weight: 100
       sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
-    Antares:
-      name: "test.beech.com"
+    - name: &Antares Antares
+      hostName: "test.beech.com"
       networkName: *netb2b
       lbType: weight
       sgPolicy: policy1
@@ -74,21 +77,24 @@ common:
       sgType: A_RECORD
       port: 7060
       transport: UDP
-    NS1:
-      name: "ns1.cc.com"
+      optionsPingPolicy: opPolicy1
+    - name: &NS1 NS1
+      hostName: "ns1.cc.com"
       networkName: *netcc
       lbType: weight
       sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
       sgType: A_RECORD
       port: 8060
       transport: UDP
-    NS2:
-      name: "ns2.cc.com"
+    - name: &NS2 NS2
+      hostName: "ns2.cc.com"
       networkName: *netcc
       lbType: weight
       sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
       sgType: A_RECORD
@@ -100,7 +106,16 @@ common:
       failoverResponseCodes:
         - 501
         - 502
-
+  optionsPingPolicy:
+    opPolicy1:
+      name: opPolicy1
+      failoverResponseCodes:
+        - 501
+        - 502
+        - 503
+      upTimeInterval: 30000
+      downTimeInterval: 5000
+      pingTimeOut: 500
 trunk:
   PSTN:
     CcpFusionUS:
@@ -128,7 +143,7 @@ trunk:
       egress:
         lbType: ONCE
         serverGroups:
-          - Antares
+          - *Antares
   CallingCore:
     NS:
       name: NS
@@ -137,5 +152,5 @@ trunk:
       egress:
         lbType: ONCE
         serverGroups:
-          - NS1
-          - NS2
+          - *NS1
+          - *NS2

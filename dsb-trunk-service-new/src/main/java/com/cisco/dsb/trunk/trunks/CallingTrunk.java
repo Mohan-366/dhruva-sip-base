@@ -35,9 +35,9 @@ public class CallingTrunk extends AbstractTrunk {
     SipUri rUri = ((SipUri) cookie.getClonedRequest().getRequest().getRequestURI());
     String host;
     if (cookie.getRedirectionSG() != null) {
-      host = cookie.getRedirectionSG().getName();
+      host = cookie.getRedirectionSG().getHostName();
     } else {
-      host = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getName();
+      host = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getHostName();
     }
     try {
       rUri.setHost(host);

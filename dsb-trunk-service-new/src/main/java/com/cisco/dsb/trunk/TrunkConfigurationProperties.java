@@ -4,6 +4,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.trunk.trunks.*;
 import java.util.*;
 import lombok.CustomLog;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 public class TrunkConfigurationProperties {
   private CommonConfigurationProperties commonConfigurationProperties;
   private DnsServerGroupUtil dnsServerGroupUtil;
+  private OptionsPingController optionsPingController;
 
   @Autowired
   public void setCommonConfigurationProperties(
@@ -32,6 +34,11 @@ public class TrunkConfigurationProperties {
   @Autowired
   public void setDnsServerGroupUtil(DnsServerGroupUtil dnsServerGroupUtil) {
     this.dnsServerGroupUtil = dnsServerGroupUtil;
+  }
+
+  @Autowired
+  public void setOptionsPingController(OptionsPingController optionsPingController) {
+    this.optionsPingController = optionsPingController;
   }
   // Key is name of trunk
   // <String,PSTNTrunk> pstnTrunks;
@@ -68,6 +75,7 @@ public class TrunkConfigurationProperties {
         });
 
     trunk.setDnsServerGroupUtil(dnsServerGroupUtil);
+    trunk.setOptionsPingController(optionsPingController);
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {

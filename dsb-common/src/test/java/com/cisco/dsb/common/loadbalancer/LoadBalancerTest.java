@@ -200,7 +200,7 @@ public class LoadBalancerTest {
       int qValue = qValues[random.nextInt(3)];
       int weight = weights[random.nextInt(3)];
       ServerGroup sg = new ServerGroup();
-      sg.setName(name);
+      sg.setHostName(name);
       sg.setPriority(qValue);
       sg.setWeight(weight);
       serverGroups.add(sg);

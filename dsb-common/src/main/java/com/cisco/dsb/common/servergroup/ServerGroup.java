@@ -12,8 +12,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(setterPrefix = "set", toBuilder = true)
-public class ServerGroup implements LBElement, LoadBalancable {
+public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   private String name;
+  private String hostName;
   private String networkName;
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
   private boolean pingOn = false;
@@ -31,7 +32,7 @@ public class ServerGroup implements LBElement, LoadBalancable {
   @Override
   public boolean equals(Object a) {
     if (a instanceof ServerGroup) {
-      return ((ServerGroup) a).name.equals(name);
+      return ((ServerGroup) a).hostName.equals(hostName);
     }
     return false;
   }
@@ -67,19 +68,15 @@ public class ServerGroup implements LBElement, LoadBalancable {
     int compare;
     if ((compare = Float.compare(this.priority, ((ServerGroup) obj).priority)) != 0) return compare;
     if ((compare = Integer.compare(((ServerGroup) obj).weight, this.weight)) != 0) return compare;
-    if ((compare = ((ServerGroup) obj).name.compareTo(this.name)) != 0) return compare;
+    if ((compare = ((ServerGroup) obj).hostName.compareTo(this.hostName)) != 0) return compare;
     return 0;
-  }
-
-  @Override
-  public boolean isActive() {
-    return true;
   }
 
   @Override
   public String toString() {
     return String.format(
-        "( name=%s ;network=%s ;priority=%d ;weight=%d )", name, networkName, priority, weight);
+        "( Name=%s HostName=%s ;network=%s ;priority=%d ;weight=%d )",
+        name, hostName, networkName, priority, weight);
   }
 
   @Override

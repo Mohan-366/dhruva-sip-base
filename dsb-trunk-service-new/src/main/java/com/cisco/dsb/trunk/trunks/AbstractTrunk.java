@@ -11,6 +11,7 @@ import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.util.RedirectionSet;
@@ -34,17 +35,18 @@ import reactor.core.publisher.Mono;
 @NoArgsConstructor
 @CustomLog
 public abstract class AbstractTrunk implements LoadBalancable {
-
   protected String name;
   protected Ingress ingress;
   protected Egress egress;
   private DnsServerGroupUtil dnsServerGroupUtil;
+  private OptionsPingController optionsPingController;
 
   public AbstractTrunk(AbstractTrunk abstractTrunk) {
     this.name = abstractTrunk.name;
     this.ingress = abstractTrunk.ingress;
     this.egress = abstractTrunk.egress;
     this.dnsServerGroupUtil = abstractTrunk.dnsServerGroupUtil;
+    this.optionsPingController = abstractTrunk.optionsPingController;
   }
 
   @Override
@@ -158,10 +160,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
             .getSgPolicy().getFailoverResponseCodes().stream()
                 .anyMatch((failOverRespCode) -> failOverRespCode.equals(currentRespCode));
 
-    // update the best response
-    ProxySIPResponse bestResponse = cookie.getBestResponse();
-    if (bestResponse == null || bestResponse.getStatusCode() > currentRespCode) {
-      cookie.setBestResponse(proxySIPResponse);
+    // update the best response for non-3xx
+    if (!(this.enableRedirection() && proxySIPResponse.getResponseClass() == 3)) {
+      ProxySIPResponse bestResponse = cookie.getBestResponse();
+      if (bestResponse == null || bestResponse.getStatusCode() > currentRespCode) {
+        cookie.setBestResponse(proxySIPResponse);
+      }
     }
 
     return failOver;
@@ -202,18 +206,50 @@ public abstract class AbstractTrunk implements LoadBalancable {
       }
     }
 
-    ServerGroupElement serverGroupElement;
-    LoadBalancer sgeLB;
+    LoadBalancer sgeLB = cookie.getSgeLoadBalancer();
+    ServerGroupElement serverGroupElement = null;
     // dynamic sg from SRV/A_Record, create first time or when no SGE from current SG and there is
     // next SG
-    if ((sgeLB = cookie.getSgeLoadBalancer()) == null
+    if ((sgeLB) == null
         || ((serverGroupElement = ((ServerGroupElement) sgeLB.getNextElement())) == null
             && (serverGroup = (ServerGroup) sgLB.getNextElement()) != null)) {
       if (serverGroup.getSgType() == SGType.STATIC) {
-        sgeLB = LoadBalancer.of(serverGroup);
-        cookie.setSgeLoadBalancer(sgeLB);
-        return Mono.just(
-            getEndPointFromSge(serverGroup, (ServerGroupElement) sgeLB.getCurrentElement()));
+
+        while (serverGroup != null
+            && optionsPingController != null
+            && !optionsPingController.getStatus(serverGroup)) {
+          logger.error(
+              "serverGroup {} is DOWN, trying next serverGroup", serverGroup.getHostName());
+          serverGroup = (ServerGroup) cookie.getSgLoadBalancer().getNextElement();
+        }
+
+        if (serverGroup == null)
+          return Mono.error(
+              new DhruvaRuntimeException(ErrorCode.TRUNK_NO_RETRY, "None of the SGs are up"));
+
+        // TODO: modify logic when taking up DNS serverGroup optionsPing
+        if (serverGroup.getSgType() == SGType.STATIC) {
+
+          sgeLB = LoadBalancer.of(serverGroup);
+          serverGroupElement = (ServerGroupElement) sgeLB.getCurrentElement();
+
+          while (serverGroupElement != null
+              && optionsPingController != null
+              && !optionsPingController.getStatus(serverGroupElement)) {
+            logger.error(
+                "serverGroupElement {} is DOWN, trying next serverGroupelement",
+                serverGroupElement);
+
+            serverGroupElement = (ServerGroupElement) sgeLB.getNextElement();
+          }
+          if (serverGroupElement == null)
+            return Mono.error(
+                new DhruvaRuntimeException(ErrorCode.TRUNK_NO_RETRY, "None of the SGEs are up "));
+
+          cookie.setSgeLoadBalancer(sgeLB);
+          return Mono.just(
+              getEndPointFromSge(serverGroup, (ServerGroupElement) sgeLB.getCurrentElement()));
+        }
       }
       logger.debug("Querying DNS for SG:{}", serverGroup);
       return dnsServerGroupUtil
@@ -240,8 +276,15 @@ public abstract class AbstractTrunk implements LoadBalancable {
               });
     }
     // sge already exists, use it to return next element
-    if (serverGroupElement != null)
+
+    if (serverGroupElement != null) {
+      while (serverGroupElement != null
+          && optionsPingController != null
+          && !optionsPingController.getStatus(serverGroupElement)) {
+        serverGroupElement = (ServerGroupElement) sgeLB.getNextElement();
+      }
       return Mono.just(getEndPointFromSge(serverGroup, serverGroupElement));
+    }
 
     // no more sg
     logger.warn("No more endpoints to try!!!");
@@ -278,7 +321,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     } else transport = serverGroup.getTransport();
     return serverGroup
         .toBuilder()
-        .setName(((AddressImpl) contact.getAddress()).getHost())
+        .setHostName(((AddressImpl) contact.getAddress()).getHost())
         .setPort(port)
         .setTransport(transport)
         .build();

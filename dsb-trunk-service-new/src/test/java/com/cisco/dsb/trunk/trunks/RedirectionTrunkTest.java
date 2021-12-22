@@ -93,7 +93,7 @@ public class RedirectionTrunkTest {
     // dsb(follow 302) -> trunk(success Response except 3xx)
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("ns1.akg.com")
+            .setHostName("ns1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -104,7 +104,7 @@ public class RedirectionTrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("ns2.akg.com")
+            .setHostName("ns2.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -190,7 +190,7 @@ public class RedirectionTrunkTest {
     CallingTrunk trunk = new CallingTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
-            .setName("ns1.akg.com")
+            .setHostName("ns1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
@@ -201,7 +201,7 @@ public class RedirectionTrunkTest {
 
     ServerGroup sg2 =
         ServerGroup.builder()
-            .setName("ns2.akg.com")
+            .setHostName("ns2.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
             .setWeight(100)
