@@ -25,7 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("${cisco-spark.server.api-path:/api}/v1/admin")
 public class AdminController extends AbstractController {
 
-  @Autowired private DnsInjectionService dnsInjectionService;
+  private DnsInjectionService dnsInjectionService;
+
+  @Autowired
+  public void setDnsInjectionService(DnsInjectionService dnsInjectionService) {
+    this.dnsInjectionService = dnsInjectionService;
+  }
 
   @AuthorizeAnonymous
   @AuthorizeSuppressWarnings(ValidationType.ANONYMOUS_AUTH_APPLIED_TO_WRITE_API)

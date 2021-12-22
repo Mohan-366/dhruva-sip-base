@@ -8,7 +8,6 @@ import gov.nist.javax.sip.header.ContactList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 
 public class RedirectionSet {
   private HashSet<String> hashSet = new HashSet<>();
@@ -55,16 +54,6 @@ public class RedirectionSet {
   }
 
   /**
-   * returns the last element,without removing the element
-   *
-   * @return
-   */
-  public Contact last() {
-    if (treeSet.isEmpty()) return null;
-    return treeSet.last();
-  }
-
-  /**
    * returns the first element and removes the element
    *
    * @return
@@ -74,22 +63,8 @@ public class RedirectionSet {
     return treeSet.pollFirst();
   }
 
-  /**
-   * returns the last element and removed the element
-   *
-   * @return
-   */
-  public Contact pollLast() {
-    if (treeSet.isEmpty()) return null;
-    return treeSet.pollLast();
-  }
-
   public int size() {
     return treeSet.size();
-  }
-
-  public Stream<Contact> stream() {
-    return treeSet.stream();
   }
 
   /**
@@ -113,15 +88,26 @@ public class RedirectionSet {
               ((AddressImpl) _this.getAddress()).getPort()
                   - ((AddressImpl) _that.getAddress()).getPort())
           != 0) return compare;
-      String transport_this =
+      Transport transport_this, transport_that;
+      String trans_this =
           _this.hasParameter("transport")
               ? _this.getParameter("transport")
               : String.valueOf(Transport.UDP);
-      String transport_that =
+      String trans_that =
           _that.hasParameter("transport")
               ? _that.getParameter("transport")
               : String.valueOf(Transport.UDP);
-      return transport_this.compareTo(transport_that);
+      try {
+        transport_this = Transport.valueOf(trans_this);
+      } catch (IllegalArgumentException ex) {
+        transport_this = Transport.UDP;
+      }
+      try {
+        transport_that = Transport.valueOf(trans_that);
+      } catch (IllegalArgumentException ex) {
+        transport_that = Transport.UDP;
+      }
+      return Integer.compare(transport_this.getValue(), transport_that.getValue());
     };
   }
 }

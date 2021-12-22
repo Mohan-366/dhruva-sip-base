@@ -1,17 +1,15 @@
 package com.cisco.dsb.connectivity.monitor.util;
 
 import com.cisco.dsb.common.transport.Transport;
-import java.util.Optional;
-import org.apache.commons.collections4.iterators.TransformIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class OptionsUtilTest {
 
-
   @Test
   public void testTLSNumTries() {
-    Integer expected = 1; // TODO remove hardcoded values once optionsPingConfigProperties reads from config
+    Integer expected =
+        1; // TODO remove hardcoded values once optionsPingConfigProperties reads from config
     Assert.assertEquals(OptionsUtil.getNumRetry(Transport.TLS), expected);
   }
 

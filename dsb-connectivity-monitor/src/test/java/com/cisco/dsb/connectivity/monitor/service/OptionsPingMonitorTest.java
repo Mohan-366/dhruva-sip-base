@@ -192,7 +192,6 @@ public class OptionsPingMonitorTest {
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
-
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
 
     optionsPingMonitor = null;
@@ -377,15 +376,16 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void testCreateAndSendRequest() throws DhruvaException, SipException, ParseException {
-    SIPListenPoint sipListenPoint = SIPListenPoint.SIPListenPointBuilder()
-        .setHostIPAddress("1.1.1.1")
-        .setPort(5060)
-        .setTransport(Transport.TCP)
-        .setName("network_tcp")
-        .build();
+    SIPListenPoint sipListenPoint =
+        SIPListenPoint.SIPListenPointBuilder()
+            .setHostIPAddress("1.1.1.1")
+            .setPort(5060)
+            .setTransport(Transport.TCP)
+            .setName("network_tcp")
+            .build();
     DhruvaNetwork network = DhruvaNetwork.createNetwork("network_tcp", sipListenPoint);
     CallID callID = new CallID();
-    callID.setCallId(new String ("my-call-id"));
+    callID.setCallId(new String("my-call-id"));
     CallIdHeader callIdHeader = (CallIdHeader) callID;
     SipProvider mockSipProvider = mock(SipProvider.class);
     when(mockSipProvider.getNewCallId()).thenReturn(callIdHeader);
@@ -400,8 +400,7 @@ public class OptionsPingMonitorTest {
             .setTransport(Transport.TCP)
             .build();
 
-    optionsPingMonitor.createAndSendRequest("network_tcp" , sge);
+    optionsPingMonitor.createAndSendRequest("network_tcp", sge);
     verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
-
   }
 }

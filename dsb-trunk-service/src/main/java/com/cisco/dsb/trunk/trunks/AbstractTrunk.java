@@ -218,8 +218,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
         while (serverGroup != null
             && optionsPingController != null
             && !optionsPingController.getStatus(serverGroup)) {
-          logger.error(
-              "serverGroup {} is DOWN, trying next serverGroup", serverGroup.getHostName());
+          logger.error("serverGroup {} is DOWN, trying next serverGroup", serverGroup.getName());
           serverGroup = (ServerGroup) cookie.getSgLoadBalancer().getNextElement();
         }
 
@@ -304,20 +303,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
     port = (port == -1) ? 0 : port;
     Transport transport;
     if (contact.getParameter("transport") != null) {
-      switch (contact.getParameter("transport").toLowerCase(Locale.ROOT)) {
-        case "tcp":
-          transport = Transport.TCP;
-          break;
-        case "udp":
-          transport = Transport.UDP;
-          break;
-        case "tls":
-          transport = Transport.TLS;
-          break;
-        default:
-          transport = serverGroup.getTransport();
-          break;
+      try {
+        transport = Transport.valueOf(contact.getParameter("transport").toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException ex) {
+        logger.debug("Invalid transport type in contact header", ex);
+        transport = serverGroup.getTransport();
       }
+
     } else transport = serverGroup.getTransport();
     return serverGroup
         .toBuilder()

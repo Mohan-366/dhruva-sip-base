@@ -38,7 +38,7 @@
         <module>dsb-proxy</module>
         <module>sample-app</module>
         <module>dsb-connectivity-monitor</module>
-        <module>dsb-trunk-service-new</module>
+        <module>dsb-trunk-service</module>
     </modules>
 
     <properties>
