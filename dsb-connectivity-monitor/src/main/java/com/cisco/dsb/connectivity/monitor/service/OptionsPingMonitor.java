@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
@@ -47,6 +48,7 @@ public class OptionsPingMonitor {
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
+  protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
   private static final int QUEUE_TASK_CAP = 100;
   private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
@@ -70,8 +72,10 @@ public class OptionsPingMonitor {
     while (itr.hasNext()) {
       Map.Entry<String, ServerGroup> entry = itr.next();
       ServerGroup serverGroup = entry.getValue();
+//      serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
       if (entry.getValue().isPingOn()) {
         pingPipeLine(
+            serverGroup.getName(),
             serverGroup.getNetworkName(),
             serverGroup.getElements(),
             serverGroup.getOptionsPingPolicy().getUpTimeInterval(),
@@ -82,14 +86,30 @@ public class OptionsPingMonitor {
     }
   }
 
-  protected Flux<ServerGroupElement> upElementsFlux(List<ServerGroupElement> list, int upInterval) {
-    return Flux.fromIterable(list)
+  protected Flux<ServerGroupElement> upElementsFlux(
+      List<ServerGroupElement> list, int upInterval, String serverGroupName) {
+    AtomicInteger counter = new AtomicInteger();
+    return Flux.defer( () -> Flux.fromIterable(list))
         .filter(
             e -> {
               Boolean status = elementStatus.get(e.hashCode());
-
+              logger.info("KALPA: element {} status {} : ", e, status);
               if (status == null || status) {
+                Boolean sgStatus = serverGroupStatus.get(serverGroupName);
+                if (sgStatus == null || !sgStatus) {
+                  serverGroupStatus.put(serverGroupName, true);
+                  logger.info("KALPA: Setting ServerGroup status to UP for {}", serverGroupName);
+                  Event.emitSGEvent(serverGroupName, false);
+                }
+                counter.getAndSet(0);
                 return true;
+              }
+              logger.info("KALPA: counter count: ", counter.get());
+              if (counter.getAndIncrement() == (list.size() - 1)) {
+                serverGroupStatus.put(serverGroupName, false);
+                logger.info("KALPA: Setting ServerGroup status to DOWN for {}", serverGroupName);
+                Event.emitSGEvent(serverGroupName, true);
+                counter.getAndSet(0);
               }
               return false;
             })
@@ -101,14 +121,30 @@ public class OptionsPingMonitor {
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
-      List<ServerGroupElement> list, int downInterval) {
-    return Flux.fromIterable(list)
+      List<ServerGroupElement> list, int downInterval, String serverGroupName) {
+    AtomicInteger counter = new AtomicInteger();
+    return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
+              Boolean sgStatus = serverGroupStatus.get(serverGroupName);
               Boolean status = elementStatus.get(e.hashCode());
               if (status != null && !status) {
+                if (sgStatus == null || sgStatus) {
+                if (counter.getAndIncrement() == (list.size() - 1)) {
+                  serverGroupStatus.put(serverGroupName, false);
+                  logger.info("KALPA: Setting ServerGroup status to DOWN for {}", serverGroupName);
+                  Event.emitSGEvent(serverGroupName, true);
+                  counter.getAndSet(0);
+                }
+                }
                 return true;
               }
+              if (sgStatus == null || !sgStatus) {
+                serverGroupStatus.put(serverGroupName, true);
+                logger.info("KALPA: Setting ServerGroup status to UP for {}", serverGroupName);
+                Event.emitSGEvent(serverGroupName, false);
+              }
+
               return false;
             })
         .repeatWhen(
@@ -119,6 +155,7 @@ public class OptionsPingMonitor {
   }
 
   protected void pingPipeLine(
+      String serverGroupName,
       String network,
       List<ServerGroupElement> list,
       int upInterval,
@@ -127,7 +164,7 @@ public class OptionsPingMonitor {
       List<Integer> failoverCodes) {
 
     Flux<SIPResponse> upElementsResponse =
-        upElementsFlux(list, upInterval)
+        upElementsFlux(list, upInterval, serverGroupName)
             .flatMap(
                 element -> {
                   return sendPingRequestToUpElement(
@@ -135,7 +172,7 @@ public class OptionsPingMonitor {
                 });
 
     Flux<SIPResponse> downElementsResponse =
-        downElementsFlux(list, downInterval)
+        downElementsFlux(list, downInterval, serverGroupName)
             .flatMap(
                 element -> {
                   return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);

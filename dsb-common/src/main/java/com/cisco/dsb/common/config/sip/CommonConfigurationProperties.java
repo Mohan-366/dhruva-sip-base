@@ -106,7 +106,6 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
-
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
   }

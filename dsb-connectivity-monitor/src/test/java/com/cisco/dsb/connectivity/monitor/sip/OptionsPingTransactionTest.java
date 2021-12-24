@@ -134,16 +134,16 @@ public class OptionsPingTransactionTest {
   void testNullSipProvider() throws SipException {
     OptionsPingTransaction optionsPingTransaction =
         new OptionsPingTransaction(dhruvaExecutorService);
-    optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), DhruvaNetwork.getDefault(), null);
+    optionsPingTransaction.proxySendOutBoundRequest(
+        new SIPRequest(), DhruvaNetwork.getDefault(), null);
   }
-
 
   @Test
   public void testNullClientTransaction() {
     OptionsPingTransaction optionsPingTransaction =
         new OptionsPingTransaction(dhruvaExecutorService);
     SIPResponse sipResponse = new SIPResponse();
-    Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(null, sipResponse ));
+    Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(null, sipResponse));
   }
 
   @Test
@@ -154,7 +154,8 @@ public class OptionsPingTransactionTest {
     when(mockClientTransaction.getApplicationData()).thenReturn(applicationDataCookie);
     OptionsPingTransaction optionsPingTransaction =
         new OptionsPingTransaction(dhruvaExecutorService);
-    Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(mockClientTransaction, new SIPResponse()));
+    Assert.assertNull(
+        optionsPingTransaction.getValidOptionsResponse(mockClientTransaction, new SIPResponse()));
   }
 
   @Test

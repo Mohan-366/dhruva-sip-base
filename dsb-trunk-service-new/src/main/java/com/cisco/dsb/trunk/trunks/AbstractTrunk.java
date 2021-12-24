@@ -216,7 +216,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
         while (serverGroup != null
             && optionsPingController != null
             && !optionsPingController.getStatus(serverGroup)) {
-          logger.error("serverGroup {} is DOWN, trying next serverGroup" , serverGroup.getName());
+          logger.error("serverGroup {} is DOWN, trying next serverGroup", serverGroup.getName());
           serverGroup = (ServerGroup) cookie.getSgLoadBalancer().getNextElement();
         }
 
@@ -233,7 +233,9 @@ public abstract class AbstractTrunk implements LoadBalancable {
           while (serverGroupElement != null
               && optionsPingController != null
               && !optionsPingController.getStatus(serverGroupElement)) {
-            logger.error("serverGroupElement {} is DOWN, trying next serverGroupelement" , serverGroupElement);
+            logger.error(
+                "serverGroupElement {} is DOWN, trying next serverGroupelement",
+                serverGroupElement);
 
             serverGroupElement = (ServerGroupElement) sgeLB.getNextElement();
           }

@@ -20,8 +20,8 @@ public class OptionsPingControllerImpl implements OptionsPingController {
 
   protected Boolean getServerGroupStatus(String key) {
 
-    return commonConfigurationProperties.getServerGroups().get(key).getElements().stream()
-        .anyMatch(x -> getElementStatus(x.hashCode()) == true);
+    Boolean status =  optionsPingMonitor.serverGroupStatus.get(key);
+    return (status == null ? true : status);
   }
 
   public Boolean getStatus(Pingable obj) {

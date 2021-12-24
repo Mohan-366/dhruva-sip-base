@@ -29,6 +29,7 @@ import javax.sip.header.Header;
 import org.junit.Assert;
 import org.mockito.*;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -48,6 +49,8 @@ public class OptionsPingMonitorTest {
   @Spy SipProvider sipProvider;
 
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor;
+  @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor2;
+  @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor3;
 
   @Mock ProxyPacketProcessor proxyPacketProcessor;
 
@@ -57,6 +60,51 @@ public class OptionsPingMonitorTest {
   @Mock
   CallIdHeader callID = mock(CallIdHeader.class, withSettings().extraInterfaces(Header.class));
 
+  private ServerGroup createSGWithUpOrDownElements(Boolean isUpElements, OptionsPingMonitor optionsPingMonitor) {
+    int portCounter;
+    if (isUpElements) {
+      portCounter = 100;
+    } else {
+      portCounter = 200;
+    }
+    List<ServerGroupElement> sgeList = new ArrayList<>();
+    for (int j = 1; j <= 3; j++) {
+      ServerGroupElement sge =
+          ServerGroupElement.builder()
+              .setIpAddress("127.0.0.1")
+              .setPort(portCounter)
+              .setPriority(10)
+              .setWeight(10)
+              .setTransport(Transport.TCP)
+              .build();
+      portCounter++;
+      sgeList.add(sge);
+      if (isUpElements &&  portCounter == 101) {
+        Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
+            .when(optionsPingMonitor)
+            .createAndSendRequest("netSG", sge);
+      }
+    }
+    List<Integer> failoverCodes = Arrays.asList(503);
+    OptionsPingPolicy optionsPingPolicy =
+        OptionsPingPolicy.builder()
+            .setName("opPolicy1")
+            .setFailoverResponseCodes(failoverCodes)
+            .setUpTimeInterval(1000)
+            .setDownTimeInterval(500)
+            .setPingTimeOut(100)
+            .build();
+    ServerGroup sg =
+        ServerGroup.builder()
+            .setNetworkName("netSG" )
+            .setName("mySG")
+            .setElements(sgeList)
+            .setPingOn(true)
+            .setOptionsPingPolicy(optionsPingPolicy)
+            .build();
+    return sg;
+
+  }
   public void createMultipleServerGroupElements() {
     int portCounter = 0;
     for (int i = 1; i <= 50; i++) {
@@ -183,8 +231,32 @@ public class OptionsPingMonitorTest {
     map.put(server1.getName(), server1);
   }
 
+  @Test
+  public void serverGroupStatusWithOneUpElement() throws InterruptedException {
+    MockitoAnnotations.initMocks(this);
+    ServerGroup sg = this.createSGWithUpOrDownElements(true, optionsPingMonitor2);
+    Map <String, ServerGroup> map = new HashMap<>();
+    map.put(sg.getName(), sg);
+    optionsPingMonitor2.init(map);
+    Thread.sleep(1500);
+    Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
+//    optionsPingMonitor = null;
+  }
+
+  @Test
+  public void serverGroupStatusWithDownElements() throws InterruptedException {
+    ServerGroup sg = this.createSGWithUpOrDownElements(false, optionsPingMonitor3);
+    Map <String, ServerGroup> map = new HashMap<>();
+    map.put(sg.getName(), sg);
+    optionsPingMonitor3.init(map);
+    Thread.sleep(1500);
+    Assert.assertFalse(optionsPingMonitor3.serverGroupStatus.get(sg.getName()));
+//    optionsPingMonitor = null;
+  }
+
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
   void testOptionsPingMultipleElements() throws InterruptedException {
+    MockitoAnnotations.initMocks(this);
     this.createMultipleServerGroupElements();
 
     optionsPingMonitor.init(initmap);
@@ -192,10 +264,9 @@ public class OptionsPingMonitorTest {
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
-
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
 
-    optionsPingMonitor = null;
+//    optionsPingMonitor = null;
   }
 
   @Test(description = "checking up and down Flux are segregated")
@@ -209,7 +280,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .upElementsFlux(finalItr1.next().getValue().getElements(), 5000)
+                    .upElementsFlux(finalItr1.next().getValue().getElements(), 5000, "SG1")
                     .log())
         .thenAwait(Duration.ofSeconds(20000))
         .expectNext(sge1, sge2, sge3, sge4)
@@ -223,7 +294,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .downElementsFlux(finalItr.next().getValue().getElements(), 5000)
+                    .downElementsFlux(finalItr.next().getValue().getElements(), 5000, "SG1")
                     .log())
         .expectNextCount(0)
         .thenCancel()
@@ -241,7 +312,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .downElementsFlux(finalItr2.next().getValue().getElements(), 5000)
+                    .downElementsFlux(finalItr2.next().getValue().getElements(), 5000, "SG1")
                     .log())
         .thenAwait(Duration.ofSeconds(10000))
         .expectNext(sge2, sge3)
@@ -256,7 +327,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .upElementsFlux(finalItr3.next().getValue().getElements(), 5000)
+                    .upElementsFlux(finalItr3.next().getValue().getElements(), 5000, "SG1")
                     .log())
         .thenAwait(Duration.ofSeconds(10000))
         .expectNext(sge1, sge4)
@@ -377,15 +448,16 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void testCreateAndSendRequest() throws DhruvaException, SipException, ParseException {
-    SIPListenPoint sipListenPoint = SIPListenPoint.SIPListenPointBuilder()
-        .setHostIPAddress("1.1.1.1")
-        .setPort(5060)
-        .setTransport(Transport.TCP)
-        .setName("network_tcp")
-        .build();
+    SIPListenPoint sipListenPoint =
+        SIPListenPoint.SIPListenPointBuilder()
+            .setHostIPAddress("1.1.1.1")
+            .setPort(5060)
+            .setTransport(Transport.TCP)
+            .setName("network_tcp")
+            .build();
     DhruvaNetwork network = DhruvaNetwork.createNetwork("network_tcp", sipListenPoint);
     CallID callID = new CallID();
-    callID.setCallId(new String ("my-call-id"));
+    callID.setCallId(new String("my-call-id"));
     CallIdHeader callIdHeader = (CallIdHeader) callID;
     SipProvider mockSipProvider = mock(SipProvider.class);
     when(mockSipProvider.getNewCallId()).thenReturn(callIdHeader);
@@ -400,8 +472,7 @@ public class OptionsPingMonitorTest {
             .setTransport(Transport.TCP)
             .build();
 
-    optionsPingMonitor.createAndSendRequest("network_tcp" , sge);
+    optionsPingMonitor.createAndSendRequest("network_tcp", sge);
     verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
-
   }
 }

@@ -124,7 +124,7 @@ public class OptionsPingControllerTest {
 
   }
 
-  @Test (description = "Negative case when a non SG or SGE element status is requested")
+  @Test(description = "Negative case when a non SG or SGE element status is requested")
   public void testWhenNotSGOrSGEGetStatus() {
 
     assertFalse(optionsPingController.getStatus(new NewPingable()));

@@ -35,6 +35,7 @@ public class Event {
   public enum EventType {
     CONNECTION,
     SIPMESSAGE,
+    SERVERGROUP_ELEMENT_EVENT,
     SERVERGROUP_EVENT
   }
 
@@ -68,7 +69,8 @@ public class Event {
     BufferSizeExceeded,
     SslHandShakeFailed,
     ConnectionInActive,
-    ServerGroupElementDown
+    ServerGroupElementDown,
+    ServerGroupDown
   }
 
   public static void emitMessageEvent(
@@ -140,9 +142,24 @@ public class Event {
                 "network",
                 networkName));
 
-    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, "ServerGroup Element UP", eventInfoMap);
+    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, "ServerGroup Element UP", eventInfoMap);
   }
 
+  public static void emitSGEvent(String serverGroupName, boolean isDown) {
+    String msg;
+    Map<String, String> eventInfoMap =
+          Maps.newHashMap(
+              ImmutableMap.of("serverGroupName",
+                  serverGroupName));
+      if (isDown) {
+      eventInfoMap.put("errorType", ErrorType.ServerGroupDown.name());
+      msg = "ServerGroup DOWN";
+    } else {
+        msg = "ServerGroup UP";
+      }
+
+    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, msg, eventInfoMap);
+  }
   public static void emitSGElementDownEvent(
       Integer errorCode,
       String errorReason,
@@ -168,6 +185,6 @@ public class Event {
     }
     eventInfoMap.put("transport", transport.name());
 
-    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, "ServerGroup Element Down", eventInfoMap);
+    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, "ServerGroup Element Down", eventInfoMap);
   }
 }
