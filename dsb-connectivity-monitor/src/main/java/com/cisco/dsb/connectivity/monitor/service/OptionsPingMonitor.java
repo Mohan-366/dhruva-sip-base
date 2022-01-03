@@ -243,7 +243,8 @@ public class OptionsPingMonitor {
       sgeHashSet.add(elementHashCode);
       serverGroupElementStatusCounter.put(serverGroupName, sgeHashSet);
     }
-    if (sgeHashSet.size() == sgeSize) { // this means all elements are down
+    // this means all elements are down.
+    if (sgeHashSet.size() == sgeSize) {
       serverGroupStatus.put(serverGroupName, false);
       Event.emitSGEvent(serverGroupName, true);
     }
@@ -297,7 +298,6 @@ public class OptionsPingMonitor {
       Set<Integer> sgeHashSet = serverGroupElementStatusCounter.get(serverGroupName);
       if (sgeHashSet != null) {
         sgeHashSet.remove(elementHashCode);
-        serverGroupElementStatusCounter.put(serverGroupName, sgeHashSet);
       }
       Event.emitSGEvent(serverGroupName, false);
     }
