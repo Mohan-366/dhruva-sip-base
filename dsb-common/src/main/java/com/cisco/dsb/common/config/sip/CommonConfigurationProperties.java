@@ -172,7 +172,6 @@ public class CommonConfigurationProperties {
     updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
-
   public void setServerGroups(List<ServerGroup> serverGroupsList) {
     Map<String, ServerGroup> serverGroups =
         serverGroupsList.stream()

@@ -1,6 +1,5 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
