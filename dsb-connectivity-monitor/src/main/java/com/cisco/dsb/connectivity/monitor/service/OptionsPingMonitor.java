@@ -49,7 +49,7 @@ public class OptionsPingMonitor {
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
-  protected ConcurrentHashMap<String, Set<Integer>> serverGroupElementStatusCounter =
+  protected ConcurrentHashMap<String, Set<Integer>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
   private static final int QUEUE_TASK_CAP = 100;
@@ -238,10 +238,10 @@ public class OptionsPingMonitor {
     Set<Integer> sgeHashSet;
     synchronized (this) {
       sgeHashSet =
-          serverGroupElementStatusCounter.getOrDefault(
+          downServerGroupElementsCounter.getOrDefault(
               serverGroupName, ConcurrentHashMap.newKeySet());
       sgeHashSet.add(elementHashCode);
-      serverGroupElementStatusCounter.put(serverGroupName, sgeHashSet);
+      downServerGroupElementsCounter.put(serverGroupName, sgeHashSet);
     }
     // this means all elements are down.
     if (sgeHashSet.size() == sgeSize) {
@@ -295,7 +295,7 @@ public class OptionsPingMonitor {
     Boolean sgStatus = serverGroupStatus.get(serverGroupName);
     if (sgStatus != null && !sgStatus) {
       serverGroupStatus.put(serverGroupName, true);
-      Set<Integer> sgeHashSet = serverGroupElementStatusCounter.get(serverGroupName);
+      Set<Integer> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
       if (sgeHashSet != null) {
         sgeHashSet.remove(elementHashCode);
       }
