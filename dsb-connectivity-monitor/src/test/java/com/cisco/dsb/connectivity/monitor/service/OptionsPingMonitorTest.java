@@ -29,7 +29,6 @@ import javax.sip.header.Header;
 import org.junit.Assert;
 import org.mockito.*;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -60,7 +59,8 @@ public class OptionsPingMonitorTest {
   @Mock
   CallIdHeader callID = mock(CallIdHeader.class, withSettings().extraInterfaces(Header.class));
 
-  private ServerGroup createSGWithUpOrDownElements(Boolean isUpElements, OptionsPingMonitor optionsPingMonitor) {
+  private ServerGroup createSGWithUpOrDownElements(
+      Boolean isUpElements, OptionsPingMonitor optionsPingMonitor) {
     int portCounter;
     if (isUpElements) {
       portCounter = 100;
@@ -77,34 +77,34 @@ public class OptionsPingMonitorTest {
               .setWeight(10)
               .setTransport(Transport.TCP)
               .build();
-      portCounter++;
       sgeList.add(sge);
-      if (isUpElements &&  portCounter == 101) {
+      if (isUpElements && portCounter == 100) {
         Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
             .when(optionsPingMonitor)
             .createAndSendRequest("netSG", sge);
       }
+      portCounter++;
     }
     List<Integer> failoverCodes = Arrays.asList(503);
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder()
             .setName("opPolicy1")
             .setFailoverResponseCodes(failoverCodes)
-            .setUpTimeInterval(1000)
-            .setDownTimeInterval(500)
-            .setPingTimeOut(100)
+            .setUpTimeInterval(500)
+            .setDownTimeInterval(200)
+            .setPingTimeOut(150)
             .build();
     ServerGroup sg =
         ServerGroup.builder()
-            .setNetworkName("netSG" )
+            .setNetworkName("netSG")
             .setName("mySG")
             .setElements(sgeList)
             .setPingOn(true)
             .setOptionsPingPolicy(optionsPingPolicy)
             .build();
     return sg;
-
   }
+
   public void createMultipleServerGroupElements() {
     int portCounter = 0;
     for (int i = 1; i <= 50; i++) {
@@ -233,25 +233,24 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void serverGroupStatusWithOneUpElement() throws InterruptedException {
-    MockitoAnnotations.initMocks(this);
     ServerGroup sg = this.createSGWithUpOrDownElements(true, optionsPingMonitor2);
-    Map <String, ServerGroup> map = new HashMap<>();
+    Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
     optionsPingMonitor2.init(map);
     Thread.sleep(1500);
     Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
-//    optionsPingMonitor = null;
+    //    optionsPingMonitor = null;
   }
 
   @Test
   public void serverGroupStatusWithDownElements() throws InterruptedException {
     ServerGroup sg = this.createSGWithUpOrDownElements(false, optionsPingMonitor3);
-    Map <String, ServerGroup> map = new HashMap<>();
+    Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
     optionsPingMonitor3.init(map);
-    Thread.sleep(1500);
+    Thread.sleep(1000);
     Assert.assertFalse(optionsPingMonitor3.serverGroupStatus.get(sg.getName()));
-//    optionsPingMonitor = null;
+    //    optionsPingMonitor = null;
   }
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
@@ -266,7 +265,7 @@ public class OptionsPingMonitorTest {
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
 
-//    optionsPingMonitor = null;
+    //    optionsPingMonitor = null;
   }
 
   @Test(description = "checking up and down Flux are segregated")
@@ -346,7 +345,8 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToUpElement("net1", sge1, 5000, 500, failoverCodes);
+        optionsPingMonitor.sendPingRequestToUpElement(
+            "net1", sge1, 5000, 500, failoverCodes, "SG1", 1);
 
     StepVerifier.create(response).expectNextCount(1).verifyComplete();
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
@@ -361,7 +361,8 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToUpElement("net1", sge1, 5000, 500, failoverCodes);
+        optionsPingMonitor.sendPingRequestToUpElement(
+            "net1", sge1, 5000, 500, failoverCodes, "SG1", 1);
     StepVerifier.create(response).expectNextCount(1).verifyComplete();
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
   }
@@ -377,7 +378,8 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToUpElement("net1", sge1, 5000, 5, failoverCodes);
+        optionsPingMonitor.sendPingRequestToUpElement(
+            "net1", sge1, 5000, 5, failoverCodes, "SG1", 1);
     StepVerifier.withVirtualTime(() -> response)
         .thenAwait(Duration.ofMillis((5000 * 3) + (5 * 3)))
         .expectNextCount(0)
@@ -395,7 +397,7 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes);
+        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
     optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
     StepVerifier.create(response).expectNextCount(1).verifyComplete();
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
@@ -412,7 +414,7 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes);
+        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
     optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
     StepVerifier.create(response.log()).expectNextCount(1).verifyComplete();
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
@@ -429,7 +431,7 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor)
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
-        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes);
+        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
     optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
     StepVerifier.create(response.log()).expectNextCount(0).verifyComplete();
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.hashCode()));

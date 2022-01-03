@@ -20,7 +20,7 @@ public class OptionsPingControllerImpl implements OptionsPingController {
 
   protected Boolean getServerGroupStatus(String key) {
 
-    Boolean status =  optionsPingMonitor.serverGroupStatus.get(key);
+    Boolean status = optionsPingMonitor.serverGroupStatus.get(key);
     return (status == null ? true : status);
   }
 

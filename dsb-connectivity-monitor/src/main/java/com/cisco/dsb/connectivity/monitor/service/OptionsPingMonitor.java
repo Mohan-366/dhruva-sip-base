@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
@@ -49,6 +49,8 @@ public class OptionsPingMonitor {
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
+  protected ConcurrentHashMap<String, Set<Integer>> serverGroupElementStatusCounter =
+      new ConcurrentHashMap<>();
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
   private static final int QUEUE_TASK_CAP = 100;
   private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
@@ -72,7 +74,7 @@ public class OptionsPingMonitor {
     while (itr.hasNext()) {
       Map.Entry<String, ServerGroup> entry = itr.next();
       ServerGroup serverGroup = entry.getValue();
-//      serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
+            serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
       if (entry.getValue().isPingOn()) {
         pingPipeLine(
             serverGroup.getName(),
@@ -88,28 +90,12 @@ public class OptionsPingMonitor {
 
   protected Flux<ServerGroupElement> upElementsFlux(
       List<ServerGroupElement> list, int upInterval, String serverGroupName) {
-    AtomicInteger counter = new AtomicInteger();
-    return Flux.defer( () -> Flux.fromIterable(list))
+    return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
               Boolean status = elementStatus.get(e.hashCode());
-              logger.info("KALPA: element {} status {} : ", e, status);
               if (status == null || status) {
-                Boolean sgStatus = serverGroupStatus.get(serverGroupName);
-                if (sgStatus == null || !sgStatus) {
-                  serverGroupStatus.put(serverGroupName, true);
-                  logger.info("KALPA: Setting ServerGroup status to UP for {}", serverGroupName);
-                  Event.emitSGEvent(serverGroupName, false);
-                }
-                counter.getAndSet(0);
                 return true;
-              }
-              logger.info("KALPA: counter count: ", counter.get());
-              if (counter.getAndIncrement() == (list.size() - 1)) {
-                serverGroupStatus.put(serverGroupName, false);
-                logger.info("KALPA: Setting ServerGroup status to DOWN for {}", serverGroupName);
-                Event.emitSGEvent(serverGroupName, true);
-                counter.getAndSet(0);
               }
               return false;
             })
@@ -122,29 +108,13 @@ public class OptionsPingMonitor {
 
   protected Flux<ServerGroupElement> downElementsFlux(
       List<ServerGroupElement> list, int downInterval, String serverGroupName) {
-    AtomicInteger counter = new AtomicInteger();
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
-              Boolean sgStatus = serverGroupStatus.get(serverGroupName);
               Boolean status = elementStatus.get(e.hashCode());
               if (status != null && !status) {
-                if (sgStatus == null || sgStatus) {
-                if (counter.getAndIncrement() == (list.size() - 1)) {
-                  serverGroupStatus.put(serverGroupName, false);
-                  logger.info("KALPA: Setting ServerGroup status to DOWN for {}", serverGroupName);
-                  Event.emitSGEvent(serverGroupName, true);
-                  counter.getAndSet(0);
-                }
-                }
                 return true;
               }
-              if (sgStatus == null || !sgStatus) {
-                serverGroupStatus.put(serverGroupName, true);
-                logger.info("KALPA: Setting ServerGroup status to UP for {}", serverGroupName);
-                Event.emitSGEvent(serverGroupName, false);
-              }
-
               return false;
             })
         .repeatWhen(
@@ -168,14 +138,21 @@ public class OptionsPingMonitor {
             .flatMap(
                 element -> {
                   return sendPingRequestToUpElement(
-                      network, element, downInterval, pingTimeOut, failoverCodes);
+                      network,
+                      element,
+                      downInterval,
+                      pingTimeOut,
+                      failoverCodes,
+                      serverGroupName,
+                      list.size());
                 });
 
     Flux<SIPResponse> downElementsResponse =
         downElementsFlux(list, downInterval, serverGroupName)
             .flatMap(
                 element -> {
-                  return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
+                  return sendPingRequestToDownElement(
+                      network, element, pingTimeOut, failoverCodes, serverGroupName);
                 });
 
     Flux.merge(upElementsResponse, downElementsResponse).subscribe();
@@ -196,7 +173,9 @@ public class OptionsPingMonitor {
       ServerGroupElement element,
       int downInterval,
       int pingTimeout,
-      List<Integer> failoverCodes) {
+      List<Integer> failoverCodes,
+      String serverGroupName,
+      int sgeSize) {
 
     logger.info("Sending ping to UP element: {}", element);
     Integer key = element.hashCode();
@@ -227,6 +206,7 @@ public class OptionsPingMonitor {
                   element.getTransport(),
                   network);
               elementStatus.put(key, false);
+              checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               return Mono.empty();
             })
         .doOnNext(
@@ -245,6 +225,7 @@ public class OptionsPingMonitor {
                     element.getTransport(),
                     network);
                 elementStatus.put(key, false);
+                checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               } else if (status == null) {
                 logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
@@ -252,6 +233,21 @@ public class OptionsPingMonitor {
             });
   }
 
+  private void checkAndMakeServerGroupDown(
+      String serverGroupName, Integer elementHashCode, int sgeSize) {
+    Set<Integer> sgeHashSet;
+    synchronized (this) {
+      sgeHashSet =
+          serverGroupElementStatusCounter.getOrDefault(
+              serverGroupName, ConcurrentHashMap.newKeySet());
+      sgeHashSet.add(elementHashCode);
+      serverGroupElementStatusCounter.put(serverGroupName, sgeHashSet);
+    }
+    if (sgeHashSet.size() == sgeSize) { // this means all elements are down
+      serverGroupStatus.put(serverGroupName, false);
+      Event.emitSGEvent(serverGroupName, true);
+    }
+  }
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
@@ -263,7 +259,11 @@ public class OptionsPingMonitor {
    * @return
    */
   protected Mono<SIPResponse> sendPingRequestToDownElement(
-      String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
+      String network,
+      ServerGroupElement element,
+      int pingTimeout,
+      List<Integer> failoverCodes,
+      String serverGroupName) {
     logger.info("Sending ping to DOWN element: {}", element);
     Integer key = element.hashCode();
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
@@ -285,8 +285,22 @@ public class OptionsPingMonitor {
                 Event.emitSGElementUpEvent(
                     element.getIpAddress(), element.getPort(), element.getTransport(), network);
                 elementStatus.put(key, true);
+                makeServerGroupUp(serverGroupName, element.hashCode());
               }
             });
+  }
+
+  private void makeServerGroupUp(String serverGroupName, Integer elementHashCode) {
+    Boolean sgStatus = serverGroupStatus.get(serverGroupName);
+    if (sgStatus != null && !sgStatus) {
+      serverGroupStatus.put(serverGroupName, true);
+      Set<Integer> sgeHashSet = serverGroupElementStatusCounter.get(serverGroupName);
+      if (sgeHashSet != null) {
+        sgeHashSet.remove(elementHashCode);
+        serverGroupElementStatusCounter.put(serverGroupName, sgeHashSet);
+      }
+      Event.emitSGEvent(serverGroupName, false);
+    }
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
