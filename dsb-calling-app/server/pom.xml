@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>com.cisco</groupId>
-            <artifactId>dsb-trunk-service-new</artifactId>
+            <artifactId>dsb-trunk-service</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
@@ -94,6 +94,13 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            com/cisco/dhruva/normalisation/**/*
+                        </exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-prepare-agent</id>

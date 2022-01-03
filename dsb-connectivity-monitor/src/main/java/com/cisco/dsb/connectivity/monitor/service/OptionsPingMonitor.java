@@ -74,10 +74,10 @@ public class OptionsPingMonitor {
     while (itr.hasNext()) {
       Map.Entry<String, ServerGroup> entry = itr.next();
       ServerGroup serverGroup = entry.getValue();
-            serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
+            serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
       if (entry.getValue().isPingOn()) {
         pingPipeLine(
-            serverGroup.getName(),
+            serverGroup.getHostName(),
             serverGroup.getNetworkName(),
             serverGroup.getElements(),
             serverGroup.getOptionsPingPolicy().getUpTimeInterval(),
@@ -89,7 +89,7 @@ public class OptionsPingMonitor {
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
-      List<ServerGroupElement> list, int upInterval, String serverGroupName) {
+      List<ServerGroupElement> list, int upInterval) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
@@ -134,7 +134,7 @@ public class OptionsPingMonitor {
       List<Integer> failoverCodes) {
 
     Flux<SIPResponse> upElementsResponse =
-        upElementsFlux(list, upInterval, serverGroupName)
+        upElementsFlux(list, upInterval)
             .flatMap(
                 element -> {
                   return sendPingRequestToUpElement(

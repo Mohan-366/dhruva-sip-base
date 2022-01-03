@@ -67,7 +67,7 @@ public class EndPoint implements Cloneable {
         serverGroupElement.getIpAddress(),
         serverGroupElement.getPort(),
         serverGroupElement.getTransport(),
-        serverGroup.getName());
+        serverGroup.getHostName());
   }
 
   /** our equals implementation */

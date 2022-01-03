@@ -98,6 +98,7 @@ public class OptionsPingMonitorTest {
         ServerGroup.builder()
             .setNetworkName("netSG")
             .setName("mySG")
+            .setHostName("mySG")
             .setElements(sgeList)
             .setPingOn(true)
             .setOptionsPingPolicy(optionsPingPolicy)
@@ -169,14 +170,14 @@ public class OptionsPingMonitorTest {
       ServerGroup sg =
           ServerGroup.builder()
               .setNetworkName("net" + i)
-              .setName("SGName" + i)
+              .setHostName("SGName" + i)
               .setElements(sgeList)
               .setPingOn(true)
               .setOptionsPingPolicy(optionsPingPolicy)
               .build();
 
       serverGroups.add(sg);
-      initmap.put(sg.getName(), sg);
+      initmap.put(sg.getHostName(), sg);
     }
   }
 
@@ -221,14 +222,14 @@ public class OptionsPingMonitorTest {
 
     ServerGroup server1 =
         ServerGroup.builder()
-            .setName("net1")
+            .setHostName("net1")
             .setElements(sgeList)
             .setSgPolicyConfig("global")
             .setPingOn(true)
             .build();
 
     map = new HashMap<>();
-    map.put(server1.getName(), server1);
+    map.put(server1.getHostName(), server1);
   }
 
   @Test
@@ -279,7 +280,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .upElementsFlux(finalItr1.next().getValue().getElements(), 5000, "SG1")
+                    .upElementsFlux(finalItr1.next().getValue().getElements(), 5000)
                     .log())
         .thenAwait(Duration.ofSeconds(20000))
         .expectNext(sge1, sge2, sge3, sge4)
@@ -326,7 +327,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .upElementsFlux(finalItr3.next().getValue().getElements(), 5000, "SG1")
+                    .upElementsFlux(finalItr3.next().getValue().getElements(), 5000)
                     .log())
         .thenAwait(Duration.ofSeconds(10000))
         .expectNext(sge1, sge4)
