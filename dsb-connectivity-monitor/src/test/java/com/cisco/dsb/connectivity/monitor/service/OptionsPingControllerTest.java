@@ -103,19 +103,11 @@ public class OptionsPingControllerTest {
 
   @Test(description = "test status of ServerGroup")
   void testSG() {
-    Map<String, ServerGroup> sg = new HashMap<>();
-    sg.put("net1", server1);
-
-    when(commonConfigurationProperties.getServerGroups()).thenReturn(sg);
-
-    optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
-    optionsPingMonitor.elementStatus.put(sge2.hashCode(), false);
-    optionsPingMonitor.elementStatus.put(sge3.hashCode(), false);
-    optionsPingMonitor.elementStatus.put(sge4.hashCode(), false);
-
+    optionsPingMonitor.serverGroupStatus.put(server1.getHostName(), false);
     // turning on one element , SG should be UP
     Assert.assertFalse(optionsPingController.getStatus(server1));
     optionsPingMonitor.elementStatus.put(sge4.hashCode(), true);
+    optionsPingMonitor.serverGroupStatus.put(server1.getHostName(), true);
 
     //
     assertTrue(optionsPingController.getStatus(server1));

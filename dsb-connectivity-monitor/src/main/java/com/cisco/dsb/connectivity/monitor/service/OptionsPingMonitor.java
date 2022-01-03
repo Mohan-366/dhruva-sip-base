@@ -74,7 +74,7 @@ public class OptionsPingMonitor {
     while (itr.hasNext()) {
       Map.Entry<String, ServerGroup> entry = itr.next();
       ServerGroup serverGroup = entry.getValue();
-            serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
+      serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
       if (entry.getValue().isPingOn()) {
         pingPipeLine(
             serverGroup.getHostName(),
@@ -88,8 +88,7 @@ public class OptionsPingMonitor {
     }
   }
 
-  protected Flux<ServerGroupElement> upElementsFlux(
-      List<ServerGroupElement> list, int upInterval) {
+  protected Flux<ServerGroupElement> upElementsFlux(List<ServerGroupElement> list, int upInterval) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
