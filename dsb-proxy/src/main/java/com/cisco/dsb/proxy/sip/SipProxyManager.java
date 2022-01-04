@@ -421,7 +421,7 @@ public class SipProxyManager {
                   }
                   if (throwable != null) {
                     logger.error(
-                        "Error while sending out mid dialog request based on request", throwable);
+                        "Error while sending out mid dialog request based on rURI/Route Header", throwable);
                     proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
                   }
                 });

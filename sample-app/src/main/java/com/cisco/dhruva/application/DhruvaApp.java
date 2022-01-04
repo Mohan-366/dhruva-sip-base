@@ -1,7 +1,5 @@
 package com.cisco.dhruva.application;
 
-import com.cisco.dhruva.application.calltype.CallType;
-import com.cisco.dhruva.application.calltype.DefaultCallType;
 import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.ProxyService;
@@ -10,6 +8,9 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
+import javax.sip.message.Response;
+
+import com.cisco.dsb.proxy.sip.ProxyInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -17,20 +18,29 @@ import reactor.core.publisher.Mono;
 @Service
 public class DhruvaApp {
   Logger logger = DhruvaLoggerFactory.getLogger(ProxyService.class);
-  private ArrayList<CallType> callTypes;
   @Autowired ProxyService proxyService;
 
-  @Autowired DefaultCallType defaultCallType;
   private Consumer<ProxySIPRequest> requestConsumer =
       proxySIPRequest -> {
         logger.info("-------App: Got SIPMessage->Type:SIPRequest------");
         // TODO Can we do this in 'for loop' as it's faster for small amount of iteration
-        callTypes.stream()
-            .filter(callType -> callType.filter().test(proxySIPRequest))
-            .findFirst()
-            .orElse(defaultCallType)
-            .processRequest()
-            .accept(Mono.just(proxySIPRequest));
+          proxySIPRequest.setOutgoingNetwork("SampleNetwork");
+          ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
+
+          proxyInterface
+                  .proxyRequest(proxySIPRequest)
+                  .whenComplete(
+                          (proxySIPResponse, throwable) -> {
+                              if (proxySIPResponse != null) {
+                                  proxySIPResponse.proxy();
+                                  return;
+                              }
+                              if (throwable != null) {
+                                  logger.error(
+                                          "Error while sending out request", throwable);
+                                  proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                              }
+                          });
       };
 
   @PostConstruct
@@ -40,8 +50,5 @@ public class DhruvaApp {
         ProxyAppConfig.builder()._2xx(true)._4xx(true).requestConsumer(requestConsumer).build();
     proxyService.register(appConfig);
 
-    // register for interested CallTypes
-    callTypes = new ArrayList<>();
-    callTypes.add(defaultCallType);
   }
 }

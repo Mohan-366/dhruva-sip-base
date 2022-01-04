@@ -1,8 +1,6 @@
 #DSB-Calling-App
-network name for beech `net_internal_beech`
+Calling app uses three listen points to receive and send calls to PSTN, Media Anchor, Calling Core.
+Check the application-local.yaml on how these are configured and modify listenPoints, SGs according to your need. 
 
-network name for SP `net_sp`
-
-network name for WxC `net_internal_calling_core`
-
-Configure the listen points with above names. If you want to change the listen point names, change them in SIPConfig.java file.
+Enable local profile to load configuration from this property source file
+`spring.profiles.active:local`. Add this in bootstrap.yaml present under server module.
