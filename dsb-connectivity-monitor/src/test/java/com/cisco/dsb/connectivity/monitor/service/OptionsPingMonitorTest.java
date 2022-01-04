@@ -294,7 +294,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .downElementsFlux(finalItr.next().getValue().getElements(), 5000, "SG1")
+                    .downElementsFlux(finalItr.next().getValue().getElements(), 5000)
                     .log())
         .expectNextCount(0)
         .thenCancel()
@@ -312,7 +312,7 @@ public class OptionsPingMonitorTest {
     StepVerifier.withVirtualTime(
             () ->
                 optionsPingMonitor
-                    .downElementsFlux(finalItr2.next().getValue().getElements(), 5000, "SG1")
+                    .downElementsFlux(finalItr2.next().getValue().getElements(), 5000)
                     .log())
         .thenAwait(Duration.ofSeconds(10000))
         .expectNext(sge2, sge3)

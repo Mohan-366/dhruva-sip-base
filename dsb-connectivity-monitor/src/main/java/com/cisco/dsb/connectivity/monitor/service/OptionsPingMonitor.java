@@ -3,6 +3,7 @@ package com.cisco.dsb.connectivity.monitor.service;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -15,10 +16,8 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -69,26 +68,55 @@ public class OptionsPingMonitor {
   }
 
   private void startMonitoring(Map<String, ServerGroup> map) {
-    Iterator<Entry<String, ServerGroup>> itr = map.entrySet().iterator();
-    logger.info("Starting OPTIONS pings!!");
-    while (itr.hasNext()) {
-      Map.Entry<String, ServerGroup> entry = itr.next();
-      ServerGroup serverGroup = entry.getValue();
-      serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
-      if (entry.getValue().isPingOn()) {
-        pingPipeLine(
-            serverGroup.getHostName(),
-            serverGroup.getNetworkName(),
-            serverGroup.getElements(),
-            serverGroup.getOptionsPingPolicy().getUpTimeInterval(),
-            serverGroup.getOptionsPingPolicy().getDownTimeInterval(),
-            serverGroup.getOptionsPingPolicy().getPingTimeOut(),
-            serverGroup.getOptionsPingPolicy().getFailoverResponseCodes());
-      }
-    }
+    logger.info("Starting OPTIONS pings!! : {}", map);
+    Flux<SIPResponse> upElementsResponse =
+        Flux.defer(() -> Flux.fromIterable(map.values()))
+            .flatMap(
+                serverGroup -> {
+                  OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
+                  return Flux.defer(
+                          () ->
+                              upElementsFlux(
+                                  serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval()))
+                      .flatMap(
+                          element -> {
+                            serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
+                            return sendPingRequestToUpElement(
+                                serverGroup.getNetworkName(),
+                                element,
+                                optionsPingPolicy.getDownTimeInterval(),
+                                optionsPingPolicy.getPingTimeOut(),
+                                optionsPingPolicy.getFailoverResponseCodes(),
+                                serverGroup.getHostName(),
+                                serverGroup.getElements().size());
+                          });
+                });
+
+    Flux<SIPResponse> downElementsResponse =
+        Flux.defer(() -> Flux.fromIterable(map.values()))
+            .flatMap(
+                serverGroup -> {
+                  OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
+                  return Flux.defer(
+                          () ->
+                              downElementsFlux(
+                                  serverGroup.getElements(),
+                                  optionsPingPolicy.getDownTimeInterval()))
+                      .flatMap(
+                          element -> {
+                            return sendPingRequestToDownElement(
+                                serverGroup.getNetworkName(),
+                                element,
+                                optionsPingPolicy.getPingTimeOut(),
+                                optionsPingPolicy.getFailoverResponseCodes(),
+                                serverGroup.getHostName());
+                          });
+                });
+    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
-  protected Flux<ServerGroupElement> upElementsFlux(List<ServerGroupElement> list, int upInterval) {
+  protected Flux<ServerGroupElement> upElementsFlux(
+      List<ServerGroupElement> list, int upTimeInterval) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
@@ -101,12 +129,12 @@ public class OptionsPingMonitor {
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(upInterval),
+                    Duration.ofMillis(upTimeInterval),
                     Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
-      List<ServerGroupElement> list, int downInterval, String serverGroupName) {
+      List<ServerGroupElement> list, int downIntervalTime) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
@@ -119,42 +147,8 @@ public class OptionsPingMonitor {
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(downInterval),
+                    Duration.ofMillis(downIntervalTime),
                     Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
-  }
-
-  protected void pingPipeLine(
-      String serverGroupName,
-      String network,
-      List<ServerGroupElement> list,
-      int upInterval,
-      int downInterval,
-      int pingTimeOut,
-      List<Integer> failoverCodes) {
-
-    Flux<SIPResponse> upElementsResponse =
-        upElementsFlux(list, upInterval)
-            .flatMap(
-                element -> {
-                  return sendPingRequestToUpElement(
-                      network,
-                      element,
-                      downInterval,
-                      pingTimeOut,
-                      failoverCodes,
-                      serverGroupName,
-                      list.size());
-                });
-
-    Flux<SIPResponse> downElementsResponse =
-        downElementsFlux(list, downInterval, serverGroupName)
-            .flatMap(
-                element -> {
-                  return sendPingRequestToDownElement(
-                      network, element, pingTimeOut, failoverCodes, serverGroupName);
-                });
-
-    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
   /**
