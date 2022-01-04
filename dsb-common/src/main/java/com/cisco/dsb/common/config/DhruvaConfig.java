@@ -39,7 +39,6 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
 
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
-
   @Autowired private Environment env;
 
   private static final long DEFAULT_CACHE_TIMEOUT = 10;

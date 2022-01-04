@@ -9,20 +9,16 @@ public class SipTokens extends Token {
 
   // sip tokens
   public static final String SipColonDoubleSlash = SipColon + DoubleSlash;
-
   // sips tokens
   public static final String SipsColonDoubleSlash = SipsColon + DoubleSlash;
 
-  // tel tokens
-  public static final String Tel = "tel";
-  public static final String TelColon = Tel + Colon;
+  public static final String SipSrvPrefix = Underscore + Sip + Dot;
   public static final String SipsSrvPrefix = Underscore + Sips + Dot;
 
-  public static final String Tcp = "tcp";
-  public static final String Tls = "tls";
+  public static final String UDP = "udp";
 
   //   _sip._tcp.
-  public static final String SipTcpSrvPrefix = Underscore + Sip + Dot + Underscore + Tcp + Dot;
+  public static final String SipTcpSrvPrefix = SipSrvPrefix + Underscore + Tcp + Dot;
   //   _sips._tcp.
-  public static final String SipTlsSrvPrefix = Underscore + Sips + Dot + Underscore + Tcp + Dot;
+  public static final String SipTlsSrvPrefix = SipsSrvPrefix + Underscore + Tcp + Dot;
 }

@@ -16,8 +16,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import javax.sip.*;
 import javax.sip.header.CSeqHeader;
-import org.junit.Assert;
 import org.mockito.*;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

@@ -684,7 +684,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           }
         });
     supportedHeaders.forEach(response::addHeader);
-    System.out.println("---Response after adding supported headers: \n" + response);
   }
 
   private void addAcceptHeader(Response response) {

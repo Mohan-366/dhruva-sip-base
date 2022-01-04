@@ -175,7 +175,7 @@ public abstract class ProxyResponseGenerator {
    * Utility function that sends 404 responses. Note, you must use a stateful transaction to send
    * the response.
    *
-   * @param request The request original request that this response messeage is responding to.
+   * @param request The request original request that this response message is responding to.
    * @param trans The stateful proxy transaction that will be used to send the response.
    */
   public static void sendNotFoundResponse(SIPRequest request, ProxyTransaction trans)

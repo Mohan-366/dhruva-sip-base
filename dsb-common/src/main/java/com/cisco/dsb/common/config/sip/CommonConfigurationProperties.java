@@ -36,7 +36,6 @@ public class CommonConfigurationProperties {
   public static final boolean DEFAULT_RECORD_ROUTE_ENABLED = true;
   public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;
   public static final Boolean DEFAULT_ENABLE_CERT_SERVICE = false;
-  public static final long DEFAULT_TIMER_C_DURATION_MILLISEC = 180000;
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
 
   @Getter @Setter private boolean enableCertService = false;
@@ -171,7 +170,6 @@ public class CommonConfigurationProperties {
             });
     updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
-
 
   public void setServerGroups(List<ServerGroup> serverGroupsList) {
     Map<String, ServerGroup> serverGroups =
