@@ -70,109 +70,64 @@ To use the dsb artifacts in any new repo, the following text will have to be add
    - To set logger level to "Debug", use environment variable `debug_mode` and set the value as `enabled` in the tomcat configuration's 'Startup/Connection' section.
 
 
-   - Provide listen points for Dhruva SIP Base. Since we are running DSB in Tomcat in IntelliJ (more details in 'Running in Tomcat in Intellij IDE'),
-   pass the required config as environment variables.
-       - For this, go to 'Services' in IDE. You will find the tomcat that you have configured earlier. Right click on that tomcat server
-       and choose 'Edit Configuration'.
-       - Choose 'Startup/Connection' section.
-       - Enable checkbox '_Pass environment variables_'
-       - Provide listen points as below
-           - In 'Name' -> `sipListenPoints`
-           - In 'Value' -> `[{`
-                               `"name": "<networkName>",`
-                               `"hostIPAddress": "<IP of machine where DSB runs",`
-                               `"transport": "<TCP>",`
-                               `"port": <port>,`
-                               `"recordRoute": true`
-                           `}] `
-       - Provide Server Groups as below
-            - In 'Name' -> `sipServerGroups`
-            - In 'Value' ->`[{`
-                            `"serverGroupName": "<SG name>",`
-                            `"networkName": "<Network name>",`
-                            `"elements": [{"ipAddress": "<SG IP address>", "port": "<SG port>", "transport": "UDP", "qValue": <qValue>, "weight": <weight>}],` 
-                            `"sgPolicy": <"PolicyName">,`   	
-                            `}] `
-       - Provide Dynamic Server Group as below
-                   - In 'Name' -> `sipDynamicServerGroups`
-                   - In 'Value' -> `[{`
-                                   `"serverGroupName": "<SG name>",`
-                                   `"sgPolicy": <"PolicyName">`
-                                    `}]` 
-                                  
-       - Provide Server Groups as below
-            - In 'Name' -> `sgPolicies`
-            - In 'Value' -> `[{`
-                                    `"name": "<Policy Name>",`
-                                    `"lbType": "<Load balancer type>",`
-                                    `"failoverResponseCodes": [{"ipAddress": [List of Error Codes]`  	
-                                         `}] `
+#### application-local.yaml to be configured
+   - To configure any ConfigurationProperty Source classes we have to configure it via property source yaml file
+   - In bootstrap.yaml set `spring.profiles.active: local` to pick up application-local.yaml as propertySource file
+   - To configure listenPoints
+     ```yaml
+        common:
+          listenPoints:
+            - name: net_sp
+              port: 5060
+              transport: UDP
+              hostIPAddress: "127.0.0.1"
 
-```yaml 
-Reference
-  sipServerGroups:
-[{"serverGroupName": "SG1", "networkName": "UDPNetwork", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.1", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}], "sgPolicy": "sgPolicy"},{"serverGroupName": "SG2", "networkName": "net_me_tcp", "lbType": "call-id", "elements": [{"ipAddress": "127.0.0.2", "port": "5060", "transport": "TLS", "qValue": 0.9, "weight": 0}]}]
-dynamicServerGroup:
-[{"serverGroupName": "cisco.webex.com","sgPolicy": "policy1"}]
-  sgPolicies:
-[{"name": "policy1", "lbType": "call-type", "failoverResponseCodes": [501,502]},
-{"name": "global", "lbType": "call-type", "failoverResponseCodes": [503,504]}]
-```
-**NOTE**
+   - To configure ServerGroup
+     ```yaml
+        common:
+            serverGroups:
+              - name: &UsPoolA UsPoolA
+                hostName: "UsPoolA"
+                networkName: net_sp
+                lbType: weight
+                elements:
+                  - ipAddress: "127.0.0.1"
+                    port: 6060
+                    transport: UDP
+                    priority: 10
+                    weight: 100
+                 - ipAddress: "127.0.0.1"
+                   port: 6061
+                   transport: UDP
+                   priority: 5
+                   weight: 100
+                sgPolicy: policy1
+                optionsPingPolicy: opPolicy1
+                priority: 10
+                weight: 100
+   - To configure  SG Policy
+     ```yaml
+       common:
+          sgPolicy:
+             policy1:
+                name: policy1
+                failoverResponseCodes:
+                  - 501
+                  - 502
+        
+   - To configure OptionPingPolicy
+        ```yaml
+        optionsPingPolicy:
+           opPolicy1:
+              name: opPolicy1
+              failoverResponseCodes:
+                 - 501
+                 - 502
+                 - 503
+             upTimeInterval: 30000
+             downTimeInterval: 5000
+             pingTimeOut: 500
+     
+***NOTE:For all the configuration available please check CommonConfigurationProperty class***
 
-* For DynamicSG/ Static SG without any SGPolicy configured, default SGPolicy would be ```global```. 
-* Make sure while configuring ```sipServerGroups```, ```networkName``` should be one of the ```sipListenPoints``` network name. 
-* Make sure to check the README of the app you are deploying, so that proper env variables are passed specific to that App.
-
-#### Using TLS in DSB
-
-- Add TLS ListenPoint as follows:
-    `[{`
-                               `"name": "<networkName>",`
-                               `"hostIPAddress": "<IP of machine where DSB runs",`
-                               `"transport": "TLS",`
-                               `"port": <port>,`
-                               `"recordRoute": true`
-                           `}] `
-- Test keystore and certs added
-A test keystore.kjs file is present in dsb-common/src/test/resources/ along with server.crt.pem and server.key.pem which have been added to the keystore.jks. These can be used to make TLS sipp calls through the application. 
-
-- sipp commands with tls certs 
-
-    - UAS : sipp -sf uas.xml -p <uas listen port>  -i <uas ip> -t l1 -tls_cert server.crt.pem -tls_key server.key.pem  
-    - UAC : sipp -sf uac.xml -i <uac ip> -p <uas port> <dsb ip:dsb tls port> -t l1 -tls_cert server.crt -tls_key server.key  -m 1 
-
-- Config Changes
-
-    - Please note, to run TLS you will have to specify keystore and truststore location in provide env as follows
-
-      ```-Ddsb.tlsKeyStoreFilePath=/tmp/keystore.jks -Ddsb.tlsKeyStorePassword=dsb123```
-      ```-Ddsb.tlsTrustStoreFilePath=/tmp/keystore.jks -Ddsb.tlsTrustStorePassword=dsb123```
-
-      - By default, the TLS authentication type is set to ```SERVER``` type in Jain. If you wish to enable MTLS (server and client authentication) then set the following property in env. 
-
-        dsb.clientAuthType = “Enabled” (by default this is “Disabled”)
-
-      - As a result, the default trustManager will have above config.
-
-    - There are three different types of truststores possible. 
-
-         - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config. 
-         - CertTrustManager used to talk to cert service for authentication
-         - Permissive TrustStore which allows everything (any certificate).
-
-    - Every stack can choose from one of the above. 
-         - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”. 
-         - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
-         - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in json as follows:
-                           `[{`                    
-                               `"name": "<networkName>",`
-                               `"hostIPAddress": "<IP of machine where DSB runs",`
-                               `"transport": "TLS",`
-                               `"port": <port>,`
-                               `"recordRoute": true`
-                               `"tlsAuthType"`: "NONE"`
-                           `}] `
-         - In order to get CertTrustManager set property ```dsb.enableCertService``` to true.
-
-
+###Default config for each application is present in application.yaml, application-local.yaml under the modules resources folder

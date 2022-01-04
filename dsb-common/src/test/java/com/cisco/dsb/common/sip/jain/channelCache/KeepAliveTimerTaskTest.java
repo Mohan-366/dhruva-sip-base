@@ -16,7 +16,6 @@ import lombok.CustomLog;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
-import org.springframework.mock.env.MockEnvironment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -24,7 +23,7 @@ import org.testng.annotations.Test;
 @CustomLog
 @Test
 public class KeepAliveTimerTaskTest {
-  @Mock Environment env = new MockEnvironment();
+  @Mock Environment env;
 
   DhruvaExecutorService dhruvaExecutorService;
   @Mock CommonConfigurationProperties sipProperties;
@@ -48,6 +47,7 @@ public class KeepAliveTimerTaskTest {
     when(env.getProperty(prefix + ".min", Integer.class, 10)).thenReturn(10);
     when(env.getProperty(prefix + ".max", Integer.class, 20)).thenReturn(20);
     when(env.getProperty(prefix + ".queue", Integer.class, 20)).thenReturn(20);
+    when(env.getProperty(prefix + ".threadPriority", Integer.class, 5)).thenReturn(5);
     when(env.getProperty(prefix + ".keepalive-seconds", Integer.class, 60)).thenReturn(60);
 
     prefix = "executor.testDhruva2KEEP_ALIVE_SERVICE";
@@ -57,6 +57,7 @@ public class KeepAliveTimerTaskTest {
     when(env.getProperty(prefix + ".min", Integer.class, 10)).thenReturn(10);
     when(env.getProperty(prefix + ".max", Integer.class, 20)).thenReturn(20);
     when(env.getProperty(prefix + ".queue", Integer.class, 20)).thenReturn(20);
+    when(env.getProperty(prefix + ".threadPriority", Integer.class, 5)).thenReturn(5);
     when(env.getProperty(prefix + ".keepalive-seconds", Integer.class, 60)).thenReturn(60);
   }
 

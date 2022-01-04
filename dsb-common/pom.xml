@@ -173,6 +173,11 @@
           <artifactId>easy-rules-core</artifactId>
           <version>4.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.cisco.wx2</groupId>
+            <artifactId>ci-client</artifactId>
+            <version>3.2.4</version>
+        </dependency>
     </dependencies>
     <build>
         <testResources>
