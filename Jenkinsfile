@@ -104,7 +104,7 @@ node() {
                 if(env.GIT_BRANCH == 'trunkService'){
                     tag = tag +"-ts"
                 } else if (env.GIT_BRANCH == 'OPTIONS_PING'){
-                    TAG = TAG +"-op"
+                    tag = tag +"-op"
                 }
                 sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
                 def artifactID = sh(
