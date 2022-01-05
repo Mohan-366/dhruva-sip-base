@@ -39,7 +39,7 @@ public class DhruvaServiceHealthListenerTest {
   ArgumentCaptor<Boolean> includedFlagCaptor;
 
   @BeforeMethod
-  private void before()  {
+  private void before() {
     MockitoAnnotations.initMocks(this);
     when(dhruvaExecutorServiceMock.getScheduledExecutorThreadPool(
             ExecutorType.HEALTH_MONITOR_SERVICE))
@@ -48,6 +48,9 @@ public class DhruvaServiceHealthListenerTest {
     includedFlagCaptor = ArgumentCaptor.forClass(Boolean.class);
   }
 
+  @Test(
+      description =
+          "To test captured metrics when service is being monitored along with upstream elements")
   public void reportServiceHealthUpstreamIncludedWhenDhruvaOnlineTest() {
 
     when(serviceHealthMock.isOnline()).thenReturn(true);
@@ -91,10 +94,12 @@ public class DhruvaServiceHealthListenerTest {
     boolean includedFlagForMetric = includedFlagCaptor.getValue();
     ServiceHealth capturedServiceHealth = serviceHealthArgumentCaptor.getValue();
 
+    Assert.assertTrue(includedFlagForMetric);
     Assert.assertEquals(capturedServiceHealth.getServiceState(), ServiceState.ONLINE);
     Assert.assertEquals(capturedServiceHealth.getMessage(), "Dhruva service is healthy");
   }
 
+  @Test(description = "Test to check captured metrics when dhruva service is offline")
   public void reportServiceHealthUpstreamIncludedWhenDhruvaOfflineTest1() {
     when(serviceHealthMock.isOnline()).thenReturn(false);
     when(serviceHealthMock.getServiceState()).thenReturn(ServiceState.OFFLINE);
@@ -132,6 +137,7 @@ public class DhruvaServiceHealthListenerTest {
     Assert.assertEquals(capturedServiceHealth.getServiceState(), ServiceState.OFFLINE);
   }
 
+  @Test(description = "Test when the upstream element/s is offline")
   public void reportServiceHealthUpstreamIncludedWhenDhruvaOfflineTest2() {
     when(serviceHealthMock.isOnline()).thenReturn(false);
     when(serviceHealthMock.getServiceState()).thenReturn(ServiceState.OFFLINE);
@@ -182,6 +188,7 @@ public class DhruvaServiceHealthListenerTest {
     dhruvaMetricServiceHealthListner.init();
   }
 
+  @Test(description = "Test when the service health status is changed")
   public void serviceChangedTest() {
     // invoke service health changed
     // proceed with testing the same way as reporthealth()

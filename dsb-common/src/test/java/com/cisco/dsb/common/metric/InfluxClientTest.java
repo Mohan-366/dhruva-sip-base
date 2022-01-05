@@ -100,6 +100,7 @@ public class InfluxClientTest {
     Assert.assertEquals(influxClientMock.getInstanceName(), "TESTENV-test-dhruva-0");
   }
 
+  @Test(description = "test for sending single influx point as a metric")
   public void influxClientSendMetricTest() {
     ArgumentCaptor<InfluxPoint> metricCaptor = ArgumentCaptor.forClass(InfluxPoint.class);
 
@@ -114,6 +115,7 @@ public class InfluxClientTest {
         receivedMetric.getMeasurement(), ((InfluxMetric) testMetric1).measurement());
   }
 
+  @Test(description = "test case for checking multiple influxpoints")
   public void influxClientSendMetricsTest() {
 
     ArgumentCaptor<Set<InfluxPoint>> metricsCaptor = ArgumentCaptor.forClass(Set.class);
@@ -132,27 +134,33 @@ public class InfluxClientTest {
     Assert.assertEquals(receivedMetric.size(), 2);
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric1.get()));
   }
+  /*
+    public void latencyMetricContextTest() throws InterruptedException {
+      MetricService metricService = mock(MetricService.class);
+      String testCallId = "123-test";
+      SipMetricsContext contextAtStart =
+          new SipMetricsContext(
+              metricService,
+              SipMetricsContext.State.latencyIncomingNewRequestStart,
+              testCallId,
+              true);
 
-  public void latencyMetricContextTest() throws InterruptedException {
-    MetricService metricService = mock(MetricService.class);
-    String testCallId = "123-test";
-    SipMetricsContext contextAtStart =
-        new SipMetricsContext(
-            metricService,
-            SipMetricsContext.State.latencyIncomingNewRequestStart,
-            testCallId,
-            true);
+      Thread.sleep(100);
 
-    Thread.sleep(100);
+      SipMetricsContext contextAtEnd =
+          new SipMetricsContext(
+              metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, testCallId, true);
 
-    SipMetricsContext contextAtEnd =
-        new SipMetricsContext(
-            metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, testCallId, true);
+      // add assert checks for the case
 
-    // add assert checks for the case
 
-  }
 
+      verify()
+
+    }
+  */
+
+  @Test(description = "Tests for validating various scenarious of sipmetriccontext")
   public void sipMetricContextNegativeTest() {
     MetricService metricService = mock(MetricService.class);
 
@@ -166,7 +174,6 @@ public class InfluxClientTest {
     Assert.assertEquals(testSipContext.getCallId(), "");
     Assert.assertEquals(testSipContext.getValue(), 1);
 
-    // just to increase coverage
     testSipContext.setState(SipMetricsContext.State.latencyIncomingNewRequestEnd);
     Assert.assertEquals(testSipContext.state, SipMetricsContext.State.latencyIncomingNewRequestEnd);
     testSipContext.setSuccessful("123-test-call-ide");
