@@ -8,6 +8,8 @@ import com.cisco.wx2.metrics.InfluxPoint;
 import com.cisco.wx2.server.InfluxDBClientHelper;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.codehaus.plexus.util.cli.Arg;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -133,14 +135,26 @@ public class InfluxClientTest {
 
     Assert.assertEquals(receivedMetric.size(), 2);
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric1.get()));
+    Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric2.get()));
   }
-  /*
+/*
+  public void latencyMetricContextInvocationTest(){
+    SipMetricsContext sipMetricContextMock = mock(SipMetricsContext.class);
+
+
+    verify(sipMetricContextMock).
+  }
+
+
+
+
     public void latencyMetricContextTest() throws InterruptedException {
-      MetricService metricService = mock(MetricService.class);
+      MetricService metricServiceMock = mock(MetricService.class);
+      MetricClient metricClientMock = mock(MetricClient.class);
       String testCallId = "123-test";
       SipMetricsContext contextAtStart =
           new SipMetricsContext(
-              metricService,
+                  metricServiceMock,
               SipMetricsContext.State.latencyIncomingNewRequestStart,
               testCallId,
               true);
@@ -149,17 +163,21 @@ public class InfluxClientTest {
 
       SipMetricsContext contextAtEnd =
           new SipMetricsContext(
-              metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, testCallId, true);
+                  metricServiceMock, SipMetricsContext.State.latencyIncomingNewRequestEnd, testCallId, true);
 
       // add assert checks for the case
 
 
+      ArgumentCaptor<Metric> metricArgumentCaptor = ArgumentCaptor.forClass(Metric.class);
+      verify(metricClientMock,times(1)).sendMetric(metricArgumentCaptor.capture());
 
-      verify()
+      Metric capturedMetric = metricArgumentCaptor.getValue();
+
+      Assert.assertNotNull(capturedMetric);
 
     }
-  */
 
+*/
   @Test(description = "Tests for validating various scenarious of sipmetriccontext")
   public void sipMetricContextNegativeTest() {
     MetricService metricService = mock(MetricService.class);

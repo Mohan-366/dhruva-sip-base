@@ -237,6 +237,7 @@ public class MetricServiceTest {
 
   public void latencyMetricTest() throws InterruptedException {
 
+
     SipMetricsContext contextAtStart =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.latencyIncomingNewRequestStart, callId, true);
@@ -248,6 +249,11 @@ public class MetricServiceTest {
             metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, callId, true);
 
     // add assert checks for the case
+    Mockito.verify(metricClientMock,times(1)).sendMetric(metricArgumentCaptor.capture());
+
+    Metric capturedMetric = metricArgumentCaptor.getValue();
+
+    Assert.assertNotNull(capturedMetric);
 
   }
 
