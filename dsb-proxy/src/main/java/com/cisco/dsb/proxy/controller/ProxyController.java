@@ -45,6 +45,7 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.SipURI;
@@ -94,6 +95,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Setter protected byte stateMode = -1;
   /** reference if request was sent to application. Default is true. */
   private boolean sendRequestToApp = true;
+
+  public static final String CALLTYPE = "calltype";
 
   private ProxyAppConfig proxyAppConfig;
 
@@ -185,6 +188,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests
+              String callType = ((SipUri) proxySIPRequest.getRequest().getRequestURI())
+                      .getParameter("callType");
+              AtomicInteger countByCallType = metricService.getCpsCounterMap().get(callType);
+              countByCallType.incrementAndGet();
+              metricService.getCpsCounterMap().put(callType,countByCallType);
               if (metricService != null
                   && !SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()))
                 new SipMetricsContext(

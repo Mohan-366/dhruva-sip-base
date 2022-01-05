@@ -17,20 +17,31 @@ import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
 import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
 import com.cisco.wx2.dto.health.ServiceHealth;
 import com.cisco.wx2.dto.health.ServiceState;
+import com.cisco.wx2.metrics.export.default_registry.DefaultMeterRegistry;
 import com.cisco.wx2.util.Token;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
-import java.util.Set;
+
+import java.sql.Time;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,7 +58,11 @@ public class MetricService {
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
+ // private CompositeMeterRegistry compositeMeterRegistry;
+  //private DefaultMeterRegistry defaultMeterRegistry;
 
+ // private List<Counter> cpsCounter;
+  @Getter @Setter private Map<String,AtomicInteger> cpsCounterMap ;
   private final Cache<String, Long> timers;
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
@@ -63,6 +78,8 @@ public class MetricService {
     scheduledExecutor =
         this.dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
     this.executorService = executorService;
+   // this.compositeMeterRegistry = compositeMeterRegistry;
+
 
     timers =
         CacheBuilder.newBuilder()
@@ -76,6 +93,37 @@ public class MetricService {
                   }
                 })
             .build();
+
+      initializeCPSMetric();
+/*
+    cpsCounterMap = new HashMap<String, AtomicInteger>();
+
+    Counter dialInCounter = Counter.builder("dhruva.cps")
+            .description("number of succesuful call per second for the callType")
+            .tag("callType", "DialIn")
+            .register(compositeMeterRegistry);
+
+    Counter dialOutCounter = Counter.builder("dhruva.cps")
+            .description("number of succesuful call per second for the callType")
+            .tag("callType", "DialIn")
+            .register(compositeMeterRegistry);
+
+    Gauge testGauge = Gauge.builder("test", (Supplier<Number>) new AtomicInteger()).register(compositeMeterRegistry);
+*/
+  }
+
+    private void initializeCPSMetric() {
+        // TODO check possible calltypes to make it dynamic
+        this.cpsCounterMap = new HashMap<>();
+        this.cpsCounterMap.put("DialIn", new AtomicInteger(0));
+        this.cpsCounterMap.put("DialOut", new AtomicInteger(0));
+
+        this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
+    }
+
+    @PostConstruct
+  public void initializePeriodicMetrics(){
+     // this.emitCPSMetricPerInterval(5, TimeUnit.SECONDS);
   }
 
   public void registerPeriodicMetric(
@@ -84,6 +132,27 @@ public class MetricService {
         getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
   }
 
+
+  public void emitCPSMetricPerInterval(
+          int interval, TimeUnit timeUnit) {
+        this.registerPeriodicMetric("cps", this.cpsMetricSupplier(),interval,timeUnit);
+  }
+
+
+  public Supplier<Set<Metric>> cpsMetricSupplier(){
+      Supplier<Set<Metric>> cpsSupplier  = () -> {
+          Set<Metric> cpsMetricSet = new HashSet<>();
+          for (Map.Entry<String, AtomicInteger> entry : cpsCounterMap.entrySet()) {
+              Metric cpsMetricForCalltype = Metrics.newMetric().measurement("cps");
+              cpsMetricForCalltype.tag("callType", entry.getKey());
+              cpsMetricForCalltype.field("count", entry.getValue());
+              cpsMetricSet.add(cpsMetricForCalltype);
+              entry.getValue().set(0);
+          }
+          return cpsMetricSet;
+      };
+      return cpsSupplier ;
+  }
   @NotNull
   private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
     return () -> {
