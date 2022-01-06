@@ -597,6 +597,10 @@ public class SipProxyManager {
       if (timeoutEvent.isServerTransaction()) {
         ServerTransaction serverTransaction = timeoutEvent.getServerTransaction();
         assert serverTransaction != null;
+        if (!(serverTransaction.getApplicationData() instanceof ProxyTransaction)) {
+          logger.info("Timeout received for Options Ping Request: transaction: ", serverTransaction);
+          return null;
+        }
         ProxyTransaction proxyTransaction =
             (ProxyTransaction) serverTransaction.getApplicationData();
         if (proxyTransaction == null) {
