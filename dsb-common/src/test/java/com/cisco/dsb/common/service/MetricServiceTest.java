@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 public class MetricServiceTest {
 
   private static final String method = "INVITE";
-  private static String callId = "100-test-call-id";
+  private static String callId = "1-test@192.168.0.1";
   private static final String cseq = "TEST INVITE";
   private static final Event.MESSAGE_TYPE REQUEST_EVENT = Event.MESSAGE_TYPE.REQUEST;
   private static final Event.MESSAGE_TYPE RESPONSE_EVENT = Event.MESSAGE_TYPE.RESPONSE;
@@ -43,7 +43,7 @@ public class MetricServiceTest {
   private static final boolean INTERALLY_GENERATED_TRUE = true;
 
   private static final boolean IS_MID_CALL_FALSE = false;
-  private static final String reqURI = "INVITE";
+  private static final String reqURI = "sip:test@test.abc.com";
 
   private ArgumentCaptor<Metric> metricArgumentCaptor;
 
@@ -84,7 +84,7 @@ public class MetricServiceTest {
         0L,
         reqURI);
 
-    Mockito.verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
+    Mockito.verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -92,7 +92,14 @@ public class MetricServiceTest {
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("method"));
-    // add more asseert
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("messageType"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isMidCall"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isInternallyGenerated"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
+    Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
 
     // scenario 2, dir-out , internally gen
     metricService.sendSipMessageMetric(
@@ -115,8 +122,14 @@ public class MetricServiceTest {
     capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("method"));
-    // add more asseert
-
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("messageType"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isMidCall"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isInternallyGenerated"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
   }
 
   public void sendSipEventMetricResponseTest() {
@@ -131,7 +144,7 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_TRUE,
         0L,
-        "SIP OK");
+        "200 OK");
 
     Mockito.verify(metricClientMock).sendMetric(metricArgumentCaptor.capture());
 
@@ -141,6 +154,15 @@ public class MetricServiceTest {
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("method"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("messageType"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isMidCall"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("isInternallyGenerated"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseCode"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseReason"));
+    Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
   }
 
   public void sendConnectionMetricTest() {
@@ -162,7 +184,7 @@ public class MetricServiceTest {
         testTransport,
         testDirection,
         testConnectionState);
-    verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
+    verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -198,8 +220,8 @@ public class MetricServiceTest {
 
   public void sendDnsMetricTest() {
 
-    String testQuery = "testQueryToCheckMetric";
-    String queryType = "testQueryTypeForTest";
+    String testQuery = "testdomain.com";
+    String queryType = "testQueryTypeARec";
     long totalDurationInMillis = 0L;
     String errorMsg = null;
 
@@ -213,6 +235,9 @@ public class MetricServiceTest {
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("queryType"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("dnsProcessingDelayMillis"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("query"));
     // if tag is false, it will not be present in the final metrics, here this tag does have null
     // value
     Assert.assertFalse(capturedMetricPoint.getTags().containsKey("failureReason"));
@@ -237,33 +262,37 @@ public class MetricServiceTest {
 
   public void latencyMetricTest() throws InterruptedException {
 
-
     SipMetricsContext contextAtStart =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.latencyIncomingNewRequestStart, callId, true);
 
-    Thread.sleep(100);
+    Thread.sleep(200);
 
     SipMetricsContext contextAtEnd =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, callId, true);
 
-    // add assert checks for the case
-    Mockito.verify(metricClientMock,times(1)).sendMetric(metricArgumentCaptor.capture());
+    Thread.sleep(200);
+
+    // verify metrics is emitted for latency
+    Mockito.verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertNotNull(capturedMetric);
-
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("count"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("duration"));
+    Assert.assertFalse(capturedMetricPoint.getFields().containsKey("durationExpected"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("eventSuccess"));
   }
-
+  @Test(description = "test case to check various negative scenarios for emitting latency metric")
   public void createMetricsForLatencyNegativeTest() {
 
     // Metric will be created without any tags and fields as count, duration nothing is evaluated
     metricService.update(
         "test.latency", 0L, 0L, TimeUnit.MILLISECONDS, 0L, TimeUnit.MILLISECONDS, true);
 
-    verify(metricClientMock, atMost(10)).sendMetric(metricArgumentCaptor.capture());
+    verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -275,7 +304,7 @@ public class MetricServiceTest {
     // Metric will be created without any tags and fields as count, duration nothing is evaluated
     metricService.update("test.latency", 0L, 1L, null, 1L, null, null);
 
-    verify(metricClientMock, atMost(10)).sendMetric(metricArgumentCaptor.capture());
+    verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
 
     capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -290,7 +319,7 @@ public class MetricServiceTest {
     metricService.update(
         "test.latency", 1L, 3L, TimeUnit.MILLISECONDS, 5L, TimeUnit.MILLISECONDS, true);
 
-    verify(metricClientMock, atMost(10)).sendMetric(metricArgumentCaptor.capture());
+    verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -321,7 +350,7 @@ public class MetricServiceTest {
     Assert.assertNull(timers.getIfPresent(key));
 
     // negative scenario 3
-    testCallId = "30434-test";
+    testCallId = "1-test@192.168.0.1";
     testMetricName = null;
 
     metricService.getTimers().invalidateAll();
@@ -332,7 +361,7 @@ public class MetricServiceTest {
     Assert.assertNull(timers.getIfPresent(key));
 
     // positive case
-    testCallId = "test-100";
+    testCallId = "1-test@192.168.0.1";
     testMetricName = "test.latency";
 
     metricService.getTimers().invalidateAll();

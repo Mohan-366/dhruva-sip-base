@@ -8,8 +8,6 @@ import com.cisco.wx2.metrics.InfluxPoint;
 import com.cisco.wx2.server.InfluxDBClientHelper;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.codehaus.plexus.util.cli.Arg;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -22,7 +20,7 @@ public class InfluxClientTest {
   Metric testMetric1;
   Metric testMetric2;
 
-  @InjectMocks InfluxClient influxClientMock;
+  @InjectMocks InfluxClient influxClient;
   @Mock InfluxDBClientHelper influxDBClientHelper;
   @Mock DhruvaProperties dhruvaProperties;
 
@@ -50,7 +48,7 @@ public class InfluxClientTest {
   }
 
   public void sendMetricsTest() {
-    InfluxClient influxClient = mock(InfluxClient.class);
+    InfluxClient influxClientMock = mock(InfluxClient.class);
 
     doAnswer(
             invocation -> {
@@ -59,21 +57,21 @@ public class InfluxClientTest {
               Assert.assertEquals(testMetric1.get(), ((InfluxPoint) ((Metric) arg0).get()));
               return null;
             })
-        .when(influxClient)
+        .when(influxClientMock)
         .sendMetric(any());
 
-    influxClient.sendMetric(testMetric1);
+    influxClientMock.sendMetric(testMetric1);
 
-    verify(influxClient, times(1)).sendMetric(any());
+    verify(influxClientMock, times(1)).sendMetric(any());
   }
 
-  @Test(expectedExceptions = Exception.class)
+  @Test(expectedExceptions = NullPointerException.class)
   public void sendMetricsTestNullCase() {
-    InfluxClient influxClient = mock(InfluxClient.class);
+    InfluxClient influxClientMock2 = mock(InfluxClient.class);
 
-    doThrow().when(influxClient).sendMetric(isNull());
+    doThrow(NullPointerException.class).when(influxClientMock2).sendMetric(isNull());
 
-    influxClientMock.sendMetric(testMetric1);
+    influxClientMock2.sendMetric(null);
 
     // verify(influxClient).sendMetric(metricArgumentCaptor.capture());
   }
@@ -81,25 +79,25 @@ public class InfluxClientTest {
   public void instanceNameTest() {
 
     // case -> env - null , pod_name - null
-    Assert.assertNotNull(influxClientMock.getInstanceName());
+    Assert.assertEquals(influxClient.getInstanceName(), "");
 
     // case -> env: null, pod_name : valid
 
     when(dhruvaProperties.getPodNameEnvVar()).thenReturn("test-dhruva-0");
     when(dhruvaProperties.getEnvironment()).thenReturn(null);
-    Assert.assertEquals(influxClientMock.getInstanceName(), "-test-dhruva-0");
+    Assert.assertEquals(influxClient.getInstanceName(), "-test-dhruva-0");
 
     // case -> env: valid , podName : null
     when(dhruvaProperties.getPodNameEnvVar()).thenReturn(null);
     when(dhruvaProperties.getEnvironment()).thenReturn("TESTENV");
 
-    Assert.assertEquals(influxClientMock.getInstanceName(), "TESTENV");
+    Assert.assertEquals(influxClient.getInstanceName(), "TESTENV");
 
     // positive path
     when(dhruvaProperties.getPodNameEnvVar()).thenReturn("test-dhruva-0");
     when(dhruvaProperties.getEnvironment()).thenReturn("TESTENV");
 
-    Assert.assertEquals(influxClientMock.getInstanceName(), "TESTENV-test-dhruva-0");
+    Assert.assertEquals(influxClient.getInstanceName(), "TESTENV-test-dhruva-0");
   }
 
   @Test(description = "test for sending single influx point as a metric")
@@ -107,11 +105,11 @@ public class InfluxClientTest {
     ArgumentCaptor<InfluxPoint> metricCaptor = ArgumentCaptor.forClass(InfluxPoint.class);
 
     doNothing().when(influxDBClientHelper).writePointAsync(any());
-    influxClientMock.sendMetric(testMetric1);
+    influxClient.sendMetric(testMetric1);
     verify(influxDBClientHelper, times(1)).writePointAsync(metricCaptor.capture());
     InfluxPoint receivedMetric = metricCaptor.getValue();
 
-    Assert.assertNotNull(receivedMetric.getTimestamp());
+    Assert.assertNotNull(receivedMetric);
     // equals check for all the fields/tags of metric emitted
     Assert.assertEquals(
         receivedMetric.getMeasurement(), ((InfluxMetric) testMetric1).measurement());
@@ -128,7 +126,7 @@ public class InfluxClientTest {
     metricsSet.add(testMetric1);
     metricsSet.add(testMetric2);
 
-    influxClientMock.sendMetrics(metricsSet);
+    influxClient.sendMetrics(metricsSet);
     verify(influxDBClientHelper, times(1)).writePoints(metricsCaptor.capture());
 
     Set<InfluxPoint> receivedMetric = metricsCaptor.getValue();
@@ -137,55 +135,15 @@ public class InfluxClientTest {
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric1.get()));
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric2.get()));
   }
-/*
-  public void latencyMetricContextInvocationTest(){
-    SipMetricsContext sipMetricContextMock = mock(SipMetricsContext.class);
 
-
-    verify(sipMetricContextMock).
-  }
-
-
-
-
-    public void latencyMetricContextTest() throws InterruptedException {
-      MetricService metricServiceMock = mock(MetricService.class);
-      MetricClient metricClientMock = mock(MetricClient.class);
-      String testCallId = "123-test";
-      SipMetricsContext contextAtStart =
-          new SipMetricsContext(
-                  metricServiceMock,
-              SipMetricsContext.State.latencyIncomingNewRequestStart,
-              testCallId,
-              true);
-
-      Thread.sleep(100);
-
-      SipMetricsContext contextAtEnd =
-          new SipMetricsContext(
-                  metricServiceMock, SipMetricsContext.State.latencyIncomingNewRequestEnd, testCallId, true);
-
-      // add assert checks for the case
-
-
-      ArgumentCaptor<Metric> metricArgumentCaptor = ArgumentCaptor.forClass(Metric.class);
-      verify(metricClientMock,times(1)).sendMetric(metricArgumentCaptor.capture());
-
-      Metric capturedMetric = metricArgumentCaptor.getValue();
-
-      Assert.assertNotNull(capturedMetric);
-
-    }
-
-*/
   @Test(description = "Tests for validating various scenarious of sipmetriccontext")
   public void sipMetricContextNegativeTest() {
-    MetricService metricService = mock(MetricService.class);
+    MetricService metricServiceMock = mock(MetricService.class);
 
     // scenario where value, callid, success flag is not set
     SipMetricsContext testSipContext =
         new SipMetricsContext(
-            metricService, SipMetricsContext.State.latencyIncomingNewRequestStart, null);
+            metricServiceMock, SipMetricsContext.State.latencyIncomingNewRequestStart, null);
 
     testSipContext.setSuccessful();
     Assert.assertTrue(testSipContext.isSuccessful());
@@ -194,8 +152,8 @@ public class InfluxClientTest {
 
     testSipContext.setState(SipMetricsContext.State.latencyIncomingNewRequestEnd);
     Assert.assertEquals(testSipContext.state, SipMetricsContext.State.latencyIncomingNewRequestEnd);
-    testSipContext.setSuccessful("123-test-call-ide");
-    Assert.assertEquals(testSipContext.getCallId(), "123-test-call-ide");
+    testSipContext.setSuccessful("1-test@192.168.0.1");
+    Assert.assertEquals(testSipContext.getCallId(), "1-test@192.168.0.1");
     testSipContext.setSuccessful();
     Assert.assertNotNull(testSipContext.getCallId());
   }
