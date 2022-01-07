@@ -33,7 +33,7 @@ public class InfluxClient implements MetricClient {
     Set<InfluxPoint> influxPoints =
         metrics.stream()
             .map(metric -> metric.timestamp(Instant.now()))
-            .map(metric-> metric.tag(INSTANCE_NAME_KEY, getInstanceName()))
+            .map(metric -> metric.tag(INSTANCE_NAME_KEY, getInstanceName()))
             .map(metric -> (InfluxPoint) metric.get())
             .collect(Collectors.toSet());
     if (!influxPoints.isEmpty()) {

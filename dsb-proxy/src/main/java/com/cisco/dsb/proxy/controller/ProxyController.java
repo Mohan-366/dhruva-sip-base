@@ -59,6 +59,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -188,11 +189,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests
-              String callType = ((SipUri) proxySIPRequest.getRequest().getRequestURI())
-                      .getParameter("callType");
-              AtomicInteger countByCallType = metricService.getCpsCounterMap().get(callType);
-              countByCallType.incrementAndGet();
-              metricService.getCpsCounterMap().put(callType,countByCallType);
+              this.incrementCPSCounter(proxySIPRequest);
+
               if (metricService != null
                   && !SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()))
                 new SipMetricsContext(
@@ -214,6 +212,19 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               }
             });
     return responseCF;
+  }
+
+  private void incrementCPSCounter(ProxySIPRequest proxySIPRequest) {
+    String callTypeName = proxySIPRequest.getCallTypeName();
+
+    if (StringUtils.isNotBlank(callTypeName)) {
+      AtomicInteger countByCallType =
+          metricService
+              .getCpsCounterMap()
+              .computeIfAbsent(callTypeName, value -> new AtomicInteger(0));
+      countByCallType.incrementAndGet();
+      metricService.getCpsCounterMap().put(callTypeName, countByCallType);
+    }
   }
 
   /**
