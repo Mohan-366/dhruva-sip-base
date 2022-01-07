@@ -133,6 +133,7 @@ public class DhruvaServiceHealthListenerTest {
     boolean includedFlagForMetric = includedFlagCaptor.getValue();
     ServiceHealth capturedServiceHealth = serviceHealthArgumentCaptor.getValue();
 
+    Assert.assertTrue(includedFlagForMetric);
     Assert.assertEquals(capturedServiceHealth.getMessage(), "Offline: testUpstreamSrv2");
     Assert.assertEquals(capturedServiceHealth.getServiceState(), ServiceState.OFFLINE);
   }
@@ -179,6 +180,7 @@ public class DhruvaServiceHealthListenerTest {
     boolean includedFlagForMetric = includedFlagCaptor.getValue();
     ServiceHealth capturedServiceHealth = serviceHealthArgumentCaptor.getValue();
 
+    Assert.assertTrue(includedFlagForMetric);
     Assert.assertEquals(
         capturedServiceHealth.getMessage(), "Offline: testUpstreamSrv2,testUpstreamSrv3");
     Assert.assertEquals(capturedServiceHealth.getServiceState(), ServiceState.OFFLINE);

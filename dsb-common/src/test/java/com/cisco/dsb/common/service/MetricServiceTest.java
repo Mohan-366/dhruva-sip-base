@@ -285,6 +285,7 @@ public class MetricServiceTest {
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("durationExpected"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("eventSuccess"));
   }
+
   @Test(description = "test case to check various negative scenarios for emitting latency metric")
   public void createMetricsForLatencyNegativeTest() {
 
