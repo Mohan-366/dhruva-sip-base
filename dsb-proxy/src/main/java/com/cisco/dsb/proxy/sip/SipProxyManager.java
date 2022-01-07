@@ -421,7 +421,8 @@ public class SipProxyManager {
                   }
                   if (throwable != null) {
                     logger.error(
-                        "Error while sending out mid dialog request based on rURI/Route Header", throwable);
+                        "Error while sending out mid dialog request based on rURI/Route Header",
+                        throwable);
                     proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
                   }
                 });
@@ -597,10 +598,6 @@ public class SipProxyManager {
       if (timeoutEvent.isServerTransaction()) {
         ServerTransaction serverTransaction = timeoutEvent.getServerTransaction();
         assert serverTransaction != null;
-        if (!(serverTransaction.getApplicationData() instanceof ProxyTransaction)) {
-          logger.info("Timeout received for Options Ping Request: transaction: ", serverTransaction);
-          return null;
-        }
         ProxyTransaction proxyTransaction =
             (ProxyTransaction) serverTransaction.getApplicationData();
         if (proxyTransaction == null) {
@@ -614,6 +611,11 @@ public class SipProxyManager {
       } else {
         ClientTransaction clientTransaction = timeoutEvent.getClientTransaction();
         assert clientTransaction != null;
+        if (!(clientTransaction.getApplicationData() instanceof ProxyTransaction)) {
+          logger.info(
+              "Timeout received for Options Ping Request: transaction: ", clientTransaction);
+          return null;
+        }
         ProxyTransaction proxyTransaction =
             (ProxyTransaction) clientTransaction.getApplicationData();
         if (proxyTransaction == null) {
