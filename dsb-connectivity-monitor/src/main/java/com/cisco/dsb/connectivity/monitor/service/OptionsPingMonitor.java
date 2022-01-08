@@ -71,13 +71,15 @@ public class OptionsPingMonitor {
     logger.info("Starting OPTIONS pings!! : {}", map);
     Flux<SIPResponse> upElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
+            .filter(
+                serverGroup -> {
+                  return isServerGroupPingable(serverGroup);
+                })
             .flatMap(
                 serverGroup -> {
                   OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
-                  return Flux.defer(
-                          () ->
-                              upElementsFlux(
-                                  serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval()))
+                  return upElementsFlux(
+                          serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval())
                       .flatMap(
                           element -> {
                             serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
@@ -94,14 +96,15 @@ public class OptionsPingMonitor {
 
     Flux<SIPResponse> downElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
+            .filter(
+                serverGroup -> {
+                  return isServerGroupPingable(serverGroup);
+                })
             .flatMap(
                 serverGroup -> {
                   OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
-                  return Flux.defer(
-                          () ->
-                              downElementsFlux(
-                                  serverGroup.getElements(),
-                                  optionsPingPolicy.getDownTimeInterval()))
+                  return downElementsFlux(
+                          serverGroup.getElements(), optionsPingPolicy.getDownTimeInterval())
                       .flatMap(
                           element -> {
                             return sendPingRequestToDownElement(
@@ -325,6 +328,14 @@ public class OptionsPingMonitor {
       CompletableFuture<SIPResponse> errResponse = new CompletableFuture<>();
       errResponse.completeExceptionally(e);
       return errResponse;
+    }
+  }
+
+  private boolean isServerGroupPingable(ServerGroup serverGroup) {
+    if (serverGroup.isPingOn() && serverGroup.getElements() != null) {
+      return true;
+    } else {
+      return false;
     }
   }
 }
