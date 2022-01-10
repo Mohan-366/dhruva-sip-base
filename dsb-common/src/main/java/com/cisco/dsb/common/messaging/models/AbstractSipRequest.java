@@ -38,9 +38,9 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
 
   public AbstractSipRequest(AbstractSipRequest abstractSipRequest) {
     super(
-        JainSipHelper.getCallId(abstractSipRequest.req),
-        JainSipHelper.getCSeq(abstractSipRequest.req));
-    this.req = (Request) abstractSipRequest.req.clone();
+        JainSipHelper.getCallId(abstractSipRequest.getRequest()),
+        JainSipHelper.getCSeq(abstractSipRequest.getRequest()));
+    this.req = (Request) abstractSipRequest.getRequest().clone();
     this.st = abstractSipRequest.st;
     this.provider = abstractSipRequest.provider;
     this.context = abstractSipRequest.context;
