@@ -7,30 +7,21 @@ import java.util.*;
 public class ExecutionContext extends HashMap<String, Object> implements Cloneable {
 
   private static final int INITIAL_SIZE = 64;
-
+  private final long timestamp;
   private final String ctxId;
+  /** We use this information to pass it to the proxy */
+  private final Map<String, String> extraHeaders = new HashMap<>();
 
   public ExecutionContext() {
-
     super(INITIAL_SIZE);
-
     this.timestamp = System.currentTimeMillis();
     this.ctxId = this.timestamp + String.valueOf(super.hashCode());
   }
-
-  private final long timestamp;
 
   @Override
   public ExecutionContext clone() {
     return (ExecutionContext) super.clone();
   }
-
-  public String getString(String key) {
-    return (String) get(key);
-  }
-
-  /** We use this information to pass it to the proxy */
-  private final Map<String, String> extraHeaders = new HashMap<>();
 
   public boolean getBoolean(String key) {
     return getBoolean(key, false);
@@ -44,7 +35,7 @@ public class ExecutionContext extends HashMap<String, Object> implements Cloneab
     return defaultResponse;
   }
 
-  public void set(String key) {
+  public void setBoolean(String key) {
     put(key, Boolean.TRUE);
   }
 

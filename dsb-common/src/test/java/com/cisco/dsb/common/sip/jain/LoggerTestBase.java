@@ -1,8 +1,7 @@
-package com.cisco.dsb.sip.jain.logger;
+package com.cisco.dsb.common.sip.jain;
 
 import static org.mockito.Mockito.*;
 
-import com.cisco.dsb.common.sip.jain.DsbHeaderLogger;
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.SipStackImpl;

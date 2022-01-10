@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.util;
+package unused.mightneedlater;
 
 public class ThreadLocals {
   private static ThreadLocal<String> threadLocalCallId = ThreadLocal.withInitial(() -> null);

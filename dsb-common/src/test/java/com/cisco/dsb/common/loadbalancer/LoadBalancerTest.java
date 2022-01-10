@@ -1,6 +1,5 @@
 package com.cisco.dsb.common.loadbalancer;
 
-import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
@@ -10,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.IRetryAnalyzer;
@@ -20,7 +18,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class LoadBalancerTest {
-  @Mock AbstractSipRequest request;
   private SecureRandom random = new SecureRandom();
 
   @BeforeTest
@@ -66,7 +63,7 @@ public class LoadBalancerTest {
   public void SGELoadBalancing(LBType lbType, List<ServerGroupElement> sgelements) {
     ServerGroup serverGroup =
         ServerGroup.builder().setElements(sgelements).setLbType(lbType).build();
-    LoadBalancer loadBalancer = LBFactory.get(serverGroup, request);
+    LoadBalancer loadBalancer = LoadBalancer.of(serverGroup);
     ArrayList<ServerGroupElement> treeSetInit = new ArrayList(loadBalancer.getElementsToTry());
     List<ServerGroupElement> selectedElements = new ArrayList<>();
     ServerGroupElement selectedElement = (ServerGroupElement) loadBalancer.getCurrentElement();
@@ -103,7 +100,7 @@ public class LoadBalancerTest {
             return lbType;
           }
         };
-    LoadBalancer loadBalancer = LBFactory.get(loadBalancable, request);
+    LoadBalancer loadBalancer = LoadBalancer.of(loadBalancable);
     ArrayList<ServerGroup> treeSetInit = new ArrayList(loadBalancer.getElementsToTry());
     List<ServerGroup> selectedElements = new ArrayList<>();
     ServerGroup selectedElement = (ServerGroup) loadBalancer.getCurrentElement();

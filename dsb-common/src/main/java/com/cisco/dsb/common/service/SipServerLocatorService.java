@@ -11,8 +11,6 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.stack.dto.SipDestination;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.dto.User;
 import com.cisco.wx2.util.JsonUtil;
 import java.net.InetAddress;
@@ -24,13 +22,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.sip.address.SipURI;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+@CustomLog
 @Service
 public class SipServerLocatorService {
-
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(SipServerLocatorService.class);
 
   @Autowired CommonConfigurationProperties props;
 
@@ -77,14 +75,8 @@ public class SipServerLocatorService {
                 JsonUtil.toJsonPretty(response));
             responseCF.complete(response);
 
-          } catch (ExecutionException e) {
+          } catch (Exception e) {
             responseCF.completeExceptionally(e);
-            logger.error("locateDestinationAsync:Error while completing async resolve");
-          } catch (InterruptedException e) {
-            responseCF.completeExceptionally(e);
-            logger.error("locateDestinationAsync:Error while completing async resolve");
-          } catch (Exception ex) {
-            responseCF.completeExceptionally(ex);
             logger.error("locateDestinationAsync:Error while completing async resolve");
           }
         },

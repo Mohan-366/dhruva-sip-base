@@ -5,7 +5,7 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.LMAUtill;
+import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -45,10 +45,10 @@ public class ProxySendMessage {
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
 
-                Transport transportType = LMAUtill.getTransportType(sipProvider);
+                Transport transportType = LMAUtil.getTransportType(sipProvider);
                 SIPResponse sipResponse = (SIPResponse) response;
 
-                LMAUtill.emitSipMessageEvent(
+                LMAUtil.emitSipMessageEvent(
                     sipProvider,
                     (SIPResponse) response,
                     Event.MESSAGE_TYPE.RESPONSE,
@@ -102,10 +102,10 @@ public class ProxySendMessage {
 
       // LMA
 
-      Transport transportType = LMAUtill.getTransportType(sipProvider);
+      Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
 
-      LMAUtill.emitSipMessageEvent(
+      LMAUtil.emitSipMessageEvent(
           sipProvider,
           (SIPResponse) response,
           Event.MESSAGE_TYPE.RESPONSE,
@@ -147,10 +147,10 @@ public class ProxySendMessage {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
 
-      Transport transportType = LMAUtill.getTransportType(sipProvider);
+      Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
 
-      LMAUtill.emitSipMessageEvent(
+      LMAUtil.emitSipMessageEvent(
           sipProvider,
           (SIPResponse) response,
           Event.MESSAGE_TYPE.RESPONSE,
@@ -199,7 +199,7 @@ public class ProxySendMessage {
               ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
               : null;
 
-      LMAUtill.emitSipMessageEvent(
+      LMAUtil.emitSipMessageEvent(
           sipProvider,
           response,
           Event.MESSAGE_TYPE.RESPONSE,
@@ -208,7 +208,7 @@ public class ProxySendMessage {
           false,
           0L);
 
-      Transport transportType = LMAUtill.getTransportType(sipProvider);
+      Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
 
       if (metricServiceBean != null) {
@@ -239,9 +239,9 @@ public class ProxySendMessage {
       else sipProvider.sendRequest(request);
 
       SIPRequest sipRequest = (SIPRequest) request;
-      Transport transportType = LMAUtill.getTransportType(sipProvider);
+      Transport transportType = LMAUtil.getTransportType(sipProvider);
 
-      LMAUtill.emitSipMessageEvent(
+      LMAUtil.emitSipMessageEvent(
           sipProvider,
           (SIPRequest) request,
           Event.MESSAGE_TYPE.REQUEST,
@@ -289,9 +289,9 @@ public class ProxySendMessage {
                 provider.sendRequest(proxySIPRequest.getRequest());
               }
 
-              Transport transportType = LMAUtill.getTransportType(provider);
+              Transport transportType = LMAUtil.getTransportType(provider);
 
-              LMAUtill.emitSipMessageEvent(
+              LMAUtil.emitSipMessageEvent(
                   provider,
                   proxySIPRequest.getRequest(),
                   Event.MESSAGE_TYPE.REQUEST,

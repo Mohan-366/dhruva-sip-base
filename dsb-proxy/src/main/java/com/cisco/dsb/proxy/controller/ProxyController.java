@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.controller;
 
-import com.cisco.dsb.common.CommonContext;
+import com.cisco.dsb.common.context.CommonContext;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;

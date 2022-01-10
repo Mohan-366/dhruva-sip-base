@@ -46,15 +46,15 @@ common:
         - ipAddress: "1.1.1.1"
           port: 5060
           transport: UDP
-          qValue: 0.9
+          priority: 1
           weight: 10
         - ipAddress: "2.2.2.2"
           port: 5070
           transport: UDP
-          qValue: 0.9
+          priority: 1
           weight: 10
       sgPolicy: policy1
-      qValue: 0.9
+      priority: 1
       weight: 10
   listen-points:
     - name: "testNetwork"
