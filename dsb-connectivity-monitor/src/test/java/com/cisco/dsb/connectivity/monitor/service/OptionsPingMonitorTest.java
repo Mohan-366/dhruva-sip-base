@@ -29,10 +29,12 @@ import javax.sip.header.Header;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+@Ignore
 public class OptionsPingMonitorTest {
 
   Map<String, ServerGroup> initmap = new HashMap<>();

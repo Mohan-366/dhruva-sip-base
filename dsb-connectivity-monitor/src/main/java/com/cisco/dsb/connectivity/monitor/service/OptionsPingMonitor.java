@@ -31,6 +31,7 @@ import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -53,6 +54,7 @@ public class OptionsPingMonitor {
   private static final int THREAD_CAP = 20; // TODO: add these as config properties
   private static final int QUEUE_TASK_CAP = 100;
   private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
+  private Disposable opFlux;
   Scheduler optionsPingScheduler;
 
   @PostConstruct
@@ -64,10 +66,14 @@ public class OptionsPingMonitor {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     optionsPingScheduler =
         Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
-    startMonitoring(map);
+    try {
+      startMonitoring(map);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
-  private void startMonitoring(Map<String, ServerGroup> map) {
+  private void startMonitoring(Map<String, ServerGroup> map) throws InterruptedException {
     logger.info("Starting OPTIONS pings!! : {}", map);
     Flux<SIPResponse> upElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
@@ -92,7 +98,12 @@ public class OptionsPingMonitor {
                                 serverGroup.getHostName(),
                                 serverGroup.getElements().size());
                           });
-                });
+                }).repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(
+                        30000),
+                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));;
 
     Flux<SIPResponse> downElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
@@ -114,8 +125,19 @@ public class OptionsPingMonitor {
                                 optionsPingPolicy.getFailoverResponseCodes(),
                                 serverGroup.getHostName());
                           });
-                });
-    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+                }).repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(
+                        5000),
+                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));;
+    opFlux = Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+//    try {
+//      logger.info("Restarting flux now!");
+//      MyThreadforOPRestart threadforOPRestart = new MyThreadforOPRestart();
+//      threadforOPRestart.start();
+//    } catch (Exception e) {
+//    }
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
@@ -128,12 +150,7 @@ public class OptionsPingMonitor {
                 return true;
               }
               return false;
-            })
-        .repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(upTimeInterval),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
+            });
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
@@ -146,12 +163,7 @@ public class OptionsPingMonitor {
                 return true;
               }
               return false;
-            })
-        .repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(downIntervalTime),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
+            });
   }
 
   /**
@@ -332,10 +344,35 @@ public class OptionsPingMonitor {
   }
 
   private boolean isServerGroupPingable(ServerGroup serverGroup) {
+
     if (serverGroup.isPingOn() && serverGroup.getElements() != null) {
+      logger.info("ServerGroup {} is pingeable!", serverGroup);
       return true;
     } else {
+      logger.info("ServerGroup {} is not pingeable!", serverGroup);
       return false;
     }
   }
+/*
+  class MyThreadforOPRestart extends Thread {
+
+    @Override
+    public void run() {
+      try {
+        Thread.sleep(60000);
+        restartFlux();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public void restartFlux() throws InterruptedException {
+    opFlux.dispose();
+    while (!opFlux.isDisposed()) {
+      logger.error("Not disposed yet");
+    }
+    logger.info("flux is now disposed! restaring it!");
+        startMonitoring(commonConfigurationProperties.getServerGroups());
+  }*/
 }

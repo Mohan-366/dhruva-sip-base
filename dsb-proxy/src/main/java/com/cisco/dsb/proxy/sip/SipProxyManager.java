@@ -616,7 +616,8 @@ public class SipProxyManager {
           logger.info(
               "Application data is not of type ProxyTransacion. It is {}"
                   + " Returning null from SipProxyManager. ClientTransaction {} ",
-              clientTransaction.getApplicationData().getClass(), clientTransaction);
+              clientTransaction.getApplicationData().getClass(),
+              clientTransaction);
           return null;
         }
         ProxyTransaction proxyTransaction =

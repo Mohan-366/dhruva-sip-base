@@ -58,7 +58,6 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
           }
         },
         dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
-
     // storing future response as  AppDataCookie in the application data of
     // clientTransaction for future mapping.
     applicationDataCookie = getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture);
