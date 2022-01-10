@@ -1,7 +1,5 @@
 package com.cisco.dsb.common.exception;
 
-import java.io.*;
-
 /**
  * Base class for all dynamicsoft exceptions. All exceptions thrown in the object library or in
  * other libraries derive from this class.
@@ -14,8 +12,6 @@ import java.io.*;
 public class DhruvaException extends Exception {
   /** Used to get the original stack trace and exception message. */
   Exception exception;
-
-  private String errorCause;
 
   /**
    * Constructor which accepts the exception message. This will print stack traces from the creation

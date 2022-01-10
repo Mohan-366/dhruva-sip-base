@@ -12,7 +12,7 @@ import com.cisco.dsb.common.sip.util.SipPredicates;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.LMAUtill;
+import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.cisco.dsb.common.util.log.event.Event;
@@ -512,9 +512,9 @@ public class SipProxyManager {
               true);
         }
 
-        Transport transportType = LMAUtill.getTransportType(sipProvider);
+        Transport transportType = LMAUtil.getTransportType(sipProvider);
 
-        LMAUtill.emitSipMessageEvent(
+        LMAUtil.emitSipMessageEvent(
             sipProvider,
             sipRequest,
             Event.MESSAGE_TYPE.REQUEST,
@@ -557,12 +557,12 @@ public class SipProxyManager {
         Generate Event and metrics for sip messages.
          */
 
-        Transport transportType = LMAUtill.getTransportType(sipProvider);
+        Transport transportType = LMAUtil.getTransportType(sipProvider);
 
         // BindingInfo messageBindingInfo = LMAUtill.populateBindingInfo(sipResponse,
         // transportType);
 
-        LMAUtill.emitSipMessageEvent(
+        LMAUtil.emitSipMessageEvent(
             sipProvider,
             sipResponse,
             Event.MESSAGE_TYPE.RESPONSE,

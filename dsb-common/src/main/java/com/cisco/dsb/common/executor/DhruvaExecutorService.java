@@ -1,20 +1,18 @@
 package com.cisco.dsb.common.executor;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.util.MonitoredExecutorProvider;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Map;
 import java.util.concurrent.*;
+import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.env.Environment;
 import reactor.core.scheduler.Schedulers;
 
+@CustomLog
 public class DhruvaExecutorService extends MonitoredExecutorProvider {
-
-  private static Logger LOG = DhruvaLoggerFactory.getLogger(ExecutorService.class);
 
   private final ConcurrentMap<String, ExecutorService> executorMap = new ConcurrentHashMap<>();
 
@@ -22,8 +20,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
       new ConcurrentHashMap<>();
 
   private final String servername;
-
-  public static final String Executor = "DhruvaExecutorThreadPool";
 
   public DhruvaExecutorService(
       final String servername,
@@ -37,14 +33,14 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         applicationInstanceIndex,
         isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD);
     this.servername = servername;
-    // Project reactor MDC context switching using Schedulars onHook
+    // Project reactor MDC context switching using Schedulers onHook
     Schedulers.onScheduleHook("mdc", CustomThreadPoolExecutor::wrapWithMdcContext);
   }
 
   public void startExecutorService(final ExecutorType type, final int maxThreads) {
     String name = type.getExecutorName(this.servername);
     if (isExecutorServiceRunning(name)) {
-      LOG.info("Executor service {} already running on {}", this, this.servername);
+      logger.info("Executor service {} already running on {}", this, this.servername);
       return;
     }
     // maxThreads => minThread + 10.We dont want fixed size pool
@@ -55,6 +51,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
    * provide the thread name that you want to assign
    *
    * @param name Name of thread
+   * @param minThreads Accepts the min threads to be configured as input
    * @param maxThreads Accepts the max threads to be configured as input
    */
   public void startExecutorService(String name, int minThreads, int maxThreads) {
@@ -62,15 +59,11 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         this.executorMap.compute(
             name,
             (key, value) -> {
-              if (value != null) {
-                throw new RuntimeException(
-                    "An executor service with the name " + key + " is already running!");
-              }
               // Pick from CSB
               return this.newExecutorService(key, null, minThreads, maxThreads, 100, 60, false);
             });
 
-    LOG.info(
+    logger.info(
         "Starting executor service name={}, corePoolSize={}, maxPoolSize={}",
         name,
         minThreads,
@@ -86,7 +79,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
   public void startStripedExecutorService(final ExecutorType type) {
     String name = type.getExecutorName(this.servername);
     if (isExecutorServiceRunning(name)) {
-      LOG.info("Executor service {} already running on {}", this, this.servername);
+      logger.info("Executor service {} already running on {}", this, this.servername);
       return;
     }
 
@@ -94,25 +87,22 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         this.executorMap.compute(
             name,
             (key, value) -> {
-              if (value != null) {
-                throw new RuntimeException(
-                    "An executor service with the name " + key + " is already running!");
-              }
               // Pick from CSB
               return this.newStripedExecutorService(key);
             });
 
-    LOG.info("Starting cached stripped executor service name={}", name);
+    logger.info("Starting cached stripped executor service name={}", name);
   }
 
   public void startScheduledExecutorService(final ExecutorType type, final int maxThreads) {
     String name = type.getExecutorName(this.servername);
     if (isScheduledExecutorServiceRunning(name)) {
-      LOG.info("Executor service {} already running on {}", this, this.servername);
+      logger.info("Executor service {} already running on {}", this, this.servername);
       return;
     }
     startScheduledExecutorService(name, maxThreads);
   }
+
   /**
    * provide the thread name that you want to assign
    *
@@ -124,10 +114,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         this.scheduledExecutorMap.compute(
             name,
             (key, value) -> {
-              if (value != null) {
-                throw new RuntimeException(
-                    "An executor service with the name " + key + " is already running!");
-              }
               ThreadFactoryBuilder tfb = new ThreadFactoryBuilder();
               tfb.setNameFormat(name + "-%d");
               tfb.setDaemon(true);
@@ -137,7 +123,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
     e.setRemoveOnCancelPolicy(true);
 
-    LOG.info(
+    logger.info(
         "Starting Scheduled executor service name={}, corePoolSize={}, maxPoolSize={}",
         name,
         maxThreads,
@@ -152,38 +138,20 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     return this.scheduledExecutorMap.containsKey(name);
   }
 
-  public boolean isExecutorServiceRunning(ExecutorType name) {
-    return isExecutorServiceRunning(name.getExecutorName(servername));
+  private ExecutorService getExecutor(String name) {
+    return this.executorMap.get(name);
   }
 
-  ScheduledThreadPoolExecutor getScheduledExecutor(final ExecutorType type) {
-    return getScheduledExecutor(type.getExecutorName(this.servername));
+  public ExecutorService getExecutorThreadPool(final ExecutorType type) {
+    return getExecutor(type.getExecutorName(this.servername));
   }
 
   private ScheduledThreadPoolExecutor getScheduledExecutor(String executorName) {
     return this.scheduledExecutorMap.get(executorName);
   }
 
-  public ExecutorService getExecutorThreadPool(final ExecutorType type) {
-    return getExecutor(type);
-  }
-
   public ScheduledThreadPoolExecutor getScheduledExecutorThreadPool(final ExecutorType type) {
-    return getScheduledExecutor(type);
-  }
-
-  /**
-   * Use this API to fetch the executor based on the type
-   *
-   * @param type Executor type for which the executor thread pool was created
-   * @return Executor object that was already created
-   */
-  ExecutorService getExecutor(final ExecutorType type) {
-    return getExecutor(type.getExecutorName(this.servername));
-  }
-
-  ExecutorService getExecutor(String name) {
-    return this.executorMap.get(name);
+    return getScheduledExecutor(type.getExecutorName(this.servername));
   }
 
   static class CustomThreadPoolExecutor extends ThreadPoolExecutor {
@@ -206,35 +174,21 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
     public static Runnable wrapWithMdcContext(Runnable task) {
       // save the current MDC context
-      Map<String, String> contextMap = LOG.getMDCMap();
+      Map<String, String> contextMap = logger.getMDCMap();
       return () -> {
         setMDCContext(contextMap);
         try {
           task.run();
         } finally {
-          LOG.clearMDC();
-        }
-      };
-    }
-
-    public static <T> Callable<T> wrapWithMdcContext(Callable<T> task) {
-      // save the current MDC context
-      Map<String, String> contextMap = LOG.getMDCMap();
-      return () -> {
-        setMDCContext(contextMap);
-        try {
-          return task.call();
-        } finally {
-          // once the task is complete, clear MDC
-          LOG.clearMDC();
+          logger.clearMDC();
         }
       };
     }
 
     public static void setMDCContext(Map<String, String> contextMap) {
-      LOG.clearMDC();
+      logger.clearMDC();
       if (contextMap != null) {
-        LOG.setMDC(contextMap);
+        logger.setMDC(contextMap);
       }
     }
 
@@ -451,7 +405,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     protected <V> RunnableScheduledFuture<V> decorateTask(
         Runnable r, RunnableScheduledFuture<V> task) {
       CustomScheduledTask customScheduledTask = new CustomScheduledTask<V>(r, task);
-      customScheduledTask.mdcMap = LOG.getMDCMap();
+      customScheduledTask.mdcMap = logger.getMDCMap();
       return customScheduledTask;
     }
 
@@ -459,14 +413,14 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     protected <V> RunnableScheduledFuture<V> decorateTask(
         Callable<V> c, RunnableScheduledFuture<V> task) {
       CustomScheduledTask customScheduledTask = new CustomScheduledTask<V>(c, task);
-      customScheduledTask.mdcMap = LOG.getMDCMap();
+      customScheduledTask.mdcMap = logger.getMDCMap();
       return customScheduledTask;
     }
 
     public static void setMDCContext(Map<String, String> contextMap) {
-      LOG.clearMDC();
+      logger.clearMDC();
       if (contextMap != null) {
-        LOG.setMDC(contextMap);
+        logger.setMDC(contextMap);
       }
     }
 
@@ -491,7 +445,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
       running.remove(Thread.currentThread());
       if (r
           instanceof DhruvaExecutorService.CustomScheduledThreadPoolExecutor.CustomScheduledTask) {
-        LOG.clearMDC();
+        logger.clearMDC();
       }
     }
 
@@ -518,6 +472,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
   public ThreadPoolExecutor getThreadPoolExecutor(
       int min, int max, int keepalive, BlockingQueue<Runnable> queue) {
     return new DhruvaExecutorService.CustomThreadPoolExecutor(
-        min, max, (long) keepalive, TimeUnit.SECONDS, queue);
+        min, max, keepalive, TimeUnit.SECONDS, queue);
   }
 }

@@ -1,12 +1,12 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.config.SipProperties;
 import com.cisco.dsb.common.dns.DnsLookup;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
 import java.util.Properties;
 import javax.net.ssl.KeyManager;
 import javax.sip.SipStack;
+import unused.mightneedlater.SipProperties;
 
 /** Stack factory for creating proxy stack. */
 public final class ProxyStackFactory {

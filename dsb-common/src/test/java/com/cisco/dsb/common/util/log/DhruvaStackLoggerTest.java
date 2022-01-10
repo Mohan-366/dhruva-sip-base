@@ -1,9 +1,6 @@
-package com.cisco.dsb.trunk.util.log;
+package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.sip.parser.RemotePartyIDParser;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.LogUtils;
-import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.core.GenericObject;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPMessage;

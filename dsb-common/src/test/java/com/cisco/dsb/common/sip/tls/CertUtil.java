@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.util;
+package com.cisco.dsb.common.sip.tls;
 
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;

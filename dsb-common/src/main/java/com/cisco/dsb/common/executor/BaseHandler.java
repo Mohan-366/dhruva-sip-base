@@ -1,18 +1,17 @@
 package com.cisco.dsb.common.executor;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.common.util.log.LoggingContext;
 import com.cisco.wx2.util.stripedexecutor.StripedRunnable;
 import java.util.Map;
+import lombok.CustomLog;
 import org.apache.commons.collections4.map.AbstractReferenceMap;
 import org.apache.commons.collections4.map.ReferenceMap;
 
+@CustomLog
 public abstract class BaseHandler implements StripedRunnable {
   private static Map<String, Object> stripes =
       new ReferenceMap<>(
           AbstractReferenceMap.ReferenceStrength.HARD, AbstractReferenceMap.ReferenceStrength.WEAK);
-  private Logger logger = DhruvaLoggerFactory.getLogger(BaseHandler.class);
 
   /**
    * When an object implementing interface <code>Runnable</code> is used to create a thread,

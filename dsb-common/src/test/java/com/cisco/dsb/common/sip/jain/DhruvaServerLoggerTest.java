@@ -1,10 +1,9 @@
-package com.cisco.dsb.sip.jain.logger;
+package com.cisco.dsb.common.sip.jain;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
-import com.cisco.dsb.common.sip.jain.DhruvaServerLogger;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.net.InetAddress;
 import javax.sip.header.CSeqHeader;

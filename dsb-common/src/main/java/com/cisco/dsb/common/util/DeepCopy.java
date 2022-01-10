@@ -2,8 +2,10 @@ package com.cisco.dsb.common.util;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.*;
+import lombok.CustomLog;
 
 @SuppressFBWarnings
+@CustomLog
 public class DeepCopy {
   /**
    * Returns a copy of the object, or null if the object cannot be serialized.
@@ -28,10 +30,8 @@ public class DeepCopy {
       obj = in.readObject();
     } catch (NotSerializableException e) {
       throw e;
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ClassNotFoundException cnfe) {
-      cnfe.printStackTrace();
+    } catch (IOException | ClassNotFoundException e) {
+      logger.error("Error while copying the object", e);
     }
     return obj;
   }

@@ -8,9 +8,7 @@ import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
 import com.cisco.dsb.common.util.log.LogUtils;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import gov.nist.javax.sip.header.CSeq;
@@ -18,7 +16,9 @@ import gov.nist.javax.sip.message.SIPMessage;
 import java.util.Map;
 import java.util.Optional;
 import javax.sip.message.Message;
+import lombok.CustomLog;
 
+@CustomLog
 public class Event {
 
   private static final String ISMIDDIALOG = "isMidDialog";
@@ -29,8 +29,6 @@ public class Event {
   public static String REMOTEPORT = "remotePort";
   public static String LOCALIP = "localIp";
   public static String LOCALPORT = "localPort";
-
-  private static Logger logger = DhruvaLoggerFactory.getLogger(Event.class);
 
   public enum EventType {
     CONNECTION,

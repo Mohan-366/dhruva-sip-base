@@ -28,9 +28,8 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.27</version>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-bootstrap</artifactId>
     </dependency>
   </dependencies>
   <build>

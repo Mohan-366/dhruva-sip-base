@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.util;
+package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.wx2.util.ContextConstants;
@@ -14,12 +14,11 @@ public class SipTrackingConstants {
   public static final String SIP_CALL_ID_FIELD = "sipCallId";
   public static final String SIP_CSEQ = "cSeq";
   public static final String SIP_MESSAGE_SIZE = "sipMessageSize";
-  public static final String SIPREQ_CANARYOPTS_MDC_KEY = "sipReqCanaryOpts";
   public static final String SIP_REASON_CAUSE = "sipReasonCause";
   public static final String SIP_REASON_TEXT = "sipReasonText";
 
   // Our prefix for integration tests
-  public static final String IT_PREFIX = "L2Sip-" + ContextConstants.TRACKING_ID_IT_PREFIX;
+  public static final String IT_PREFIX = "Dsb-" + ContextConstants.TRACKING_ID_IT_PREFIX;
 
   // Using "ID" suffix for consistency with Huron Kibana field names
   public static final String LOCAL_SIP_SESSION_ID_FIELD = "localSessionID";
