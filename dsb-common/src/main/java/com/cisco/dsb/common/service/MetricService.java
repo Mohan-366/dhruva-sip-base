@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,7 +47,7 @@ public class MetricService {
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
-  private final ScheduledThreadPoolExecutor scheduledExecutor;
+  private ScheduledThreadPoolExecutor scheduledExecutor;
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
@@ -83,7 +84,9 @@ public class MetricService {
                 })
             .build();
 
-    initializeCPSMetric();
+    this.cpsCounterMap = new HashMap<>();
+    this.cpsMetricSet = new HashSet<>();
+
     /*
         cpsCounterMap = new HashMap<String, AtomicInteger>();
 
@@ -101,9 +104,12 @@ public class MetricService {
     */
   }
 
+  @PostConstruct
+  public void postBeanInitialization() {
+    this.initializeCPSMetric();
+  }
+
   private void initializeCPSMetric() {
-    this.cpsCounterMap = new HashMap<>();
-    this.cpsMetricSet = new HashSet<>();
 
     this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
   }
