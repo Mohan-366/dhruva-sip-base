@@ -31,10 +31,8 @@ import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -51,11 +49,6 @@ public class OptionsPingMonitor {
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<Integer>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
-  private static final int THREAD_CAP = 20; // TODO: add these as config properties
-  private static final int QUEUE_TASK_CAP = 100;
-  private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
-  private Disposable opFlux;
-  Scheduler optionsPingScheduler;
 
   @PostConstruct
   public void initOptionsPing() {
@@ -64,16 +57,10 @@ public class OptionsPingMonitor {
 
   public void init(Map<String, ServerGroup> map) {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
-    optionsPingScheduler =
-        Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
-    try {
-      startMonitoring(map);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    startMonitoring(map);
   }
 
-  private void startMonitoring(Map<String, ServerGroup> map) throws InterruptedException {
+  private void startMonitoring(Map<String, ServerGroup> map) {
     logger.info("Starting OPTIONS pings!! : {}", map);
     Flux<SIPResponse> upElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
@@ -98,12 +85,8 @@ public class OptionsPingMonitor {
                                 serverGroup.getHostName(),
                                 serverGroup.getElements().size());
                           });
-                }).repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(
-                        30000),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));;
+                })
+            .name("upElementFlux");
 
     Flux<SIPResponse> downElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
@@ -125,19 +108,9 @@ public class OptionsPingMonitor {
                                 optionsPingPolicy.getFailoverResponseCodes(),
                                 serverGroup.getHostName());
                           });
-                }).repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(
-                        5000),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));;
-    opFlux = Flux.merge(upElementsResponse, downElementsResponse).subscribe();
-//    try {
-//      logger.info("Restarting flux now!");
-//      MyThreadforOPRestart threadforOPRestart = new MyThreadforOPRestart();
-//      threadforOPRestart.start();
-//    } catch (Exception e) {
-//    }
+                })
+            .name("downElementFlux");
+    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
@@ -150,7 +123,12 @@ public class OptionsPingMonitor {
                 return true;
               }
               return false;
-            });
+            })
+        .repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(upTimeInterval),
+                    Schedulers.newBoundedElastic(5, 50, "BE-Up-Elements")));
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
@@ -163,7 +141,12 @@ public class OptionsPingMonitor {
                 return true;
               }
               return false;
-            });
+            })
+        .repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(downIntervalTime),
+                    Schedulers.newBoundedElastic(5, 50, "BE-Down-Elements")));
   }
 
   /**
@@ -353,26 +336,4 @@ public class OptionsPingMonitor {
       return false;
     }
   }
-/*
-  class MyThreadforOPRestart extends Thread {
-
-    @Override
-    public void run() {
-      try {
-        Thread.sleep(60000);
-        restartFlux();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
-  public void restartFlux() throws InterruptedException {
-    opFlux.dispose();
-    while (!opFlux.isDisposed()) {
-      logger.error("Not disposed yet");
-    }
-    logger.info("flux is now disposed! restaring it!");
-        startMonitoring(commonConfigurationProperties.getServerGroups());
-  }*/
 }

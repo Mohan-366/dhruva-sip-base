@@ -150,8 +150,10 @@ public class Event {
         Maps.newHashMap(ImmutableMap.of("serverGroupName", serverGroupName));
     if (isDown) {
       eventInfoMap.put("errorType", ErrorType.ServerGroupDown.name());
+      eventInfoMap.put("status", "up");
       msg = "ServerGroup DOWN: " + serverGroupName;
     } else {
+      eventInfoMap.put("status", "down");
       msg = "ServerGroup UP: " + serverGroupName;
     }
 

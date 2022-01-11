@@ -29,12 +29,10 @@ import javax.sip.header.Header;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-@Ignore
 public class OptionsPingMonitorTest {
 
   Map<String, ServerGroup> initmap = new HashMap<>();
@@ -242,7 +240,6 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor2.init(map);
     Thread.sleep(1500);
     Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
-    //    optionsPingMonitor = null;
   }
 
   @Test
@@ -253,7 +250,6 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor3.init(map);
     Thread.sleep(1000);
     Assert.assertFalse(optionsPingMonitor3.serverGroupStatus.get(sg.getName()));
-    //    optionsPingMonitor = null;
   }
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
@@ -267,8 +263,6 @@ public class OptionsPingMonitorTest {
     Thread.sleep(1000);
 
     Assert.assertTrue(expectedElementStatusInt.equals(optionsPingMonitor.elementStatus));
-
-    //    optionsPingMonitor = null;
   }
 
   @Test(description = "checking up and down Flux are segregated")
