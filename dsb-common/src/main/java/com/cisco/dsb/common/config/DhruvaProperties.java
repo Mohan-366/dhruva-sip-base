@@ -7,6 +7,7 @@ import java.net.URI;
 import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -33,7 +34,7 @@ public class DhruvaProperties extends ConfigProperties {
   private static BuildInfo buildInfo;
   private final Environment env;
 
-  @Getter private String podNameEnvVar;
+  @Getter @Setter private String podNameEnvVar;
 
   @PostConstruct
   public void init() {
@@ -55,14 +56,7 @@ public class DhruvaProperties extends ConfigProperties {
     this.env = env;
   }
 
-  @Override
-  public int getApplicationInstanceIndex() {
 
-    int instanceIndex = 0;
-
-    logger.debug("Instance Index is: {} ", String.valueOf(instanceIndex));
-    return instanceIndex;
-  }
 
   public static String createUserAgentString(String uaType, Environment env) {
     String userAgent = uaType;

@@ -28,9 +28,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,7 +48,7 @@ public class MetricService {
   MetricClient metricClient;
   private final Executor executorService;
 
-  private final Cache<String, Long> timers;
+  @Getter private final Cache<String, Long> timers;
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
 
@@ -78,21 +78,23 @@ public class MetricService {
             .build();
   }
 
-  public void registerPeriodicMetric(
-      String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
-    scheduledExecutor.scheduleAtFixedRate(
-        getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
-  }
+  // Currently not being used, once used need to add UT
+  /*
+    public void registerPeriodicMetric(
+        String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
+      scheduledExecutor.scheduleAtFixedRate(
+          getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
+    }
 
-  @NotNull
-  private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
-    return () -> {
-      Set<Metric> metrics = metricSupplier.get();
-      metrics.forEach(metric -> metric.measurement(prefixDhruvaToMeasurementName(measurement)));
-      sendMetric(metrics);
-    };
-  }
-
+    @NotNull
+    private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
+      return () -> {
+        Set<Metric> metrics = metricSupplier.get();
+        metrics.forEach(metric -> metric.measurement(prefixDhruvaToMeasurementName(measurement)));
+        sendMetric(metrics);
+      };
+    }
+  */
   public void emitServiceHealth(ServiceHealth health, boolean includeUpstreamService) {
     sendServiceHealthMetric("service.health", health);
 
@@ -135,9 +137,9 @@ public class MetricService {
     Metric metric =
         Metrics.newMetric()
             .measurement("connection")
-            .tag("transport", transport.toString())
-            .tag("direction", direction.name())
-            .tag("connectionState", connectionState.name())
+            .tag("transport", transport != null ? transport.name() : null)
+            .tag("direction", direction != null ? direction.name() : null)
+            .tag("connectionState", connectionState != null ? connectionState.name() : null)
             .field("localIp", localIp)
             .field("localPort", localPort)
             .field("remoteIp", remoteIp)
