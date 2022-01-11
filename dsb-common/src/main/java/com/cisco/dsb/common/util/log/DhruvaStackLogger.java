@@ -11,9 +11,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLHandshakeException;
 import javax.sip.message.Message;
+import lombok.CustomLog;
 
+@CustomLog
 public class DhruvaStackLogger implements StackLogger {
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaStackLogger.class);
 
   private int lineCount;
   private boolean loggingEnabled = true;
@@ -45,16 +46,14 @@ public class DhruvaStackLogger implements StackLogger {
 
   /** log a stack trace. This helps to look at the stack frame. */
   @SuppressWarnings("checkstyle:emptyblock")
+  @Override
   public void logStackTrace() {
     // this is too noisy so commenting out
     // this.logStackTrace(TRACE_DEBUG);
   }
 
-  /**
-   * Log a stack trace if the current logging level exceeds given trace level.
-   *
-   * @param traceLevel
-   */
+  /** Log a stack trace if the current logging level exceeds given trace level. */
+  @Override
   public void logStackTrace(int traceLevel) {
     StackTraceElement[] stackTraceElements = new Exception().getStackTrace();
     StringBuffer buffer = new StringBuffer();
@@ -92,20 +91,14 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /**
-   * Get the line count in the log stream.
-   *
-   * @return
-   */
+  /** Get the line count in the log stream. */
+  @Override
   public int getLineCount() {
     return lineCount;
   }
 
-  /**
-   * Log an exception.
-   *
-   * @param ex
-   */
+  /** Log an exception. */
+  @Override
   public void logException(Throwable ex) {
     // Parse exceptions showing up here are from incoming SIP messages.
     // They often seem to be because of headers that we don't care about that don't meet spec.
@@ -136,7 +129,6 @@ public class DhruvaStackLogger implements StackLogger {
   /**
    * Prepend the line and file where this message originated from
    *
-   * @param message
    * @return re-written message.
    */
   @SuppressWarnings("checkstyle:parameterassignment")
@@ -228,6 +220,7 @@ public class DhruvaStackLogger implements StackLogger {
    *
    * @param message message to log into the log file.
    */
+  @Override
   public void logTrace(String message) {
 
     // TODO DSB
@@ -243,6 +236,7 @@ public class DhruvaStackLogger implements StackLogger {
    *
    * @param message message to log into the log file.
    */
+  @Override
   public void logDebug(String message) {
     if (logger.isDebugEnabled()) {
       String newMessage = this.enhanceMessage(message);
@@ -255,7 +249,6 @@ public class DhruvaStackLogger implements StackLogger {
    * Log a message into the log file.
    *
    * @param message message to log into the log file.
-   * @param ex
    */
   @Override
   public void logDebug(String message, Exception ex) {
@@ -271,6 +264,7 @@ public class DhruvaStackLogger implements StackLogger {
    *
    * @param message error message to log.
    */
+  @Override
   public void logError(String message) {
     if (logger.isInfoEnabled()) {
       String newMsg = this.enhanceMessage(message);
@@ -279,12 +273,8 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /**
-   * Log an error message. We map JAIN SIP ERROR to WARN.
-   *
-   * @param message
-   * @param ex
-   */
+  /** Log an error message. We map JAIN SIP ERROR to WARN. */
+  @Override
   public void logError(String message, Exception ex) {
     if (logger.isInfoEnabled()) {
       String newMsg = this.enhanceMessage(message);
@@ -304,11 +294,8 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /**
-   * Log a warning mesasge. We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR.
-   *
-   * @param string
-   */
+  /** Log a warning mesasge. We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR. */
+  @Override
   public void logWarning(String string) {
     logInfo(string);
   }
@@ -327,11 +314,8 @@ public class DhruvaStackLogger implements StackLogger {
         || socketWatchdog.matcher(message).matches();
   }
 
-  /**
-   * Log an info message. This is where the SIP messages get logged too.
-   *
-   * @param string
-   */
+  /** Log an info message. This is where the SIP messages get logged too. */
+  @Override
   @SuppressWarnings("checkstyle:parameterassignment")
   public void logInfo(String string) {
     if (!isSocketLog(string) && logger.isInfoEnabled()) {
@@ -344,6 +328,7 @@ public class DhruvaStackLogger implements StackLogger {
    *
    * @param message error message to log.
    */
+  @Override
   public void logFatalError(String message) {
     // TODO dsb
     if (logger.isErrorEnabled()) {
@@ -354,15 +339,13 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   /** @return flag to indicate if logging is enabled. */
+  @Override
   public boolean isLoggingEnabled() {
     return this.loggingEnabled;
   }
 
-  /**
-   * Return true/false if loging is enabled at a given level.
-   *
-   * @param logLevel
-   */
+  /** Return true/false if loging is enabled at a given level. */
+  @Override
   public boolean isLoggingEnabled(int logLevel) {
     return isLoggingEnabled() && isLoggingEnabledInternal(logLevel);
   }
@@ -391,35 +374,32 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   /** Disable logging altogether. */
+  @Override
   public void disableLogging() {
     this.loggingEnabled = false;
   }
 
   /** Enable logging (globally). */
+  @Override
   public void enableLogging() {
     this.loggingEnabled = true;
   }
 
   /** Set the build time stamp. This is logged into the logging stream. */
+  @Override
   public void setBuildTimeStamp(String buildTimeStamp) {
     logger.info("JAIN SIP build timestamp = " + buildTimeStamp);
   }
 
-  /**
-   * Stack creation properties.
-   *
-   * @param stackProperties
-   */
+  /** Stack creation properties. */
+  @Override
   public void setStackProperties(Properties stackProperties) {
     logger.info("JAIN configuration properties = " + stackProperties);
     enableLogging();
   }
 
-  /**
-   * The category for the logger.
-   *
-   * @return
-   */
+  /** The category for the logger. */
+  @Override
   public String getLoggerName() {
     return logger.getName();
   }

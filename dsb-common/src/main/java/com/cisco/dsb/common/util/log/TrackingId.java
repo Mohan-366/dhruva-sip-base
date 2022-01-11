@@ -2,7 +2,6 @@ package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.sip.dto.WebexMeetingInfo;
 import com.cisco.dsb.common.sip.util.SipConstants;
-import com.cisco.dsb.common.util.SipTrackingConstants;
 import com.cisco.wx2.dto.BuildInfo;
 import com.cisco.wx2.server.locus.util.LocusTestProperties;
 import com.cisco.wx2.util.ContextConstants;
@@ -14,6 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
+import lombok.CustomLog;
 import org.slf4j.MDC;
 
 /*
@@ -29,9 +29,8 @@ import org.slf4j.MDC;
  * TrackingID sequence diagram:
  * http://wikicentral.cisco.com/download/attachments/221945462/trackingid-flow.png
  */
+@CustomLog
 public final class TrackingId {
-
-  private static Logger logger = DhruvaLoggerFactory.getLogger(TrackingId.class);
 
   public static final String TEST_CALL_ID_PREFIX = "test";
   public static final String CANARY_OPTS_KEY = "canaryopts";
@@ -44,13 +43,11 @@ public final class TrackingId {
 
   private static String sipIpAddress = SipConstants.Ipv4_Loopback;
   private static String httpIpAddress = SipConstants.Ipv4_Loopback;
-  private static String l2SipInstancePrefix;
   private static String nomadAllocId;
   private static String build;
   private static String buildGit;
   private static boolean isCanary;
   private static String instanceId;
-  private static String canaryOpts;
 
   private static final String TID_PREFIX_SEPARATOR = "_";
 
@@ -98,14 +95,6 @@ public final class TrackingId {
     MDC.remove(ContextConstants.WEBEX_MEETING_ID);
     MDC.remove(ContextConstants.CANARY_OPTS_KEY);
     MDC.remove(SipTrackingConstants.CONNECTION_SIGNATURE);
-  }
-
-  public static String getL2SipInstancePrefix() {
-    return l2SipInstancePrefix;
-  }
-
-  public static void setL2SipInstancePrefix(String l2SipInstancePrefix) {
-    TrackingId.l2SipInstancePrefix = l2SipInstancePrefix;
   }
 
   public static void setPrefix(String prefix) {

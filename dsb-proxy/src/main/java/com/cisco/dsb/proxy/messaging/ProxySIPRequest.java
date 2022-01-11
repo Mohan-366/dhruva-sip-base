@@ -140,35 +140,36 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
    *     URI
    * @throws ParseException if the parser encounters an error.
    */
-  public URI lrEscape() throws ParseException {
-    // do the escape checking ONE time
-    if (m_routeTo != null) return m_routeTo;
-
-    /*    if (this.clonedRequest != null) {
-      request = this.getClonedRequest();
-    } else {
-      request = this.getRequest();
-    }*/
-
-    m_routeTo = req.getRequestURI();
-
-    RouteHeader topRoute = (RouteHeader) req.getHeader(RouteHeader.NAME);
-    if (topRoute != null) {
-      m_routeTo = topRoute.getAddress().getURI();
-      if (!((SipURI) m_routeTo).hasLrParam()) {
-        SipURI reqURI = (SipURI) req.getRequestURI();
-        RouteHeader routeHeader =
-            JainSipHelper.createRouteHeader(
-                reqURI.getUser(), reqURI.getHost(), reqURI.getPort(), reqURI.getTransportParam());
-        // Add header to the bottom
-        req.addHeader(routeHeader);
-        req.setRequestURI(m_routeTo);
-        req.removeFirst(RouteHeader.NAME);
-        m_escaped = true;
-      }
-    }
-    return m_routeTo;
-  }
+  //TODO RamG
+//  public URI lrEscape() throws ParseException {
+//    // do the escape checking ONE time
+//    if (m_routeTo != null) return m_routeTo;
+//
+//    /*    if (this.clonedRequest != null) {
+//      request = this.getClonedRequest();
+//    } else {
+//      request = this.getRequest();
+//    }*/
+//
+//    m_routeTo = req.getRequestURI();
+//
+//    RouteHeader topRoute = (RouteHeader) req.getHeader(RouteHeader.NAME);
+//    if (topRoute != null) {
+//      m_routeTo = topRoute.getAddress().getURI();
+//      if (!((SipURI) m_routeTo).hasLrParam()) {
+//        SipURI reqURI = (SipURI) req.getRequestURI();
+//        RouteHeader routeHeader =
+//            JainSipHelper.createRouteHeader(
+//                reqURI.getUser(), reqURI.getHost(), reqURI.getPort(), reqURI.getTransportParam());
+//        // Add header to the bottom
+//        req.addHeader(routeHeader);
+//        req.setRequestURI(m_routeTo);
+//        req.removeFirst(RouteHeader.NAME);
+//        m_escaped = true;
+//      }
+//    }
+//    return m_routeTo;
+//  }
 
   /**
    * Returns new proxySIPRequest whose meta data are same as original proxySipRequest but Request is

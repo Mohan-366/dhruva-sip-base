@@ -5,7 +5,6 @@ import static org.mockito.Mockito.when;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
@@ -60,26 +59,65 @@ public class DhruvaExecutorServiceTest {
     Assert.assertNotNull(f);
     f.get();
     Assert.assertTrue(f.isDone());
+    Assert.assertFalse(f.cancel(false)); // cannot cancel an already executed one
+
+    // trying to start an executor that is already running. No impact, just logs this activity
+    dhruvaExecutorService.startExecutorService(ExecutorType.DNS_LOCATOR_SERVICE, 50);
 
     executorService.shutdownNow();
   }
 
   @Test
-  public void testStartScheduledExecutorService() throws InterruptedException, ExecutionException {
+  public void testStartScheduledExecutorService()
+      throws InterruptedException, ExecutionException, TimeoutException {
     dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 1);
     ScheduledThreadPoolExecutor executorService =
         dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_CLIENT_TIMEOUT);
-    AtomicBoolean executed = new AtomicBoolean(false);
     ScheduledFuture<?> f =
         executorService.schedule(
             () -> {
               System.out.println("submit runnable task");
-              executed.set(true);
             },
             1,
             TimeUnit.MILLISECONDS);
+    f.get(5, TimeUnit.SECONDS);
+    Assert.assertFalse(
+        f.isCancelled()); // no cancel was invoked during execution, so should return false
+    Assert.assertTrue(f.isDone());
+
+    DhruvaExecutorService.CustomScheduledThreadPoolExecutor.CustomScheduledTask
+        customScheduledTask =
+            (DhruvaExecutorService.CustomScheduledThreadPoolExecutor.CustomScheduledTask) f;
+    Assert.assertFalse(customScheduledTask.isPeriodic());
+    Assert.assertFalse(customScheduledTask.cancel(false));
+
+    // trying to start an executor that is already running. No impact, just logs this activity
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 1);
+
+    executorService.shutdownNow();
+  }
+
+  @Test
+  public void testStartScheduledExecutorServiceWithCallableTask()
+      throws InterruptedException, ExecutionException {
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 1);
+    ScheduledThreadPoolExecutor executorService =
+        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.PROXY_SEND_MESSAGE);
+    Callable c =
+        () -> {
+          System.out.println("submit callable task");
+          return null;
+        };
+    ScheduledFuture<?> f = executorService.schedule(c, 1, TimeUnit.MILLISECONDS);
     f.get();
-    Assert.assertTrue(executed.get());
+    int runningTasks =
+        ((DhruvaExecutorService.CustomScheduledThreadPoolExecutor) executorService)
+            .getRunningTasks()
+            .size();
+    Assert.assertEquals(runningTasks, 0);
+
+    // trying to start an executor that is already running. No impact, just logs this activity
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 1);
 
     executorService.shutdownNow();
   }
@@ -99,6 +137,9 @@ public class DhruvaExecutorServiceTest {
     Assert.assertNotNull(f);
     f.get();
     Assert.assertTrue(f.isDone());
+
+    // trying to start an executor that is already running. No impact, just logs this activity
+    dhruvaExecutorService.startStripedExecutorService(ExecutorType.PROXY_PROCESSOR);
 
     executorService.shutdown();
   }

@@ -1,6 +1,6 @@
 package com.cisco.dsb.proxy.controller;
 
-import com.cisco.dsb.common.CommonContext;
+import com.cisco.dsb.common.context.CommonContext;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -164,7 +164,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       logger.error("Unable to create SipResponse for responseCode {}", responseCode);
       return;
     }
-    // ((ProxyTransaction) proxyTransaction).setInternallyGenerated(true); // ankabane
+
     Optional.ofNullable(((ProxyTransaction) proxyTransaction).getServerTransaction())
         .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
 
@@ -881,9 +881,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onResponse(ProxySIPResponse response) {
-    // TODO LMA
-    /*response.setNormalizationState(
-    DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
     Optional<String> network = DhruvaNetwork.getNetworkFromProvider(response.getProvider());
     if (network.isPresent()) response.setNetwork(network.get());
     else logger.warn("Unable to set incoming network from SipProvider");

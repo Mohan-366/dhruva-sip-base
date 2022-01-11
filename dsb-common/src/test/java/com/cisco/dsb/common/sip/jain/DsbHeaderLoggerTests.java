@@ -4,7 +4,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
-import com.cisco.dsb.sip.jain.logger.LoggerTestBase;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.net.InetAddress;
 import java.net.UnknownHostException;

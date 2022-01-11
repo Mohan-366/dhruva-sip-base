@@ -1,6 +1,5 @@
 package com.cisco.dsb.common.ua;
 
-import com.cisco.dsb.common.config.SipProperties;
 import com.cisco.dsb.common.dns.DnsLookup;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
@@ -26,6 +25,7 @@ import javax.sip.message.Message;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.apache.commons.lang3.tuple.Pair;
+import unused.mightneedlater.SipProperties;
 
 // This class is not loaded by Spring so autowire does not work.
 // TODO: Implement SipStackWrapper and uncomment the commented methods.

@@ -1,16 +1,12 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
-import com.cisco.dsb.proxy.errors.InvalidStateException;
 import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import javax.sip.InvalidArgumentException;
 import javax.sip.ServerTransaction;
-import javax.sip.SipException;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,8 +24,6 @@ public class ProxyServerTransaction {
   private ControllerConfig controllerConfig;
   @Getter @Setter private boolean isInternallyGeneratedResponse = false;
 
-  /** request received */
-  private SIPRequest request;
   /** last response sent */
   private SIPResponse response;
 
@@ -39,16 +33,12 @@ public class ProxyServerTransaction {
 
   private boolean okResponseSent = false;
 
-  private static final int UNINITIALIZED = -1;
-
-  // protected static Logger Log = DhruvaLoggerFactory.getLogger(ProxyServerTransaction.class);
-
   protected ProxyServerTransaction(
       ProxyTransaction proxy, ServerTransaction trans, SIPRequest request) {
     serverTransaction = trans;
     this.proxy = proxy;
     this.controllerConfig = this.proxy.getController().getControllerConfig();
-    //    this.request = (SIPRequest) trans.getRequest();
+
     ViaList viaHeaders = request.getViaHeaders();
     if (viaHeaders != null) numVias = viaHeaders.size();
 
@@ -60,18 +50,13 @@ public class ProxyServerTransaction {
     } else {
       rrIndexFromEnd = -1; // not valid in stateless
     }
-
-    // bindingInfo = (DsBindingInfo) request.getBindingInfo().clone();
   }
 
   public void respond(@NonNull SIPResponse response) throws DestinationUnreachableException {
 
-    // logger.debug("Entering respond()");
-
     // send the response
     try {
       ViaList vias = response.getViaHeaders();
-      // DsSipHeaderList vias = response.getHeaders(DsSipConstants.VIA);
       int numResponseVias = vias != null ? vias.size() : 0;
 
       logger.debug("numResponseVias=" + numResponseVias + ", numVias=" + numVias);
@@ -102,14 +87,5 @@ public class ProxyServerTransaction {
 
   protected SIPResponse getResponse() {
     return response;
-  }
-
-  /** This is used to handle the special case with INVITE 200OK retransmissions */
-  protected void retransmit200() throws DhruvaException, SipException, InvalidArgumentException {
-
-    if (response != null && ProxyUtils.getResponseClass(response) == 2) {
-      // respond(response);
-      serverTransaction.sendResponse(response);
-    } else throw new InvalidStateException("Cannot retransmit in this state");
   }
 }

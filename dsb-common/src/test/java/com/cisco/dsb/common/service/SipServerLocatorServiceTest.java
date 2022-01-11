@@ -28,11 +28,11 @@ import org.testng.annotations.Test;
 public
 class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //add this for end-to-end test*/ {
 
-  SipServerLocator locator;
   DhruvaExecutorService executorService;
   CommonConfigurationProperties props;
   SipServerLocatorService sipServerLocatorService;
   // @Autowired private SipServerLocatorService locatorService;
+
   @BeforeTest
   public void setup() {
     props = mock(CommonConfigurationProperties.class);
@@ -44,7 +44,6 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
 
   @Test
   public void testLocateDestinationAsync() throws ExecutionException, InterruptedException {
-
     User user = null;
     SipDestination sipDestination =
         new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.TLS);
@@ -106,6 +105,41 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     } catch (Exception ex) {
       throw ex.getCause();
     }
+  }
+
+  @Test(description = "checks the locateDestination() sync API")
+  public void testLocateDestination() throws ExecutionException, InterruptedException {
+    User user = null;
+    SipDestination sipDestination =
+        new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.TLS);
+    String callId = "test123";
+    SipServerLocator locator = mock(SipServerLocator.class);
+    sipServerLocatorService.setLocator(locator);
+    when(locator.resolve(
+            sipDestination.getAddress(),
+            sipDestination.getTransportLookupType(),
+            sipDestination.getPort()))
+        .thenReturn(
+            new LocateSIPServersResponse(
+                Collections.singletonList(
+                    new Hop(
+                        "test.cisco.com",
+                        "1.2.3.4",
+                        Transport.TLS,
+                        5061,
+                        1,
+                        1000,
+                        DNSRecordSource.DNS)),
+                null,
+                null,
+                null,
+                LocateSIPServersResponse.Type.HOSTNAME,
+                null));
+    LocateSIPServersResponse response =
+        sipServerLocatorService.locateDestination(user, sipDestination, callId);
+    assertEquals(
+        response.getHops().get(0),
+        new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
   }
 
   /*this is end-to-end test of locateDestinationAsync API

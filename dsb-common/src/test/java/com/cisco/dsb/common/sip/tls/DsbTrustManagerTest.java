@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.util.CertUtil;
 import com.cisco.wx2.certs.client.CertsX509TrustManager;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;

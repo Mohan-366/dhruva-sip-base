@@ -13,7 +13,7 @@ import javax.sip.SipProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-public class LMAUtill {
+public class LMAUtil {
 
   public static void emitSipMessageEvent(
       SipProvider sipProvider,
@@ -28,40 +28,36 @@ public class LMAUtill {
 
     if (sipProvider == null) {
       transportType = getTransportTypeFromDhruvaNetwork(message);
-
     } else {
       transportType = getTransportType(sipProvider);
     }
 
-    if (message != null) {
-      BindingInfo messageBindingInfo =
-          LMAUtill.populateBindingInfo((SIPMessage) message, transportType);
+    BindingInfo messageBindingInfo = LMAUtil.populateBindingInfo(message, transportType);
 
-      if (Event.MESSAGE_TYPE.REQUEST.equals(messageType)) {
-        SIPRequest sipRequest = (SIPRequest) message;
-        Event.emitMessageEvent(
-            messageBindingInfo,
-            message,
-            directionType,
-            Event.MESSAGE_TYPE.REQUEST,
-            isInternallyGenerated,
-            String.valueOf(sipRequest.getMethod()),
-            String.valueOf(sipRequest.getRequestURI()),
-            isMidDialogRequest,
-            dhruvaProcessDelayInMilis);
-      } else {
-        SIPResponse sipResponse = (SIPResponse) message;
-        Event.emitMessageEvent(
-            messageBindingInfo,
-            message,
-            directionType,
-            messageType,
-            isInternallyGenerated,
-            String.valueOf(sipResponse.getStatusCode()),
-            String.valueOf(sipResponse.getReasonPhrase()),
-            isMidDialogRequest, // false --  ProxyUtils.isMidDialogRequest(sipResponse),
-            0L);
-      }
+    if (Event.MESSAGE_TYPE.REQUEST.equals(messageType)) {
+      SIPRequest sipRequest = (SIPRequest) message;
+      Event.emitMessageEvent(
+          messageBindingInfo,
+          message,
+          directionType,
+          Event.MESSAGE_TYPE.REQUEST,
+          isInternallyGenerated,
+          String.valueOf(sipRequest.getMethod()),
+          String.valueOf(sipRequest.getRequestURI()),
+          isMidDialogRequest,
+          dhruvaProcessDelayInMilis);
+    } else {
+      SIPResponse sipResponse = (SIPResponse) message;
+      Event.emitMessageEvent(
+          messageBindingInfo,
+          message,
+          directionType,
+          messageType,
+          isInternallyGenerated,
+          String.valueOf(sipResponse.getStatusCode()),
+          String.valueOf(sipResponse.getReasonPhrase()),
+          isMidDialogRequest, // false --  ProxyUtils.isMidDialogRequest(sipResponse),
+          0L);
     }
   }
 

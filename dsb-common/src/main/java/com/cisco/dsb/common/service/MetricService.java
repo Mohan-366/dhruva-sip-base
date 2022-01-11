@@ -23,18 +23,14 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
-import java.util.*;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,14 +43,12 @@ public class MetricService {
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
-  private ScheduledThreadPoolExecutor scheduledExecutor;
+  private final ScheduledThreadPoolExecutor scheduledExecutor;
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
 
-  @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
-  private Set<Metric> cpsMetricSet;
-  private final Cache<String, Long> timers;
+  @Getter private final Cache<String, Long> timers;
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
 
@@ -69,7 +63,6 @@ public class MetricService {
     scheduledExecutor =
         this.dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
     this.executorService = executorService;
-    // this.compositeMeterRegistry = compositeMeterRegistry;
 
     timers =
         CacheBuilder.newBuilder()
@@ -83,86 +76,25 @@ public class MetricService {
                   }
                 })
             .build();
-
-    this.cpsCounterMap = new HashMap<>();
-    this.cpsMetricSet = new HashSet<>();
-
-    /*
-        cpsCounterMap = new HashMap<String, AtomicInteger>();
-
-        Counter dialInCounter = Counter.builder("dhruva.cps")
-                .description("number of succesuful call per second for the callType")
-                .tag("callType", "DialIn")
-                .register(compositeMeterRegistry);
-
-        Counter dialOutCounter = Counter.builder("dhruva.cps")
-                .description("number of succesuful call per second for the callType")
-                .tag("callType", "DialIn")
-                .register(compositeMeterRegistry);
-
-        Gauge testGauge = Gauge.builder("test", (Supplier<Number>) new AtomicInteger()).register(compositeMeterRegistry);
-    */
   }
 
-  @PostConstruct
-  public void postBeanInitialization() {
-    this.initializeCPSMetric();
-  }
+  // Currently not being used, once used need to add UT
+  /*
+    public void registerPeriodicMetric(
+        String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
+      scheduledExecutor.scheduleAtFixedRate(
+          getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
+    }
 
-  private void initializeCPSMetric() {
-
-    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
-  }
-
-  public void registerPeriodicMetric(
-      String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
-    scheduledExecutor.scheduleAtFixedRate(
-        getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
-  }
-
-  /**
-   * API to emit metric for successful call per secord for each calltypes
-   *
-   * @param interval
-   * @param timeUnit
-   */
-  public void emitCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
-    this.registerPeriodicMetric("cps", this.cpsMetricSupplier(), interval, timeUnit);
-  }
-
-  /**
-   * This supplier is used to evaluate no. of calls processed each second for all the calltypes
-   * available and return the result in form of a metric, to be pushed in influxDB
-   *
-   * @return
-   */
-  public Supplier<Set<Metric>> cpsMetricSupplier() {
-    Supplier<Set<Metric>> cpsSupplier =
-        () -> {
-          cpsMetricSet.clear();
-          for (Map.Entry<String, AtomicInteger> entry : cpsCounterMap.entrySet()) {
-            if (entry.getValue().get() != 0) {
-              Metric cpsMetricForCalltype = Metrics.newMetric().measurement("cps");
-              cpsMetricForCalltype.tag("callType", entry.getKey());
-              cpsMetricForCalltype.field("count", entry.getValue());
-              cpsMetricSet.add(cpsMetricForCalltype);
-              entry.getValue().set(0);
-            }
-          }
-          return cpsMetricSet;
-        };
-    return cpsSupplier;
-  }
-
-  @NotNull
-  private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
-    return () -> {
-      Set<Metric> metrics = metricSupplier.get();
-      metrics.forEach(metric -> metric.measurement(prefixDhruvaToMeasurementName(measurement)));
-      sendMetric(metrics);
-    };
-  }
-
+    @NotNull
+    private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
+      return () -> {
+        Set<Metric> metrics = metricSupplier.get();
+        metrics.forEach(metric -> metric.measurement(prefixDhruvaToMeasurementName(measurement)));
+        sendMetric(metrics);
+      };
+    }
+  */
   public void emitServiceHealth(ServiceHealth health, boolean includeUpstreamService) {
     sendServiceHealthMetric("service.health", health);
 
@@ -205,9 +137,9 @@ public class MetricService {
     Metric metric =
         Metrics.newMetric()
             .measurement("connection")
-            .tag("transport", transport.toString())
-            .tag("direction", direction.name())
-            .tag("connectionState", connectionState.name())
+            .tag("transport", transport != null ? transport.name() : null)
+            .tag("direction", direction != null ? direction.name() : null)
+            .tag("connectionState", connectionState != null ? connectionState.name() : null)
             .field("localIp", localIp)
             .field("localPort", localPort)
             .field("remoteIp", remoteIp)

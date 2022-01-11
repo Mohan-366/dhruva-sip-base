@@ -2,11 +2,8 @@ package com.cisco.dsb.common.dns;
 
 public class DnsException extends RuntimeException {
 
-  public static final int QUERY_TYPE_SRV = 1;
-  public static final int QUERY_TYPE_A = 33;
   private int queryType;
   private String query;
-
   protected DnsErrorCode errorCode = DnsErrorCode.ERROR_UNKNOWN;
 
   public DnsException(String message) {

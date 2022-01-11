@@ -1,5 +1,8 @@
 # Dhruva-Sip-Base
 
+## Wiki link:
+https://confluence-eng-gpk2.cisco.com/conf/display/DHRUVA/
+
 [![Build Status](https://engci-jenkins-blr.cisco.com/jenkins/buildStatus/icon?job=team_dhruva%2FDSB%2Fmaster)](https://engci-jenkins-blr.cisco.com/jenkins/job/team_dhruva/job/DSB/job/master/)
 
 Dhruva Sip Base(DSB) provides common set of sip functionalities that can be used for building any kind of sip application e.g sip proxy, sip ua 
@@ -62,8 +65,19 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 - Optionally uncheck "After launch" under the "Open browser" section.
 - Set the URL as `http://localhost:8080/dsb_calling_app_war_exploded/`
 - In VM options field enter: `-Xmx2048m -Xms1024m -DexternalUrlProtocol=http -DjedisPoolHealthCheckMonitorEnabled=false`.
+
+_Note:_ 
+We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency for tests)
+1. So, you can either have a redis instance running locally in your dev machine (or)
+2. Include the following VM options additionally (which disables the dependency on redis)
+
+` -DenableLettuceRedisDataSourceForUserToGroups=false
+  -DenableLettuceRedisDataSourceForUserCache=false
+  -DenableLettuceRedisDataSourceForOrgCache=false
+  -DenableLettuceRedisDataSourceForAuthCache=false`
+
 - Now go to the deployment tab
-- Use + button to add the artifact `sample-app-war-exploded` (pick one with 'exploded' word in name, it will speedup your tomcat run). You cab deploy any application, just choose the right war file.
+- Use + button to add the artifact `sample-app-war-exploded` (pick one with 'exploded' word in name, it will speedup your tomcat run). You can deploy any application, just choose the right war file.
 
 
 #### ENV variables to be configured

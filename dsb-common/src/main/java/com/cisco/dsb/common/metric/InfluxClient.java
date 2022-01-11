@@ -41,7 +41,7 @@ public class InfluxClient implements MetricClient {
     }
   }
 
-  private String getInstanceName() {
+  public String getInstanceName() {
 
     StringBuilder instanceName = new StringBuilder();
 
@@ -53,7 +53,7 @@ public class InfluxClient implements MetricClient {
       instanceName.append(dhruvaProperties.getPodNameEnvVar());
     }
 
-    return (instanceName == null) ? "" : instanceName.toString();
+    return instanceName.toString();
   }
 
   @PreDestroy

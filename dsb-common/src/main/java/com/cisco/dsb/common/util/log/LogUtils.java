@@ -18,12 +18,13 @@ import java.util.regex.Pattern;
 import javax.sip.address.SipURI;
 import javax.sip.address.TelURL;
 import javax.sip.address.URI;
+import lombok.CustomLog;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
+@CustomLog
 public class LogUtils {
 
-  private static Logger logger = DhruvaLoggerFactory.getLogger(LogUtils.class);
   private static boolean obfuscateLog = true;
   private static final String COLON = ":";
 
