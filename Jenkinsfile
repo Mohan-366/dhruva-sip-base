@@ -69,11 +69,13 @@ node() {
         }
         stage('build and publish wbx3 images') {
             try {
-                if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService') {
+                if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService' || env.GIT_BRANCH == 'OPTIONS_PING') {
                     sh 'ls -lrth'
                     def TAG="2."+env.BUILD_NUMBER
                     if(env.GIT_BRANCH == 'trunkService'){
                         TAG = TAG +"-ts"
+                    } else if(env.GIT_BRANCH == 'OPTIONS_PING'){
+                        TAG = TAG +"-op"
                     }
                     /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
                 to determine where to build and push (in our case, containers.cisco.com/edge_group)
@@ -96,11 +98,13 @@ node() {
                 throw ex
             }
         }
-        if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService') {
+        if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService' || env.GIT_BRANCH == 'OPTIONS_PING') {
             stage('ecr sync') {
                 def tag = "2."+ env.BUILD_NUMBER
                 if(env.GIT_BRANCH == 'trunkService'){
                     tag = tag +"-ts"
+                } else if (env.GIT_BRANCH == 'OPTIONS_PING'){
+                    tag = tag +"-op"
                 }
                 sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
                 def artifactID = sh(

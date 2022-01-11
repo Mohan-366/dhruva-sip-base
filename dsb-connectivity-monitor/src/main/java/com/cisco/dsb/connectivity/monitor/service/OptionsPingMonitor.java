@@ -3,6 +3,7 @@ package com.cisco.dsb.connectivity.monitor.service;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -15,11 +16,10 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -33,7 +33,6 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -47,10 +46,9 @@ public class OptionsPingMonitor {
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
-  private static final int THREAD_CAP = 20; // TODO: add these as config properties
-  private static final int QUEUE_TASK_CAP = 100;
-  private static final String THREAD_NAME_PREFIX = "OPTIONS-PING";
-  Scheduler optionsPingScheduler;
+  protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
+  protected ConcurrentHashMap<String, Set<Integer>> downServerGroupElementsCounter =
+      new ConcurrentHashMap<>();
 
   @PostConstruct
   public void initOptionsPing() {
@@ -59,35 +57,68 @@ public class OptionsPingMonitor {
 
   public void init(Map<String, ServerGroup> map) {
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
-    optionsPingScheduler =
-        Schedulers.newBoundedElastic(THREAD_CAP, QUEUE_TASK_CAP, THREAD_NAME_PREFIX);
     startMonitoring(map);
   }
 
   private void startMonitoring(Map<String, ServerGroup> map) {
-    Iterator<Entry<String, ServerGroup>> itr = map.entrySet().iterator();
-    logger.info("Starting OPTIONS pings!!");
-    while (itr.hasNext()) {
-      Map.Entry<String, ServerGroup> entry = itr.next();
-      ServerGroup serverGroup = entry.getValue();
-      if (entry.getValue().isPingOn()) {
-        pingPipeLine(
-            serverGroup.getNetworkName(),
-            serverGroup.getElements(),
-            serverGroup.getOptionsPingPolicy().getUpTimeInterval(),
-            serverGroup.getOptionsPingPolicy().getDownTimeInterval(),
-            serverGroup.getOptionsPingPolicy().getPingTimeOut(),
-            serverGroup.getOptionsPingPolicy().getFailoverResponseCodes());
-      }
-    }
+    logger.info("Starting OPTIONS pings!! : {}", map);
+    Flux<SIPResponse> upElementsResponse =
+        Flux.defer(() -> Flux.fromIterable(map.values()))
+            .filter(
+                serverGroup -> {
+                  return isServerGroupPingable(serverGroup);
+                })
+            .flatMap(
+                serverGroup -> {
+                  OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
+                  return upElementsFlux(
+                          serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval())
+                      .flatMap(
+                          element -> {
+                            serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
+                            return sendPingRequestToUpElement(
+                                serverGroup.getNetworkName(),
+                                element,
+                                optionsPingPolicy.getDownTimeInterval(),
+                                optionsPingPolicy.getPingTimeOut(),
+                                optionsPingPolicy.getFailoverResponseCodes(),
+                                serverGroup.getHostName(),
+                                serverGroup.getElements().size());
+                          });
+                })
+            .name("upElementFlux");
+
+    Flux<SIPResponse> downElementsResponse =
+        Flux.defer(() -> Flux.fromIterable(map.values()))
+            .filter(
+                serverGroup -> {
+                  return isServerGroupPingable(serverGroup);
+                })
+            .flatMap(
+                serverGroup -> {
+                  OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
+                  return downElementsFlux(
+                          serverGroup.getElements(), optionsPingPolicy.getDownTimeInterval())
+                      .flatMap(
+                          element -> {
+                            return sendPingRequestToDownElement(
+                                serverGroup.getNetworkName(),
+                                element,
+                                optionsPingPolicy.getPingTimeOut(),
+                                optionsPingPolicy.getFailoverResponseCodes(),
+                                serverGroup.getHostName());
+                          });
+                })
+            .name("downElementFlux");
+    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
-  protected Flux<ServerGroupElement> upElementsFlux(List<ServerGroupElement> list, int upInterval) {
-    return Flux.fromIterable(list)
+  protected Flux<ServerGroupElement> upElementsFlux(
+      List<ServerGroupElement> list, int upTimeInterval) {
+    return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
               Boolean status = elementStatus.get(e.hashCode());
-
               if (status == null || status) {
                 return true;
               }
@@ -96,13 +127,13 @@ public class OptionsPingMonitor {
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(upInterval),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
+                    Duration.ofMillis(upTimeInterval),
+                    Schedulers.newBoundedElastic(5, 50, "BE-Up-Elements")));
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
-      List<ServerGroupElement> list, int downInterval) {
-    return Flux.fromIterable(list)
+      List<ServerGroupElement> list, int downIntervalTime) {
+    return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
               Boolean status = elementStatus.get(e.hashCode());
@@ -114,34 +145,8 @@ public class OptionsPingMonitor {
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(downInterval),
-                    Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
-  }
-
-  protected void pingPipeLine(
-      String network,
-      List<ServerGroupElement> list,
-      int upInterval,
-      int downInterval,
-      int pingTimeOut,
-      List<Integer> failoverCodes) {
-
-    Flux<SIPResponse> upElementsResponse =
-        upElementsFlux(list, upInterval)
-            .flatMap(
-                element -> {
-                  return sendPingRequestToUpElement(
-                      network, element, downInterval, pingTimeOut, failoverCodes);
-                });
-
-    Flux<SIPResponse> downElementsResponse =
-        downElementsFlux(list, downInterval)
-            .flatMap(
-                element -> {
-                  return sendPingRequestToDownElement(network, element, pingTimeOut, failoverCodes);
-                });
-
-    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+                    Duration.ofMillis(downIntervalTime),
+                    Schedulers.newBoundedElastic(5, 50, "BE-Down-Elements")));
   }
 
   /**
@@ -159,7 +164,9 @@ public class OptionsPingMonitor {
       ServerGroupElement element,
       int downInterval,
       int pingTimeout,
-      List<Integer> failoverCodes) {
+      List<Integer> failoverCodes,
+      String serverGroupName,
+      int sgeSize) {
 
     logger.info("Sending ping to UP element: {}", element);
     Integer key = element.hashCode();
@@ -190,6 +197,7 @@ public class OptionsPingMonitor {
                   element.getTransport(),
                   network);
               elementStatus.put(key, false);
+              checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               return Mono.empty();
             })
         .doOnNext(
@@ -208,6 +216,7 @@ public class OptionsPingMonitor {
                     element.getTransport(),
                     network);
                 elementStatus.put(key, false);
+                checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               } else if (status == null) {
                 logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
@@ -215,6 +224,22 @@ public class OptionsPingMonitor {
             });
   }
 
+  private void checkAndMakeServerGroupDown(
+      String serverGroupName, Integer elementHashCode, int sgeSize) {
+    Set<Integer> sgeHashSet;
+    synchronized (this) {
+      sgeHashSet =
+          downServerGroupElementsCounter.getOrDefault(
+              serverGroupName, ConcurrentHashMap.newKeySet());
+      sgeHashSet.add(elementHashCode);
+      downServerGroupElementsCounter.put(serverGroupName, sgeHashSet);
+    }
+    // this means all elements are down.
+    if (sgeHashSet.size() == sgeSize) {
+      serverGroupStatus.put(serverGroupName, false);
+      Event.emitSGEvent(serverGroupName, true);
+    }
+  }
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
@@ -226,7 +251,11 @@ public class OptionsPingMonitor {
    * @return
    */
   protected Mono<SIPResponse> sendPingRequestToDownElement(
-      String network, ServerGroupElement element, int pingTimeout, List<Integer> failoverCodes) {
+      String network,
+      ServerGroupElement element,
+      int pingTimeout,
+      List<Integer> failoverCodes,
+      String serverGroupName) {
     logger.info("Sending ping to DOWN element: {}", element);
     Integer key = element.hashCode();
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
@@ -248,8 +277,21 @@ public class OptionsPingMonitor {
                 Event.emitSGElementUpEvent(
                     element.getIpAddress(), element.getPort(), element.getTransport(), network);
                 elementStatus.put(key, true);
+                makeServerGroupUp(serverGroupName, element.hashCode());
               }
             });
+  }
+
+  private void makeServerGroupUp(String serverGroupName, Integer elementHashCode) {
+    Boolean sgStatus = serverGroupStatus.get(serverGroupName);
+    if (sgStatus != null && !sgStatus) {
+      serverGroupStatus.put(serverGroupName, true);
+      Set<Integer> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
+      if (sgeHashSet != null) {
+        sgeHashSet.remove(elementHashCode);
+      }
+      Event.emitSGEvent(serverGroupName, false);
+    }
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
@@ -281,6 +323,17 @@ public class OptionsPingMonitor {
       CompletableFuture<SIPResponse> errResponse = new CompletableFuture<>();
       errResponse.completeExceptionally(e);
       return errResponse;
+    }
+  }
+
+  private boolean isServerGroupPingable(ServerGroup serverGroup) {
+
+    if (serverGroup.isPingOn() && serverGroup.getElements() != null) {
+      logger.info("ServerGroup {} is pingeable!", serverGroup);
+      return true;
+    } else {
+      logger.info("ServerGroup {} is not pingeable!", serverGroup);
+      return false;
     }
   }
 }

@@ -16,15 +16,17 @@ public class OptionsPingControllerImpl implements OptionsPingController {
     return (status == null ? true : status);
   }
 
-  protected Boolean getServerGroupStatus(ServerGroup sg) {
-    return sg.getElements().stream().anyMatch(x -> getElementStatus(x.hashCode()) == true);
+  protected Boolean getServerGroupStatus(String key) {
+
+    Boolean status = optionsPingMonitor.serverGroupStatus.get(key);
+    return (status == null ? true : status);
   }
 
   public Boolean getStatus(Pingable obj) {
 
     if (obj instanceof ServerGroupElement) return getElementStatus(obj.hashCode());
 
-    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj));
+    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj).getHostName());
 
     return false;
   }

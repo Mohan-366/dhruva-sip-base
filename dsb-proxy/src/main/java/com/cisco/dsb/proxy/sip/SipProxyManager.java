@@ -611,6 +611,15 @@ public class SipProxyManager {
       } else {
         ClientTransaction clientTransaction = timeoutEvent.getClientTransaction();
         assert clientTransaction != null;
+        // This will happen in case of OPTIONS Ping Request Timeout event
+        if (!(clientTransaction.getApplicationData() instanceof ProxyTransaction)) {
+          logger.info(
+              "Application data is not of type ProxyTransacion. It is {}"
+                  + " Returning null from SipProxyManager. ClientTransaction {} ",
+              clientTransaction.getApplicationData().getClass(),
+              clientTransaction);
+          return null;
+        }
         ProxyTransaction proxyTransaction =
             (ProxyTransaction) clientTransaction.getApplicationData();
         if (proxyTransaction == null) {
