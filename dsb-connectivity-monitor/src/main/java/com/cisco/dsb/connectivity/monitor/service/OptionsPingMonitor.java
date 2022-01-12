@@ -64,10 +64,7 @@ public class OptionsPingMonitor {
     logger.info("Starting OPTIONS pings!! : {}", map);
     Flux<SIPResponse> upElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
-            .filter(
-                serverGroup -> {
-                  return isServerGroupPingable(serverGroup);
-                })
+            .filter(this::isServerGroupPingable)
             .flatMap(
                 serverGroup -> {
                   OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
@@ -85,32 +82,26 @@ public class OptionsPingMonitor {
                                 serverGroup.getHostName(),
                                 serverGroup.getElements().size());
                           });
-                })
-            .name("upElementFlux");
+                });
 
     Flux<SIPResponse> downElementsResponse =
         Flux.defer(() -> Flux.fromIterable(map.values()))
-            .filter(
-                serverGroup -> {
-                  return isServerGroupPingable(serverGroup);
-                })
+            .filter(this::isServerGroupPingable)
             .flatMap(
                 serverGroup -> {
                   OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
                   return downElementsFlux(
                           serverGroup.getElements(), optionsPingPolicy.getDownTimeInterval())
                       .flatMap(
-                          element -> {
-                            return sendPingRequestToDownElement(
-                                serverGroup.getNetworkName(),
-                                element,
-                                optionsPingPolicy.getPingTimeOut(),
-                                optionsPingPolicy.getFailoverResponseCodes(),
-                                serverGroup.getHostName());
-                          });
-                })
-            .name("downElementFlux");
-    Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+                          element ->
+                              sendPingRequestToDownElement(
+                                  serverGroup.getNetworkName(),
+                                  element,
+                                  optionsPingPolicy.getPingTimeOut(),
+                                  optionsPingPolicy.getFailoverResponseCodes(),
+                                  serverGroup.getHostName()));
+                });
+    Flux.merge(upElementsResponse, downElementsResponse).name("OPTIONS-PING").subscribe();
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
@@ -174,12 +165,11 @@ public class OptionsPingMonitor {
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))
         .doOnError(
-            throwable -> {
-              logger.error(
-                  "Error happened for UP element: {}. Element will be retried: {}",
-                  element,
-                  throwable.getMessage());
-            })
+            throwable ->
+                logger.error(
+                    "Error happened for UP element: {}. Element will be retried: {}",
+                    element,
+                    throwable.getMessage()))
         .retryWhen(
             Retry.fixedDelay(
                 OptionsUtil.getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
@@ -190,12 +180,7 @@ public class OptionsPingMonitor {
                   element,
                   throwable.getMessage());
               Event.emitSGElementDownEvent(
-                  null,
-                  "All Ping attempts failed for element",
-                  element.getIpAddress(),
-                  element.getPort(),
-                  element.getTransport(),
-                  network);
+                  null, "All Ping attempts failed for element", element, network);
               elementStatus.put(key, false);
               checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               return Mono.empty();
@@ -209,12 +194,7 @@ public class OptionsPingMonitor {
                     n.getStatusCode(),
                     element);
                 Event.emitSGElementDownEvent(
-                    n.getStatusCode(),
-                    "Error response received for element",
-                    element.getIpAddress(),
-                    element.getPort(),
-                    element.getTransport(),
-                    network);
+                    n.getStatusCode(), "Error response received for element", element, network);
                 elementStatus.put(key, false);
                 checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
               } else if (status == null) {
@@ -239,6 +219,7 @@ public class OptionsPingMonitor {
       serverGroupStatus.put(serverGroupName, false);
       Event.emitSGEvent(serverGroupName, true);
     }
+    logger.info("KALPA: downServerGroupElementsCounter content: {}", sgeHashSet);
   }
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
@@ -274,8 +255,7 @@ public class OptionsPingMonitor {
                 logger.info("503 received for element: {}. Keeping status as DOWN.", element);
               } else {
                 logger.info("Marking status as UP for element: {}", element);
-                Event.emitSGElementUpEvent(
-                    element.getIpAddress(), element.getPort(), element.getTransport(), network);
+                Event.emitSGElementUpEvent(element, network);
                 elementStatus.put(key, true);
                 makeServerGroupUp(serverGroupName, element.hashCode());
               }
@@ -286,12 +266,13 @@ public class OptionsPingMonitor {
     Boolean sgStatus = serverGroupStatus.get(serverGroupName);
     if (sgStatus != null && !sgStatus) {
       serverGroupStatus.put(serverGroupName, true);
-      Set<Integer> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
-      if (sgeHashSet != null) {
-        sgeHashSet.remove(elementHashCode);
-      }
       Event.emitSGEvent(serverGroupName, false);
     }
+    Set<Integer> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
+    if (sgeHashSet != null) {
+      sgeHashSet.remove(elementHashCode);
+    }
+    logger.info("KALPA: downServerGroupElementsCounter content: {}", sgeHashSet);
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
@@ -307,9 +288,7 @@ public class OptionsPingMonitor {
       } else {
         throw new DhruvaRuntimeException(
             ErrorCode.REQUEST_NO_PROVIDER,
-            String.format(
-                "unable to find provider for outbound request with network:"
-                    + dhruvaNetwork.getName()));
+            "unable to find provider for outbound request with network:" + dhruvaNetwork.getName());
       }
 
       SIPRequest sipRequest = OptionsUtil.getRequest(element, dhruvaNetwork, sipProvider);

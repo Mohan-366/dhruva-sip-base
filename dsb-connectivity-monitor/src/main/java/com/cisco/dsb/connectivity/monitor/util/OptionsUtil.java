@@ -87,7 +87,7 @@ public class OptionsUtil {
     return sipRequest;
   }
 
-  public static Integer getNumRetry(Transport transport) {
+  public static int getNumRetry(Transport transport) {
     switch (transport) {
       case TLS:
         return numTriesTLS;
@@ -96,7 +96,7 @@ public class OptionsUtil {
       case UDP:
         return numTriesUDP;
       default:
-        return null;
+        return 0;
     }
   }
 }
