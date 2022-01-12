@@ -59,15 +59,15 @@ public class MetricServiceV2Test {
     cpsCounterMapTest.put("DialInB2BTest", new AtomicInteger(2));
     metricService.setCpsCounterMap(cpsCounterMapTest);
 
-    metricService.emitCPSMetricPerInterval(100, TimeUnit.MILLISECONDS);
-    Thread.sleep(1000L);
+    metricService.emitCPSMetricPerInterval(10, TimeUnit.MILLISECONDS);
+    Thread.sleep(100L);
 
     ArgumentCaptor<Set<Metric>> metricSetCaptor = ArgumentCaptor.forClass(Set.class);
     verify(metricClientMock, atLeast(9)).sendMetrics(metricSetCaptor.capture());
 
     List<Set<Metric>> capturedMetricSet = metricSetCaptor.getAllValues();
 
-    Assert.assertTrue(capturedMetricSet.size() > 5);
+    Assert.assertTrue(capturedMetricSet.size() > 9);
   }
 
   @Test(description = "Test to check supplier emitting metric set with cps counter information")

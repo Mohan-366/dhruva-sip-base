@@ -189,7 +189,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests
-              this.incrementCPSCounter(proxySIPRequest);
 
               if (metricService != null
                   && !SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()))
@@ -214,18 +213,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return responseCF;
   }
 
-  private void incrementCPSCounter(ProxySIPRequest proxySIPRequest) {
-    String callTypeName = proxySIPRequest.getCallTypeName();
 
-    if (StringUtils.isNotBlank(callTypeName)) {
-      AtomicInteger countByCallType =
-          metricService
-              .getCpsCounterMap()
-              .computeIfAbsent(callTypeName, value -> new AtomicInteger(0));
-      countByCallType.incrementAndGet();
-      metricService.getCpsCounterMap().put(callTypeName, countByCallType);
-    }
-  }
 
   /**
    * Check whether App is interested in mid midialog messages set the usingRouteHeader to true if

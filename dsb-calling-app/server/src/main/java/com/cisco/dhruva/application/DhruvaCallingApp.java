@@ -61,7 +61,6 @@ public class DhruvaCallingApp {
     return proxySIPRequest -> {
       try {
         CallType callType = this.filter.filter(proxySIPRequest);
-        proxySIPRequest.setCallTypeName(callType.getClass().getSimpleName());
         callType.processRequest(proxySIPRequest);
       } catch (InvalidCallTypeException ie) {
         logger.error(
