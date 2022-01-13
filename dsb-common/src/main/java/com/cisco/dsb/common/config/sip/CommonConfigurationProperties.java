@@ -192,6 +192,7 @@ public class CommonConfigurationProperties {
               }
             });
     if (this.configUpdateListener != null) {
+      logger.info("KALPA: Calling the configUPdated method");
       configUpdateListener.configUpdated();
     }
   }
@@ -201,9 +202,13 @@ public class CommonConfigurationProperties {
     oldMap.putAll(newMap);
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
     removeKeys.forEach(oldMap::remove);
+    logger.info("KALPA: updated SG map: {}", oldMap);
   }
 
   public void registerConfigUpdateListener(ConfigUpdateListener configUpdateListener) {
+    logger.info(
+        "KALPA: updating configUpdateListener as {}",
+        configUpdateListener.getClass().getSimpleName());
     this.configUpdateListener = configUpdateListener;
   }
 }

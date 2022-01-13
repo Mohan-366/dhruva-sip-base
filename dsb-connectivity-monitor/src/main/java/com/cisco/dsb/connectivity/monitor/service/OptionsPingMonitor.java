@@ -55,6 +55,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
 
   @PostConstruct
   public void initOptionsPing() {
+    logger.info("KALPA: Registering {} as ConfigUpdateListener", this.getClass().getSimpleName());
     commonConfigurationProperties.registerConfigUpdateListener(this);
     init(commonConfigurationProperties.getServerGroups());
   }
@@ -336,25 +337,21 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
 
     @Override
     public void run() {
-      try {
-        Thread.sleep(60000);
-        restartFlux();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+      restartFlux();
     }
   }
 
-  private void restartFlux() throws InterruptedException {
+  private void restartFlux() {
     opFlux.dispose();
     while (!opFlux.isDisposed()) {
-      logger.error("Not disposed yet");
+      logger.error("KALPA: Not disposed yet");
     }
-    logger.info("flux is now disposed! restaring it!");
+    logger.info("KALPA: flux is now disposed! restaring it!");
     startMonitoring(commonConfigurationProperties.getServerGroups());
   }
 
   public void configUpdated() {
+    logger.info("KALPA: in optionsPingMonitor");
     MyThreadforOPRestart myThreadforOPRestart = new MyThreadforOPRestart();
     myThreadforOPRestart.start();
   }
