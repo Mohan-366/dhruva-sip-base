@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.config.ConfigUpdateListener;
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
@@ -37,6 +38,8 @@ public class CommonConfigurationProperties {
   public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;
   public static final Boolean DEFAULT_ENABLE_CERT_SERVICE = false;
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
+
+  private ConfigUpdateListener configUpdateListener;
 
   @Getter @Setter private boolean enableCertService = false;
   @Getter @Setter private boolean useRedisAsCache = false;
@@ -188,6 +191,9 @@ public class CommonConfigurationProperties {
                     "SGName: " + sg.getHostName() + "; listenPoint: \"" + network + "\" not found");
               }
             });
+    if (this.configUpdateListener != null) {
+      configUpdateListener.configUpdated();
+    }
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
@@ -195,5 +201,9 @@ public class CommonConfigurationProperties {
     oldMap.putAll(newMap);
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
     removeKeys.forEach(oldMap::remove);
+  }
+
+  public void registerConfigUpdateListener(ConfigUpdateListener configUpdateListener) {
+    this.configUpdateListener = configUpdateListener;
   }
 }

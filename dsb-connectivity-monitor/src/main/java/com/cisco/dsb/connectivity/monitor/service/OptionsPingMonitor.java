@@ -1,5 +1,6 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
+import com.cisco.dsb.common.config.ConfigUpdateListener;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -31,6 +32,7 @@ import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -39,12 +41,13 @@ import reactor.util.retry.Retry;
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor {
+public class OptionsPingMonitor implements ConfigUpdateListener {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
+  private Disposable opFlux;
   protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<Integer>> downServerGroupElementsCounter =
@@ -52,6 +55,7 @@ public class OptionsPingMonitor {
 
   @PostConstruct
   public void initOptionsPing() {
+    commonConfigurationProperties.registerConfigUpdateListener(this);
     init(commonConfigurationProperties.getServerGroups());
   }
 
@@ -81,7 +85,13 @@ public class OptionsPingMonitor {
                                 optionsPingPolicy.getFailoverResponseCodes(),
                                 serverGroup.getHostName(),
                                 serverGroup.getElements().size());
-                          });
+                          })
+                      .repeatWhen(
+                          completed ->
+                              completed.delayElements(
+                                  Duration.ofMillis(
+                                      serverGroup.getOptionsPingPolicy().getUpTimeInterval()),
+                                  Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
                 });
 
     Flux<SIPResponse> downElementsResponse =
@@ -99,9 +109,15 @@ public class OptionsPingMonitor {
                                   element,
                                   optionsPingPolicy.getPingTimeOut(),
                                   optionsPingPolicy.getFailoverResponseCodes(),
-                                  serverGroup.getHostName()));
+                                  serverGroup.getHostName()))
+                      .repeatWhen(
+                          completed ->
+                              completed.delayElements(
+                                  Duration.ofMillis(
+                                      serverGroup.getOptionsPingPolicy().getDownTimeInterval()),
+                                  Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
                 });
-    Flux.merge(upElementsResponse, downElementsResponse).name("OPTIONS-PING").subscribe();
+    opFlux = Flux.merge(upElementsResponse, downElementsResponse).subscribe();
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
@@ -314,5 +330,32 @@ public class OptionsPingMonitor {
       logger.info("ServerGroup {} is not pingeable!", serverGroup);
       return false;
     }
+  }
+
+  public class MyThreadforOPRestart extends Thread {
+
+    @Override
+    public void run() {
+      try {
+        Thread.sleep(60000);
+        restartFlux();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  private void restartFlux() throws InterruptedException {
+    opFlux.dispose();
+    while (!opFlux.isDisposed()) {
+      logger.error("Not disposed yet");
+    }
+    logger.info("flux is now disposed! restaring it!");
+    startMonitoring(commonConfigurationProperties.getServerGroups());
+  }
+
+  public void configUpdated() {
+    MyThreadforOPRestart myThreadforOPRestart = new MyThreadforOPRestart();
+    myThreadforOPRestart.start();
   }
 }
