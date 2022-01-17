@@ -66,13 +66,19 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
   }
 
   private void startMonitoring(Map<String, ServerGroup> map) {
-    logger.info("Starting OPTIONS pings!! : {}", map);
+    logger.info(
+        "Starting OPTIONS pings!! : {}", commonConfigurationProperties.getServerGroups().values());
     Flux<SIPResponse> upElementsResponse =
-        Flux.defer(() -> Flux.fromIterable(map.values()))
+        Flux.defer(
+                () -> Flux.fromIterable(commonConfigurationProperties.getServerGroups().values()))
             .filter(this::isServerGroupPingable)
             .flatMap(
                 serverGroup -> {
                   OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
+                  if (optionsPingPolicy == null) {
+                    optionsPingPolicy = OptionsUtil.getDefaultOptionsPingPolicy();
+                  }
+                  OptionsPingPolicy finalOptionsPingPolicy = optionsPingPolicy;
                   return upElementsFlux(
                           serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval())
                       .flatMap(
@@ -81,9 +87,9 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                             return sendPingRequestToUpElement(
                                 serverGroup.getNetworkName(),
                                 element,
-                                optionsPingPolicy.getDownTimeInterval(),
-                                optionsPingPolicy.getPingTimeOut(),
-                                optionsPingPolicy.getFailoverResponseCodes(),
+                                finalOptionsPingPolicy.getDownTimeInterval(),
+                                finalOptionsPingPolicy.getPingTimeOut(),
+                                finalOptionsPingPolicy.getFailoverResponseCodes(),
                                 serverGroup.getHostName(),
                                 serverGroup.getElements().size());
                           })
@@ -96,7 +102,8 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                 });
 
     Flux<SIPResponse> downElementsResponse =
-        Flux.defer(() -> Flux.fromIterable(map.values()))
+        Flux.defer(
+                () -> Flux.fromIterable(commonConfigurationProperties.getServerGroups().values()))
             .filter(this::isServerGroupPingable)
             .flatMap(
                 serverGroup -> {

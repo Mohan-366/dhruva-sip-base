@@ -1,5 +1,6 @@
 package com.cisco.dsb.connectivity.monitor.util;
 
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -9,6 +10,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.sip.InvalidArgumentException;
 import javax.sip.PeerUnavailableException;
@@ -23,6 +25,7 @@ public class OptionsUtil {
   private static final int numTriesUDP = 10;
   private static final int numTriesTCP = 1;
   private static final int numTriesTLS = 1;
+  private static OptionsPingPolicy defaultOptionsPingPolicy;
 
   public static SIPRequest getRequest(
       ServerGroupElement element, DhruvaNetwork dhruvaNetwork, SipProvider sipProvider)
@@ -98,5 +101,25 @@ public class OptionsUtil {
       default:
         return 0;
     }
+  }
+
+  public static OptionsPingPolicy getDefaultOptionsPingPolicy() {
+    if (defaultOptionsPingPolicy != null) {
+      return defaultOptionsPingPolicy;
+    }
+    synchronized (OptionsUtil.class) {
+      if (defaultOptionsPingPolicy != null) {
+        return defaultOptionsPingPolicy;
+      }
+      defaultOptionsPingPolicy =
+          OptionsPingPolicy.builder()
+              .setName("DefaultOPPolicy")
+              .setPingTimeOut(500)
+              .setDownTimeInterval(5000)
+              .setUpTimeInterval(30000)
+              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+              .build();
+    }
+    return defaultOptionsPingPolicy;
   }
 }
