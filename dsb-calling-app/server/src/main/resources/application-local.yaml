@@ -20,7 +20,8 @@ common:
       transport: UDP
       hostIPAddress: "127.0.0.1"
   serverGroups:
-    - name: &UsPoolA UsPoolA
+    UsPoolA:
+      name: &UsPoolA UsPoolA
       hostName: "UsPoolA"
       networkName: *netsp
       lbType: weight
@@ -39,7 +40,8 @@ common:
       optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
-    - name: &UsPoolB UsPoolB
+    UsPoolB:
+      name: &UsPoolB UsPoolB
       hostName: "UsPoolB"
       networkName: *netsp
       lbType: weight
@@ -53,7 +55,8 @@ common:
       optionsPingPolicy: opPolicy1
       priority: 20
       weight: 100
-    - name: &InPoolA InPoolA
+    InPoolA:
+      name: &InPoolA InPoolA
       hostName: "InPoolA"
       networkName: *netsp
       lbType: weight
@@ -67,7 +70,8 @@ common:
       optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
-    - name: &Antares Antares
+    Antares:
+      name: &Antares Antares
       hostName: "test.beech.com"
       networkName: *netb2b
       lbType: weight
@@ -78,7 +82,8 @@ common:
       port: 7060
       transport: UDP
       optionsPingPolicy: opPolicy1
-    - name: &NS1 NS1
+    NS1:
+      name: &NS1 NS1
       hostName: "ns1.cc.com"
       networkName: *netcc
       lbType: weight
@@ -89,7 +94,8 @@ common:
       sgType: A_RECORD
       port: 8060
       transport: UDP
-    - name: &NS2 NS2
+    NS2:
+      name: &NS2 NS2
       hostName: "ns2.cc.com"
       networkName: *netcc
       lbType: weight
