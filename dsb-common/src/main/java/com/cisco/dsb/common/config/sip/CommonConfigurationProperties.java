@@ -106,7 +106,7 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
-  @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
+  private Map<String, ServerGroup> serverGroups = new HashMap<>();
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
@@ -191,10 +191,11 @@ public class CommonConfigurationProperties {
                     "SGName: " + sg.getHostName() + "; listenPoint: \"" + network + "\" not found");
               }
             });
-    if (this.configUpdateListener != null) {
-      logger.info("KALPA: Calling the configUPdated method");
-      configUpdateListener.configUpdated();
-    }
+  }
+
+  public Map<String, ServerGroup> getServerGroups() {
+    logger.info("KALPA: getServerGroups called! {}", this);
+    return this.serverGroups;
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
@@ -203,12 +204,5 @@ public class CommonConfigurationProperties {
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
     removeKeys.forEach(oldMap::remove);
     logger.info("KALPA: updated SG map: {}", oldMap);
-  }
-
-  public void registerConfigUpdateListener(ConfigUpdateListener configUpdateListener) {
-    logger.info(
-        "KALPA: updating configUpdateListener as {}",
-        configUpdateListener.getClass().getSimpleName());
-    this.configUpdateListener = configUpdateListener;
   }
 }

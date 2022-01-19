@@ -772,6 +772,7 @@ public class ProxyControllerTest {
     proxyController.proxyRequest(proxySIPRequest);
   }
 
+  @Ignore
   @Test(description = "proxyrequest without route header, route using rURI")
   public void testProxyRequestWithoutRoute()
       throws ParseException, SipException, InterruptedException {

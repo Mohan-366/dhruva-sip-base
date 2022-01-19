@@ -1,6 +1,5 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
-import com.cisco.dsb.common.config.ConfigUpdateListener;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -30,6 +29,8 @@ import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -41,22 +42,24 @@ import reactor.util.retry.Retry;
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor implements ConfigUpdateListener {
+public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefreshedEvent> {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   private Disposable opFlux;
-  protected ConcurrentMap<Integer, Boolean> elementStatus = new ConcurrentHashMap<>();
+  protected ConcurrentMap<String, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
-  protected ConcurrentHashMap<String, Set<Integer>> downServerGroupElementsCounter =
+  protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
+
+  private Boolean configRefreshedUp = false;
+  private Boolean configRefreshedDown = false;
 
   @PostConstruct
   public void initOptionsPing() {
     logger.info("KALPA: Registering {} as ConfigUpdateListener", this.getClass().getSimpleName());
-    commonConfigurationProperties.registerConfigUpdateListener(this);
     init(commonConfigurationProperties.getServerGroups());
   }
 
@@ -67,7 +70,8 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
 
   private void startMonitoring(Map<String, ServerGroup> map) {
     logger.info(
-        "Starting OPTIONS pings!! : {}", commonConfigurationProperties.getServerGroups().values());
+        "Starting OPTIONS pings Now!! : {}",
+        commonConfigurationProperties.getServerGroups().values());
     Flux<SIPResponse> upElementsResponse =
         Flux.defer(
                 () -> Flux.fromIterable(commonConfigurationProperties.getServerGroups().values()))
@@ -83,6 +87,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                           serverGroup.getElements(), optionsPingPolicy.getUpTimeInterval())
                       .flatMap(
                           element -> {
+                            logger.info("KALPA: {}", element.toString());
                             serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
                             return sendPingRequestToUpElement(
                                 serverGroup.getNetworkName(),
@@ -96,10 +101,10 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                       .repeatWhen(
                           completed ->
                               completed.delayElements(
-                                  Duration.ofMillis(
-                                      serverGroup.getOptionsPingPolicy().getUpTimeInterval()),
+                                  Duration.ofMillis(15000),
                                   Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
                 });
+    ;
 
     Flux<SIPResponse> downElementsResponse =
         Flux.defer(
@@ -111,21 +116,31 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                   return downElementsFlux(
                           serverGroup.getElements(), optionsPingPolicy.getDownTimeInterval())
                       .flatMap(
-                          element ->
-                              sendPingRequestToDownElement(
-                                  serverGroup.getNetworkName(),
-                                  element,
-                                  optionsPingPolicy.getPingTimeOut(),
-                                  optionsPingPolicy.getFailoverResponseCodes(),
-                                  serverGroup.getHostName()))
+                          element -> {
+                            return sendPingRequestToDownElement(
+                                serverGroup.getNetworkName(),
+                                element,
+                                optionsPingPolicy.getPingTimeOut(),
+                                optionsPingPolicy.getFailoverResponseCodes(),
+                                serverGroup.getHostName());
+                          })
                       .repeatWhen(
                           completed ->
                               completed.delayElements(
-                                  Duration.ofMillis(
-                                      serverGroup.getOptionsPingPolicy().getDownTimeInterval()),
-                                  Schedulers.newBoundedElastic(40, 100, "BE-Up-Elements")));
+                                  Duration.ofMillis(15000),
+                                  Schedulers.newBoundedElastic(40, 100, "BE-Down-Elements")));
                 });
-    opFlux = Flux.merge(upElementsResponse, downElementsResponse).subscribe();
+    ;
+    opFlux =
+        Flux.merge(upElementsResponse, downElementsResponse)
+            .subscribe(
+                m -> {
+                  logger.info(
+                      "whatever: {}, configRefreshedUp : {}, configRefreshedDown: {}",
+                      m,
+                      configRefreshedUp,
+                      configRefreshedDown);
+                });
   }
 
   protected Flux<ServerGroupElement> upElementsFlux(
@@ -133,17 +148,12 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
-              Boolean status = elementStatus.get(e.hashCode());
+              Boolean status = elementStatus.get(e.toString());
               if (status == null || status) {
                 return true;
               }
               return false;
-            })
-        .repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(upTimeInterval),
-                    Schedulers.newBoundedElastic(5, 50, "BE-Up-Elements")));
+            });
   }
 
   protected Flux<ServerGroupElement> downElementsFlux(
@@ -151,17 +161,12 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
-              Boolean status = elementStatus.get(e.hashCode());
+              Boolean status = elementStatus.get(e.toString());
               if (status != null && !status) {
                 return true;
               }
               return false;
-            })
-        .repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(downIntervalTime),
-                    Schedulers.newBoundedElastic(5, 50, "BE-Down-Elements")));
+            });
   }
 
   /**
@@ -184,7 +189,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
       int sgeSize) {
 
     logger.info("Sending ping to UP element: {}", element);
-    Integer key = element.hashCode();
+    String key = element.toString();
     Boolean status = elementStatus.get(key);
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))
@@ -206,7 +211,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
               Event.emitSGElementDownEvent(
                   null, "All Ping attempts failed for element", element, network);
               elementStatus.put(key, false);
-              checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
+              checkAndMakeServerGroupDown(serverGroupName, element.toString(), sgeSize);
               return Mono.empty();
             })
         .doOnNext(
@@ -220,7 +225,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                 Event.emitSGElementDownEvent(
                     n.getStatusCode(), "Error response received for element", element, network);
                 elementStatus.put(key, false);
-                checkAndMakeServerGroupDown(serverGroupName, element.hashCode(), sgeSize);
+                checkAndMakeServerGroupDown(serverGroupName, element.toString(), sgeSize);
               } else if (status == null) {
                 logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
@@ -228,14 +233,13 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
             });
   }
 
-  private void checkAndMakeServerGroupDown(
-      String serverGroupName, Integer elementHashCode, int sgeSize) {
-    Set<Integer> sgeHashSet;
+  private void checkAndMakeServerGroupDown(String serverGroupName, String elementKey, int sgeSize) {
+    Set<String> sgeHashSet;
     synchronized (this) {
       sgeHashSet =
           downServerGroupElementsCounter.getOrDefault(
               serverGroupName, ConcurrentHashMap.newKeySet());
-      sgeHashSet.add(elementHashCode);
+      sgeHashSet.add(elementKey);
       downServerGroupElementsCounter.put(serverGroupName, sgeHashSet);
     }
     // this means all elements are down.
@@ -245,6 +249,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
     }
     logger.info("KALPA: downServerGroupElementsCounter content: {}", sgeHashSet);
   }
+
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
@@ -262,7 +267,7 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
       List<Integer> failoverCodes,
       String serverGroupName) {
     logger.info("Sending ping to DOWN element: {}", element);
-    Integer key = element.hashCode();
+    String key = element.toString();
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))
         .onErrorResume(
@@ -281,20 +286,20 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
                 logger.info("Marking status as UP for element: {}", element);
                 Event.emitSGElementUpEvent(element, network);
                 elementStatus.put(key, true);
-                makeServerGroupUp(serverGroupName, element.hashCode());
+                makeServerGroupUp(serverGroupName, element.toString());
               }
             });
   }
 
-  private void makeServerGroupUp(String serverGroupName, Integer elementHashCode) {
+  private void makeServerGroupUp(String serverGroupName, String elementKey) {
     Boolean sgStatus = serverGroupStatus.get(serverGroupName);
     if (sgStatus != null && !sgStatus) {
       serverGroupStatus.put(serverGroupName, true);
       Event.emitSGEvent(serverGroupName, false);
     }
-    Set<Integer> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
+    Set<String> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
     if (sgeHashSet != null) {
-      sgeHashSet.remove(elementHashCode);
+      sgeHashSet.remove(elementKey);
     }
     logger.info("KALPA: downServerGroupElementsCounter content: {}", sgeHashSet);
   }
@@ -340,26 +345,23 @@ public class OptionsPingMonitor implements ConfigUpdateListener {
     }
   }
 
-  public class MyThreadforOPRestart extends Thread {
-
-    @Override
-    public void run() {
-      restartFlux();
-    }
+  @Override
+  public void onApplicationEvent(RefreshScopeRefreshedEvent event) {
+    logger.info(
+        "onApplicationEvent: {} invoked on OptionsPingMonitor. Source: {}",
+        event.getName(),
+        event.getSource());
+    restartFlux();
   }
 
   private void restartFlux() {
     opFlux.dispose();
-    while (!opFlux.isDisposed()) {
-      logger.error("KALPA: Not disposed yet");
-    }
+    //    while (!opFlux.isDisposed()) {
+    //      logger.error("KALPA: Not disposed yet");
+    //    }
     logger.info("KALPA: flux is now disposed! restaring it!");
+    configRefreshedDown = true;
+    configRefreshedUp = true;
     startMonitoring(commonConfigurationProperties.getServerGroups());
-  }
-
-  public void configUpdated() {
-    logger.info("KALPA: in optionsPingMonitor");
-    MyThreadforOPRestart myThreadforOPRestart = new MyThreadforOPRestart();
-    myThreadforOPRestart.start();
   }
 }

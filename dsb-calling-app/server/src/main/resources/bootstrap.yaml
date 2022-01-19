@@ -7,9 +7,10 @@ spring:
     kubernetes:
       config:
         sources:
-          - name: dhruva-static-config-map
-          - name: dhruva-dynamic-config-map
-#        namespace: pushed as part of helm chart
+          - namespace: sip
+            name: dhruva-static-config-map-kalpa
+          - namespace: sip
+            name: dhruva-dynamic-config-map-kalpa
       reload:
         enabled: true
         mode: polling

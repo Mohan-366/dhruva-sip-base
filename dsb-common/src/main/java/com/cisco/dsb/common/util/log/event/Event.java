@@ -178,7 +178,7 @@ public class Event {
     }
     eventInfoMap.put("transport", sge.getTransport().name());
 
-    String msg = "ServerGroup Element DOWN: " + sge;
+    String msg = "ServerGroup Element DOWN: " + sge.hashCode() + " : " + sge;
     logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
   }
 }

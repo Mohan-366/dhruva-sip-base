@@ -298,11 +298,11 @@ public class OptionsPingMonitorTest {
         .thenCancel()
         .verify();
 
-    optionsPingMonitor.elementStatus.put(sge1.hashCode(), true);
-    optionsPingMonitor.elementStatus.put(sge2.hashCode(), false);
+    optionsPingMonitor.elementStatus.put(sge1.toString(), true);
+    optionsPingMonitor.elementStatus.put(sge2.toString(), false);
 
-    optionsPingMonitor.elementStatus.put(sge3.hashCode(), false);
-    optionsPingMonitor.elementStatus.put(sge4.hashCode(), true);
+    optionsPingMonitor.elementStatus.put(sge3.toString(), false);
+    optionsPingMonitor.elementStatus.put(sge4.toString(), true);
 
     itr = map.entrySet().iterator();
     Iterator<Map.Entry<String, ServerGroup>> finalItr2 = itr;
@@ -397,7 +397,7 @@ public class OptionsPingMonitorTest {
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
         optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
-    optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
+    optionsPingMonitor.elementStatus.put(sge1.toString(), false);
     StepVerifier.create(response).expectNextCount(1).verifyComplete();
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
   }
@@ -414,7 +414,7 @@ public class OptionsPingMonitorTest {
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
         optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
-    optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
+    optionsPingMonitor.elementStatus.put(sge1.toString(), false);
     StepVerifier.create(response.log()).expectNextCount(1).verifyComplete();
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
   }
@@ -431,7 +431,7 @@ public class OptionsPingMonitorTest {
         .createAndSendRequest(anyString(), any());
     Mono<SIPResponse> response =
         optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, 5000, failoverCodes, "SG1");
-    optionsPingMonitor.elementStatus.put(sge1.hashCode(), false);
+    optionsPingMonitor.elementStatus.put(sge1.toString(), false);
     StepVerifier.create(response.log()).expectNextCount(0).verifyComplete();
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.hashCode()));
   }
@@ -472,6 +472,7 @@ public class OptionsPingMonitorTest {
             .setWeight(10)
             .setTransport(Transport.TCP)
             .build();
+    System.out.println(sge.toString());
 
     optionsPingMonitor.createAndSendRequest("network_tcp", sge);
     verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());
