@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.util.log;
 
-import com.cisco.dsb.common.sip.util.SipConstants;
+import com.cisco.dsb.common.sip.util.SipTokens;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
@@ -19,11 +19,6 @@ public class DhruvaStackLogger implements StackLogger {
   private int lineCount;
   private boolean loggingEnabled = true;
 
-  private static final Pattern tenantPattern =
-      Pattern.compile(".*" + SipConstants.X_Cisco_Tenant + "=([a-zA-Z0-9\\-]*)", Pattern.MULTILINE);
-
-  private static final Pattern tenantXmlPattern = Pattern.compile("<tenant-id>([^<]*)</tenant-id>");
-
   private static final String patternOnSslHandshake = ".*" + "on sslhandshake" + ".*";
 
   // socket closed 1f845f93[SSL_NULL_WITH_NULL_NULL:
@@ -41,7 +36,6 @@ public class DhruvaStackLogger implements StackLogger {
   private static final Pattern socketWatchdog =
       Pattern.compile("starting watchdog for socket" + patternOnSslHandshake);
 
-  private static final String Quote = "\"";
   private static final String digits = "digits=";
 
   /** log a stack trace. This helps to look at the stack frame. */
@@ -83,7 +77,6 @@ public class DhruvaStackLogger implements StackLogger {
       logger.info(message, parameters);
     } else if (traceLevel == TRACE_DEBUG) {
       logger.debug(message, parameters);
-      // TODO dsb
     } else if (traceLevel == TRACE_TRACE) {
       logger.trace(message, parameters);
     } else {
@@ -178,9 +171,10 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   public static String obfuscateDigits(String message) {
-    String regex = digits + Quote + "([0-9a-dA-D#\\*]*)" + Quote;
+    String regex = digits + SipTokens.Quote + "([0-9a-dA-D#\\*]*)" + SipTokens.Quote;
 
-    return replaceAll(message, regex, (matcher) -> digits + Quote + "OBFUSCATED" + Quote);
+    return replaceAll(
+        message, regex, (matcher) -> digits + SipTokens.Quote + "OBFUSCATED" + SipTokens.Quote);
   }
 
   public static String obfuscateAll(String message, String regex) {
@@ -207,12 +201,13 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   private static String obfuscateQuotedStrings(String header) {
-    String regex = Quote + "(.*?)" + Quote;
+    String regex = SipTokens.Quote + "(.*?)" + SipTokens.Quote;
 
     return replaceAll(
         header,
         regex,
-        (matcher) -> Quote + LogUtils.obfuscateEntireString(matcher.group(1)) + Quote);
+        (matcher) ->
+            SipTokens.Quote + LogUtils.obfuscateEntireString(matcher.group(1)) + SipTokens.Quote);
   }
 
   /**

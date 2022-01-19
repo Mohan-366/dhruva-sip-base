@@ -50,7 +50,7 @@ public class DnsServerGroupUtil {
 
     DnsDestination dnsDestination = new DnsDestination(hostname, port, transportType);
     CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse =
-        locatorService.locateDestinationAsync(userInject, dnsDestination, null);
+        locatorService.locateDestinationAsync(userInject, dnsDestination);
 
     return serverGroupMono(locateSIPServersResponse, serverGroup);
   }

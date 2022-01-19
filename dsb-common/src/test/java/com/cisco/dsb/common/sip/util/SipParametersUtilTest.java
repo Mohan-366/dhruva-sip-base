@@ -1,13 +1,23 @@
 package com.cisco.dsb.common.sip.util;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.cisco.dsb.common.sip.header.RemotePartyIDHeader;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.parser.RemotePartyIDParser;
 import com.google.common.collect.ImmutableMap;
+import gov.nist.javax.sip.header.Accept;
+import gov.nist.javax.sip.header.To;
+import java.util.HashMap;
 import java.util.Map;
 import javax.sip.address.SipURI;
+import javax.sip.address.URI;
 import javax.sip.header.Header;
+import javax.sip.header.HeaderAddress;
+import javax.sip.header.Parameters;
 import javax.sip.header.ToHeader;
+import javax.sip.message.Request;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -122,6 +132,18 @@ public class SipParametersUtilTest {
     Assert.assertEquals(parameters, expectedParameters);
   }
 
+  public void testHeaderParametersNegativeCases() {
+    Parameters params = new Accept();
+    Map<String, String> param1 =
+        SipParametersUtil.getParameters((Header) params, SipParametersUtil.ParametersType.SIP_URI);
+    Assert.assertTrue(param1.isEmpty());
+
+    HeaderAddress ha = new To();
+    Map<String, String> param2 =
+        SipParametersUtil.getParameters((Header) ha, SipParametersUtil.ParametersType.SIP_URI);
+    Assert.assertTrue(param2.isEmpty());
+  }
+
   /*@DataProvider
   public Object[][] sipUriCallTypeData() throws Exception {
       return new Object[][] {
@@ -163,7 +185,30 @@ public class SipParametersUtilTest {
 
   @Test(dataProvider = "sipUriFlagParameterData")
   public void testUriFlag(SipURI sipUri, String flagName, boolean hasFlag) {
+    Request request = mock(Request.class);
+    when(request.getRequestURI()).thenReturn(sipUri);
     Map<String, String> parameters = SipParametersUtil.getParameters(sipUri);
     Assert.assertEquals(SipParametersUtil.hasParameter(parameters, flagName), hasFlag);
+  }
+
+  @Test
+  public void testUriFlagFromRequest() {
+    Map<String, String> parameters = SipParametersUtil.getParameters((Request) null);
+    Assert.assertTrue(parameters.isEmpty());
+
+    Request request = mock(Request.class);
+    URI uri = mock(URI.class);
+    when(request.getRequestURI()).thenReturn(uri);
+    when(uri.isSipURI()).thenReturn(false);
+    Assert.assertTrue(SipParametersUtil.getParameters(request).isEmpty());
+  }
+
+  @Test
+  public void testHasParameter() {
+    Assert.assertFalse(SipParametersUtil.hasParameter(null, "test", null));
+    Assert.assertFalse(SipParametersUtil.hasParameter(new HashMap<>(), "test", null));
+    Map<String, String> paramMap = new HashMap<>();
+    paramMap.put("test", "test-value");
+    Assert.assertTrue(SipParametersUtil.hasParameter(paramMap, "test", "test-value"));
   }
 }

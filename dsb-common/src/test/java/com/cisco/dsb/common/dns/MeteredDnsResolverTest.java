@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 
 public class MeteredDnsResolverTest {
   private static final String FQDN = "hellowebex";
-  private static final DnsException EXCEPTION =
+  private static final DnsException DNS_EXCEPTION =
       new DnsException(1, FQDN, DnsErrorCode.ERROR_DNS_HOST_NOT_FOUND);
   private static final Error ERROR = new Error();
 
@@ -43,15 +43,13 @@ public class MeteredDnsResolverTest {
 
   private DnsLookup delegate;
   private DnsReporter reporter;
-  private DnsTimingContext timingReporter;
-
   private DnsLookup resolver;
 
   @BeforeMethod
   public void before() {
     delegate = mock(DnsLookup.class);
     reporter = mock(DnsReporter.class);
-    timingReporter = mock(DnsTimingContext.class);
+    DnsTimingContext timingReporter = mock(DnsTimingContext.class);
 
     resolver = new MeteredDnsResolver(delegate, reporter);
 
@@ -65,7 +63,7 @@ public class MeteredDnsResolverTest {
     resolver.lookupSRV(FQDN);
 
     verify(reporter, never()).reportEmpty(FQDN, "SRV");
-    verify(reporter, never()).reportFailure(FQDN, "SRV", EXCEPTION.getCause());
+    verify(reporter, never()).reportFailure(FQDN, "SRV", DNS_EXCEPTION.getCause());
   }
 
   @Test
@@ -75,22 +73,32 @@ public class MeteredDnsResolverTest {
     resolver.lookupA(FQDN);
 
     verify(reporter, never()).reportEmpty(FQDN, "A");
-    verify(reporter, never()).reportFailure(FQDN, "A", EXCEPTION.getCause());
+    verify(reporter, never()).reportFailure(FQDN, "A", DNS_EXCEPTION.getCause());
   }
 
   @Test
-  public void shouldReportEmpty() {
+  public void shouldReportEmptyForSrv() {
     when(delegate.lookupSRV(FQDN)).thenReturn(CompletableFuture.completedFuture(EMPTY_SRV));
 
     resolver.lookupSRV(FQDN);
 
     verify(reporter).reportEmpty(FQDN, "SRV");
-    verify(reporter, never()).reportFailure(FQDN, "SRV", EXCEPTION.getCause());
+    verify(reporter, never()).reportFailure(FQDN, "SRV", DNS_EXCEPTION.getCause());
+  }
+
+  @Test
+  public void shouldReportEmptyForA() {
+    when(delegate.lookupA(FQDN)).thenReturn(CompletableFuture.completedFuture(EMPTY_A));
+
+    resolver.lookupA(FQDN);
+
+    verify(reporter).reportEmpty(FQDN, "A");
+    verify(reporter, never()).reportFailure(FQDN, "A", DNS_EXCEPTION.getCause());
   }
 
   @Test
   public void shouldReportExceptionForSrv() throws Exception {
-    when(delegate.lookupSRV(FQDN)).thenThrow(EXCEPTION);
+    when(delegate.lookupSRV(FQDN)).thenThrow(DNS_EXCEPTION);
 
     try {
       CompletableFuture<List<DNSSRVRecord>> f;
@@ -102,12 +110,12 @@ public class MeteredDnsResolverTest {
     }
 
     verify(reporter, never()).reportEmpty(FQDN, "SRV");
-    verify(reporter).reportFailure(FQDN, "SRV", EXCEPTION);
+    verify(reporter).reportFailure(FQDN, "SRV", DNS_EXCEPTION);
   }
 
   @Test
   public void shouldReportExceptionForA() throws Exception {
-    when(delegate.lookupA(FQDN)).thenThrow(EXCEPTION);
+    when(delegate.lookupA(FQDN)).thenThrow(DNS_EXCEPTION);
 
     try {
       CompletableFuture<List<DNSARecord>> f;
@@ -118,7 +126,7 @@ public class MeteredDnsResolverTest {
 
     }
     verify(reporter, never()).reportEmpty(FQDN, "A");
-    verify(reporter).reportFailure(FQDN, "A", EXCEPTION);
+    verify(reporter).reportFailure(FQDN, "A", DNS_EXCEPTION);
   }
 
   @Test
@@ -135,6 +143,6 @@ public class MeteredDnsResolverTest {
     }
 
     verify(reporter, never()).reportEmpty(FQDN, "SRV");
-    verify(reporter, never()).reportFailure(FQDN, "SRV", EXCEPTION);
+    verify(reporter, never()).reportFailure(FQDN, "SRV", DNS_EXCEPTION);
   }
 }

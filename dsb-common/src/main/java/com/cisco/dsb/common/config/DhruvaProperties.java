@@ -3,7 +3,6 @@ package com.cisco.dsb.common.config;
 import com.cisco.wx2.dto.BuildInfo;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.google.common.base.Strings;
-import java.net.URI;
 import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -24,16 +23,15 @@ public class DhruvaProperties extends ConfigProperties {
   // implements DiagnosticsClientFactory.DiagnosticsClientFactoryProperties {
   private static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_DHRUVA";
 
-  public static final String CLIENT_ID = "clientId";
+  /*public static final String CLIENT_ID = "clientId";
   public static final String CLIENT_SECRET = "clientSecret";
   public static final String MACHINE_ACCOUNT_USER = "machineAccountUser";
   public static final String MACHINE_ACCOUNT_PASSWORD = "machineAccountPassword";
-  public static final String ORG_ID = "orgId";
+  public static final String ORG_ID = "orgId";*/
   public static final String POD_NAME_ENV_VAR_KEY = "POD_NAME";
 
   private static BuildInfo buildInfo;
   private final Environment env;
-
   @Getter @Setter private String podNameEnvVar;
 
   @PostConstruct
@@ -45,18 +43,11 @@ public class DhruvaProperties extends ConfigProperties {
             : System.getenv(POD_NAME_ENV_VAR_KEY);
   }
 
-  public enum Env {
-    integration,
-    production
-  }
-
   @Autowired
   public DhruvaProperties(Environment env) {
     super(env, createUserAgentString(DEFAULT_DHRUVA_USER_AGENT, env));
     this.env = env;
   }
-
-
 
   public static String createUserAgentString(String uaType, Environment env) {
     String userAgent = uaType;
@@ -70,6 +61,13 @@ public class DhruvaProperties extends ConfigProperties {
     userAgent += " (" + env.getProperty("environment", "local") + ")";
 
     return userAgent;
+  }
+
+  /* ----- THe following code is needed for Diagnostics ----
+  // Uncomment when using them.
+  public enum Env {
+    integration,
+    production
   }
 
   public String getDhruvaClientId() {
@@ -140,5 +138,5 @@ public class DhruvaProperties extends ConfigProperties {
         || "intb3".equals(environment)
         || "intb4".equals(environment)
         || "integration".equals(this.getCloud());
-  }
+  }*/
 }

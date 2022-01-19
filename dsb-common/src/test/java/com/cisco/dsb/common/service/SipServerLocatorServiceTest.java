@@ -47,7 +47,6 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     User user = null;
     SipDestination sipDestination =
         new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.TLS);
-    String callId = "test123";
     SipServerLocator locator = mock(SipServerLocator.class);
     sipServerLocatorService.setLocator(locator);
     when(locator.resolve(
@@ -72,7 +71,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
                 LocateSIPServersResponse.Type.HOSTNAME,
                 null));
     CompletableFuture<LocateSIPServersResponse> responseCF =
-        sipServerLocatorService.locateDestinationAsync(user, sipDestination, callId);
+        sipServerLocatorService.locateDestinationAsync(user, sipDestination);
     LocateSIPServersResponse response = responseCF.join();
     assertEquals(
         response.getHops().get(0),
@@ -86,7 +85,6 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     User user = null;
     SipDestination sipDestination =
         new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.TLS);
-    String callId = "test123";
     SipServerLocator locator = mock(SipServerLocator.class);
     sipServerLocatorService.setLocator(locator);
     InterruptedException iEx =
@@ -99,7 +97,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
             null))
         .thenThrow(iEx);
     CompletableFuture<LocateSIPServersResponse> responseCF =
-        sipServerLocatorService.locateDestinationAsync(user, sipDestination, callId);
+        sipServerLocatorService.locateDestinationAsync(user, sipDestination);
     try {
       responseCF.join();
     } catch (Exception ex) {
@@ -112,7 +110,6 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     User user = null;
     SipDestination sipDestination =
         new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.TLS);
-    String callId = "test123";
     SipServerLocator locator = mock(SipServerLocator.class);
     sipServerLocatorService.setLocator(locator);
     when(locator.resolve(
@@ -136,7 +133,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
                 LocateSIPServersResponse.Type.HOSTNAME,
                 null));
     LocateSIPServersResponse response =
-        sipServerLocatorService.locateDestination(user, sipDestination, callId);
+        sipServerLocatorService.locateDestination(user, sipDestination);
     assertEquals(
         response.getHops().get(0),
         new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));

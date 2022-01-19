@@ -1,7 +1,6 @@
 package com.cisco.dsb.common.sip.enums;
 
 import com.cisco.dsb.common.transport.Transport;
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -15,14 +14,6 @@ public enum LocateSIPServerTransportType {
   TLS_AND_TCP,
   TCP_AND_TLS,
   UDP;
-
-  public static Optional<LocateSIPServerTransportType> fromString(String s) {
-    try {
-      return Optional.of(LocateSIPServerTransportType.valueOf(s.toUpperCase(Locale.US)));
-    } catch (Exception e) {
-      return Optional.empty();
-    }
-  }
 
   // There's no conversion for TLS_AND_TCP.
   public Optional<Transport> toSipTransport() {

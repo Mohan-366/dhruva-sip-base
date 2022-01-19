@@ -19,7 +19,6 @@ public class SimpleLookupFactory implements LookupFactory {
 
   // By default disabled
   private int negativeCacheTTL = 500;
-
   private int maxCacheSize = 50000;
 
   public SimpleLookupFactory(Resolver resolver) {
@@ -38,24 +37,10 @@ public class SimpleLookupFactory implements LookupFactory {
     try {
       final Lookup lookup = new Lookup(searchString, type);
       if (resolver != null) lookup.setResolver(resolver);
-
-      if (cache != null) lookup.setCache(cache);
-
+      lookup.setCache(cache);
       return lookup;
     } catch (TextParseException e) {
       throw new DnsException(type, searchString, DnsErrorCode.ERROR_DNS_INVALID_QUERY);
     }
-  }
-
-  public int getMaximumCacheSize() {
-    return maxCacheSize;
-  }
-
-  public int getCurrentCacheSize() {
-    return cache.getSize();
-  }
-
-  public void clearCache() {
-    cache.clearCache();
   }
 }

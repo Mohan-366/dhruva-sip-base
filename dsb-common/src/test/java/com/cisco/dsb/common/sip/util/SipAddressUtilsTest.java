@@ -1,127 +1,37 @@
 package com.cisco.dsb.common.sip.util;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import javax.sip.address.TelURL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class SipAddressUtilsTest {
+
   @Test
-  void testConvertTelToSipUriUser() {
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("Tel"));
-    Assert.assertEquals("", SipAddressUtils.convertTelToSipUriUser("-"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("#"));
-    Assert.assertEquals("", SipAddressUtils.convertTelToSipUriUser("--"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("-#"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("-%23"));
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("-Tel"));
-    Assert.assertEquals("42", SipAddressUtils.convertTelToSipUriUser("-42"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("#-"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("##"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("#%23"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("#Tel"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("#42"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("%23-"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("%23#"));
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("Tel-"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("Tel#"));
-    Assert.assertEquals("42", SipAddressUtils.convertTelToSipUriUser("42-"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("42#"));
-    Assert.assertEquals("", SipAddressUtils.convertTelToSipUriUser("---"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("--#"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("--%23"));
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("--Tel"));
-    Assert.assertEquals("42", SipAddressUtils.convertTelToSipUriUser("--42"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("-#-"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("-##"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("-#%23"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("-#Tel"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("-#42"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("-%23-"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("-%23#"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("-%23%23"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("-%23Tel"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("-%2342"));
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("-Tel-"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("-Tel#"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("-Tel%23"));
-    Assert.assertEquals("TelTel", SipAddressUtils.convertTelToSipUriUser("-TelTel"));
-    Assert.assertEquals("Tel42", SipAddressUtils.convertTelToSipUriUser("-Tel42"));
-    Assert.assertEquals("42", SipAddressUtils.convertTelToSipUriUser("-42-"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("-42#"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("-42%23"));
-    Assert.assertEquals("42Tel", SipAddressUtils.convertTelToSipUriUser("-42Tel"));
-    Assert.assertEquals("4242", SipAddressUtils.convertTelToSipUriUser("-4242"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("#--"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("#-#"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("#-%23"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("#-Tel"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("#-42"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("##-"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("###"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("##%23"));
-    Assert.assertEquals("%23%23Tel", SipAddressUtils.convertTelToSipUriUser("##Tel"));
-    Assert.assertEquals("%23%2342", SipAddressUtils.convertTelToSipUriUser("##42"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("#%23-"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("#%23#"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("#%23%23"));
-    Assert.assertEquals("%23%23Tel", SipAddressUtils.convertTelToSipUriUser("#%23Tel"));
-    Assert.assertEquals("%23%2342", SipAddressUtils.convertTelToSipUriUser("#%2342"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("#Tel-"));
-    Assert.assertEquals("%23Tel%23", SipAddressUtils.convertTelToSipUriUser("#Tel#"));
-    Assert.assertEquals("%23Tel%23", SipAddressUtils.convertTelToSipUriUser("#Tel%23"));
-    Assert.assertEquals("%23TelTel", SipAddressUtils.convertTelToSipUriUser("#TelTel"));
-    Assert.assertEquals("%23Tel42", SipAddressUtils.convertTelToSipUriUser("#Tel42"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("#42-"));
-    Assert.assertEquals("%2342%23", SipAddressUtils.convertTelToSipUriUser("#42#"));
-    Assert.assertEquals("%2342%23", SipAddressUtils.convertTelToSipUriUser("#42%23"));
-    Assert.assertEquals("%2342Tel", SipAddressUtils.convertTelToSipUriUser("#42Tel"));
-    Assert.assertEquals("%234242", SipAddressUtils.convertTelToSipUriUser("#4242"));
-    Assert.assertEquals("%23", SipAddressUtils.convertTelToSipUriUser("%23--"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("%23-#"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("%23-%23"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("%23-Tel"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("%23-42"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("%23#-"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("%23##"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("%23#%23"));
-    Assert.assertEquals("%23%23Tel", SipAddressUtils.convertTelToSipUriUser("%23#Tel"));
-    Assert.assertEquals("%23%2342", SipAddressUtils.convertTelToSipUriUser("%23#42"));
-    Assert.assertEquals("%23%23", SipAddressUtils.convertTelToSipUriUser("%23%23-"));
-    Assert.assertEquals("%23%23%23", SipAddressUtils.convertTelToSipUriUser("%23%23#"));
-    Assert.assertEquals("%23Tel", SipAddressUtils.convertTelToSipUriUser("%23Tel-"));
-    Assert.assertEquals("%23Tel%23", SipAddressUtils.convertTelToSipUriUser("%23Tel#"));
-    Assert.assertEquals("%2342", SipAddressUtils.convertTelToSipUriUser("%2342-"));
-    Assert.assertEquals("%2342%23", SipAddressUtils.convertTelToSipUriUser("%2342#"));
-    Assert.assertEquals("Tel", SipAddressUtils.convertTelToSipUriUser("Tel--"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("Tel-#"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("Tel-%23"));
-    Assert.assertEquals("TelTel", SipAddressUtils.convertTelToSipUriUser("Tel-Tel"));
-    Assert.assertEquals("Tel42", SipAddressUtils.convertTelToSipUriUser("Tel-42"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("Tel#-"));
-    Assert.assertEquals("Tel%23%23", SipAddressUtils.convertTelToSipUriUser("Tel##"));
-    Assert.assertEquals("Tel%23%23", SipAddressUtils.convertTelToSipUriUser("Tel#%23"));
-    Assert.assertEquals("Tel%23Tel", SipAddressUtils.convertTelToSipUriUser("Tel#Tel"));
-    Assert.assertEquals("Tel%2342", SipAddressUtils.convertTelToSipUriUser("Tel#42"));
-    Assert.assertEquals("Tel%23", SipAddressUtils.convertTelToSipUriUser("Tel%23-"));
-    Assert.assertEquals("Tel%23%23", SipAddressUtils.convertTelToSipUriUser("Tel%23#"));
-    Assert.assertEquals("TelTel", SipAddressUtils.convertTelToSipUriUser("TelTel-"));
-    Assert.assertEquals("TelTel%23", SipAddressUtils.convertTelToSipUriUser("TelTel#"));
-    Assert.assertEquals("Tel42", SipAddressUtils.convertTelToSipUriUser("Tel42-"));
-    Assert.assertEquals("Tel42%23", SipAddressUtils.convertTelToSipUriUser("Tel42#"));
-    Assert.assertEquals("42", SipAddressUtils.convertTelToSipUriUser("42--"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("42-#"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("42-%23"));
-    Assert.assertEquals("42Tel", SipAddressUtils.convertTelToSipUriUser("42-Tel"));
-    Assert.assertEquals("4242", SipAddressUtils.convertTelToSipUriUser("42-42"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("42#-"));
-    Assert.assertEquals("42%23%23", SipAddressUtils.convertTelToSipUriUser("42##"));
-    Assert.assertEquals("42%23%23", SipAddressUtils.convertTelToSipUriUser("42#%23"));
-    Assert.assertEquals("42%23Tel", SipAddressUtils.convertTelToSipUriUser("42#Tel"));
-    Assert.assertEquals("42%2342", SipAddressUtils.convertTelToSipUriUser("42#42"));
-    Assert.assertEquals("42%23", SipAddressUtils.convertTelToSipUriUser("42%23-"));
-    Assert.assertEquals("42%23%23", SipAddressUtils.convertTelToSipUriUser("42%23#"));
-    Assert.assertEquals("42Tel", SipAddressUtils.convertTelToSipUriUser("42Tel-"));
-    Assert.assertEquals("42Tel%23", SipAddressUtils.convertTelToSipUriUser("42Tel#"));
-    Assert.assertEquals("4242", SipAddressUtils.convertTelToSipUriUser("4242-"));
-    Assert.assertEquals("4242%23", SipAddressUtils.convertTelToSipUriUser("4242#"));
+  public void testConvertTelToSipUriUser() {
+    runConvertTelToSipUriUser("3309", "3309");
+    runConvertTelToSipUriUser("3*309", "3*309");
+    runConvertTelToSipUriUser("3-309#", "3309%23");
+  }
+
+  private void runConvertTelToSipUriUser(String tel, String expect) {
+    String result = SipAddressUtils.convertTelToSipUriUser(tel);
+    String msg = String.format("FAILED tel=[%s] expect=[%s] result=[%s]", tel, expect, result);
+    Assert.assertEquals(result, expect, msg);
+  }
+
+  @Test
+  public void testPhoneNoFromTel() {
+    TelURL url = mock(TelURL.class);
+    String expected = "12345";
+    when(url.getPhoneNumber()).thenReturn(expected);
+
+    when(url.isGlobal()).thenReturn(true);
+    Assert.assertEquals(SipAddressUtils.phoneNumberFromTelUrl(url), "+" + expected);
+
+    when(url.isGlobal()).thenReturn(false);
+    Assert.assertEquals(SipAddressUtils.phoneNumberFromTelUrl(url), expected);
   }
 }

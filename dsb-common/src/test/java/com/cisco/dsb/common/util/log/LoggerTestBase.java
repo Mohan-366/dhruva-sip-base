@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.sip.jain;
+package com.cisco.dsb.common.util.log;
 
 import static org.mockito.Mockito.*;
 

@@ -1,7 +1,5 @@
 package com.cisco.dsb.common.sip.util;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.util.Token;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
@@ -15,15 +13,14 @@ import gov.nist.javax.sip.stack.TLSMessageChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.sip.header.*;
+import lombok.CustomLog;
 
+@CustomLog
 public final class SipUtils {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(SipUtils.class);
 
   public static final String BRANCH_MAGIC_COOKIE = "z9hG4bK";
 
@@ -140,7 +137,6 @@ public final class SipUtils {
     SSLSession sslSession = null;
 
     // For debugging https://jira-eng-gpk2.cisco.com/jira/browse/SPARK-100870 in govcloud
-
     if (messageChannel instanceof TLSMessageChannel) {
       logger.debug(
           "begin getHandshakeCompletedEvent messageChannel.hashCode={} handshakeCompletedListener.hashCode={}",
@@ -236,67 +232,12 @@ public final class SipUtils {
     return InetAddresses.isInetAddress(value);
   }
 
-  public static boolean isHostIPAddr(String host) {
-    if (host == null) {
-      return false;
-    }
-    char firstChar = host.charAt(0);
-    if (firstChar > '9' || firstChar < '0') {
-      return false;
-    }
-
-    int len = host.length();
-    int dotCount = 0;
-    for (int i = 1; i < len; i++) {
-      switch (host.charAt(i)) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-          break;
-        case '.':
-          dotCount++;
-          break;
-        default:
-          return false;
-      }
-    }
-    return dotCount == 3;
-  }
-
-  /* Determines User portion from requestURi */
-  public static String getUserPortion(String reqUri) {
-
-    Pattern pattern = Pattern.compile("((sip:)(.+)@(.+))");
-    Matcher matcher = pattern.matcher(reqUri);
-    if (!matcher.find()) return null;
-    String user = matcher.group(3);
-    return user;
-  }
-  /* Determines Host portion from requestURi */
-
-  public static String getHostPortion(String reqUri) {
-    Pattern pattern = Pattern.compile("((sip:)(.+)@(.+))");
-    Matcher matcher = pattern.matcher(reqUri);
-    if (!matcher.find()) return null;
-    String host = matcher.group(4);
-    return host.split(";")[0];
-  }
-
   public static boolean isMidDialogRequest(SIPRequest request) {
     if (request == null) {
       return false;
     }
-
     String tag = request.getToTag();
-
-    // If there is a To Tag, then this is a mid dialog request.
+    // If there is a To Tag, then this is a mid-dialog request.
     return (tag != null) && (tag.length() > 0);
   }
 }

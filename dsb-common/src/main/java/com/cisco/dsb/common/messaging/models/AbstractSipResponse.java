@@ -3,14 +3,14 @@ package com.cisco.dsb.common.messaging.models;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.ClientTransaction;
 import javax.sip.Dialog;
 import javax.sip.SipProvider;
 import javax.sip.message.Response;
+import lombok.CustomLog;
 
+@CustomLog
 public abstract class AbstractSipResponse extends SipEventImpl implements SipResponse {
 
   protected final Response response;
@@ -21,8 +21,6 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   private String sessionId;
   private String reqURI;
   private String correlationID;
-
-  private static Logger logger = DhruvaLoggerFactory.getLogger(AbstractSipRequest.class);
 
   public AbstractSipResponse(
       ExecutionContext executionContext,

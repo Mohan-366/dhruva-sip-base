@@ -1,7 +1,6 @@
-package com.cisco.dsb.common.sip.jain;
+package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.sip.util.SipConstants;
-import com.cisco.dsb.common.util.log.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import gov.nist.core.ServerLogger;
@@ -12,15 +11,15 @@ import java.util.Properties;
 import javax.sip.SipStack;
 import javax.sip.header.ReasonHeader;
 import javax.sip.message.Message;
+import lombok.CustomLog;
 
 /**
  * Implementation of high level interface used by JAIN SIP to log SIPMessages and exception. This
  * calls through to an underlying StackLogger which sip-apps also provides through the SipLogger
  * class.
  */
+@CustomLog
 public class DhruvaServerLogger implements ServerLogger {
-
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DhruvaServerLogger.class);
 
   protected StackLogger stackLogger;
 

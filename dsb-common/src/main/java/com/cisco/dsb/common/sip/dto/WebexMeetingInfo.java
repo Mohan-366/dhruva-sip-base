@@ -1,6 +1,5 @@
 package com.cisco.dsb.common.sip.dto;
 
-import com.cisco.wx2.dto.locus.LocusDescription;
 import com.cisco.wx2.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -99,7 +98,7 @@ public class WebexMeetingInfo {
       return this;
     }
 
-    public Builder fromLocusInfo(LocusDescription info) {
+    /*public Builder fromLocusInfo(LocusDescription info) {
       if (info != null) {
         if (!Strings.isNullOrEmpty(info.getWebExSite())) {
           this.webExSite = info.getWebExSite();
@@ -109,7 +108,7 @@ public class WebexMeetingInfo {
         }
       }
       return this;
-    }
+    }*/
 
     /** @return A WebexMeetingInfo Object, or null if all fields are null or empty */
     public WebexMeetingInfo buildIfValid() {

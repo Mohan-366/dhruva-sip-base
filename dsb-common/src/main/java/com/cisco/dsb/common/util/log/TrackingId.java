@@ -101,10 +101,6 @@ public final class TrackingId {
     TrackingId.defaultPrefix = prefix;
   }
 
-  public static String calculateForCallId(String id) {
-    return calculateForCallId(defaultPrefix, id);
-  }
-
   @SuppressWarnings("checkstyle:parameterassignment")
   public static String calculateForCallId(String prefix, String id) {
     if (id != null && !id.isEmpty()) {

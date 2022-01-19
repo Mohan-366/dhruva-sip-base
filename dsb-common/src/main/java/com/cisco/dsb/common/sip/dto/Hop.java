@@ -40,11 +40,6 @@ public class Hop {
         hostname, host, transport, port, priority, weight, source.toString());
   }
 
-  public String toShortString() {
-    return (hostname != null ? hostname : host)
-        + (port != -1 ? (':' + Integer.toString(port)) : "");
-  }
-
   @Override
   public boolean equals(Object obj) {
     if (obj == this) {

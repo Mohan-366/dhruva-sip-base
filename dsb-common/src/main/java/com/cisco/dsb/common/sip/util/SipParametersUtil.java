@@ -2,7 +2,6 @@ package com.cisco.dsb.common.sip.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import gov.nist.javax.sip.message.SIPRequest;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -67,7 +66,6 @@ public class SipParametersUtil {
       // SipURI implements Parameters
       return getParams((Parameters) uri);
     }
-
     return new HashMap<>();
   }
 
@@ -79,23 +77,23 @@ public class SipParametersUtil {
       return hasParameter(parameters, SipConstants.CALLTYPE_PARAM, callType.toString());
   }*/
 
-  public static boolean hasXCiscoCrid(Map<String, String> requestUriParameters) {
-    return requestUriParameters != null
-        && requestUriParameters.containsKey(SipConstants.X_Cisco_Crid);
-  }
+  /*public static boolean hasXCiscoCrid(Map<String, String> requestUriParameters) {
+      return requestUriParameters != null
+          && requestUriParameters.containsKey(SipConstants.X_Cisco_Crid);
+    }
 
-  public static boolean hasXCiscoCrid(SIPRequest request) {
-    return SipParametersUtil.hasXCiscoCrid(SipParametersUtil.getParameters(request));
-  }
+    public static boolean hasXCiscoCrid(SIPRequest request) {
+      return SipParametersUtil.hasXCiscoCrid(SipParametersUtil.getParameters(request));
+    }
 
-  public static String getXCiscoCrid(Map<String, String> parameters) {
-    return hasXCiscoCrid(parameters) ? parameters.get(SipConstants.X_Cisco_Crid) : null;
-  }
+    public static String getXCiscoCrid(Map<String, String> parameters) {
+      return hasXCiscoCrid(parameters) ? parameters.get(SipConstants.X_Cisco_Crid) : null;
+    }
 
-  public static String getXCiscoCrid(SIPRequest request) {
-    return getXCiscoCrid(getParameters(request));
-  }
-
+    public static String getXCiscoCrid(SIPRequest request) {
+      return getXCiscoCrid(getParameters(request));
+    }
+  */
   /**
    * Checks if a parameter exists in the map (such as flag parameter). Ignores any value for the
    * parameter that may be present.

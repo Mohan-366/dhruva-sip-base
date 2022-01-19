@@ -7,14 +7,17 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.CustomLog;
 
+@CustomLog
 public class PeerCertInfoUtils {
 
   private static final String COMMON_NAME = "cn";
-  private static final String SAN = "san";
   private static final String SAN_RFC822_NAME = "sanrfc822name";
   private static final String SAN_URI = "sanuniformresourceidentifier";
   private static final String SAN_DNS_NAME = "sandnsname";
+
+  private PeerCertInfoUtils() {}
 
   public static List<String> getPeerCertInfo(List<SIPHeader> headerList) {
     return getPeerCertInfo(headerList, -1);
@@ -41,7 +44,7 @@ public class PeerCertInfoUtils {
           String headerBody = header.getHeaderValue();
 
           if (StringUtil.isNullOrEmpty(headerBody)) {
-            // TODO: logger.info("Empty x-cisco-peer-cert-info header body");
+            logger.info("Empty x-cisco-peer-cert-info header body");
             continue;
           }
 
@@ -58,8 +61,7 @@ public class PeerCertInfoUtils {
                     sanArray,
                     maxDomains - orgDomainsFromPeerCertInfoHeader.size(),
                     sanArray.length);
-            // TODO: logger.info("The following SANs are being omitted: {}",
-            // Arrays.toString(omittedSans));
+            logger.info("The following SANs are being omitted: {}", Arrays.toString(omittedSans));
             sanArray =
                 Arrays.copyOf(sanArray, maxDomains - orgDomainsFromPeerCertInfoHeader.size());
           }
@@ -81,7 +83,7 @@ public class PeerCertInfoUtils {
             String[] sanNameValue = san.split("=", 2);
 
             if (sanNameValue.length != 2) {
-              // TODO: logger.info("San format is missing a name or value. san: {}", san);
+              logger.info("San format is missing a name or value. san: {}", san);
               continue;
             }
 
@@ -96,13 +98,12 @@ public class PeerCertInfoUtils {
                 case SAN_URI:
                   try {
                     String host = new java.net.URI(sanValue).getHost();
-                    // TODO:  logger.info("host: {}", host);
+                    logger.info("host: {}", host);
                     if (!Strings.isNullOrEmpty(host)) {
                       orgDomainsFromPeerCertInfoHeader.add(host);
                     }
                   } catch (URISyntaxException e) {
-                    // TODO: logger.info("Parsing error in SAN type: {}, Value: {}", SAN_URI,
-                    // sanValue, e);
+                    logger.info("Parsing error in SAN type: {}, Value: {}", SAN_URI, sanValue, e);
                   }
                   break;
                 case SAN_RFC822_NAME:
@@ -113,14 +114,15 @@ public class PeerCertInfoUtils {
                   }
                   break;
                 default:
-                  // TODO: logger.info("X-Cisco-Peer-Cert-Info header contains a SAN type that
-                  // cannot be processed: {}", sanName);
+                  logger.info(
+                      "X-Cisco-Peer-Cert-Info header contains a SAN type that cannot be processed: {}",
+                      sanName);
                   break;
               }
             }
           }
         } catch (Exception ex) {
-          // TODO: logger.info("Error getting peer cert info from header: {}. ", header, ex);
+          logger.info("Error getting peer cert info from header: {}. ", header, ex);
         }
       }
     }

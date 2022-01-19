@@ -1,10 +1,9 @@
 package com.cisco.dsb.common.sip.stack.dto;
 
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import java.io.Serializable;
 import java.net.InetAddress;
+import lombok.CustomLog;
 
 /**
  * This class is a container for holding onto port, address and protocol information. When data
@@ -14,6 +13,7 @@ import java.net.InetAddress;
  * connection data for reuse. When an active connection is sought, this class is used to address a
  * message.
  */
+@CustomLog
 public class BindingInfo implements Cloneable, Serializable {
   /** Indicates an unspecified local port. */
   // changed its value to 0 as it is used by JDK Socket classes.
@@ -50,7 +50,6 @@ public class BindingInfo implements Cloneable, Serializable {
 
   private String m_Network;
   private String m_strConnectionId;
-  private Logger logger = DhruvaLoggerFactory.getLogger(BindingInfo.class);
 
   private BindingInfo(BindingInfoBuilder bindingInfoBuilder) {
     this.m_IsTrying = bindingInfoBuilder.m_IsTrying;

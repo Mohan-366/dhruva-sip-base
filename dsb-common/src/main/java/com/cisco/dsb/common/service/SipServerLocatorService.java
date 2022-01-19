@@ -51,7 +51,7 @@ public class SipServerLocatorService {
   }
 
   public CompletableFuture<LocateSIPServersResponse> locateDestinationAsync(
-      User user, SipDestination sipDestination, String callId) {
+      User user, SipDestination sipDestination) {
     final String name = sipDestination.getAddress();
     final LocateSIPServerTransportType transportLookupType =
         sipDestination.getTransportLookupType();
@@ -85,8 +85,7 @@ public class SipServerLocatorService {
     return responseCF;
   }
 
-  public LocateSIPServersResponse locateDestination(
-      User user, SipDestination sipDestination, String callId)
+  public LocateSIPServersResponse locateDestination(User user, SipDestination sipDestination)
       throws ExecutionException, InterruptedException {
     final String name = sipDestination.getAddress();
     final LocateSIPServerTransportType transportLookupType =

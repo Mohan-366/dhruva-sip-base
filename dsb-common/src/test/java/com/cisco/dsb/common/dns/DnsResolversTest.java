@@ -102,22 +102,15 @@ public class DnsResolversTest {
     }
   }
 
-  @Test
+  @Test(expectedExceptions = {ExecutionException.class})
   public void checkResultsInValidAQuery() throws Exception {
-    try {
+    thrown.expectCause(isA(DnsException.class));
 
-      String host = "thehost13.";
-      when(lookupFactory.createLookup(host, Type.A)).thenReturn(testLookupA(host));
-      when(xbillResolver.send(any(Message.class)))
-          .thenReturn(messageWithRCode(host, Rcode.NXDOMAIN));
-      CompletableFuture<List<DNSARecord>> future = resolver.lookupA(host);
-      List<DNSARecord> records = future.get();
-      Assert.assertFalse(records.isEmpty());
-    } catch (DnsException e) {
-      Assert.fail();
-    } catch (InterruptedException | ExecutionException e) {
-      e.printStackTrace();
-    }
+    String host = "thehost13.";
+    when(lookupFactory.createLookup(host, Type.A)).thenReturn(testLookupA(host));
+    when(xbillResolver.send(any(Message.class))).thenReturn(messageWithRCode(host, Rcode.NXDOMAIN));
+    CompletableFuture<List<DNSARecord>> future = resolver.lookupA(host);
+    List<DNSARecord> records = future.get();
   }
 
   @Test

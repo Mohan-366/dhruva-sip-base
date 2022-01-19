@@ -18,10 +18,9 @@ public class OverrideSipRoutingTest {
   @Test
   void testConstructor2() {
     ArrayList<InjectedDNSARecord> injectedDNSARecordList = new ArrayList<>();
-    OverrideSipRouting actualOverrideSipRouting =
-        new OverrideSipRouting(injectedDNSARecordList, new ArrayList<>());
     ArrayList<InjectedDNSSRVRecord> injectedDNSSRVRecordList = new ArrayList<>();
-    actualOverrideSipRouting.setDnsSRVRecords(injectedDNSSRVRecordList);
+    OverrideSipRouting actualOverrideSipRouting =
+        new OverrideSipRouting(injectedDNSARecordList, injectedDNSSRVRecordList);
     Assert.assertSame(injectedDNSARecordList, actualOverrideSipRouting.getDnsARecords());
     Assert.assertSame(injectedDNSSRVRecordList, actualOverrideSipRouting.getDnsSRVRecords());
   }

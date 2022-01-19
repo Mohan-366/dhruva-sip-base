@@ -34,7 +34,7 @@ public class DsbTrustManagerTest {
   @InjectMocks DhruvaConfig dhruvaConfig;
 
   @BeforeClass
-  public void before() throws Exception {
+  public void before() {
 
     dsbTrustManagerFactory = spy(new DsbTrustManagerFactory());
     MockitoAnnotations.initMocks(this);

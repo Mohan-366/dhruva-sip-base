@@ -33,8 +33,8 @@ public abstract class AbstractDnsCache<T> {
       return true;
     } else {
       logger.warn(
-          "{}} lookup array contains element of type {}",
-          expectedType.getName(),
+          "{} lookup array contains element of type {}",
+          expectedType.getSimpleName(),
           actualObject.getClass());
     }
     return false;

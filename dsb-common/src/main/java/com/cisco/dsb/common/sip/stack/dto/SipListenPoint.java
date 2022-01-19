@@ -108,7 +108,7 @@ public abstract class SipListenPoint {
   }
 
   public boolean handlesService(SipServiceType sipServiceType) {
-    if (sipServiceTypes == null || sipServiceTypes.isEmpty()) {
+    if (sipServiceTypes.isEmpty()) {
       return false;
     }
     return sipServiceTypes.contains(sipServiceType);

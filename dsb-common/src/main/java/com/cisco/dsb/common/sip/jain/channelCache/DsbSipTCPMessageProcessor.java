@@ -2,8 +2,6 @@ package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
@@ -12,15 +10,15 @@ import gov.nist.javax.sip.stack.TCPMessageProcessor;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
+import lombok.CustomLog;
 
 /**
  * This class is an adapter for the JAIN SIP TCP message processor to the MessageChannelCache
  * interface.
  */
+@CustomLog
 public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements MessageChannelCache {
 
-  private static final Logger logger =
-      DhruvaLoggerFactory.getLogger(DsbSipTCPMessageProcessor.class);
   private final StartStoppable keepAliveTimerTask;
 
   /**

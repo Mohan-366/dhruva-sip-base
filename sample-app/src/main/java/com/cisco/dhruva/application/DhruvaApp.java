@@ -1,7 +1,5 @@
 package com.cisco.dhruva.application;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -9,12 +7,13 @@ import com.cisco.dsb.proxy.sip.ProxyInterface;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.sip.message.Response;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@CustomLog
 public class DhruvaApp {
-  Logger logger = DhruvaLoggerFactory.getLogger(ProxyService.class);
   @Autowired ProxyService proxyService;
 
   private Consumer<ProxySIPRequest> requestConsumer =

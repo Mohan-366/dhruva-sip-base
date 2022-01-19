@@ -2,23 +2,20 @@ package com.cisco.dsb.common.sip.parser;
 
 import com.cisco.dsb.common.sip.header.XCiscoGeoLocationInfo;
 import com.cisco.dsb.common.sip.util.SipConstants;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import gov.nist.javax.sip.header.SIPHeader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.CustomLog;
 
 // X-Cisco-Geo-Location-Info: <clientRegionCode="clientRegionCodeValue">,
 // <clientCountryCode="clientCountryCode">, <sipCloudIngressDC="sipCloudIngressDCValue">,
 // <geoDNSDialled="<true|false>">
 @SuppressFBWarnings(value = "REDOS", justification = "Erroneous warning")
+@CustomLog
 public class XCiscoGeoLocationInfoParser {
-
-  private static Logger logger = DhruvaLoggerFactory.getLogger(ExecutorService.class);
 
   public static XCiscoGeoLocationInfo parse(SIPHeader sipHeader) {
     if (sipHeader == null) {
