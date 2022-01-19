@@ -17,6 +17,7 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   private final SipProvider provider;
   private ExecutionContext context;
   private CallType callType;
+  private String callTypeName;
   private String sessionId;
   private String reqURI;
   private String correlationID;
@@ -45,6 +46,7 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
     this.provider = abstractSipRequest.provider;
     this.context = abstractSipRequest.context;
     this.callType = abstractSipRequest.callType;
+    this.callTypeName = abstractSipRequest.callTypeName;
     this.sessionId = abstractSipRequest.sessionId;
     this.reqURI = abstractSipRequest.reqURI;
     this.correlationID = abstractSipRequest.correlationID;
@@ -115,6 +117,16 @@ public abstract class AbstractSipRequest extends SipEventImpl implements SipRequ
   @Override
   public CallType getCallType() {
     return this.callType;
+  }
+
+  @Override
+  public void setCallTypeName(String callTypeName) {
+    this.callTypeName = callTypeName;
+  }
+
+  @Override
+  public String getCallTypeName() {
+    return this.callTypeName;
   }
 
   @Override

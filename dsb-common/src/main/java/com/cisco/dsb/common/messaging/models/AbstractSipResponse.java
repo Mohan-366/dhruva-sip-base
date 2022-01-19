@@ -18,6 +18,7 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   private final SipProvider provider;
   private ExecutionContext context;
   private CallType callType;
+  private String callTypeName;
   private String sessionId;
   private String reqURI;
   private String correlationID;
@@ -93,6 +94,16 @@ public abstract class AbstractSipResponse extends SipEventImpl implements SipRes
   @Override
   public CallType getCallType() {
     return this.callType;
+  }
+
+  @Override
+  public void setCallTypeName(String callTypeName) {
+    this.callTypeName = callTypeName;
+  }
+
+  @Override
+  public String getCallTypeName() {
+    return this.callTypeName;
   }
 
   @Override

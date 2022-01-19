@@ -76,6 +76,10 @@ public interface SipEvent extends Cloneable, Serializable {
 
   public CallType getCallType();
 
+  public void setCallTypeName(String callTypeName);
+
+  public String getCallTypeName();
+
   public void setReqURI(String reqURI);
 
   public boolean isMidCall();
