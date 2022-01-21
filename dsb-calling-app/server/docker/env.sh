@@ -13,6 +13,4 @@ export TOMCAT_http_port=8080
 #        -storepass changeit -noprompt \
 #        -file /test/server.pem
 #fi
-echo "starting redis server"
-redis-server &
 echo "DONE env.sh"
