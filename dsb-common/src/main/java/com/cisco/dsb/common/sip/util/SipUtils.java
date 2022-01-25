@@ -18,6 +18,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.sip.header.*;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public final class SipUtils {
@@ -169,6 +170,10 @@ public final class SipUtils {
       throws SSLPeerUnverifiedException {
     if (messageChannel == null) {
       return null;
+    }
+
+    if (StringUtils.equals("UDP", messageChannel.getTransport())) {
+      return "UDP";
     }
 
     if (!messageChannel.isSecure()) {
