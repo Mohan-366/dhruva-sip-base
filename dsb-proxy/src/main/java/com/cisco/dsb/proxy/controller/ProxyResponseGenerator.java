@@ -3,8 +3,6 @@ package com.cisco.dsb.proxy.controller;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.util.SipTag;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import gov.nist.javax.sip.Utils;
 import gov.nist.javax.sip.header.Contact;
@@ -16,16 +14,14 @@ import java.util.List;
 import javax.sip.header.ContactHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
+import lombok.CustomLog;
 import lombok.NonNull;
 
 /*
  * This class enapsulates the funtionality of several commonly sent responses.
  */
-
+@CustomLog
 public abstract class ProxyResponseGenerator {
-
-  /** our log object * */
-  private static final Logger Log = DhruvaLoggerFactory.getLogger(ProxyResponseGenerator.class);
 
   public static final String NL = System.getProperty("line.separator");
 
@@ -75,12 +71,12 @@ public abstract class ProxyResponseGenerator {
       SIPRequest request,
       ProxyTransaction trans)
       throws Exception {
-    Log.debug("Entering sendRedirectResponse()");
+    logger.debug("Entering sendRedirectResponse()");
     SIPResponse response = createRedirectResponse(contactHeaders, request);
 
     // send the response.
     trans.respond(response);
-    Log.debug("Leaving sendRedirectResponse()");
+    logger.debug("Leaving sendRedirectResponse()");
   }
 
   public static SIPResponse createRedirectResponse(
@@ -88,7 +84,7 @@ public abstract class ProxyResponseGenerator {
       /*DsSipContactHeader contactHeader,*/
       SIPRequest request)
       throws DhruvaException, ParseException {
-    Log.debug("Entering createRedirectResponse()");
+    logger.debug("Entering createRedirectResponse()");
     SIPResponse response = null;
     // added by BJ
     ContactHeader contactHeader = (ContactHeader) contactHeaders.getFirst();
@@ -113,7 +109,7 @@ public abstract class ProxyResponseGenerator {
     // SIPResponse.getReasonPhrase(statusCode);
     // response.setApp();
 
-    Log.info("Created " + response.getStatusCode() + " response");
+    logger.info("Created " + response.getStatusCode() + " response");
 
     ToHeader toHeader = response.getToHeader();
     if (toHeader.getTag() == null) {
@@ -127,7 +123,7 @@ public abstract class ProxyResponseGenerator {
       response.addHeader(contact);
     }
 
-    Log.debug("Leaving createRedirectResponse()");
+    logger.debug("Leaving createRedirectResponse()");
     return response;
   }
 
@@ -139,7 +135,7 @@ public abstract class ProxyResponseGenerator {
    */
   public static void sendServerInternalErrorResponse(SIPRequest request, ProxyTransaction trans)
       throws DhruvaException, ParseException {
-    Log.debug("Entering sendServerInternalErrorResponse()");
+    logger.debug("Entering sendServerInternalErrorResponse()");
 
     SIPResponse response =
         (SIPResponse)
@@ -152,12 +148,12 @@ public abstract class ProxyResponseGenerator {
     }
 
     trans.respond(response);
-    Log.debug("Leaving sendServerInternalErrorResponse()");
+    logger.debug("Leaving sendServerInternalErrorResponse()");
   }
 
   public static SIPResponse createNotFoundResponse(SIPRequest request)
       throws DhruvaException, ParseException {
-    Log.debug("Entering createNotFoundResponse()");
+    logger.debug("Entering createNotFoundResponse()");
     SIPResponse response =
         (SIPResponse) JainSipHelper.getMessageFactory().createResponse(Response.NOT_FOUND, request);
 
@@ -166,7 +162,7 @@ public abstract class ProxyResponseGenerator {
       toHeader.setTag(SipTag.generateTag());
     }
 
-    Log.debug("Leaving createNotFoundResponse()");
+    logger.debug("Leaving createNotFoundResponse()");
 
     return response;
   }
@@ -180,14 +176,14 @@ public abstract class ProxyResponseGenerator {
    */
   public static void sendNotFoundResponse(SIPRequest request, ProxyTransaction trans)
       throws DhruvaException, ParseException {
-    Log.debug("Entering sendNotFoundResponse()");
+    logger.debug("Entering sendNotFoundResponse()");
     trans.respond(createNotFoundResponse(request));
-    Log.debug("Leaving sendNotFoundResponse()");
+    logger.debug("Leaving sendNotFoundResponse()");
   }
 
   public static void sendTryingResponse(SIPRequest request, ProxyTransaction trans)
       throws ParseException {
-    Log.debug("Entering sendTryingResponse()");
+    logger.debug("Entering sendTryingResponse()");
     SIPResponse response =
         (SIPResponse) JainSipHelper.getMessageFactory().createResponse(Response.TRYING, request);
 
@@ -195,27 +191,27 @@ public abstract class ProxyResponseGenerator {
   }
 
   public static void sendResponse(@NonNull SIPResponse response, @NonNull ProxyTransaction trans) {
-    Log.debug("Entering sendResponse()");
+    logger.debug("Entering sendResponse()");
 
     if (trans != null) {
       trans.respond(response);
-      Log.debug("Sent response:" + NL + response);
+      logger.debug("Sent response:" + NL + response);
     } else {
-      Log.warn("ProxyTransaction was null!");
+      logger.warn("ProxyTransaction was null!");
     }
   }
 
   /** Creates a response of the given type, and tags the To header. */
   public static SIPResponse createResponse(int responseCode, SIPRequest request)
       throws DhruvaException, ParseException {
-    Log.debug("Entering createResponse()");
+    logger.debug("Entering createResponse()");
     SIPResponse response =
         (SIPResponse) JainSipHelper.getMessageFactory().createResponse(responseCode, request);
 
     String tag = response.getToTag();
-    Log.debug("To tag is " + tag);
+    logger.debug("To tag is " + tag);
     if (tag == null) {
-      Log.debug("Generating To tag");
+      logger.debug("Generating To tag");
       ToHeader toHeader = response.getToHeader();
       if (toHeader != null) toHeader.setTag(SipTag.generateTag());
     }

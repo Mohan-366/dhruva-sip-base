@@ -16,7 +16,6 @@ import org.testng.annotations.Test;
 
 @Test
 public class LogUtilsTest {
-  // private static Logger logger = DSBLogger.getLogger(LogUtilsTest.class);
   private static SipFactory sipFactory;
 
   static {

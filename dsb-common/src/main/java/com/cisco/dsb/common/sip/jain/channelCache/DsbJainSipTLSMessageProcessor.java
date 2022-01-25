@@ -2,8 +2,6 @@ package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Preconditions;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
@@ -12,11 +10,11 @@ import gov.nist.javax.sip.stack.TLSMessageProcessor;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
+import lombok.CustomLog;
 
+@CustomLog
 public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
     implements MessageChannelCache {
-  private static final Logger logger =
-      DhruvaLoggerFactory.getLogger(DsbNioTlsMessageProcessor.class);
   private final StartStoppable keepAliveTimerTask;
 
   /**

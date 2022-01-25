@@ -30,12 +30,6 @@ public class DnsDestination implements SipDestination {
   }
 
   @Override
-  // doesnt apply to DNS destinations
-  public String getId() {
-    return null;
-  }
-
-  @Override
   public String toString() {
     return "DnsDestination{"
         + "address='"

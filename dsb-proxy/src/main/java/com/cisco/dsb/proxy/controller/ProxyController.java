@@ -45,6 +45,7 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.SipURI;
@@ -58,6 +59,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -94,6 +96,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Setter protected byte stateMode = -1;
   /** reference if request was sent to application. Default is true. */
   private boolean sendRequestToApp = true;
+
+  public static final String CALLTYPE = "calltype";
 
   private ProxyAppConfig proxyAppConfig;
 
@@ -160,7 +164,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       logger.error("Unable to create SipResponse for responseCode {}", responseCode);
       return;
     }
-    // ((ProxyTransaction) proxyTransaction).setInternallyGenerated(true); // ankabane
+
     Optional.ofNullable(((ProxyTransaction) proxyTransaction).getServerTransaction())
         .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
 
@@ -185,6 +189,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests
+
               if (metricService != null
                   && !SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()))
                 new SipMetricsContext(
@@ -207,6 +212,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             });
     return responseCF;
   }
+
+
 
   /**
    * Check whether App is interested in mid midialog messages set the usingRouteHeader to true if
@@ -862,9 +869,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
   @Override
   public void onResponse(ProxySIPResponse response) {
-    // TODO LMA
-    /*response.setNormalizationState(
-    DsMessageLoggingInterface.SipMsgNormalizationState.POST_NORMALIZED);*/
     Optional<String> network = DhruvaNetwork.getNetworkFromProvider(response.getProvider());
     if (network.isPresent()) response.setNetwork(network.get());
     else logger.warn("Unable to set incoming network from SipProvider");

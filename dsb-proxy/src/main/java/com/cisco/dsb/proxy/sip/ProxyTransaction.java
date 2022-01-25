@@ -484,27 +484,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     }
   }
 
-  /**
-   * if the cancel is for the primary transaction, invoke the cancel method of the controller.
-   * Otherwise, do nothing. This happens in any state (note we can't get cancel once we've sent a
-   * response)
-   *
-   * <p>NOTE: change cancel behavior in server transaction to not send final response to request, or
-   * overload to do this. proxy shouldn't send response to request on cancel.
-   *
-   * @param trans
-   * @param cancel
-   */
-  protected synchronized void cancelCallBack(ServerTransaction trans, SIPRequest cancel) {
-    logger.debug("Entering cancelCallBack()");
-    try {
-      controller.onCancel(this, getServerTransaction(), cancel);
-    } catch (DhruvaException e) {
-      logger.warn("Exception at cancel CallBack", e);
-    }
-    logger.debug("Leaving cancelCallBack()");
-  }
-
   protected synchronized void timeOut(ServerTransaction trans) {
     ProxyServerTransaction serverTrans = getServerTransaction();
     if (trans != null

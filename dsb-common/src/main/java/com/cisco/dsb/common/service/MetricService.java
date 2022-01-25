@@ -23,14 +23,21 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,7 +55,9 @@ public class MetricService {
   MetricClient metricClient;
   private final Executor executorService;
 
-  private final Cache<String, Long> timers;
+  @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
+
+  @Getter private final Cache<String, Long> timers;
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
 
@@ -76,12 +85,58 @@ public class MetricService {
                   }
                 })
             .build();
+
+    this.cpsCounterMap = new HashMap<>();
+  }
+
+  @PostConstruct
+  public void postBeanInitialization() {
+    this.initializeCPSMetric();
+  }
+
+  private void initializeCPSMetric() {
+
+    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
   }
 
   public void registerPeriodicMetric(
       String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
     scheduledExecutor.scheduleAtFixedRate(
         getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
+  }
+
+  /**
+   * API to emit metric for successful call per secord for each calltypes
+   *
+   * @param interval
+   * @param timeUnit
+   */
+  public void emitCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric("cps", this.cpsMetricSupplier(), interval, timeUnit);
+  }
+
+  /**
+   * This supplier is used to evaluate no. of calls processed each second for all the calltypes
+   * available and return the result in form of a metric, to be pushed in influxDB
+   *
+   * @return
+   */
+  public Supplier<Set<Metric>> cpsMetricSupplier() {
+    Supplier<Set<Metric>> cpsSupplier =
+        () -> {
+          Set<Metric> cpsMetricSet = new HashSet<>();
+          for (Map.Entry<String, AtomicInteger> entry : cpsCounterMap.entrySet()) {
+            if (entry.getValue().get() != 0) {
+              Metric cpsMetricForCallType = Metrics.newMetric().measurement("cps");
+              cpsMetricForCallType.tag("callType", entry.getKey());
+              cpsMetricForCallType.field("count", entry.getValue());
+              cpsMetricSet.add(cpsMetricForCallType);
+              entry.getValue().set(0);
+            }
+          }
+          return cpsMetricSet;
+        };
+    return cpsSupplier;
   }
 
   @NotNull
@@ -135,9 +190,9 @@ public class MetricService {
     Metric metric =
         Metrics.newMetric()
             .measurement("connection")
-            .tag("transport", transport.toString())
-            .tag("direction", direction.name())
-            .tag("connectionState", connectionState.name())
+            .tag("transport", transport != null ? transport.name() : null)
+            .tag("direction", direction != null ? direction.name() : null)
+            .tag("connectionState", connectionState != null ? connectionState.name() : null)
             .field("localIp", localIp)
             .field("localPort", localPort)
             .field("remoteIp", remoteIp)

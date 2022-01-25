@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.sip.stack.dto;
+package unused.mightneedlater;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

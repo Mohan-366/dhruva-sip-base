@@ -10,7 +10,7 @@ public class SipTrackingConstants {
   public static final String TRACKING_ID_ORIGINATING_THREAD_NAME =
       "trackingIdOriginatingThreadName";
   public static final String SIP_IP_ADDRESS_FIELD = "sipAddress";
-  public static final String HTTP_IP_ADDRESS_FIELD = "httpAddres";
+  public static final String HTTP_IP_ADDRESS_FIELD = "httpAddress";
   public static final String SIP_CALL_ID_FIELD = "sipCallId";
   public static final String SIP_CSEQ = "cSeq";
   public static final String SIP_MESSAGE_SIZE = "sipMessageSize";

@@ -13,8 +13,6 @@ import com.cisco.wx2.dto.ErrorInfo;
 import com.cisco.wx2.dto.ErrorList;
 import java.security.KeyStore;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -174,10 +172,7 @@ public class CommonConfigurationProperties {
     updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
 
-  public void setServerGroups(List<ServerGroup> serverGroupsList) {
-    Map<String, ServerGroup> serverGroups =
-        serverGroupsList.stream()
-            .collect(Collectors.toMap(ServerGroup::getName, Function.identity()));
+  public void setServerGroups(Map<String, ServerGroup> serverGroups) {
 
     // update SG map
     updateMap(this.serverGroups, serverGroups);

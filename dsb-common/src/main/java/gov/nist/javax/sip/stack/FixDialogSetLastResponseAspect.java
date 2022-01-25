@@ -1,18 +1,15 @@
 package gov.nist.javax.sip.stack;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.message.Request;
+import lombok.CustomLog;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 @Aspect
+@CustomLog
 public class FixDialogSetLastResponseAspect {
-
-  private static Logger logger =
-      DhruvaLoggerFactory.getLogger(FixDialogSetLastResponseAspect.class.getName());
 
   @Around(
       "execution(public void gov.nist.javax.sip.stack.SIPDialog.setLastResponse(gov.nist.javax.sip.stack.SIPTransaction , gov.nist.javax.sip.message"

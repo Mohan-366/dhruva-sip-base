@@ -133,7 +133,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
     AtomicInteger state = new AtomicInteger(0); // 0 means fail response, 1 means success response
     doAnswer(
             invocationOnMock -> {
@@ -335,7 +335,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
         .expectNext(successProxySIPResponse)
@@ -484,7 +484,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
         .expectNext(successProxySIPResponse)
@@ -556,7 +556,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
         .when(rUri)
@@ -645,7 +645,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     StepVerifier.withVirtualTime(() -> antaresTrunk.processEgress(proxySIPRequest))
         .thenAwait(Duration.ofSeconds(antaresTrunk.getEgress().getOverallResponseTimeout()))
@@ -693,7 +693,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
     AtomicInteger state = new AtomicInteger(0); // 0 means fail response, 1 means success response
     doAnswer(
             invocationOnMock -> {
@@ -747,7 +747,7 @@ public class TrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
     AtomicInteger state = new AtomicInteger(0); // 0 means fail response, 1 means success response
     doAnswer(
             invocationOnMock -> {

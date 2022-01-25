@@ -10,7 +10,6 @@ import lombok.*;
  * device address, port and the protocol and has accessor methods to get and set them.
  */
 @Getter
-@NoArgsConstructor
 @ToString
 @CustomLog
 public class EndPoint implements Cloneable {

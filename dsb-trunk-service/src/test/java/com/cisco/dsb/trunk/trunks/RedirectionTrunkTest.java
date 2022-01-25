@@ -127,7 +127,7 @@ public class RedirectionTrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
     SIPResponse redirectSR = mock(SIPResponse.class);
@@ -227,7 +227,7 @@ public class RedirectionTrunkTest {
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
-        .locateDestinationAsync(eq(null), any(DnsDestination.class), eq(null));
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     ProxySIPResponse redirectPSR1 = mock(ProxySIPResponse.class);
     // redirect from NS

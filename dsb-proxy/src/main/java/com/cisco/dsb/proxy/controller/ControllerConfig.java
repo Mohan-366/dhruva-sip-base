@@ -477,7 +477,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
         DnsDestination destination = new DnsDestination(host, port, transportType);
         LocateSIPServersResponse locateSIPServersResponse =
-            sipLocator.locateDestination(null, destination, null);
+            sipLocator.locateDestination(null, destination);
 
         List<Hop> hops = locateSIPServersResponse.getHops();
 

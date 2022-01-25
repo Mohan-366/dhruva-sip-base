@@ -16,18 +16,17 @@ public class ListenIf implements ListenInterface {
 
   protected int port;
   protected Transport protocol;
-  protected String addressStr = null;
+  protected String addressStr;
 
-  protected InetAddress addressInet = null;
-  protected static final int UDP_CLEANUP_TIME = 90; // in secs
+  protected InetAddress addressInet;
 
-  protected InetAddress translatedAddressInet = null;
+  protected InetAddress translatedAddressInet;
 
-  protected DhruvaNetwork network =
-      null; // this data member indicated INTERNAL, EXTERNAL or EXTERNAL_OBTAIN in listen command
+  protected DhruvaNetwork
+      network; // this data member indicated INTERNAL, EXTERNAL or EXTERNAL_OBTAIN in listen command
 
   // hold translated address/port from listen external command
-  protected String translatedAddressStr = null;
+  protected String translatedAddressStr;
   protected int translatedPort = -1;
 
   protected boolean attachExternalIp;
@@ -88,17 +87,17 @@ public class ListenIf implements ListenInterface {
         port,
         protocol,
         interfaceIP,
-        InetAddress.getByName(interfaceIP.toString()),
+        InetAddress.getByName(interfaceIP),
         direction,
         translatedInterfaceIP,
         null,
         translatedPort,
         attachExternalIp);
 
-    this.addressInet = InetAddress.getByName(interfaceIP.toString());
+    this.addressInet = InetAddress.getByName(interfaceIP);
 
     if (translatedInterfaceIP != null) {
-      this.translatedAddressInet = InetAddress.getByName(translatedInterfaceIP.toString());
+      this.translatedAddressInet = InetAddress.getByName(translatedInterfaceIP);
     } else {
       this.translatedAddressInet = this.addressInet;
     }

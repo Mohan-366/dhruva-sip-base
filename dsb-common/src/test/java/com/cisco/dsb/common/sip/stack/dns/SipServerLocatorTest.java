@@ -32,8 +32,6 @@ public class SipServerLocatorTest {
   // Configure immediate eviction of {SRV, A} records in cache. Per Guava's CacheBuilder
   // documentation, if maximum
   // size of cache is 0 then elements will be evicted immediately after being loaded into the cache.
-  private ARecordCache aCache = new ARecordCache(0, 500);
-  private SrvRecordCache srvCache = new SrvRecordCache(0, 500);
   DnsInjectionService dnsInjectionService = DnsInjectionService.memoryBackedCache();
 
   @Test
@@ -337,7 +335,7 @@ public class SipServerLocatorTest {
         logger.info(
             "test: transportLookupType=TLS_AND_TCP pass SRV domain name and TLS port, hit injectAddress");
         // This should attempt only hostname lookup since port is specified.
-        // Should hit on the the hostname record created for this scenario.
+        // Should hit on the hostname record created for this scenario.
         // Because port is NOT 5060, returns hops as TLS
         LocateSIPServersResponse response =
             locator.resolve(name, LocateSIPServerTransportType.TLS_AND_TCP, 5075, userIdInject);
@@ -361,6 +359,26 @@ public class SipServerLocatorTest {
         Assert.assertEquals(
             response.getHops().get(0),
             new Hop(name, injectAddress, Transport.TCP, 5060, 1, 100, DNSRecordSource.INJECTED));
+      }
+
+      // Test Invalid(null) LookupTransportType
+      {
+        logger.info(
+            "test: name is IP, transportLookupType is null - does not resolve. Also test usage of null userIdInject");
+        LocateSIPServersResponse response = locator.resolve("10.9.8.7", null, 5062);
+        logger.info("response = \n{}\n", JsonUtil.toJsonPretty(response));
+        logger.info("hops in response = " + response.getHops());
+        Assert.assertEquals(response.getHops().size(), 0);
+      }
+
+      // Test Invalid port value
+      {
+        logger.info("test: name is IP, transport=TCP, port=invalid number");
+        LocateSIPServersResponse response =
+            locator.resolve("10.9.8.7", LocateSIPServerTransportType.TCP, -1, userIdInject);
+        logger.info("response = \n{}\n", JsonUtil.toJsonPretty(response));
+        logger.info("hops in response = " + response.getHops());
+        Assert.assertEquals(response.getHops().size(), 0);
       }
 
       // Test name is IPv4 address

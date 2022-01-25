@@ -32,8 +32,6 @@ import org.springframework.stereotype.Service;
 @CustomLog
 public class SipServerLocator implements SipResolver {
   private final DnsLookup dnsLookup;
-  public static boolean m_useDsUnreachableTable = false;
-
   private DnsInjectionService dnsInjectionService;
 
   private static final int DEFAULT_PORT = Transport.UDP.getDefaultPort();
@@ -281,8 +279,7 @@ public class SipServerLocator implements SipResolver {
       String name,
       Transport transport,
       List<InjectedDNSSRVRecord> injectSRV,
-      List<InjectedDNSARecord> injectA)
-      throws ExecutionException, InterruptedException {
+      List<InjectedDNSARecord> injectA) {
 
     // SRV records are ordered per RFC 3263. Must preserve the ordering.
     // Also want to remove duplicate hops. LinkedHashSet does both.
@@ -350,8 +347,7 @@ public class SipServerLocator implements SipResolver {
       String name,
       int port,
       Transport transport,
-      List<InjectedDNSARecord> injectA)
-      throws ExecutionException, InterruptedException {
+      List<InjectedDNSARecord> injectA) {
     try {
       responseLog.append("Lookup hostname=%s.", name);
       response.setDnsARecords(lookupHostname(name + ".", injectA, responseLog));

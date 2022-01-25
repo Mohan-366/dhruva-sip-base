@@ -36,6 +36,7 @@ public class SipListenPointTest {
     expectedServiceTypes.add(SipServiceType.CMR4_DIALIN);
     Assert.assertEquals(slp.getSipServiceTypes(), expectedServiceTypes);
 
+    slp.addServices(null);
     // add more service types (apart from those set during listenPoint creation) and verify the same
     Set<SipServiceType> extraServiceTypes = new HashSet<>();
     extraServiceTypes.add(SipServiceType.HURON);

@@ -13,6 +13,4 @@ public interface SipDestination {
   int getPort();
 
   LocateSIPServerTransportType getTransportLookupType();
-
-  String getId();
 }

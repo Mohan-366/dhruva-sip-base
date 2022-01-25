@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
-import org.slf4j.event.Level;
 
 public class DhruvaLogger implements Logger {
 
@@ -241,73 +240,8 @@ public class DhruvaLogger implements Logger {
 
   // Should be removed , adding for compatible now
   @Override
-  public boolean isEnabled(Level level) {
-    boolean isEnabled = false;
-    switch (level) {
-      case INFO:
-        isEnabled = logger.isInfoEnabled();
-        break;
-      case WARN:
-        isEnabled = logger.isWarnEnabled();
-        break;
-      case DEBUG:
-        isEnabled = logger.isDebugEnabled();
-        break;
-      case ERROR:
-        isEnabled = logger.isErrorEnabled();
-        break;
-    }
-    return isEnabled;
-  }
-
-  // Should be removed , adding for compatible now
-  @Override
-  public void log(Level level, String message) {
-    switch (level) {
-      case INFO:
-        logger.info(message);
-        break;
-      case WARN:
-        logger.warn(message);
-        break;
-      case DEBUG:
-        logger.debug(message);
-        break;
-      case ERROR:
-        logger.error(message);
-        break;
-    }
-  }
-
-  // Should be removed , adding for compatible now
-  @Override
-  public void log(Level level, String message, Throwable throwable) {
-    switch (level) {
-      case INFO:
-        logger.info(message);
-        break;
-      case WARN:
-        logger.warn(message, throwable);
-        break;
-      case DEBUG:
-        logger.debug(message);
-        break;
-      case ERROR:
-        logger.error(message, throwable);
-        break;
-    }
-  }
-
-  // Should be removed , adding for compatible now
-  @Override
   public boolean isDebugEnabled() {
     return logger.isDebugEnabled();
-  }
-
-  // Should be removed , adding for compatible now
-  @Override
-  public boolean isWarnEnabled() {
-    return logger.isWarnEnabled();
   }
 
   // Should be removed , adding for compatible now

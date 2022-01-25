@@ -1,7 +1,5 @@
 package com.cisco.dsb.common.sip.stack.dto;
 
-import com.cisco.dsb.common.dns.dto.DNSARecord;
-import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
 import com.cisco.dsb.common.sip.dto.Hop;
 import com.cisco.dsb.common.sip.dto.MatchedDNSARecord;
 import com.cisco.dsb.common.sip.dto.MatchedDNSSRVRecord;
@@ -11,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class LocateSIPServersResponse {
 
@@ -107,7 +104,8 @@ public class LocateSIPServersResponse {
    *
    * @return ScrubbedLocateSIPServersResponse
    */
-  public ScrubbedLocateSIPServersResponse getScrubbed() {
+  // ------ Might be useful for MATS (uncomment then) ------
+  /*public ScrubbedLocateSIPServersResponse getScrubbed() {
     List<String> srvRecords = null;
     if (this.dnsSRVRecords != null && !this.dnsSRVRecords.isEmpty()) {
       srvRecords =
@@ -134,5 +132,5 @@ public class LocateSIPServersResponse {
     }
 
     return new ScrubbedLocateSIPServersResponse(srvRecords, aRecords, hops);
-  }
+  }*/
 }

@@ -500,8 +500,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
@@ -571,8 +570,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
@@ -625,8 +623,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
@@ -745,8 +742,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
     proxyController.onNewRequest(proxySIPRequest);
     proxyController.proxyRequest(proxySIPRequest);
@@ -764,8 +760,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
     proxyController.onNewRequest(proxySIPRequest);
     proxySIPRequest.setOutgoingNetwork("invalid");
@@ -844,8 +839,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
@@ -1001,8 +995,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
     // Check that lrfix variable is set even if requri does not belong to proxy and has top route
@@ -1047,8 +1040,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
     proxySIPRequest = proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest);
     SipURI requestURI = (SipURI) proxySIPRequest.getRequest().getRequestURI();
@@ -1079,8 +1071,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
     proxySIPRequest = proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest);
     SipURI requestURI = (SipURI) proxySIPRequest.getRequest().getRequestURI();
@@ -1105,8 +1096,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
@@ -1373,8 +1363,7 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(
-            nullable(User.class), any(SipDestination.class), nullable(String.class)))
+    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
         .thenReturn(locateSIPServersResponse);
 
     proxyController.onNewRequest(proxySIPRequest);

@@ -10,39 +10,6 @@ public class SipTag implements Cloneable {
   /** A prefix for all tags. */
   private static final String DEFAULT_PROLOG = "dsb";
 
-  /** The tag itself. */
-  private String m_strTag;
-
-  /** Default constructor. */
-  public SipTag() {}
-
-  /**
-   * Constructor which sets the prolog.
-   *
-   * @param prolog the prolog value.
-   */
-  public SipTag(String prolog) {
-    reGenerate(prolog);
-  }
-
-  /**
-   * Retrieves the tag information.
-   *
-   * @return The tag.
-   */
-  public String getValue() {
-    return m_strTag;
-  }
-
-  /**
-   * Regenerates the tag value.
-   *
-   * @param prolog the prolog value.
-   */
-  public void reGenerate(String prolog) {
-    m_strTag = generateTag(prolog);
-  }
-
   /**
    * Generates and return a new tag value.
    *
@@ -67,6 +34,6 @@ public class SipTag implements Cloneable {
     int current_time = (int) (System.currentTimeMillis() % 65535);
     sb.append(Integer.toHexString(aRandom));
     sb.append(Integer.toHexString(current_time));
-    return new String(sb.toString());
+    return sb.toString();
   }
 }

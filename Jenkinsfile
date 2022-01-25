@@ -59,7 +59,8 @@ node() {
         }
         stage('postBuild') {
             // Report SpotBugs static analysis warnings (also sets build result on failure)
-            findbugs pattern: '**/spotbugsXml.xml', failedTotalAll: '0'
+            def spotbugs = scanForIssues tool: spotBugs(pattern: '**/spotbugsXml.xml')
+            publishIssues issues: [spotbugs]
             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
         }
         stage('archive') {
@@ -69,14 +70,9 @@ node() {
         }
         stage('build and publish wbx3 images') {
             try {
-                if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService' || env.GIT_BRANCH == 'OPTIONS_PING') {
+                if (env.GIT_BRANCH == 'master') {
                     sh 'ls -lrth'
                     def TAG="2."+env.BUILD_NUMBER
-                    if(env.GIT_BRANCH == 'trunkService'){
-                        TAG = TAG +"-ts"
-                    } else if(env.GIT_BRANCH == 'OPTIONS_PING'){
-                        TAG = TAG +"-op"
-                    }
                     /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
                 to determine where to build and push (in our case, containers.cisco.com/edge_group)
                 */
@@ -98,14 +94,9 @@ node() {
                 throw ex
             }
         }
-        if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'trunkService' || env.GIT_BRANCH == 'OPTIONS_PING') {
+        if (env.GIT_BRANCH == 'master') {
             stage('ecr sync') {
                 def tag = "2."+ env.BUILD_NUMBER
-                if(env.GIT_BRANCH == 'trunkService'){
-                    tag = tag +"-ts"
-                } else if (env.GIT_BRANCH == 'OPTIONS_PING'){
-                    tag = tag +"-op"
-                }
                 sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
                 def artifactID = sh(
                         script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva:${tag} | cut -f 2 -d \':\'",

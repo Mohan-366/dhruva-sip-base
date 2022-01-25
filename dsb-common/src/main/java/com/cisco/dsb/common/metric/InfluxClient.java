@@ -33,6 +33,7 @@ public class InfluxClient implements MetricClient {
     Set<InfluxPoint> influxPoints =
         metrics.stream()
             .map(metric -> metric.timestamp(Instant.now()))
+            .map(metric -> metric.tag(INSTANCE_NAME_KEY, getInstanceName()))
             .map(metric -> (InfluxPoint) metric.get())
             .collect(Collectors.toSet());
     if (!influxPoints.isEmpty()) {
@@ -40,7 +41,7 @@ public class InfluxClient implements MetricClient {
     }
   }
 
-  private String getInstanceName() {
+  public String getInstanceName() {
 
     StringBuilder instanceName = new StringBuilder();
 
@@ -52,7 +53,7 @@ public class InfluxClient implements MetricClient {
       instanceName.append(dhruvaProperties.getPodNameEnvVar());
     }
 
-    return (instanceName == null) ? "" : instanceName.toString();
+    return instanceName.toString();
   }
 
   @PreDestroy

@@ -2,9 +2,6 @@ package com.cisco.dsb.common.sip.tls;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dto.TrustedSipSources;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.cisco.wx2.certs.client.CertsClientFactory;
 import com.cisco.wx2.certs.common.util.RevocationManager;
 import com.cisco.wx2.server.organization.OrganizationCollectionCache;
@@ -24,11 +21,12 @@ import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
 
+@CustomLog
 public class DsbTrustManager implements X509TrustManager {
 
-  private static Logger logger = DhruvaLoggerFactory.getLogger(DsbTrustManager.class);
   private static DsbTrustManager trustAllTrustManagerInstance = new DsbTrustManager();
   private static String trustStoreFile;
   private static String trustStoreType;
@@ -36,6 +34,7 @@ public class DsbTrustManager implements X509TrustManager {
   private static String javaHome;
   private static boolean softFailEnabled;
   private static boolean enableOcsp;
+  private static boolean acceptedIssuersEnabled;
   private X509TrustManager trustManager;
   private static DsbTrustManager systemTrustManager = null;
   private TrustedSipSources trustedSipSources;
@@ -68,6 +67,7 @@ public class DsbTrustManager implements X509TrustManager {
       trustStorePassword = commonConfigurationProperties.getTlsTrustStorePassword();
       softFailEnabled = commonConfigurationProperties.isTlsCertRevocationEnableSoftFail();
       enableOcsp = commonConfigurationProperties.isTlsCertEnableOcsp();
+      acceptedIssuersEnabled = commonConfigurationProperties.isAcceptedIssuersEnabled();
       javaHome = System.getProperty("java.home");
       systemTrustManager = createSystemTrustManager();
     }
@@ -192,7 +192,7 @@ public class DsbTrustManager implements X509TrustManager {
 
   @Override
   public X509Certificate[] getAcceptedIssuers() {
-    if (DhruvaNetwork.getIsAcceptedIssuersEnabled()) {
+    if (acceptedIssuersEnabled) {
       return trustManager.getAcceptedIssuers();
     } else {
       return new X509Certificate[0];

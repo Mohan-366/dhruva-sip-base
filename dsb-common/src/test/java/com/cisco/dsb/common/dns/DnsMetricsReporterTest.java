@@ -22,7 +22,6 @@ public class DnsMetricsReporterTest {
   private DnsLookup resolver;
 
   @Mock MetricService metricService;
-
   @InjectMocks DnsMetricsReporter dnsMetricsReporter;
 
   LookupFactory lookupFactory;
@@ -31,9 +30,7 @@ public class DnsMetricsReporterTest {
   @BeforeMethod
   public void setUp() {
     lookupFactory = mock(LookupFactory.class);
-
     xbillResolver = mock(Resolver.class);
-
     MockitoAnnotations.initMocks(this);
 
     resolver =
@@ -143,6 +140,44 @@ public class DnsMetricsReporterTest {
     Assert.assertEquals(DnsErrorCode.ERROR_DNS_QUERY_TIMEDOUT.name(), errorMsg);
   }
 
+  @Test
+  public void testALookupThrowsNestedExceptionWithMetrics() throws Exception {
+    String query = "thefqdn2.";
+    doNothing().when(metricService).sendDNSMetric(anyString(), anyString(), anyLong(), anyString());
+
+    when(lookupFactory.createLookup(query, Type.A)).thenReturn(testLookupA(query));
+    when(xbillResolver.send(any(Message.class)))
+        .thenReturn(
+            messageWithRCode(
+                query,
+                Rcode.SERVFAIL)); // RCode = 2 (try again) -> DnsErrorCode.ERROR_DNS_QUERY_TIMEDOUT
+
+    resolver.lookupA(query);
+
+    ArgumentCaptor<String> argumentCaptor1 = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<String> argumentCaptor2 = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<Long> argumentCaptor3 = ArgumentCaptor.forClass(Long.class);
+    ArgumentCaptor<String> argumentCaptor4 = ArgumentCaptor.forClass(String.class);
+    verify(metricService)
+        .sendDNSMetric(
+            argumentCaptor1.capture(),
+            argumentCaptor2.capture(),
+            argumentCaptor3.capture(),
+            argumentCaptor4.capture());
+
+    String actualQuery = argumentCaptor1.getValue();
+    Assert.assertEquals(query, actualQuery);
+
+    String actualQueryType = argumentCaptor2.getValue();
+    Assert.assertEquals("A", actualQueryType);
+
+    Long processingDelay = argumentCaptor3.getValue();
+    Assert.assertTrue(processingDelay >= 0L);
+
+    String errorMsg = argumentCaptor4.getValue();
+    Assert.assertEquals(DnsErrorCode.ERROR_DNS_QUERY_TIMEDOUT.name(), errorMsg);
+  }
+
   private void setupResponseForSrvQuery(String queryFqdn, String responseFqdn, String... results)
       throws IOException {
     when(lookupFactory.createLookup(queryFqdn, Type.SRV)).thenReturn(testLookupSrv(queryFqdn));
@@ -152,6 +187,14 @@ public class DnsMetricsReporterTest {
 
   private Lookup testLookupSrv(String thefqdn) throws TextParseException {
     Lookup result = new Lookup(thefqdn, Type.SRV);
+
+    result.setResolver(xbillResolver);
+
+    return result;
+  }
+
+  private Lookup testLookupA(String thefqdn) throws TextParseException {
+    Lookup result = new Lookup(thefqdn, Type.A);
 
     result.setResolver(xbillResolver);
 

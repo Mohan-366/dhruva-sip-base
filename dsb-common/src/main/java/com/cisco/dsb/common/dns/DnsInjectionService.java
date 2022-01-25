@@ -4,17 +4,16 @@ import static com.cisco.dsb.common.sip.stack.dns.SipServerLocator.addTrailingPer
 
 import com.cisco.dsb.common.sip.dto.InjectedDNSARecord;
 import com.cisco.dsb.common.sip.dto.InjectedDNSSRVRecord;
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 
+@CustomLog
 public class DnsInjectionService {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(DnsInjectionService.class);
 
   private Cache<String, List<InjectedDNSSRVRecord>> srvRecordOverrides;
   private Cache<String, List<InjectedDNSARecord>> aRecordOverrides;
@@ -36,9 +35,9 @@ public class DnsInjectionService {
   }
 
   public void injectA(String userId, List<InjectedDNSARecord> aRecords) {
-    logger.warn("injectA {} userId={}", aRecords, userId);
+    logger.warn("injectA={} userId={}", aRecords, userId);
     if (aRecords == null) {
-      logger.warn("INVALID, do not inject SRV null userId={}", userId);
+      logger.warn("INVALID, do not injectA=null userId={}", userId);
       return;
     }
     String key = makeKey(userId);
@@ -56,9 +55,9 @@ public class DnsInjectionService {
   }
 
   public void injectSRV(String userId, List<InjectedDNSSRVRecord> srvRecords) {
-    logger.warn("injectSRV {} userId={}", srvRecords, userId);
+    logger.warn("injectSRV={} userId={}", srvRecords, userId);
     if (srvRecords == null) {
-      logger.warn("INVALID, do not inject SRV null userId={}", userId);
+      logger.warn("INVALID, do not injectSRV=null userId={}", userId);
       return;
     }
     List<InjectedDNSSRVRecord> srvRecordsScrubbed =

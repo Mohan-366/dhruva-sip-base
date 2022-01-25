@@ -2,7 +2,6 @@ package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
-import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.sip.*;
 import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
@@ -12,16 +11,13 @@ import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
 import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
-import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.ReasonHeader;
-import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -140,35 +136,37 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
    *     URI
    * @throws ParseException if the parser encounters an error.
    */
-  public URI lrEscape() throws ParseException {
-    // do the escape checking ONE time
-    if (m_routeTo != null) return m_routeTo;
-
-    /*    if (this.clonedRequest != null) {
-      request = this.getClonedRequest();
-    } else {
-      request = this.getRequest();
-    }*/
-
-    m_routeTo = req.getRequestURI();
-
-    RouteHeader topRoute = (RouteHeader) req.getHeader(RouteHeader.NAME);
-    if (topRoute != null) {
-      m_routeTo = topRoute.getAddress().getURI();
-      if (!((SipURI) m_routeTo).hasLrParam()) {
-        SipURI reqURI = (SipURI) req.getRequestURI();
-        RouteHeader routeHeader =
-            JainSipHelper.createRouteHeader(
-                reqURI.getUser(), reqURI.getHost(), reqURI.getPort(), reqURI.getTransportParam());
-        // Add header to the bottom
-        req.addHeader(routeHeader);
-        req.setRequestURI(m_routeTo);
-        req.removeFirst(RouteHeader.NAME);
-        m_escaped = true;
-      }
-    }
-    return m_routeTo;
-  }
+  // TODO RamG
+  //  public URI lrEscape() throws ParseException {
+  //    // do the escape checking ONE time
+  //    if (m_routeTo != null) return m_routeTo;
+  //
+  //    /*    if (this.clonedRequest != null) {
+  //      request = this.getClonedRequest();
+  //    } else {
+  //      request = this.getRequest();
+  //    }*/
+  //
+  //    m_routeTo = req.getRequestURI();
+  //
+  //    RouteHeader topRoute = (RouteHeader) req.getHeader(RouteHeader.NAME);
+  //    if (topRoute != null) {
+  //      m_routeTo = topRoute.getAddress().getURI();
+  //      if (!((SipURI) m_routeTo).hasLrParam()) {
+  //        SipURI reqURI = (SipURI) req.getRequestURI();
+  //        RouteHeader routeHeader =
+  //            JainSipHelper.createRouteHeader(
+  //                reqURI.getUser(), reqURI.getHost(), reqURI.getPort(),
+  // reqURI.getTransportParam());
+  //        // Add header to the bottom
+  //        req.addHeader(routeHeader);
+  //        req.setRequestURI(m_routeTo);
+  //        req.removeFirst(RouteHeader.NAME);
+  //        m_escaped = true;
+  //      }
+  //    }
+  //    return m_routeTo;
+  //  }
 
   /**
    * Returns new proxySIPRequest whose meta data are same as original proxySipRequest but Request is

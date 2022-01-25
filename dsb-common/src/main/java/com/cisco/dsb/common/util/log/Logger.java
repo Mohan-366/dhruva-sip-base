@@ -10,7 +10,6 @@ import com.cisco.dsb.common.util.log.event.Event.EventSubType;
 import com.cisco.dsb.common.util.log.event.Event.EventType;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.slf4j.event.Level;
 
 public interface Logger {
 
@@ -75,22 +74,10 @@ public interface Logger {
 
   String getName();
 
-  // Should be removed , adding for compatible now
-  boolean isEnabled(Level warn);
-
-  // Should be removed , adding for compatible now
-  void log(Level level, String message);
-
-  // Should be removed , adding for compatible now
-  void log(Level level, String message, Throwable throwable);
-
   void trace(String s, Object... objects);
 
   // Should be removed , adding for compatible now
   boolean isDebugEnabled();
-
-  // Should be removed , adding for compatible now
-  boolean isWarnEnabled();
 
   // Should be removed , adding for compatible now
   boolean isInfoEnabled();

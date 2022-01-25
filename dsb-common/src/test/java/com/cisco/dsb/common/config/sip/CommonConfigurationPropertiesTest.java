@@ -151,8 +151,8 @@ public class CommonConfigurationPropertiesTest {
     sg.setNetworkName(networkName);
     sg.setSgPolicyConfig(sgPolicyName);
     sg.setOptionsPingPolicyConfig(pingPolicyName);
-    List<ServerGroup> sgList = new ArrayList<>();
-    sgList.add(sg);
+    Map<String, ServerGroup> sgList = new HashMap<>();
+    sgList.put("SG1", sg);
 
     // set above properties in CommonProperties
     CommonConfigurationProperties props = new CommonConfigurationProperties();

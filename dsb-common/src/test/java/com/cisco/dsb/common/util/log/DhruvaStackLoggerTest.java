@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
 
 @Test
 public class DhruvaStackLoggerTest {
-  private static Logger logger = DhruvaLoggerFactory.getLogger(DhruvaStackLoggerTest.class);
 
   private static SipFactory sipFactory;
 

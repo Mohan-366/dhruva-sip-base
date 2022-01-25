@@ -1,7 +1,6 @@
 package com.cisco.dsb.common.sip.stack.util;
 
 public class IPValidator {
-  IPValidator() {}
   /**
    * Determine if the given host string is a numeric IP address. This works for IPv4 and IPv6.
    *
@@ -53,13 +52,7 @@ public class IPValidator {
           return false;
       }
     }
-    boolean flag;
-    if (dotCount == 3) {
-      flag = true;
-    } else {
-      flag = false;
-    }
-    return flag;
+    return dotCount == 3;
   }
 
   // IPv6address = hexpart [ ":" IPv4address ]
@@ -78,15 +71,12 @@ public class IPValidator {
    * @return true if <code>host</code> is an IP addr, false otherwise
    */
   public static boolean hostIsIPv6Addr(String host) {
-    boolean flag;
     // This does not verify that it is an IPv6 address.
     // It does ensure that it is not an IPv4 address or a host name,
-    // hence IPv6 is all that is left, besides somet invalid, and it
+    // hence IPv6 is all that is left, besides some invalid, and it
     // might as well be an invalid IPv6 address vs. an invalid host or IPv4.
     // Just look for the : since that must appear in an IPv6 address
     // and must not in a hostname or IPv4 address.
-    flag = host != null && host.length() != 0 && host.indexOf(':') != -1;
-
-    return flag;
+    return host != null && host.length() != 0 && host.indexOf(':') != -1;
   }
 }

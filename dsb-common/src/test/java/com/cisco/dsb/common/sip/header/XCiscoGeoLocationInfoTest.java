@@ -33,4 +33,17 @@ public class XCiscoGeoLocationInfoTest {
       XCiscoGeoLocationInfo geoLocationInfo, JsonNode json) {
     Assert.assertTrue(json.equals(geoLocationInfo.toJson()));
   }
+
+  @Test
+  public void testGetterSetters() {
+    XCiscoGeoLocationInfo info = new XCiscoGeoLocationInfo();
+    info.setClientRegionCode("US-EAST");
+    Assert.assertEquals(info.getClientRegionCode(), "US-EAST");
+    info.setClientCountryCode("US");
+    Assert.assertEquals(info.getClientCountryCode(), "US");
+    info.setSipCloudIngressDC("AFRA");
+    Assert.assertEquals(info.getSipCloudIngressDC(), "AFRA");
+    info.setGeoDNSDialled(true);
+    Assert.assertTrue(info.getGeoDNSDialled());
+  }
 }

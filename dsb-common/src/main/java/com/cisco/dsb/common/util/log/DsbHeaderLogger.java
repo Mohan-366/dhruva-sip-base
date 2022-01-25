@@ -1,13 +1,11 @@
-package com.cisco.dsb.common.sip.jain;
+package com.cisco.dsb.common.util.log;
 
-import com.cisco.dsb.common.util.log.DhruvaLoggerFactory;
-import com.cisco.dsb.common.util.log.Logger;
 import gov.nist.javax.sip.message.SIPMessage;
+import lombok.CustomLog;
 
 /** Log SIP messages only when debug is enabled. */
+@CustomLog
 public class DsbHeaderLogger extends DhruvaServerLogger {
-
-  private static final Logger logger = DhruvaLoggerFactory.getLogger(DsbHeaderLogger.class);
 
   @Override
   protected void log(
