@@ -148,6 +148,6 @@ public class ServerGroupElement implements LBElement, Pingable {
 
     }
 
-    return toUniqueElementString();
+    return uniqueString;
   }
 }
