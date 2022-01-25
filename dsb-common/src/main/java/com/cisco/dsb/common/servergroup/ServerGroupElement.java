@@ -25,6 +25,8 @@ public class ServerGroupElement implements LBElement, Pingable {
 
   @NotBlank private int weight;
 
+  private String uniqueString;
+
   @Override
   public boolean equals(Object a) {
     if (a instanceof ServerGroupElement) {
@@ -131,5 +133,21 @@ public class ServerGroupElement implements LBElement, Pingable {
     }
     if (list1.length < list2.length) return -1;
     return 1;
+  }
+
+  public String toUniqueElementString() {
+    if (uniqueString != null) {
+      return uniqueString;
+    }
+      synchronized (this) {
+        if(uniqueString == null) {
+          StringBuilder uniqueSB = new StringBuilder();
+          uniqueSB.append(ipAddress + ":" + port + ":" + transport);
+          uniqueString = uniqueSB.toString();
+        }
+
+    }
+
+    return toUniqueElementString();
   }
 }

@@ -106,7 +106,7 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
-  private Map<String, ServerGroup> serverGroups = new HashMap<>();
+  @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
@@ -193,16 +193,10 @@ public class CommonConfigurationProperties {
             });
   }
 
-  public Map<String, ServerGroup> getServerGroups() {
-    logger.info("KALPA: getServerGroups called! {}", this);
-    return this.serverGroups;
-  }
-
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
     Set<K> removeKeys = new HashSet<>();
     oldMap.putAll(newMap);
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
     removeKeys.forEach(oldMap::remove);
-    logger.info("KALPA: updated SG map: {}", oldMap);
   }
 }
