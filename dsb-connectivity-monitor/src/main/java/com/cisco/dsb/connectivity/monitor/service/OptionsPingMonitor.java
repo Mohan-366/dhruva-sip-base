@@ -49,12 +49,11 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
-  private List<Disposable> opFlux = new ArrayList<>();
+  protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
-
 
   @PostConstruct
   public void initOptionsPing() {
@@ -75,8 +74,7 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     }
   }
 
-  protected void pingPipeLine(
-      ServerGroup serverGroup) {
+  protected void pingPipeLine(ServerGroup serverGroup) {
     String serverGroupName = serverGroup.getHostName();
     String network = serverGroup.getNetworkName();
     List<ServerGroupElement> list = serverGroup.getElements();
@@ -87,17 +85,20 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     }
     int upInterval = optionsPingPolicy.getUpTimeInterval();
     int downInterval = optionsPingPolicy.getDownTimeInterval();
-    int pingTimeOut =  optionsPingPolicy.getPingTimeOut();
+    int pingTimeOut = optionsPingPolicy.getPingTimeOut();
     List<Integer> failoverCodes = optionsPingPolicy.getFailoverResponseCodes();
 
-    Flux<SIPResponse> upElementsResponses = getUpElementsResponses(serverGroupName,
-        network, list, upInterval, downInterval, pingTimeOut, failoverCodes);
-    Flux<SIPResponse> downElementsResponses = getDownElementsResponses(serverGroupName,
-        network, list, downInterval, pingTimeOut, failoverCodes);
+    Flux<SIPResponse> upElementsResponses =
+        getUpElementsResponses(
+            serverGroupName, network, list, upInterval, downInterval, pingTimeOut, failoverCodes);
+    Flux<SIPResponse> downElementsResponses =
+        getDownElementsResponses(
+            serverGroupName, network, list, downInterval, pingTimeOut, failoverCodes);
     opFlux.add(Flux.merge(upElementsResponses, downElementsResponses).subscribe());
   }
 
-  protected Flux<SIPResponse> getUpElementsResponses(String serverGroupName,
+  protected Flux<SIPResponse> getUpElementsResponses(
+      String serverGroupName,
       String network,
       List<ServerGroupElement> list,
       int upInterval,
@@ -106,23 +107,24 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
       List<Integer> failoverCodes) {
     return getUpElements(list)
         .flatMap(
-            element -> sendPingRequestToUpElement(
-                network,
-                element,
-                downInterval,
-                pingTimeOut,
-                failoverCodes,
-                serverGroupName,
-                list.size()))
+            element ->
+                sendPingRequestToUpElement(
+                    network,
+                    element,
+                    downInterval,
+                    pingTimeOut,
+                    failoverCodes,
+                    serverGroupName,
+                    list.size()))
         .repeatWhen(
             completed ->
                 completed.delayElements(
                     Duration.ofMillis(upInterval),
                     Schedulers.newBoundedElastic(20, 50, "BE-Up-Elements")));
-
   }
 
-  protected Flux<SIPResponse> getDownElementsResponses(String serverGroupName,
+  protected Flux<SIPResponse> getDownElementsResponses(
+      String serverGroupName,
       String network,
       List<ServerGroupElement> list,
       int downInterval,
@@ -131,15 +133,15 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     return getDownElements(list)
         .flatMap(
             element ->
-              sendPingRequestToDownElement(
-                  network, element, pingTimeOut, failoverCodes, serverGroupName)
-            )
+                sendPingRequestToDownElement(
+                    network, element, pingTimeOut, failoverCodes, serverGroupName))
         .repeatWhen(
             completed ->
                 completed.delayElements(
                     Duration.ofMillis(downInterval),
                     Schedulers.newBoundedElastic(20, 50, "BE-Down-Elements")));
   }
+
   protected Flux<ServerGroupElement> getUpElements(List<ServerGroupElement> list) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
@@ -149,8 +151,7 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
             });
   }
 
-  protected Flux<ServerGroupElement> getDownElements(
-      List<ServerGroupElement> list) {
+  protected Flux<ServerGroupElement> getDownElements(List<ServerGroupElement> list) {
     return Flux.defer(() -> Flux.fromIterable(list))
         .filter(
             e -> {
@@ -201,7 +202,8 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
               Event.emitSGElementDownEvent(
                   null, "All Ping attempts failed for element", element, network);
               elementStatus.put(key, false);
-              checkAndMakeServerGroupDown(serverGroupName, element.toUniqueElementString(), sgeSize);
+              checkAndMakeServerGroupDown(
+                  serverGroupName, element.toUniqueElementString(), sgeSize);
               return Mono.empty();
             })
         .doOnNext(
@@ -215,7 +217,8 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
                 Event.emitSGElementDownEvent(
                     n.getStatusCode(), "Error response received for element", element, network);
                 elementStatus.put(key, false);
-                checkAndMakeServerGroupDown(serverGroupName, element.toUniqueElementString(), sgeSize);
+                checkAndMakeServerGroupDown(
+                    serverGroupName, element.toUniqueElementString(), sgeSize);
               } else if (status == null) {
                 logger.info("Adding status as UP for element: {}", element);
                 elementStatus.put(key, true);
@@ -336,16 +339,15 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     postRefresh.start();
   }
 
-  private void disposeExistingFlux() {
+  protected void disposeExistingFlux() {
     logger.info("Disposing existing fluxes");
     opFlux.forEach(Disposable::dispose);
-    opFlux.clear();
   }
 
   /**
    * This method will update the state of all the maps maintaining sg and elements status after
-   * config refresh. So in case if elements were removed they will be removed from here too.
-   * i.e. elementStatus, serverGroupStatus, downServerGroupElementsCounter
+   * config refresh. So in case if elements were removed they will be removed from here too. i.e.
+   * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
     Map<String, ServerGroup> sgMap = commonConfigurationProperties.getServerGroups();
@@ -356,9 +358,7 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
       String sgName = entry.getValue().getHostName();
       ServerGroup sg = entry.getValue();
       sgNameList.add(sgName);
-      sg.getElements()
-          .forEach(
-              element -> sgeNameList.add(element.toUniqueElementString()));
+      sg.getElements().forEach(element -> sgeNameList.add(element.toUniqueElementString()));
     }
 
     elementStatus.entrySet().removeIf(elementEntry -> !sgeNameList.contains(elementEntry.getKey()));
@@ -376,10 +376,11 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
-  class RefreshHandle implements Runnable {
+  protected class RefreshHandle implements Runnable {
     @Override
     public void run() {
       disposeExistingFlux();
+      opFlux.clear();
       cleanUpMaps();
       startMonitoring(commonConfigurationProperties.getServerGroups());
     }

@@ -136,21 +136,21 @@ public class ServerGroupElement implements LBElement, Pingable {
   }
 
   /**
-   * This is used for options ping status maintenance. This will not change unless
-   * config refresh happens in which case new object will get created.
+   * This is used for options ping status maintenance. This will not change unless config refresh
+   * happens in which case new object will get created.
+   *
    * @return uniqueString -> ip:port:transport
    */
   public String toUniqueElementString() {
     if (uniqueString != null) {
       return uniqueString;
     }
-      synchronized (this) {
-        if(uniqueString == null) {
-          StringBuilder uniqueSB = new StringBuilder();
-          uniqueSB.append(ipAddress + ":" + port + ":" + transport);
-          uniqueString = uniqueSB.toString();
-        }
-
+    synchronized (this) {
+      if (uniqueString == null) {
+        StringBuilder uniqueSB = new StringBuilder();
+        uniqueSB.append(ipAddress + ":" + port + ":" + transport);
+        uniqueString = uniqueSB.toString();
+      }
     }
 
     return uniqueString;
