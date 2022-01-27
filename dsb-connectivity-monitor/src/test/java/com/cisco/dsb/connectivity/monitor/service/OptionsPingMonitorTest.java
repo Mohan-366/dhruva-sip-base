@@ -31,7 +31,6 @@ import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -541,48 +540,64 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void testRefreshElementChange() {
-      doReturn(map).when(commonConfigurationProperties).getServerGroups();
-      List<ServerGroupElement> sgeList = Arrays.asList(sge1, sge2, sge3, sge4);
-    sgeList.forEach(item -> {
-      optionsPingMonitor.elementStatus.put(item.toUniqueElementString(), false);
-    });
-      optionsPingMonitor.serverGroupStatus.put("sg1", false);
-      Set<String> elementsList = ConcurrentHashMap.newKeySet();
-      optionsPingMonitor.downServerGroupElementsCounter.put("sg1", elementsList);
-      sgeList.forEach(item -> {
-        elementsList.add(item.toUniqueElementString());
-      });
+    doReturn(map).when(commonConfigurationProperties).getServerGroups();
+    List<ServerGroupElement> sgeList = Arrays.asList(sge1, sge2, sge3, sge4);
+    sgeList.forEach(
+        item -> {
+          optionsPingMonitor.elementStatus.put(item.toUniqueElementString(), false);
+        });
+    optionsPingMonitor.serverGroupStatus.put("sg1", false);
+    Set<String> elementsList = ConcurrentHashMap.newKeySet();
+    optionsPingMonitor.downServerGroupElementsCounter.put("sg1", elementsList);
+    sgeList.forEach(
+        item -> {
+          elementsList.add(item.toUniqueElementString());
+        });
 
-      Assert.assertEquals(optionsPingMonitor.elementStatus.size(), 4);
-      Assert.assertEquals(optionsPingMonitor.serverGroupStatus.size(), 1);
-      sgeList.forEach(item -> {
-        Assert.assertTrue(optionsPingMonitor.elementStatus.containsKey(item.toUniqueElementString()));
-        Assert.assertTrue(optionsPingMonitor.downServerGroupElementsCounter.get("sg1").contains(item.toUniqueElementString()));
-      });
+    Assert.assertEquals(optionsPingMonitor.elementStatus.size(), 4);
+    Assert.assertEquals(optionsPingMonitor.serverGroupStatus.size(), 1);
+    sgeList.forEach(
+        item -> {
+          Assert.assertTrue(
+              optionsPingMonitor.elementStatus.containsKey(item.toUniqueElementString()));
+          Assert.assertTrue(
+              optionsPingMonitor
+                  .downServerGroupElementsCounter
+                  .get("sg1")
+                  .contains(item.toUniqueElementString()));
+        });
 
-      ServerGroup sg = map.get("sg1");
-      sg.setElements(Arrays.asList(sge1, sge2, sge3));
-      optionsPingMonitor.cleanUpMaps();
+    ServerGroup sg = map.get("sg1");
+    sg.setElements(Arrays.asList(sge1, sge2, sge3));
+    optionsPingMonitor.cleanUpMaps();
     Assert.assertEquals(optionsPingMonitor.elementStatus.size(), 3);
     Assert.assertEquals(optionsPingMonitor.serverGroupStatus.size(), 1);
     Assert.assertTrue(!optionsPingMonitor.elementStatus.containsKey(sge4.toUniqueElementString()));
-    Assert.assertTrue(!optionsPingMonitor.downServerGroupElementsCounter.get("sg1").contains(sge4.toUniqueElementString()));
-
-
+    Assert.assertTrue(
+        !optionsPingMonitor
+            .downServerGroupElementsCounter
+            .get("sg1")
+            .contains(sge4.toUniqueElementString()));
   }
 
   @Test
   public void testDisposeFlux() {
     optionsPingMonitor.opFlux = new ArrayList<>();
-    Disposable d1 = Flux.fromIterable(Arrays.asList(1,2,3,4,5)).repeat().subscribeOn(Schedulers.boundedElastic()).subscribe();
-    Disposable d2 = Flux.fromIterable(Arrays.asList(1,2,3,4,5)).repeat().subscribeOn(Schedulers.boundedElastic()).subscribe();
+    Disposable d1 =
+        Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5))
+            .repeat()
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe();
+    Disposable d2 =
+        Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5))
+            .repeat()
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe();
     optionsPingMonitor.opFlux.add(d1);
     optionsPingMonitor.opFlux.add(d2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(!d.isDisposed()));
     optionsPingMonitor.disposeExistingFlux();
     Assert.assertEquals(optionsPingMonitor.opFlux.size(), 2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(d.isDisposed()));
-
   }
-
 }

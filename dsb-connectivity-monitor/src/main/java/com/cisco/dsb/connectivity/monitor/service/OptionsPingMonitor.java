@@ -10,6 +10,7 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
+import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
@@ -46,6 +47,7 @@ import reactor.util.retry.Retry;
 @DependsOn("dhruvaExecutorService")
 public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefreshedEvent> {
 
+  @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
@@ -57,6 +59,7 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
 
   @PostConstruct
   public void initOptionsPing() {
+    proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     startMonitoring(commonConfigurationProperties.getServerGroups());
   }
 
