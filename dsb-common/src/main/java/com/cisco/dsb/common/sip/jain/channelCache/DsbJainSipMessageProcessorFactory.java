@@ -2,6 +2,7 @@ package com.cisco.dsb.common.sip.jain.channelCache;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.service.MetricService;
 import gov.nist.javax.sip.stack.MessageProcessor;
 import gov.nist.javax.sip.stack.MessageProcessorFactory;
 import gov.nist.javax.sip.stack.OIOMessageProcessorFactory;
@@ -14,6 +15,7 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
 
   private CommonConfigurationProperties sipProperties;
   private DhruvaExecutorService executorService;
+  private MetricService metricService;
 
   @Override
   public MessageProcessor createMessageProcessor(
@@ -27,18 +29,18 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
 
       if (sipProperties.isNioEnabled()) {
         return new DsbNioTCPMessageProcessor(
-            ipAddress, sipStack, port, sipProperties, executorService);
+            ipAddress, sipStack, port, sipProperties, executorService, metricService);
       } else {
         return new DsbSipTCPMessageProcessor(
-            ipAddress, sipStack, port, sipProperties, executorService);
+            ipAddress, sipStack, port, sipProperties, executorService, metricService);
       }
     } else if (transport.equalsIgnoreCase(ListeningPoint.TLS)) {
       if (sipProperties.isNioEnabled()) {
         return new DsbNioTlsMessageProcessor(
-            ipAddress, sipStack, port, sipProperties, executorService);
+            ipAddress, sipStack, port, sipProperties, executorService,metricService);
       } else {
         return new DsbJainSipTLSMessageProcessor(
-            ipAddress, sipStack, port, sipProperties, executorService);
+            ipAddress, sipStack, port, sipProperties, executorService, metricService);
       }
     } else {
       throw new IllegalArgumentException("bad transport");
@@ -46,8 +48,11 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
   }
 
   public void initFromApplication(
-      CommonConfigurationProperties sipProperties, DhruvaExecutorService executorService) {
+      CommonConfigurationProperties sipProperties,
+      DhruvaExecutorService executorService,
+      MetricService metricService) {
     this.sipProperties = sipProperties;
     this.executorService = executorService;
+    this.metricService = metricService;
   }
 }
