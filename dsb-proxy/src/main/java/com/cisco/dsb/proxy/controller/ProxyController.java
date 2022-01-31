@@ -45,7 +45,6 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.sip.*;
 import javax.sip.address.SipURI;
@@ -59,7 +58,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -212,8 +210,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             });
     return responseCF;
   }
-
-
 
   /**
    * Check whether App is interested in mid midialog messages set the usingRouteHeader to true if
