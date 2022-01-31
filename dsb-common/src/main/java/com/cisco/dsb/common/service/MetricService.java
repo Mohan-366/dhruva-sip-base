@@ -11,6 +11,7 @@ import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
+import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
@@ -23,6 +24,7 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
+import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -178,6 +180,46 @@ public class MetricService {
     sendMetric(metric);
   }
 
+  public void emitConnectionMetrics(
+      String direction, ConnectionOrientedMessageChannel channel, String connectionState) {
+    try {
+      if (channel == null) {
+        return;
+      }
+
+      // String protocol = SipUtils.getConnectionProtocol(channel);
+      String id = SipUtils.getConnectionId(direction, channel.getPeerProtocol(), channel);
+      String localAddress = channel.getHost();
+      int localPort = channel.getPort();
+      String viaAddress = channel.getViaHost();
+      int viaPort = channel.getViaPort();
+      String remoteAddress = channel.getPeerAddress();
+      int remotePort = channel.getPeerPort();
+
+      String transport = channel.getTransport();
+
+      Metric connectionMetric = Metrics.newMetric().measurement("connection");
+
+      connectionMetric.tag("direction", direction);
+      connectionMetric.tag("transport", transport);
+      // point.addTag("protocol", protocol);
+      connectionMetric.field("viaAddress", viaAddress);
+      connectionMetric.field("viaPort", viaPort);
+      connectionMetric.field("localAddress", localAddress);
+      connectionMetric.field("localPort", localPort);
+      connectionMetric.field("remoteAddress", remoteAddress);
+      connectionMetric.field("remotePort", remotePort);
+      connectionMetric.tag("id", id);
+      connectionMetric.tag("connectionState", connectionState);
+
+      sendMetric(connectionMetric);
+
+    } catch (Exception e) {
+      // Only debug here since TLS connections with no handshake session are common and cause noisy
+      logger.debug("Unable to emit connection metric", e);
+    }
+  }
+
   public void sendConnectionMetric(
       String localIp,
       int localPort,
@@ -223,7 +265,8 @@ public class MetricService {
       boolean isMidCall,
       boolean isInternallyGenerated,
       long dhruvaProcessingDelayInMillis,
-      String requestUri) {
+      String requestUri,
+      String callType) {
 
     Metric metric =
         Metrics.newMetric()
@@ -242,6 +285,7 @@ public class MetricService {
       metric.field("responseReason", requestUri);
     } else if (messageType == REQUEST) {
       metric.field("requestUri", requestUri);
+      metric.field("callType", callType);
     }
 
     if (direction == OUT && !isInternallyGenerated) {

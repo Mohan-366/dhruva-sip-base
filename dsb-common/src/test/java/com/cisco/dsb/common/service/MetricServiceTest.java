@@ -15,6 +15,7 @@ import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.metrics.InfluxPoint;
 import com.google.common.cache.Cache;
+import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -44,6 +45,7 @@ public class MetricServiceTest {
 
   private static final boolean IS_MID_CALL_FALSE = false;
   private static final String reqURI = "sip:test@test.abc.com";
+  private static final String CALLTYPE_TEST = "TEST_CALLTYPE";
 
   private ArgumentCaptor<Metric> metricArgumentCaptor;
 
@@ -82,7 +84,8 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_FALSE,
         0L,
-        reqURI);
+        reqURI,
+        CALLTYPE_TEST);
 
     Mockito.verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
@@ -99,7 +102,9 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
 
     // scenario 2, dir-out , internally gen
     metricService.sendSipMessageMetric(
@@ -112,7 +117,8 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_FALSE,
         0L,
-        reqURI);
+        reqURI,
+        CALLTYPE_TEST);
 
     Mockito.verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
 
@@ -129,6 +135,7 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
   }
 
@@ -144,7 +151,8 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_TRUE,
         0L,
-        "200 OK");
+        "200 OK",
+        null);
 
     Mockito.verify(metricClientMock).sendMetric(metricArgumentCaptor.capture());
 
@@ -163,6 +171,62 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseCode"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseReason"));
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
+    Assert.assertFalse(capturedMetricPoint.getFields().containsKey("callType"));
+  }
+
+  @Test(description = "Test to verify emitted connection metrics")
+  public void connectionMetricTest1() {
+
+    // scenario -> if channel is null then no metrics will be emitted
+    metricService.emitConnectionMetrics(
+        DIRECTION_IN.toString(), null, Connection.STATE.CONNECTED.toString());
+    verify(metricClientMock, times(0)).sendMetric(metricArgumentCaptor.capture());
+  }
+
+  @Test(description = "Test to verify emitted connection metrics")
+  public void connectionMetricTest2() {
+
+    // scenario-> channel is mocked, client will emit metrics with connection info
+    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+    String localAddress = "127.0.0.1";
+    int localPort = 5060;
+    String viaAddress = "127.0.0.1";
+    int viaPort = 5060;
+    String remoteAddress = "127.0.0.1";
+    int remotePort = 54317;
+
+    String transport = "TCP";
+
+    when(mockedChannel.getHost()).thenReturn(localAddress);
+    when(mockedChannel.getPort()).thenReturn(localPort);
+    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
+    when(mockedChannel.getViaPort()).thenReturn(viaPort);
+    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
+    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
+    when(mockedChannel.getTransport()).thenReturn(transport);
+    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+
+    metricService.emitConnectionMetrics(
+        DIRECTION_IN.toString(), mockedChannel, Connection.STATE.CONNECTED.toString());
+    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+
+    Metric capturedMetric = metricArgumentCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+
+    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
+
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("transport"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("id"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("connectionState"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localAddress"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localPort"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remoteAddress"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remotePort"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaAddress"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaPort"));
   }
 
   public void sendConnectionMetricTest() {

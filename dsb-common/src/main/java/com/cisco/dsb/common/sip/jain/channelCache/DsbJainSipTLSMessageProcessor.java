@@ -54,12 +54,12 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
     } catch (Exception ex) {
       logger.error("Error starting TLS message processor");
       logger.emitEvent(
-              Event.EventType.CONNECTION,
-              Event.EventSubType.TCPCONNECTION,
-              Event.ErrorType.ConnectionError,
-              ex.getMessage(),
-              null,
-              ex);
+          Event.EventType.CONNECTION,
+          Event.EventSubType.TCPCONNECTION,
+          Event.ErrorType.ConnectionError,
+          ex.getMessage(),
+          null,
+          ex);
       throw ex;
     }
   }
@@ -83,11 +83,11 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
 
   @Override
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
-    metricService.emitConnectionMetrics(Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+    metricService.emitConnectionMetrics(
+        Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }
-
 
   @Override
   public String getStackName() {

@@ -37,7 +37,7 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
     } else if (transport.equalsIgnoreCase(ListeningPoint.TLS)) {
       if (sipProperties.isNioEnabled()) {
         return new DsbNioTlsMessageProcessor(
-            ipAddress, sipStack, port, sipProperties, executorService,metricService);
+            ipAddress, sipStack, port, sipProperties, executorService, metricService);
       } else {
         return new DsbJainSipTLSMessageProcessor(
             ipAddress, sipStack, port, sipProperties, executorService, metricService);
