@@ -15,7 +15,6 @@ import gov.nist.javax.sip.stack.SIPTransactionStack;
 import gov.nist.javax.sip.stack.TCPMessageProcessor;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.util.Collection;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -91,10 +90,10 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
     return incomingMessageChannels.values();
   }
 
-
   @Override
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
-    metricService.emitConnectionMetrics(Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+    metricService.emitConnectionMetrics(
+        Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }
@@ -109,17 +108,22 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
     hostPort.setPort(peerPort);
     String messageChannelKey = MessageChannel.getKey(hostPort, "TCP");
 
-
-    ConnectionOrientedMessageChannel removedIncomingChannel = this.incomingMessageChannels.get(messageChannelKey);
-    ConnectionOrientedMessageChannel removedMessageChannel = this.messageChannels.get(messageChannelKey);
-
-
+    ConnectionOrientedMessageChannel removedIncomingChannel =
+        this.incomingMessageChannels.get(messageChannelKey);
+    ConnectionOrientedMessageChannel removedMessageChannel =
+        this.messageChannels.get(messageChannelKey);
 
     boolean result = super.closeReliableConnection(peerAddress, peerPort);
 
-    if(result){
-      metricService.emitConnectionMetrics(Event.DIRECTION.OUT.toString() , removedMessageChannel, Connection.STATE.DISCONNECTED.toString());
-      metricService.emitConnectionMetrics(Event.DIRECTION.IN.toString() , removedIncomingChannel, Connection.STATE.DISCONNECTED.toString());
+    if (result) {
+      metricService.emitConnectionMetrics(
+          Event.DIRECTION.OUT.toString(),
+          removedMessageChannel,
+          Connection.STATE.DISCONNECTED.toString());
+      metricService.emitConnectionMetrics(
+          Event.DIRECTION.IN.toString(),
+          removedIncomingChannel,
+          Connection.STATE.DISCONNECTED.toString());
     }
 
     logger.debug("Connection removed for reliableConnection");
