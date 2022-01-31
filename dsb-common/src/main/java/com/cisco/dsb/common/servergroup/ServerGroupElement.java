@@ -81,7 +81,7 @@ public class ServerGroupElement implements LBElement, Pingable {
    *     object in a sorted list, a negative integer if this endpoint should come before the given
    *     object in a sorted list, or zero if the two objects are equivalent.
    */
-  private int compareDomainNames(String domain1, String domain2) {
+  public int compareDomainNames(String domain1, String domain2) {
     int compare = 0;
     if (!domain1.equals(domain2)) {
 

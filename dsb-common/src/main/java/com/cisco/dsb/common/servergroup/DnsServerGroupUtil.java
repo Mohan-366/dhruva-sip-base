@@ -71,7 +71,6 @@ public class DnsServerGroupUtil {
   }
 
   private ServerGroup getServerGroupFromHops(List<Hop> hops, ServerGroup serverGroup) {
-    assert hops != null;
     List<ServerGroupElement> elementList =
         hops.stream()
             .map(

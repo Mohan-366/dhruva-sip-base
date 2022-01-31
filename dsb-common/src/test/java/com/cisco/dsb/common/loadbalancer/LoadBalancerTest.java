@@ -33,6 +33,7 @@ public class LoadBalancerTest {
     return new Object[][] {
       {LBType.HIGHEST_Q, serverGroupElements},
       {LBType.WEIGHT, serverGroupElements},
+      {LBType.MS_ID, serverGroupElements},
       {LBType.ONCE, serverGroupElements},
       {LBType.HIGHEST_Q, serverGroupElements2},
       {LBType.HIGHEST_Q, serverGroupElements1},
@@ -73,6 +74,7 @@ public class LoadBalancerTest {
     }
     switch (lbType) {
       case WEIGHT:
+      case MS_ID:
       case HIGHEST_Q:
         if (treeSetInit.size() > 1) {
           Assert.assertFalse(Comparators.isInOrder(selectedElements, weightComparator()));
@@ -151,6 +153,25 @@ public class LoadBalancerTest {
     Assert.assertTrue(450 <= count[0] && count[0] <= 550); // 5%
     Assert.assertTrue(270 <= count[1] && count[1] <= 330); // 10%
     Assert.assertTrue(150 <= count[2] && count[2] <= 250); // ~15%
+  }
+
+  // used later
+  @Test(description = "LB for MSID")
+  public void testMSID() {
+    LBType lbType = LBType.MS_ID;
+
+    List<ServerGroupElement> sgelements = getServerGroupElements(5, false);
+    ServerGroup serverGroup =
+        ServerGroup.builder().setElements(sgelements).setLbType(lbType).build();
+    LoadBalancer loadBalancer = LoadBalancer.of(serverGroup);
+    loadBalancer.setKey(random.nextLong() + "");
+
+    int firstElement = loadBalancer.getCurrentElement().getPriority();
+    int lastElement = firstElement;
+    for (int i = 0; i < 4; i++) {
+      lastElement = loadBalancer.getNextElement().getPriority();
+    }
+    Assert.assertTrue(firstElement <= lastElement);
   }
 
   private List<ServerGroupElement> getServerGroupElements(int count, boolean sameQ) {
