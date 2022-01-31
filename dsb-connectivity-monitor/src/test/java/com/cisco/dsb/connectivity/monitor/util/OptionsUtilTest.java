@@ -21,7 +21,7 @@ public class OptionsUtilTest {
 
   @Test
   public void testUDPNumTries() {
-    Integer expected = 10;
+    Integer expected = 0;
     Assert.assertEquals(OptionsUtil.getNumRetry(Transport.UDP), expected);
   }
 

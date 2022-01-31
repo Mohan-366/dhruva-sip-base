@@ -20,7 +20,9 @@ import javax.sip.message.Request;
 
 public class OptionsUtil {
 
-  private static final int numTriesUDP = 10;
+
+  //No retry has to be done for UDP, JAIN stack takes care of sending retransmissions.
+  private static final int numTriesUDP = 0;
   private static final int numTriesTCP = 1;
   private static final int numTriesTLS = 1;
 

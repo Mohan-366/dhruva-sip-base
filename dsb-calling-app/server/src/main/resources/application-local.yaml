@@ -25,6 +25,7 @@ common:
       hostName: "UsPoolA"
       networkName: *netsp
       lbType: weight
+      pingOn: true
       elements:
         - ipAddress: "127.0.0.1"
           port: 6060
@@ -120,8 +121,8 @@ common:
         - 502
         - 503
       upTimeInterval: 30000
-      downTimeInterval: 5000
-      pingTimeOut: 500
+      downTimeInterval: 8000
+      pingTimeOut: 5000
 trunk:
   PSTN:
     CcpFusionUS:
