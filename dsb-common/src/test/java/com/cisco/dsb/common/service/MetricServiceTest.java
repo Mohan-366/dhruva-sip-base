@@ -84,8 +84,9 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_FALSE,
         0L,
-        reqURI,
-        CALLTYPE_TEST);
+        reqURI
+        // ,CALLTYPE_TEST
+        );
 
     Mockito.verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
@@ -102,9 +103,8 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
+    // Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
 
     // scenario 2, dir-out , internally gen
     metricService.sendSipMessageMetric(
@@ -117,8 +117,9 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_FALSE,
         0L,
-        reqURI,
-        CALLTYPE_TEST);
+        reqURI
+        // ,CALLTYPE_TEST
+        );
 
     Mockito.verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
 
@@ -135,7 +136,7 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("cSeq"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("requestUri"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
+    // Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callType"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
   }
 
@@ -151,8 +152,9 @@ public class MetricServiceTest {
         IS_MID_CALL_FALSE,
         INTERALLY_GENERATED_TRUE,
         0L,
-        "200 OK",
-        null);
+        "200 OK"
+        // ,null
+        );
 
     Mockito.verify(metricClientMock).sendMetric(metricArgumentCaptor.capture());
 
@@ -171,7 +173,7 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseCode"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("responseReason"));
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("processingDelayInMillis"));
-    Assert.assertFalse(capturedMetricPoint.getFields().containsKey("callType"));
+    // Assert.assertFalse(capturedMetricPoint.getFields().containsKey("callType"));
   }
 
   @Test(description = "Test to verify emitted connection metrics")
