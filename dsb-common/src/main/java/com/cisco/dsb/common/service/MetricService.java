@@ -265,8 +265,9 @@ public class MetricService {
       boolean isMidCall,
       boolean isInternallyGenerated,
       long dhruvaProcessingDelayInMillis,
-      String requestUri,
-      String callType) {
+      String requestUri
+      // String callType
+      ) {
 
     Metric metric =
         Metrics.newMetric()
@@ -285,7 +286,7 @@ public class MetricService {
       metric.field("responseReason", requestUri);
     } else if (messageType == REQUEST) {
       metric.field("requestUri", requestUri);
-      metric.field("callType", callType);
+      // metric.field("callType", callType);
     }
 
     if (direction == OUT && !isInternallyGenerated) {
