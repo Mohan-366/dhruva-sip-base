@@ -32,7 +32,7 @@ import javax.sip.SipProvider;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -45,7 +45,7 @@ import reactor.util.retry.Retry;
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefreshedEvent> {
+public class OptionsPingMonitor implements ApplicationListener<EnvironmentChangeEvent> {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
@@ -82,10 +82,6 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
     String network = serverGroup.getNetworkName();
     List<ServerGroupElement> list = serverGroup.getElements();
     OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
-    // Get default Options ping policy if not found in config
-    if (optionsPingPolicy == null) {
-      optionsPingPolicy = OptionsUtil.getDefaultOptionsPingPolicy();
-    }
     int upInterval = optionsPingPolicy.getUpTimeInterval();
     int downInterval = optionsPingPolicy.getDownTimeInterval();
     int pingTimeOut = optionsPingPolicy.getPingTimeOut();
@@ -335,11 +331,20 @@ public class OptionsPingMonitor implements ApplicationListener<RefreshScopeRefre
   }
 
   @Override
-  public void onApplicationEvent(@NotNull RefreshScopeRefreshedEvent event) {
-    logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getName());
-    RefreshHandle refreshHandle = new RefreshHandle();
-    Thread postRefresh = new Thread(refreshHandle);
-    postRefresh.start();
+  public void onApplicationEvent(@NotNull EnvironmentChangeEvent event) {
+    logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor for {}", event.getKeys());
+
+    if (event.getKeys().stream()
+        .anyMatch(
+            key -> {
+              // Refresh OPTIONS pings only when common config has some changes.
+              return key.contains("common");
+            })) {
+      logger.info("Change detected in Common Config, Restarting OPTIONS pings.");
+      RefreshHandle refreshHandle = new RefreshHandle();
+      Thread postRefresh = new Thread(refreshHandle);
+      postRefresh.start();
+    }
   }
 
   protected void disposeExistingFlux() {

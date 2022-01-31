@@ -4,6 +4,7 @@ import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.transport.Transport;
+import java.util.Arrays;
 import java.util.List;
 import lombok.*;
 
@@ -19,9 +20,26 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
   private boolean pingOn = false;
   private List<ServerGroupElement> elements;
-  private SGPolicy sgPolicy;
+
+  @Builder.Default
+  private SGPolicy sgPolicy =
+      SGPolicy.builder()
+          .setName("defaultSGPolicy")
+          .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+          .build();
+
   private String sgPolicyConfig;
-  private OptionsPingPolicy optionsPingPolicy;
+
+  @Builder.Default
+  private OptionsPingPolicy optionsPingPolicy =
+      OptionsPingPolicy.builder()
+          .setName("defaultOPPolicy")
+          .setPingTimeOut(500)
+          .setDownTimeInterval(5000)
+          .setUpTimeInterval(30000)
+          .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+          .build();
+
   private String optionsPingPolicyConfig;
   private int priority;
   private int weight;

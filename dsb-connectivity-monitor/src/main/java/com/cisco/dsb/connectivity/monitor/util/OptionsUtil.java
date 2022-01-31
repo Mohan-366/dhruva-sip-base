@@ -10,7 +10,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.sip.InvalidArgumentException;
 import javax.sip.PeerUnavailableException;
@@ -101,25 +100,5 @@ public class OptionsUtil {
       default:
         return 0;
     }
-  }
-
-  public static OptionsPingPolicy getDefaultOptionsPingPolicy() {
-    if (defaultOptionsPingPolicy != null) {
-      return defaultOptionsPingPolicy;
-    }
-    synchronized (OptionsUtil.class) {
-      if (defaultOptionsPingPolicy != null) {
-        return defaultOptionsPingPolicy;
-      }
-      defaultOptionsPingPolicy =
-          OptionsPingPolicy.builder()
-              .setName("DefaultOPPolicy")
-              .setPingTimeOut(500)
-              .setDownTimeInterval(5000)
-              .setUpTimeInterval(30000)
-              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
-              .build();
-    }
-    return defaultOptionsPingPolicy;
   }
 }

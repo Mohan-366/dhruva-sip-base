@@ -135,15 +135,10 @@ public class CommonConfigurationProperties {
         .forEach(
             serverGroup -> {
               SGPolicy sgPolicy = sgPolicyMap.get(serverGroup.getSgPolicyConfig());
-              if (sgPolicy == null)
-                throw new DhruvaRuntimeException(
-                    "SGName: "
-                        + serverGroup.getHostName()
-                        + "; SGPolicy \""
-                        + serverGroup.getSgPolicyConfig()
-                        + "\" not present");
-              logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
-              serverGroup.setSgPolicyFromConfig(sgPolicy);
+              if (sgPolicy != null) {
+                logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
+                serverGroup.setSgPolicyFromConfig(sgPolicy);
+              }
             });
     updateMap(this.sgPolicyMap, sgPolicyMap);
   }
@@ -156,15 +151,11 @@ public class CommonConfigurationProperties {
             serverGroup -> {
               OptionsPingPolicy optionsPingPolicy =
                   optionsPingPolicyMap.get(serverGroup.getOptionsPingPolicyConfig());
-              if (optionsPingPolicy == null)
-                throw new DhruvaRuntimeException(
-                    "SGName: "
-                        + serverGroup.getHostName()
-                        + "; OptionsPingPolicy \""
-                        + serverGroup.getOptionsPingPolicyConfig()
-                        + "\" not present");
-              logger.info("SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
-              serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
+              if (optionsPingPolicy != null) {
+                logger.info(
+                    "SG: {} OptionsPingPolicy {}", serverGroup, optionsPingPolicy.getName());
+                serverGroup.setOptionsPingPolicyFromConfig(optionsPingPolicy);
+              }
             });
     updateMap(this.optionsPingPolicyMap, optionsPingPolicyMap);
   }
