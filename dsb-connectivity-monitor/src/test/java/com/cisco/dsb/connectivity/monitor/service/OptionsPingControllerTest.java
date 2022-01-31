@@ -74,13 +74,14 @@ public class OptionsPingControllerTest {
     server1 =
         ServerGroup.builder()
             .setHostName("net1")
+            .setName("net1")
             .setElements(sgeList)
             .setSgPolicyConfig("global")
             .setPingOn(true)
             .build();
 
     map = new HashMap<>();
-    map.put(server1.getHostName(), server1);
+    map.put(server1.getName(), server1);
   }
 
   @Test(description = "test status of SGE")
@@ -102,11 +103,11 @@ public class OptionsPingControllerTest {
 
   @Test(description = "test status of ServerGroup")
   void testSG() {
-    optionsPingMonitor.serverGroupStatus.put(server1.getHostName(), false);
+    optionsPingMonitor.serverGroupStatus.put(server1.getName(), false);
     // turning on one element , SG should be UP
     Assert.assertFalse(optionsPingController.getStatus(server1));
     optionsPingMonitor.elementStatus.put(sge4.toUniqueElementString(), true);
-    optionsPingMonitor.serverGroupStatus.put(server1.getHostName(), true);
+    optionsPingMonitor.serverGroupStatus.put(server1.getName(), true);
 
     //
     assertTrue(optionsPingController.getStatus(server1));

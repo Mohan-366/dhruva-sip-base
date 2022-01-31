@@ -72,13 +72,13 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         continue;
       }
       logger.info("Starting OPTIONS pings for elements of ServerGroup: {}", serverGroup);
-      serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
+      serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
       pingPipeLine(serverGroup);
     }
   }
 
   protected void pingPipeLine(ServerGroup serverGroup) {
-    String serverGroupName = serverGroup.getHostName();
+    String serverGroupName = serverGroup.getName();
     String network = serverGroup.getNetworkName();
     List<ServerGroupElement> list = serverGroup.getElements();
     OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
@@ -363,7 +363,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     List<String> sgeNameList = new ArrayList<>();
 
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
-      String sgName = entry.getValue().getHostName();
+      String sgName = entry.getValue().getName();
       ServerGroup sg = entry.getValue();
       sgNameList.add(sgName);
       sg.getElements().forEach(element -> sgeNameList.add(element.toUniqueElementString()));

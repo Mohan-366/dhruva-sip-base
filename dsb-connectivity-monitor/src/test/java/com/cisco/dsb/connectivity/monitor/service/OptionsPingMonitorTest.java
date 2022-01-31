@@ -171,13 +171,14 @@ public class OptionsPingMonitorTest {
           ServerGroup.builder()
               .setNetworkName("net" + i)
               .setHostName("SGName" + i)
+              .setName("SGName" + i)
               .setElements(sgeList)
               .setPingOn(true)
               .setOptionsPingPolicy(optionsPingPolicy)
               .build();
 
       serverGroups.add(sg);
-      initmap.put(sg.getHostName(), sg);
+      initmap.put(sg.getName(), sg);
     }
   }
 
@@ -256,6 +257,7 @@ public class OptionsPingMonitorTest {
 
     ServerGroup server1 =
         ServerGroup.builder()
+            .setName("sg1")
             .setHostName("sg1")
             .setNetworkName(network.getName())
             .setElements(sgeList)
@@ -273,7 +275,7 @@ public class OptionsPingMonitorTest {
             .build();
     server1.setOptionsPingPolicyFromConfig(opPolicy);
     map = new HashMap<>();
-    map.put(server1.getHostName(), server1);
+    map.put(server1.getName(), server1);
   }
 
   @BeforeMethod
@@ -335,7 +337,7 @@ public class OptionsPingMonitorTest {
             () ->
                 optionsPingMonitor
                     .getUpElementsResponses(
-                        sg.getHostName(),
+                        sg.getName(),
                         sg.getNetworkName(),
                         sg.getElements(),
                         sg.getOptionsPingPolicy().getUpTimeInterval(),
@@ -352,7 +354,7 @@ public class OptionsPingMonitorTest {
             () ->
                 optionsPingMonitor
                     .getDownElementsResponses(
-                        sg.getHostName(),
+                        sg.getName(),
                         sg.getNetworkName(),
                         sg.getElements(),
                         sg.getOptionsPingPolicy().getDownTimeInterval(),
@@ -381,7 +383,7 @@ public class OptionsPingMonitorTest {
             () ->
                 optionsPingMonitor
                     .getDownElementsResponses(
-                        sg.getHostName(),
+                        sg.getName(),
                         sg.getNetworkName(),
                         sg.getElements(),
                         sg.getOptionsPingPolicy().getDownTimeInterval(),

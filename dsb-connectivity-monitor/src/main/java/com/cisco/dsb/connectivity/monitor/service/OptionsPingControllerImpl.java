@@ -25,7 +25,7 @@ public class OptionsPingControllerImpl implements OptionsPingController {
   public Boolean getStatus(Pingable obj) {
     if (obj instanceof ServerGroupElement)
       return getElementStatus(((ServerGroupElement) obj).toUniqueElementString());
-    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj).getHostName());
+    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj).getName());
     return false;
   }
 }

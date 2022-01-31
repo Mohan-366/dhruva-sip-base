@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.*;
 
+@CustomLog
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,26 +21,9 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
   private boolean pingOn = false;
   private List<ServerGroupElement> elements;
-
-  @Builder.Default
-  private SGPolicy sgPolicy =
-      SGPolicy.builder()
-          .setName("defaultSGPolicy")
-          .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
-          .build();
-
+  private SGPolicy sgPolicy;
   private String sgPolicyConfig;
-
-  @Builder.Default
-  private OptionsPingPolicy optionsPingPolicy =
-      OptionsPingPolicy.builder()
-          .setName("defaultOPPolicy")
-          .setPingTimeOut(500)
-          .setDownTimeInterval(5000)
-          .setUpTimeInterval(30000)
-          .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
-          .build();
-
+  private OptionsPingPolicy optionsPingPolicy;
   private String optionsPingPolicyConfig;
   private int priority;
   private int weight;
@@ -71,6 +55,38 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     this.optionsPingPolicy = optionsPingPolicy;
   }
 
+  public OptionsPingPolicy getOptionsPingPolicy() {
+    if (this.optionsPingPolicy == null) {
+      this.optionsPingPolicy =
+          OptionsPingPolicy.builder()
+              .setName("defaultOPPolicy")
+              .setPingTimeOut(500)
+              .setDownTimeInterval(5000)
+              .setUpTimeInterval(30000)
+              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+              .build();
+      logger.info(
+          "OptionsPingPolicy was not configured for servergroup: {}. Using default policy: {}",
+          this.toString(),
+          optionsPingPolicy.toString());
+    }
+    return optionsPingPolicy;
+  }
+
+  public SGPolicy getSgPolicy() {
+    if (this.sgPolicy == null) {
+      this.sgPolicy =
+          SGPolicy.builder()
+              .setName("defaultSGPolicy")
+              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+              .build();
+      logger.info(
+          "SGPolicy was not configured for servergroup: {}. Using default policy: {}",
+          this.toString(),
+          sgPolicy.toString());
+    }
+    return sgPolicy;
+  }
   /**
    * Compares this object to the object passed as an argument. If this object has a higher q-value,
    * the operation returns a negative integer. If this object has a lower q-value, the operation
