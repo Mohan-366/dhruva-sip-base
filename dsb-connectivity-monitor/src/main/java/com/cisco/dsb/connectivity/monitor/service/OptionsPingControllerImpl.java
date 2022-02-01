@@ -11,7 +11,7 @@ public class OptionsPingControllerImpl implements OptionsPingController {
 
   @Autowired OptionsPingMonitor optionsPingMonitor;
 
-  protected Boolean getElementStatus(Integer key) {
+  protected Boolean getElementStatus(String key) {
     Boolean status = optionsPingMonitor.elementStatus.get(key);
     return (status == null ? true : status);
   }
@@ -23,11 +23,9 @@ public class OptionsPingControllerImpl implements OptionsPingController {
   }
 
   public Boolean getStatus(Pingable obj) {
-
-    if (obj instanceof ServerGroupElement) return getElementStatus(obj.hashCode());
-
-    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj).getHostName());
-
+    if (obj instanceof ServerGroupElement)
+      return getElementStatus(((ServerGroupElement) obj).toUniqueElementString());
+    if (obj instanceof ServerGroup) return getServerGroupStatus(((ServerGroup) obj).getName());
     return false;
   }
 }

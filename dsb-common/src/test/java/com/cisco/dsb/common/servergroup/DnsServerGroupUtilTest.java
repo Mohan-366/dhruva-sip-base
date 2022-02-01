@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.dto.Hop;
@@ -44,10 +43,7 @@ public class DnsServerGroupUtilTest {
     when(network.getListenPoint()).thenReturn(sipListenPoint);
     when(network.getName()).thenReturn("default");
     when(network.getTransport()).thenReturn(Transport.TLS);
-
   }
-
-
 
   @Test
   public void testInvalidNetwork() {
@@ -66,20 +62,19 @@ public class DnsServerGroupUtilTest {
         .verify();
   }
 
-
   @DataProvider(name = "emptyOrNullHops")
   private Object[][] getEmptyorNullHop() {
     List<Hop> hopsNull = null;
 
     List<Hop> hopsEmpty = Collections.emptyList();
     return new Object[][] {
-            {Transport.TLS, hopsNull},
-            {Transport.TCP, hopsEmpty},
+      {Transport.TLS, hopsNull},
+      {Transport.TCP, hopsEmpty},
     };
   }
 
-  @Test (dataProvider = "emptyOrNullHops")
-  public void testCreateDnsErrorHandling( Transport transport, List<Hop> hops) {
+  @Test(dataProvider = "emptyOrNullHops")
+  public void testCreateDnsErrorHandling(Transport transport, List<Hop> hops) {
 
     LocateSIPServersResponse locateSIPServersResponseMock = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponseMock.getHops()).thenReturn(hops);
@@ -98,5 +93,4 @@ public class DnsServerGroupUtilTest {
                     && throwable.getMessage().equals("Null / Empty hops"))
         .verify();
   }
-
 }

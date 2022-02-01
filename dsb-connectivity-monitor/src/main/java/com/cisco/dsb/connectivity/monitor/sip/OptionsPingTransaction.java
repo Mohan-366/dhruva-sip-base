@@ -10,11 +10,10 @@ import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPClientTransactionImpl;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.sip.*;
-
-import gov.nist.javax.sip.stack.SIPClientTransactionImpl;
 import lombok.CustomLog;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,10 +39,10 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
   }
 
   public CompletableFuture<SIPResponse> proxySendOutBoundRequest(
-          @NonNull SIPRequest sipRequest,
-          @NonNull DhruvaNetwork dhruvaNetwork,
-          @NonNull SipProvider sipProvider)
-          throws SipException {
+      @NonNull SIPRequest sipRequest,
+      @NonNull DhruvaNetwork dhruvaNetwork,
+      @NonNull SipProvider sipProvider)
+      throws SipException {
     SIPListenPoint sipListenPoint = dhruvaNetwork.getListenPoint();
     if (sipListenPoint.getTransport().equals(Transport.UDP)) {
       forceRequestSource(sipRequest, sipListenPoint);
@@ -52,19 +51,19 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     ClientTransaction clientTrans = sipProvider.getNewClientTransaction(sipRequest);
 
     CompletableFuture.runAsync(
-            () -> {
-              try {
-                clientTrans.sendRequest();
-              } catch (SipException e) {
-                logger.error(
-                        "Error Sending OPTIONS request to {}:{} on network {} ",
-                        ((SIPRequest) clientTrans.getRequest()).getRemoteAddress(),
-                        ((SIPRequest) clientTrans.getRequest()).getRemotePort(),
-                        dhruvaNetwork.getName());
-                responseFuture.completeExceptionally(e);
-              }
-            },
-            dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
+        () -> {
+          try {
+            clientTrans.sendRequest();
+          } catch (SipException e) {
+            logger.error(
+                "Error Sending OPTIONS request to {}:{} on network {} ",
+                ((SIPRequest) clientTrans.getRequest()).getRemoteAddress(),
+                ((SIPRequest) clientTrans.getRequest()).getRemotePort(),
+                dhruvaNetwork.getName());
+            responseFuture.completeExceptionally(e);
+          }
+        },
+        dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING));
 
     // storing future response as  AppDataCookie in the application data of
     // clientTransaction for future mapping.
@@ -74,38 +73,36 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     if (sipListenPoint.getTransport().equals(Transport.UDP))
       timeOutFOrUDP(responseFuture, clientTrans);
 
-      return responseFuture;
+    return responseFuture;
   }
-
 
   // In case of timeout for UDP [unreliable transport],
   // JAIN stack keeps sending retransmission until timer F fires [takes 32 seconds]
   // In the above case, it will take 32 secs for the transaction to get complete
-  //So we are terminating the transaction in 5 seconds[getTimeOutForUDP()] and marking the element as down
+  // So we are terminating the transaction in 5 seconds[getTimeOutForUDP()] and marking the element
+  // as down
 
-  private void timeOutFOrUDP(CompletableFuture<SIPResponse> responseFuture , ClientTransaction clientTrans) {
+  private void timeOutFOrUDP(
+      CompletableFuture<SIPResponse> responseFuture, ClientTransaction clientTrans) {
     responseFuture
-            .orTimeout(getTimeOutForUDP(), TimeUnit.MILLISECONDS)
-            .exceptionally(
-                    ex -> {
-                      {
-                        try {
-                          clientTrans.terminate();
-                          logger.error(
-                                  "Terminating the UDP transaction for {} due to timeout  transaction details {}",
-                                  clientTrans.getRequest().getRequestURI(), ((SIPClientTransactionImpl) clientTrans).getTransactionId());
-                        } catch (ObjectInUseException e) {
-                          logger.error(
-                                  "Exception while terminating Options ping transaction  ",
-                                  e);
-                          responseFuture.completeExceptionally(e);
-                        }
-                      }
-                      return null;
-                    });
-
+        .orTimeout(getTimeOutForUDP(), TimeUnit.MILLISECONDS)
+        .exceptionally(
+            ex -> {
+              {
+                try {
+                  clientTrans.terminate();
+                  logger.error(
+                      "Terminating the UDP transaction for {} due to timeout  transaction details {}",
+                      clientTrans.getRequest().getRequestURI(),
+                      ((SIPClientTransactionImpl) clientTrans).getTransactionId());
+                } catch (ObjectInUseException e) {
+                  logger.error("Exception while terminating Options ping transaction  ", e);
+                  responseFuture.completeExceptionally(e);
+                }
+              }
+              return null;
+            });
   }
-
 
   @Override
   public void processResponse(ResponseEvent responseEvent) {

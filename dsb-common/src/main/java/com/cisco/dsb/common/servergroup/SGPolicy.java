@@ -5,6 +5,7 @@ import javax.validation.constraints.NotBlank;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
+@ToString
 @Getter
 @Setter
 @NoArgsConstructor

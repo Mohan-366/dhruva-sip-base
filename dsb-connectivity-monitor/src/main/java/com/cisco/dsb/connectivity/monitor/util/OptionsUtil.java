@@ -1,5 +1,6 @@
 package com.cisco.dsb.connectivity.monitor.util;
 
+import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -20,11 +21,11 @@ import javax.sip.message.Request;
 
 public class OptionsUtil {
 
-
-  //No retry has to be done for UDP, JAIN stack takes care of sending retransmissions.
+  // No retry has to be done for UDP, JAIN stack takes care of sending retransmissions.
   private static final int numTriesUDP = 0;
   private static final int numTriesTCP = 1;
   private static final int numTriesTLS = 1;
+  private static OptionsPingPolicy defaultOptionsPingPolicy;
 
   public static SIPRequest getRequest(
       ServerGroupElement element, DhruvaNetwork dhruvaNetwork, SipProvider sipProvider)
@@ -89,7 +90,7 @@ public class OptionsUtil {
     return sipRequest;
   }
 
-  public static Integer getNumRetry(Transport transport) {
+  public static int getNumRetry(Transport transport) {
     switch (transport) {
       case TLS:
         return numTriesTLS;
@@ -98,7 +99,7 @@ public class OptionsUtil {
       case UDP:
         return numTriesUDP;
       default:
-        return null;
+        return 0;
     }
   }
 }
