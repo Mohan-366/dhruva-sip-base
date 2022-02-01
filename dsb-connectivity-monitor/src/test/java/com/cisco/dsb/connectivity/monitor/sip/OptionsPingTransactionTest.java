@@ -88,35 +88,32 @@ public class OptionsPingTransactionTest {
   void testTimeOutForUDPException() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-            new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService);
     OptionsPingTransaction optionsPingTransaction1 = Mockito.spy(optionsPingTransaction);
     when(optionsPingTransaction1.getTimeOutForUDP()).thenReturn(500);
     when(sipListenPoint.getTransport()).thenReturn(Transport.UDP);
 
-
     doThrow(ObjectInUseException.class).when(clientTransaction).terminate();
     CompletableFuture<SIPResponse> sipResponseCompletableFuture =
-            optionsPingTransaction1.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
+        optionsPingTransaction1.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
     Thread.sleep(750);
 
     Assert.assertTrue(sipResponseCompletableFuture.isCompletedExceptionally());
   }
 
-
   @Test(description = "TCP timeout , does not terminate the transaction")
   void testTimeOutForTCP() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-            new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService);
     OptionsPingTransaction optionsPingTransaction1 = Mockito.spy(optionsPingTransaction);
     when(optionsPingTransaction1.getTimeOutForUDP()).thenReturn(500);
     when(sipListenPoint.getTransport()).thenReturn(Transport.TCP);
     CompletableFuture<SIPResponse> sipResponseCompletableFuture =
-            optionsPingTransaction1.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
+        optionsPingTransaction1.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
     Thread.sleep(750);
     Assert.assertFalse(sipResponseCompletableFuture.isCompletedExceptionally());
   }
-
 
   @Test(description = "options ping request sending failure ")
   void testCFOptionWithException() throws SipException, InterruptedException {

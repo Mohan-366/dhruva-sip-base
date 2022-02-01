@@ -4,9 +4,11 @@ import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.transport.Transport;
+import java.util.Arrays;
 import java.util.List;
 import lombok.*;
 
+@CustomLog
 @Getter
 @Setter
 @NoArgsConstructor
@@ -53,6 +55,38 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     this.optionsPingPolicy = optionsPingPolicy;
   }
 
+  public OptionsPingPolicy getOptionsPingPolicy() {
+    if (this.optionsPingPolicy == null) {
+      this.optionsPingPolicy =
+          OptionsPingPolicy.builder()
+              .setName("defaultOPPolicy")
+              .setPingTimeOut(500)
+              .setDownTimeInterval(5000)
+              .setUpTimeInterval(30000)
+              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+              .build();
+      logger.info(
+          "OptionsPingPolicy was not configured for servergroup: {}. Using default policy: {}",
+          this.toString(),
+          optionsPingPolicy.toString());
+    }
+    return optionsPingPolicy;
+  }
+
+  public SGPolicy getSgPolicy() {
+    if (this.sgPolicy == null) {
+      this.sgPolicy =
+          SGPolicy.builder()
+              .setName("defaultSGPolicy")
+              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+              .build();
+      logger.info(
+          "SGPolicy was not configured for servergroup: {}. Using default policy: {}",
+          this.toString(),
+          sgPolicy.toString());
+    }
+    return sgPolicy;
+  }
   /**
    * Compares this object to the object passed as an argument. If this object has a higher q-value,
    * the operation returns a negative integer. If this object has a lower q-value, the operation

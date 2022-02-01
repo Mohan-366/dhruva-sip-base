@@ -6,8 +6,8 @@ package com.cisco.dsb.common.util.log.event;
 
 import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
-import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -128,20 +128,18 @@ public class Event {
     //    consumer1.accept(sipMsg);
   }
 
-  public static void emitSGElementUpEvent(
-      String elementAddress, int elementPort, Transport transport, String networkName) {
+  public static void emitSGElementUpEvent(ServerGroupElement sge, String networkName) {
     Map<String, String> eventInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
                 Event.REMOTEIP,
-                elementAddress,
+                sge.getIpAddress(),
                 Event.REMOTEPORT,
-                String.valueOf(elementPort),
+                String.valueOf(sge.getPort()),
                 "network",
                 networkName));
-
-    logger.emitEvent(
-        EventType.SERVERGROUP_ELEMENT_EVENT, null, "ServerGroup Element UP", eventInfoMap);
+    String msg = "ServerGroup Element UP: " + sge;
+    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
   }
 
   public static void emitSGEvent(String serverGroupName, boolean isDown) {
@@ -161,12 +159,7 @@ public class Event {
   }
 
   public static void emitSGElementDownEvent(
-      Integer errorCode,
-      String errorReason,
-      String elementAddress,
-      int elementPort,
-      Transport transport,
-      String networkName) {
+      Integer errorCode, String errorReason, ServerGroupElement sge, String networkName) {
     Map<String, String> eventInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
@@ -175,17 +168,17 @@ public class Event {
                 "errorReason",
                 errorReason,
                 Event.REMOTEIP,
-                elementAddress,
+                sge.getIpAddress(),
                 Event.REMOTEPORT,
-                String.valueOf(elementPort),
+                String.valueOf(sge.getPort()),
                 "network",
                 networkName));
     if (errorCode != null) {
       eventInfoMap.put("errorCode", String.valueOf(errorCode));
     }
-    eventInfoMap.put("transport", transport.name());
+    eventInfoMap.put("transport", sge.getTransport().name());
 
-    logger.emitEvent(
-        EventType.SERVERGROUP_ELEMENT_EVENT, null, "ServerGroup Element Down", eventInfoMap);
+    String msg = "ServerGroup Element DOWN: " + sge.toUniqueElementString() + " : " + sge;
+    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
   }
 }

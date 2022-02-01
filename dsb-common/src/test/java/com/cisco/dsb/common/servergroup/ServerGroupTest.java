@@ -28,7 +28,6 @@ public class ServerGroupTest {
     sg1.setSgPolicy("mediaPolicy");
     sg1.setOptionsPingPolicy("UDPPolicy");
 
-
     Assert.assertTrue(sg.equals(sg1));
 
     ServerGroupElement sge1 = new ServerGroupElement();
