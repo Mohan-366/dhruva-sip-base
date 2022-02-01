@@ -93,9 +93,9 @@ public class LMAUtil {
   }
 
   public static Event.EventSubType getEventSubTypeFromTransport(String transport) {
-    return StringUtils.equals(transport, "UDP")
+    return StringUtils.equalsIgnoreCase(transport, "UDP")
         ? Event.EventSubType.UDPCONNECTION
-        : StringUtils.equals(transport, "TLS")
+        : StringUtils.equalsIgnoreCase(transport, "TLS")
             ? Event.EventSubType.TLSCONNECTION
             : Event.EventSubType.TCPCONNECTION;
   }

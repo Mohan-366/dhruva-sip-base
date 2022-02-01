@@ -54,20 +54,14 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
 
   /** Start our thread. */
   public void start() throws IOException {
-    logger.info("TCP message processor thread for stack {} starting", getStackName());
+    logger.debug("TCP message processor thread for stack {} starting", getStackName());
     try {
       super.start();
       keepAliveTimerTask.start();
       connectionMetricTask.start();
     } catch (Exception ex) {
       logger.error("Error starting TCP message processor");
-      logger.emitEvent(
-          Event.EventType.CONNECTION,
-          Event.EventSubType.TCPCONNECTION,
-          Event.ErrorType.ConnectionError,
-          ex.getMessage(),
-          null,
-          ex);
+      Event.emitConnectionErrorEvent("TCP", Event.ErrorType.ConnectionError, null, ex);
       throw ex;
     }
   }
@@ -75,9 +69,9 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
   /** Stop method. */
   public void stop() {
     keepAliveTimerTask.stop();
-    connectionMetricTask.stop();
-    logger.info("TCP message processor thread for stack {} stopping", getStackName());
+    logger.debug("TCP message processor thread for stack {} stopping", getStackName());
     super.stop();
+    connectionMetricTask.stop();
   }
 
   @Override
@@ -94,6 +88,9 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+    metricService.emitConnectionMetrics(
+        Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+
     super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }

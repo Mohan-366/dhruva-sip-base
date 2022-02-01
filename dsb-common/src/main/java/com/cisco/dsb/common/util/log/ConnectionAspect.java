@@ -4,7 +4,6 @@ import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipTLSMessageProcessor;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTCPMessageProcessor;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTlsMessageProcessor;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
-import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.stack.*;
 import java.net.InetAddress;
@@ -34,6 +33,10 @@ public class ConnectionAspect {
       throwing = "ex")
   public void logIOExceptionOnBlockingConnection(JoinPoint jp, Exception ex) {
     logger.debug("exception from io handler found");
+    this.logDSBEventForIOException(jp, ex);
+  }
+
+  private void logDSBEventForIOException(JoinPoint jp, Exception ex) {
     Object[] args = jp.getArgs();
 
     InetAddress senderAddress = (InetAddress) args[0];
@@ -43,13 +46,7 @@ public class ConnectionAspect {
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
 
-    logger.emitEvent(
-        Event.EventType.CONNECTION,
-        LMAUtil.getEventSubTypeFromTransport(transport),
-        Event.ErrorType.ConnectionError,
-        ex.getMessage(),
-        null,
-        ex);
+    Event.emitConnectionErrorEvent(transport, Event.ErrorType.ConnectionError, null, ex);
   }
 
   /**
@@ -64,22 +61,7 @@ public class ConnectionAspect {
       throwing = "ex")
   public void logIOExceptionOnNBConnection(JoinPoint jp, Exception ex) {
     logger.debug("exception from non blocking io handler found");
-    Object[] args = jp.getArgs();
-
-    InetAddress senderAddress = (InetAddress) args[0];
-    InetAddress receiverAddress = (InetAddress) args[1];
-    int contactPort = (int) args[2];
-    String transport = String.valueOf(args[3]);
-    boolean isClient = (Boolean) args[5];
-    MessageChannel messageChannel = (MessageChannel) args[6];
-
-    logger.emitEvent(
-        Event.EventType.CONNECTION,
-        LMAUtil.getEventSubTypeFromTransport(transport),
-        Event.ErrorType.ConnectionError,
-        ex.getMessage(),
-        null,
-        ex);
+    this.logDSBEventForIOException(jp, ex);
   }
 
   /**
@@ -104,12 +86,12 @@ public class ConnectionAspect {
       "execution(public javax.net.ssl.HandshakeCompletedEvent gov.nist.javax.sip.stack.HandshakeCompletedListenerImpl.getHandshakeCompletedEvent())")
   public HandshakeCompletedEvent getHandshakeCompletedEvent(ProceedingJoinPoint pjp)
       throws Throwable {
-    logger.info(
+    logger.debug(
         "HandshakeCompletedListenerImpl.getHandshakeCompletedEvent enter: listener{}",
         traceHashcode(pjp.getTarget()));
     HandshakeCompletedEvent event = (HandshakeCompletedEvent) pjp.proceed();
 
-    logger.info(
+    logger.debug(
         "HandshakeCompletedListenerImpl.getHandshakeCompletedEvent exit: listener{} handshakeCompletedEvent{}",
         traceHashcode(pjp.getTarget()),
         traceHashcode(event));

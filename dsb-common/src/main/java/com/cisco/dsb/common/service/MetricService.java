@@ -12,7 +12,6 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
 import com.cisco.dsb.common.sip.util.SipUtils;
-import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
 import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
@@ -187,7 +186,6 @@ public class MetricService {
         return;
       }
 
-      // String protocol = SipUtils.getConnectionProtocol(channel);
       String id = SipUtils.getConnectionId(direction, channel.getPeerProtocol(), channel);
       String localAddress = channel.getHost();
       int localPort = channel.getPort();
@@ -202,14 +200,13 @@ public class MetricService {
 
       connectionMetric.tag("direction", direction);
       connectionMetric.tag("transport", transport);
-      // point.addTag("protocol", protocol);
       connectionMetric.field("viaAddress", viaAddress);
       connectionMetric.field("viaPort", viaPort);
       connectionMetric.field("localAddress", localAddress);
       connectionMetric.field("localPort", localPort);
       connectionMetric.field("remoteAddress", remoteAddress);
       connectionMetric.field("remotePort", remotePort);
-      connectionMetric.tag("id", id);
+      connectionMetric.field("id", id);
       connectionMetric.tag("connectionState", connectionState);
 
       sendMetric(connectionMetric);
@@ -218,28 +215,6 @@ public class MetricService {
       // Only debug here since TLS connections with no handshake session are common and cause noisy
       logger.debug("Unable to emit connection metric", e);
     }
-  }
-
-  public void sendConnectionMetric(
-      String localIp,
-      int localPort,
-      String remoteIp,
-      int remotePort,
-      Transport transport,
-      DIRECTION direction,
-      Connection.STATE connectionState) {
-
-    Metric metric =
-        Metrics.newMetric()
-            .measurement("connection")
-            .tag("transport", transport != null ? transport.name() : null)
-            .tag("direction", direction != null ? direction.name() : null)
-            .tag("connectionState", connectionState != null ? connectionState.name() : null)
-            .field("localIp", localIp)
-            .field("localPort", localPort)
-            .field("remoteIp", remoteIp)
-            .field("remotePort", remotePort);
-    sendMetric(metric);
   }
 
   public void sendDNSMetric(

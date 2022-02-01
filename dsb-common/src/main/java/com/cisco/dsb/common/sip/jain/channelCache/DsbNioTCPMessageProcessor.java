@@ -6,8 +6,11 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.google.common.base.Preconditions;
+import gov.nist.core.Host;
+import gov.nist.core.HostPort;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
+import gov.nist.javax.sip.stack.MessageChannel;
 import gov.nist.javax.sip.stack.NioTcpMessageProcessor;
 import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.io.IOException;
@@ -47,20 +50,14 @@ public class DsbNioTCPMessageProcessor extends NioTcpMessageProcessor
 
   /** Start our thread. */
   public void start() throws IOException {
-    logger.info("TCP message NIO processor thread for stack {} starting", getStackName());
+    logger.debug("TCP message NIO processor thread for stack {} starting", getStackName());
     try {
       super.start();
       keepAliveTimerTask.start();
       connectionMetricTask.start();
     } catch (Exception ex) {
-      logger.error("Error starting NIO TCP message processor");
-      logger.emitEvent(
-          Event.EventType.CONNECTION,
-          Event.EventSubType.TCPCONNECTION,
-          Event.ErrorType.ConnectionError,
-          ex.getMessage(),
-          null,
-          ex);
+      logger.debug("Error starting NIO TCP message processor");
+      Event.emitConnectionErrorEvent("TCP", Event.ErrorType.ConnectionError, null, ex);
       throw ex;
     }
   }
@@ -68,8 +65,9 @@ public class DsbNioTCPMessageProcessor extends NioTcpMessageProcessor
   /** Stop method. */
   public void stop() {
     keepAliveTimerTask.stop();
-    logger.info("TCP message NIO processor thread for stack {} stopping", getStackName());
+    logger.debug("TCP message NIO processor thread for stack {} stopping", getStackName());
     super.stop();
+    connectionMetricTask.stop();
   }
 
   @Override
@@ -86,8 +84,43 @@ public class DsbNioTCPMessageProcessor extends NioTcpMessageProcessor
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+    metricService.emitConnectionMetrics(
+        Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+
     super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
+  }
+
+  @Override
+  public boolean closeReliableConnection(String peerAddress, int peerPort)
+      throws IllegalArgumentException {
+
+    validatePortInRange(peerPort);
+    HostPort hostPort = new HostPort();
+    hostPort.setHost(new Host(peerAddress));
+    hostPort.setPort(peerPort);
+    String messageChannelKey = MessageChannel.getKey(hostPort, "TCP");
+
+    ConnectionOrientedMessageChannel removedIncomingChannel =
+        this.incomingMessageChannels.get(messageChannelKey);
+    ConnectionOrientedMessageChannel removedMessageChannel =
+        this.messageChannels.get(messageChannelKey);
+
+    boolean result = super.closeReliableConnection(peerAddress, peerPort);
+
+    if (result) {
+      metricService.emitConnectionMetrics(
+          Event.DIRECTION.OUT.toString(),
+          removedMessageChannel,
+          Connection.STATE.DISCONNECTED.toString());
+      metricService.emitConnectionMetrics(
+          Event.DIRECTION.IN.toString(),
+          removedIncomingChannel,
+          Connection.STATE.DISCONNECTED.toString());
+    }
+
+    logger.debug("Connection removed for reliableConnection");
+    return result;
   }
 
   @Override

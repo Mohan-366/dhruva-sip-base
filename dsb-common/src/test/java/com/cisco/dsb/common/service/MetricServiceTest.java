@@ -182,7 +182,7 @@ public class MetricServiceTest {
     // scenario -> if channel is null then no metrics will be emitted
     metricService.emitConnectionMetrics(
         DIRECTION_IN.toString(), null, Connection.STATE.CONNECTED.toString());
-    verify(metricClientMock, times(0)).sendMetric(metricArgumentCaptor.capture());
+    verify(metricClientMock, times(0)).sendMetric(any());
   }
 
   @Test(description = "Test to verify emitted connection metrics")
@@ -220,37 +220,54 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("transport"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("transport"), transport);
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("id"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("direction"), DIRECTION_IN.toString());
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("connectionState"));
+    Assert.assertEquals(
+        capturedMetricPoint.getTags().get("connectionState"),
+        Connection.STATE.CONNECTED.toString());
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("id"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localAddress"), localAddress);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localPort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localPort"), localPort);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remoteAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remotePort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remotePort"), remotePort);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaAddress"), viaAddress);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaPort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaPort"), viaPort);
   }
 
-  public void sendConnectionMetricTest() {
+  @Test(description = "Test to verify emitted connection metrics of outward dir")
+  public void connectionMetricTestDirOut() {
 
-    String testLocalIp = "127.0.0.1";
-    int testLocalPort = 5060;
-    String testRemoteIp = "127.0.0.2";
-    int testRemotePort = 6060;
-    Transport testTransport = Transport.TCP;
-    Event.DIRECTION testDirection = Event.DIRECTION.IN;
-    Connection.STATE testConnectionState = Connection.STATE.ACTIVE;
+    // scenario-> channel is mocked, client will emit metrics with connection info
+    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+    String localAddress = "127.0.0.1";
+    int localPort = 5060;
+    String viaAddress = "127.0.0.1";
+    int viaPort = 5060;
+    String remoteAddress = "127.0.0.1";
+    int remotePort = 7060;
 
-    // Positive scenario
-    metricService.sendConnectionMetric(
-        testLocalIp,
-        testLocalPort,
-        testRemoteIp,
-        testRemotePort,
-        testTransport,
-        testDirection,
-        testConnectionState);
-    verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
+    String transport = "TCP";
+
+    when(mockedChannel.getHost()).thenReturn(localAddress);
+    when(mockedChannel.getPort()).thenReturn(localPort);
+    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
+    when(mockedChannel.getViaPort()).thenReturn(viaPort);
+    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
+    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
+    when(mockedChannel.getTransport()).thenReturn(transport);
+    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+
+    metricService.emitConnectionMetrics(
+        DIRECTION_OUT.toString(), mockedChannel, Connection.STATE.CONNECTED.toString());
+    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
@@ -260,28 +277,85 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("transport"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("transport"), transport);
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("direction"), DIRECTION_OUT.toString());
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("connectionState"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localIp"));
+    Assert.assertEquals(
+        capturedMetricPoint.getTags().get("connectionState"),
+        Connection.STATE.CONNECTED.toString());
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("id"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localAddress"), localAddress);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localPort"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remoteIp"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localPort"), localPort);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remoteAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remotePort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remotePort"), remotePort);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaAddress"), viaAddress);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaPort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaPort"), viaPort);
+  }
 
-    // negative scenario
-    metricService.sendConnectionMetric(
-        testLocalIp, testLocalPort, testRemoteIp, testRemotePort, null, null, null);
-    verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
+  @Test(
+      description =
+          "Test to verify emitted connection metrics of outward dir, disconnected connection")
+  public void connectionMetricTestForDisconnected() {
 
-    capturedMetric = metricArgumentCaptor.getValue();
+    // scenario-> channel is mocked, client will emit metrics with connection info
+    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+    String localAddress = "127.0.0.1";
+    int localPort = 5060;
+    String viaAddress = "127.0.0.1";
+    int viaPort = 5060;
+    String remoteAddress = "127.0.0.1";
+    int remotePort = 7060;
+
+    String transport = "TCP";
+
+    when(mockedChannel.getHost()).thenReturn(localAddress);
+    when(mockedChannel.getPort()).thenReturn(localPort);
+    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
+    when(mockedChannel.getViaPort()).thenReturn(viaPort);
+    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
+    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
+    when(mockedChannel.getTransport()).thenReturn(transport);
+    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+
+    metricService.emitConnectionMetrics(
+        DIRECTION_OUT.toString(), mockedChannel, Connection.STATE.DISCONNECTED.toString());
+    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+
+    Metric capturedMetric = metricArgumentCaptor.getValue();
     Assert.assertNotNull(capturedMetric);
 
-    capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
     Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
 
-    Assert.assertFalse(capturedMetricPoint.getTags().containsKey("transport"));
-    Assert.assertFalse(capturedMetricPoint.getTags().containsKey("direction"));
-    Assert.assertFalse(capturedMetricPoint.getTags().containsKey("connectionState"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("transport"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("transport"), transport);
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("direction"));
+    Assert.assertEquals(capturedMetricPoint.getTags().get("direction"), DIRECTION_OUT.toString());
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("connectionState"));
+    Assert.assertEquals(
+        capturedMetricPoint.getTags().get("connectionState"),
+        Connection.STATE.DISCONNECTED.toString());
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("id"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localAddress"), localAddress);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("localPort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("localPort"), localPort);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remoteAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remoteAddress"), remoteAddress);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("remotePort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("remotePort"), remotePort);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaAddress"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaAddress"), viaAddress);
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("viaPort"));
+    Assert.assertEquals(capturedMetricPoint.getFields().get("viaPort"), viaPort);
   }
 
   public void sendDnsMetricTest() {

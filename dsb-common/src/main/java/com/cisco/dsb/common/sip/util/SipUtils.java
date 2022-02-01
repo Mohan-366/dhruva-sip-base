@@ -172,7 +172,7 @@ public final class SipUtils {
       return null;
     }
 
-    if (StringUtils.equals("UDP", messageChannel.getTransport())) {
+    if (StringUtils.equalsIgnoreCase("UDP", messageChannel.getTransport())) {
       return "UDP";
     }
 

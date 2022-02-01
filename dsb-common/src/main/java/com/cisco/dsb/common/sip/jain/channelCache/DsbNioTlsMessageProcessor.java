@@ -53,13 +53,7 @@ public class DsbNioTlsMessageProcessor extends NioTlsMessageProcessor
       connectionMetricTask.start();
     } catch (Exception ex) {
       logger.error("Error starting NIO TLS message processor");
-      logger.emitEvent(
-          Event.EventType.CONNECTION,
-          Event.EventSubType.TCPCONNECTION,
-          Event.ErrorType.ConnectionError,
-          ex.getMessage(),
-          null,
-          ex);
+      Event.emitConnectionErrorEvent("TLS", Event.ErrorType.ConnectionError, null, ex);
       throw ex;
     }
   }
@@ -67,8 +61,9 @@ public class DsbNioTlsMessageProcessor extends NioTlsMessageProcessor
   /** Stop method. */
   public void stop() {
     keepAliveTimerTask.stop();
-    logger.info("TLS message nio processor thread for stack {} stopping", getStackName());
+    logger.debug("TLS message nio processor thread for stack {} stopping", getStackName());
     super.stop();
+    connectionMetricTask.stop();
   }
 
   @Override
@@ -85,6 +80,8 @@ public class DsbNioTlsMessageProcessor extends NioTlsMessageProcessor
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
+    metricService.emitConnectionMetrics(
+        Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }
