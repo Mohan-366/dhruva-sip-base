@@ -10,6 +10,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
+import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -17,6 +18,7 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
+import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
@@ -262,6 +264,14 @@ public class ProxyService {
           } catch (DhruvaException ex) {
             logger.error("Unable to send err response {}", Response.SERVER_INTERNAL_ERROR);
           }
+        }
+        // Emit latency metric for non mid-dialog requests
+        if (metricService != null && !SipUtils.isMidDialogRequest(sipRequest)) {
+          new SipMetricsContext(
+              metricService,
+              SipMetricsContext.State.proxyNewRequestFinalResponseProcessed,
+              sipRequest.getCallId().getCallId(),
+              true);
         }
       } catch (Exception exception) {
         logger.error("Unable to gracefully handle the exception in request pipeline!", exception);

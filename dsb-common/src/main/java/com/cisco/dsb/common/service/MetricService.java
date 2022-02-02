@@ -38,6 +38,7 @@ import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -58,6 +59,7 @@ public class MetricService {
   @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
 
   @Getter private final Cache<String, Long> timers;
+  @Getter private final HashMap<String, StopWatch> stopWatchTimers = new HashMap<>();
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
 
@@ -266,12 +268,21 @@ public class MetricService {
 
   public void time(
       String metric, long duration, TimeUnit timeUnit, @Nullable SipMetricsContext context) {
-    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null);
+    String callId = null;
+    if (context != null) {
+      callId = context.getCallId();
+    }
+    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null, callId);
   }
 
   public void update(
-      String metric, long count, long duration, TimeUnit timeUnit, Boolean isSuccess) {
-    update(metric, count, duration, timeUnit, 0, null, isSuccess);
+      String metric,
+      long count,
+      long duration,
+      TimeUnit timeUnit,
+      Boolean isSuccess,
+      @Nullable String callId) {
+    update(metric, count, duration, timeUnit, 0, null, isSuccess, callId);
   }
 
   public void update(
@@ -281,7 +292,8 @@ public class MetricService {
       TimeUnit durationTimeUnit,
       long expectedDuration,
       TimeUnit expectedTimeUnit,
-      Boolean isSuccess) {
+      Boolean isSuccess,
+      String callId) {
 
     update(
         createMetric(
@@ -291,7 +303,8 @@ public class MetricService {
             durationTimeUnit,
             expectedDuration,
             expectedTimeUnit,
-            isSuccess));
+            isSuccess,
+            callId));
   }
 
   public void update(Metric influxPoint) {
@@ -326,7 +339,8 @@ public class MetricService {
       TimeUnit durationTimeUnit,
       long expectedDuration,
       TimeUnit expectedTimeUnit,
-      Boolean isSuccess) {
+      Boolean isSuccess,
+      String callId) {
 
     long normalizedDuration =
         duration > 0 && durationTimeUnit != null
@@ -356,6 +370,9 @@ public class MetricService {
       if (isSuccess != null) {
         point.field("eventSuccess", isSuccess);
       }
+      if (callId != null) {
+        point.field("callId", callId);
+      }
     }
 
     return point;
@@ -367,6 +384,55 @@ public class MetricService {
       String key = joiner.join(callId, metric);
       timers.put(key, System.nanoTime());
     }
+  }
+
+  public void startStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null && !stopWatch.isStarted()) {
+        stopWatch.start();
+      } else {
+        stopWatch = new StopWatch();
+        stopWatch.start();
+        stopWatchTimers.put(key, stopWatch);
+      }
+    }
+  }
+
+  public void pauseStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.suspend();
+      }
+    }
+  }
+
+  public void resumeStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.resume();
+      }
+    }
+  }
+
+  public long endStopWatch(String callId, String metric) {
+    final long noValidDuration = -1L;
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.stop();
+        long retVal = stopWatch.getTime(TimeUnit.MILLISECONDS);
+        stopWatchTimers.remove(key);
+        return retVal;
+      }
+    }
+    return noValidDuration;
   }
 
   // Stops timing operation on the given (metric, callId) pair and calculates

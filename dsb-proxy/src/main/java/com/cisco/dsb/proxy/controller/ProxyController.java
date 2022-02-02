@@ -172,6 +172,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Override
   public CompletableFuture<ProxySIPResponse> proxyRequest(
       @NonNull ProxySIPRequest proxySIPRequest, EndPoint endPoint) {
+    logger.info(
+        "proxying to endpoint {} over transport {}", endPoint.getHost(), endPoint.getProtocol());
     // already has EndPoint
     processOutboundDestination(proxySIPRequest, endPoint); // add Route header
     return proxyRequest(proxySIPRequest);
@@ -184,18 +186,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     proxyTransactionProcessRequest.apply(proxySIPRequest); // adds some proxyParams and RR
     proxyTransaction
         .proxySendOutBoundRequest(proxySIPRequest)
-        .doFinally(
-            (signalType) -> {
-              // Emit latency metric for non mid-dialog requests
-
-              if (metricService != null
-                  && !SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()))
-                new SipMetricsContext(
-                    metricService,
-                    SipMetricsContext.State.latencyIncomingNewRequestEnd,
-                    proxySIPRequest.getCallId(),
-                    true);
-            })
         .subscribe(
             this::onProxySuccess,
             err -> {
@@ -325,6 +315,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
     ProxyParams dpp = pp;
     dpp.setProxyToAddress(proxySIPRequest.getDownstreamElement().getHost());
+    if (!mEmulate2543) {
+      try {
+        proxySIPRequest.lrEscape();
+      } catch (ParseException e) {
+        logger.error("caught exception while invoking lrEscape in proxyRouteSetRemoteInfo", e);
+        throw e;
+      }
+    }
     request.setRemoteAddress(
         InetAddress.getByName(proxySIPRequest.getDownstreamElement().getHost()));
     dpp.setProxyToPort(proxySIPRequest.getDownstreamElement().getPort());
@@ -752,12 +750,20 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Override
   public void onProxySuccess(ProxySIPRequest proxySIPRequest) {
     logger.debug("sent out the request successfully");
+    proxySIPRequest.handleProxyEvent(
+        metricService, SipMetricsContext.State.proxyNewRequestSendSuccess);
   }
 
   @Override
   public void onProxyFailure(
       ProxyClientTransaction proxyClientTransaction, ProxyCookie cookie, Throwable err) {
     logger.debug("Entering onProxyFailure():");
+    if (proxyClientTransaction != null) {
+      ProxySIPRequest proxySIPRequest = proxyClientTransaction.getProxySIPRequest();
+      proxySIPRequest.handleProxyEvent(
+          metricService, SipMetricsContext.State.proxyNewRequestSendFailure);
+    }
+
     ErrorCode errorCode;
     if (err instanceof DhruvaRuntimeException)
       errorCode = ((DhruvaRuntimeException) err).getErrCode();

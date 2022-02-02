@@ -10,7 +10,9 @@ import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
+import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.servergroup.*;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
@@ -72,7 +74,9 @@ public class TrunkTest {
     when(request.getRequestURI()).thenReturn(rUri);
     when(clonedPSR.getRequest()).thenReturn(clonedRequest);
     when(clonedRequest.getRequestURI()).thenReturn(clonedUri);
-
+    doNothing()
+        .when(proxySIPRequest)
+        .handleProxyEvent(any(MetricService.class), any(SipMetricsContext.State.class));
     // init response behaviors
     when(successProxySIPResponse.getResponse()).thenReturn(successSipResponse);
     when(successProxySIPResponse.getStatusCode()).thenReturn(Response.OK);

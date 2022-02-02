@@ -1,6 +1,7 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -16,11 +17,6 @@ public interface CallType {
   @CustomLog
   final class Logger {}
 
-  MetricService metricServiceBean =
-      SpringApplicationContext.getAppContext() == null
-          ? null
-          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
-
   TrunkType getIngressTrunk();
 
   TrunkType getEgressTrunk();
@@ -31,12 +27,17 @@ public interface CallType {
 
   TrunkManager getTrunkManager();
 
+  static MetricService getMetricService() {
+    return SpringApplicationContext.getAppContext() == null
+        ? null
+        : SpringApplicationContext.getAppContext().getBean(MetricService.class);
+  }
+
   default void processRequest(ProxySIPRequest proxySIPRequest) {
     TrunkManager trunkManager = getTrunkManager();
     String ingress = getIngressKey();
     String egress = getEgressKey(proxySIPRequest);
-    proxySIPRequest.setCallTypeName(this.getClass().getSimpleName());
-    if (metricServiceBean != null) {
+    if (getMetricService() != null) {
       this.incrementCPSCounter(proxySIPRequest);
     }
     if (ingress == null || egress == null) {
@@ -47,6 +48,13 @@ public interface CallType {
     trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress);
     trunkManager
         .handleEgress(getEgressTrunk(), proxySIPRequest, egress)
+        .doFinally(
+            (signalType) -> {
+              // Emit latency metric for non mid-dialog requests
+              proxySIPRequest.handleProxyEvent(
+                  getMetricService(),
+                  SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
+            })
         .subscribe(
             proxySIPResponse -> {
               Logger.logger.debug(
@@ -72,11 +80,11 @@ public interface CallType {
 
     if (StringUtils.isNotBlank(callTypeName)) {
       AtomicInteger countByCallType =
-          metricServiceBean
+          getMetricService()
               .getCpsCounterMap()
               .computeIfAbsent(callTypeName, value -> new AtomicInteger(0));
       countByCallType.incrementAndGet();
-      metricServiceBean.getCpsCounterMap().put(callTypeName, countByCallType);
+      getMetricService().getCpsCounterMap().put(callTypeName, countByCallType);
     }
   }
 }

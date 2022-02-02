@@ -507,7 +507,7 @@ public class SipProxyManager {
         if (!SipUtils.isMidDialogRequest(sipRequest)) {
           new SipMetricsContext(
               metricService,
-              SipMetricsContext.State.latencyIncomingNewRequestStart,
+              SipMetricsContext.State.proxyNewRequestReceived,
               sipRequest.getCallId().getCallId(),
               true);
         }

@@ -3,6 +3,8 @@ package com.cisco.dsb.proxy.messaging;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.context.ExecutionContext;
+import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -144,5 +146,22 @@ public class ProxySIPRequestTest {
     // These apis are not doing anything today, just for numbers
     proxySIPRequest.sendFailureResponse();
     proxySIPRequest.sendSuccessResponse();
+  }
+
+  @Test(
+      description =
+          "test handling of proxy events to manage latency metrics.we can add other metrics in future")
+  public void testProxyEvent() {
+    MetricService metricService = mock(MetricService.class);
+    doNothing().when(metricService).handleMetricsEvent(any(SipMetricsContext.class));
+
+    ProxyInterface proxyInterface = mock(ProxyInterface.class);
+    ProxySIPRequest proxySIPRequest =
+        new ProxySIPRequest(executionContext, provider, request, serverTransaction);
+    proxySIPRequest.setProxyInterface(proxyInterface);
+
+    proxySIPRequest.handleProxyEvent(
+        metricService, SipMetricsContext.State.proxyNewRequestReceived);
+    verify(metricService).handleMetricsEvent(any(SipMetricsContext.class));
   }
 }

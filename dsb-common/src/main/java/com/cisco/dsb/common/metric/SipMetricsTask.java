@@ -28,12 +28,23 @@ public class SipMetricsTask implements Runnable {
     return metricsService.stopTimer(metricsContext.getCallId(), metric);
   }
 
+  private long getTimeStopWatch(String metric) {
+    return metricsService.endStopWatch(metricsContext.getCallId(), metric);
+  }
+
   // Record timing operation for given metric
   private void time(String metric) {
     final long duration = getTime(metric);
 
     if (duration > 0) metricsService.time(metric, duration, TimeUnit.MILLISECONDS, metricsContext);
     else logger.debug("duration is invalid, skipping sending the metric: " + metric);
+  }
+
+  private void timeStopWatch(String metric) {
+    final long duration = getTimeStopWatch(metric);
+
+    if (duration > 0) metricsService.time(metric, duration, TimeUnit.MILLISECONDS, metricsContext);
+    else logger.debug("duration is invalid, skipping sending the metric: {}", metric);
   }
 
   @Override
@@ -44,13 +55,23 @@ public class SipMetricsTask implements Runnable {
 
   private void handleState() {
     switch (metricsContext.state) {
-      case latencyIncomingNewRequestStart:
-        logger.debug("incoming new request timer start");
-        metricsService.startTimer(metricsContext.getCallId(), incomingRequest);
+      case proxyNewRequestReceived:
+        logger.debug("incoming new request timer start {}", metricsContext.getCallId());
+        metricsService.startStopWatch(metricsContext.getCallId(), incomingRequest);
         break;
-      case latencyIncomingNewRequestEnd:
-        logger.debug("incoming new request timer end");
-        time(incomingRequest);
+      case proxyNewRequestSendSuccess:
+      case proxyNewRequestSendFailure:
+        logger.debug("pause the request timer {}", metricsContext.getCallId());
+        metricsService.pauseStopWatch(metricsContext.getCallId(), incomingRequest);
+        break;
+      case proxyNewRequestRetryNextElement:
+        logger.debug("resume the request timer {}", metricsContext.getCallId());
+        metricsService.resumeStopWatch(metricsContext.getCallId(), incomingRequest);
+        break;
+      case proxyNewRequestFinalResponseProcessed:
+        logger.debug(
+            "incoming new request processing latency time end {}", metricsContext.getCallId());
+        timeStopWatch(incomingRequest);
         break;
       default:
         break;

@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.service;
 
+import static com.cisco.dsb.common.service.MetricService.joiner;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -16,10 +17,12 @@ import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.metrics.InfluxPoint;
 import com.google.common.cache.Cache;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.time.StopWatch;
 import org.mockito.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -264,18 +267,56 @@ public class MetricServiceTest {
 
     SipMetricsContext contextAtStart =
         new SipMetricsContext(
-            metricService, SipMetricsContext.State.latencyIncomingNewRequestStart, callId, true);
+            metricService, SipMetricsContext.State.proxyNewRequestReceived, callId, true);
 
-    Thread.sleep(200);
+    Thread.sleep(10);
+
+    SipMetricsContext contextInBetween =
+        new SipMetricsContext(
+            metricService, SipMetricsContext.State.proxyNewRequestSendSuccess, callId, true);
+
+    Thread.sleep(20);
 
     SipMetricsContext contextAtEnd =
         new SipMetricsContext(
-            metricService, SipMetricsContext.State.latencyIncomingNewRequestEnd, callId, true);
+            metricService,
+            SipMetricsContext.State.proxyNewRequestFinalResponseProcessed,
+            callId,
+            true);
 
-    Thread.sleep(200);
+    Thread.sleep(20);
+
+    SipMetricsContext contextAtStart2 =
+        new SipMetricsContext(
+            metricService, SipMetricsContext.State.proxyNewRequestReceived, callId, true);
+
+    Thread.sleep(10);
+
+    SipMetricsContext contextInBetween2 =
+        new SipMetricsContext(
+            metricService, SipMetricsContext.State.proxyNewRequestSendFailure, callId, true);
+
+    Thread.sleep(10);
+
+    SipMetricsContext contextRetry2 =
+        new SipMetricsContext(
+            metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement, callId, true);
+
+    SipMetricsContext contextInBetween22 =
+        new SipMetricsContext(
+            metricService, SipMetricsContext.State.proxyNewRequestSendSuccess, callId, true);
+
+    SipMetricsContext contextAtEnd2 =
+        new SipMetricsContext(
+            metricService,
+            SipMetricsContext.State.proxyNewRequestFinalResponseProcessed,
+            callId,
+            true);
+
+    Thread.sleep(20);
 
     // verify metrics is emitted for latency
-    Mockito.verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+    Mockito.verify(metricClientMock, times(2)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
@@ -291,7 +332,7 @@ public class MetricServiceTest {
 
     // Metric will be created without any tags and fields as count, duration nothing is evaluated
     metricService.update(
-        "test.latency", 0L, 0L, TimeUnit.MILLISECONDS, 0L, TimeUnit.MILLISECONDS, true);
+        "test.latency", 0L, 0L, TimeUnit.MILLISECONDS, 0L, TimeUnit.MILLISECONDS, true, null);
 
     verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
@@ -303,7 +344,7 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedMetricPoint.getFields().size(), 0);
 
     // Metric will be created without any tags and fields as count, duration nothing is evaluated
-    metricService.update("test.latency", 0L, 1L, null, 1L, null, null);
+    metricService.update("test.latency", 0L, 1L, null, 1L, null, null, null);
 
     verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
 
@@ -318,7 +359,7 @@ public class MetricServiceTest {
   public void createMetricsForLatencyPositiveTest() {
     // Positive path
     metricService.update(
-        "test.latency", 1L, 3L, TimeUnit.MILLISECONDS, 5L, TimeUnit.MILLISECONDS, true);
+        "test.latency", 1L, 3L, TimeUnit.MILLISECONDS, 5L, TimeUnit.MILLISECONDS, true, null);
 
     verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
@@ -347,7 +388,7 @@ public class MetricServiceTest {
 
     metricService.startTimer(testCallId, testMetricName);
     timers = metricService.getTimers();
-    String key = MetricService.joiner.join(testCallId, testMetricName);
+    String key = joiner.join(testCallId, testMetricName);
     Assert.assertNull(timers.getIfPresent(key));
 
     // negative scenario 3
@@ -358,7 +399,7 @@ public class MetricServiceTest {
 
     metricService.startTimer(testCallId, testMetricName);
     timers = metricService.getTimers();
-    key = MetricService.joiner.join(testCallId, testMetricName);
+    key = joiner.join(testCallId, testMetricName);
     Assert.assertNull(timers.getIfPresent(key));
 
     // positive case
@@ -369,7 +410,7 @@ public class MetricServiceTest {
 
     metricService.startTimer(testCallId, testMetricName);
     timers = metricService.getTimers();
-    key = MetricService.joiner.join(testCallId, testMetricName);
+    key = joiner.join(testCallId, testMetricName);
     Assert.assertNotNull(timers.getIfPresent(key));
   }
 
@@ -496,5 +537,34 @@ public class MetricServiceTest {
       Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.OFFLINE.toString());
       Assert.assertEquals(capturedMetricPoint.getField("availability"), 0.0);
     }
+  }
+
+  @Test(description = "test various scenarios of metricService using stopWatch")
+  public void testStopWatch() {
+    String callId = "ABCDWebEx123";
+    String metric = "dhruva.latency";
+    String key = joiner.join(callId, metric);
+
+    // Start the stop watch timer for given callID
+    metricService.startStopWatch(callId, metric);
+    HashMap<String, StopWatch> timers = metricService.getStopWatchTimers();
+    Assert.assertNotNull(timers.get(key));
+    StopWatch stopWatch = timers.get(key);
+    Assert.assertTrue(stopWatch.isStarted());
+
+    // Pause
+    metricService.pauseStopWatch(callId, metric);
+    Assert.assertTrue(stopWatch.isSuspended());
+
+    // Resume
+    metricService.resumeStopWatch(callId, metric);
+    Assert.assertTrue(stopWatch.isStarted());
+
+    // End
+    metricService.endStopWatch(callId, metric);
+    Assert.assertTrue(stopWatch.isStopped());
+
+    // Make sure key is removed
+    Assert.assertNull(timers.get(key));
   }
 }
