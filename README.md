@@ -145,3 +145,56 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
 ***NOTE:For all the configuration available please check CommonConfigurationProperty class***
 
 ###Default config for each application is present in application.yaml, application-local.yaml under the modules resources folder
+
+#### Using TLS in DSB
+
+
+- Add TLS ListenPoint as per the following:
+     ```yaml
+        common:
+          listenPoints:
+            - name: <network_name>
+              port: <port>
+              transport: TLS
+              hostIPAddress: "<IP of machine where DSB runs"
+              recordRoute: true
+- Test keystore and certs added
+  A test keystore.kjs file is present in dsb-common/src/test/resources/ along with server.crt.pem and server.key.pem which have been added to the keystore.jks. These can be used to make TLS sipp calls through the application.
+
+- sipp commands with tls certs
+
+    - UAS : sipp -sf uas.xml -p <uas listen port>  -i <uas ip> -t l1 -tls_cert server.crt.pem -tls_key server.key.pem
+    - UAC : sipp -sf uac.xml -i <uac ip> -p <uas port> <dsb ip:dsb tls port> -t l1 -tls_cert server.crt -tls_key server.key  -m 1
+
+- Config Changes
+
+    - Please note, to run TLS you will have to specify keystore and truststore location in the configuration YAML file, under "common" tag
+      ```yaml
+          common:
+            tlsKeyStorePassword: dsb123
+            tlsKeyStoreType: "jks"
+            tlsKeyStoreFilePath: "/tmp/keystore.jks"
+            tlsTrustStorePassword: dsb123
+            tlsTrustStoreFilePath: "/tmp/keystore.jks" 
+            tlsTrustStoreType: "jks"
+    - By default, the TLS authentication type is set to ```SERVER``` type in Jain. If you wish to enable MTLS (server and client authentication) then set the following property in env.
+          clientAuthType = “Enabled” (by default this is “Disabled”)
+      - As a result, the default trustManager will have above config.
+      - There are three different types of truststores possible.
+          - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config.
+          - CertTrustManager used to talk to cert service for authentication
+          - Permissive TrustStore which allows everything (any certificate).
+      - Every stack can choose from one of the above.
+          - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”.
+          - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
+          - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in the configuration YAML file
+          ```yaml
+          common:
+          listenPoints:
+            - name: <network_name>
+              port: <port>
+              transport: TLS
+              hostIPAddress: "<IP of machine where DSB runs"
+              recordRoute: true
+              tlsAuthType: NONE
+      - In order to get CertTrustManager set property ```enableCertService``` to true in the configuration YAML file.

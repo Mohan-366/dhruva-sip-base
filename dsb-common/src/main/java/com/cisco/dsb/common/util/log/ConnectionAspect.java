@@ -46,7 +46,7 @@ public class ConnectionAspect {
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
 
-    Event.emitConnectionErrorEvent(transport, Event.ErrorType.ConnectionError, null, ex);
+    Event.emitConnectionErrorEvent(transport, null, ex);
   }
 
   /**

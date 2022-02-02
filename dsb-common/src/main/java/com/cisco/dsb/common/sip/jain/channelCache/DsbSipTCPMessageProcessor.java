@@ -61,7 +61,7 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
       connectionMetricTask.start();
     } catch (Exception ex) {
       logger.error("Error starting TCP message processor");
-      Event.emitConnectionErrorEvent("TCP", Event.ErrorType.ConnectionError, null, ex);
+      Event.emitConnectionErrorEvent("TCP", null, ex);
       throw ex;
     }
   }
@@ -86,12 +86,12 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
 
   @Override
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
+    super.remove(messageChannel);
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     metricService.emitConnectionMetrics(
         Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
 
-    super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }
 

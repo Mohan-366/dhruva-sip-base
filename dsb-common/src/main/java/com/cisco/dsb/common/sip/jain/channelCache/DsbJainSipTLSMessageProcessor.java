@@ -53,7 +53,7 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
       connectionMetricTask.start();
     } catch (Exception ex) {
       logger.error("Error starting TLS message processor");
-      Event.emitConnectionErrorEvent("TLS", Event.ErrorType.ConnectionError, null, ex);
+      Event.emitConnectionErrorEvent("TLS", null, ex);
       throw ex;
     }
   }
@@ -78,12 +78,12 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
 
   @Override
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
+    super.remove(messageChannel);
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     metricService.emitConnectionMetrics(
         Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
-    super.remove(messageChannel);
-    logger.debug("Connection removed from message processor");
+    logger.debug("Connection removed from tls message processor");
   }
 
   @Override

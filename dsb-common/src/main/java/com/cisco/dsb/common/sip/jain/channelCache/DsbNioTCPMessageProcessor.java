@@ -57,7 +57,7 @@ public class DsbNioTCPMessageProcessor extends NioTcpMessageProcessor
       connectionMetricTask.start();
     } catch (Exception ex) {
       logger.debug("Error starting NIO TCP message processor");
-      Event.emitConnectionErrorEvent("TCP", Event.ErrorType.ConnectionError, null, ex);
+      Event.emitConnectionErrorEvent("TCP", null, ex);
       throw ex;
     }
   }
@@ -82,12 +82,11 @@ public class DsbNioTCPMessageProcessor extends NioTcpMessageProcessor
 
   @Override
   protected synchronized void remove(ConnectionOrientedMessageChannel messageChannel) {
+    super.remove(messageChannel);
     metricService.emitConnectionMetrics(
         Event.DIRECTION.OUT.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
     metricService.emitConnectionMetrics(
         Event.DIRECTION.IN.toString(), messageChannel, Connection.STATE.DISCONNECTED.toString());
-
-    super.remove(messageChannel);
     logger.debug("Connection removed from message processor");
   }
 
