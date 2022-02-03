@@ -144,7 +144,8 @@ public class JainStackInitializerTest {
             mockListener,
             executorService,
             trustManager,
-            keyManager);
+            keyManager,
+            null);
     Assert.assertEquals(simpleStack, mockStack);
   }
 }

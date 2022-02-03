@@ -91,4 +91,12 @@ public class LMAUtil {
             .orElse(Transport.NONE)
         : Transport.NONE;
   }
+
+  public static Event.EventSubType getEventSubTypeFromTransport(String transport) {
+    return StringUtils.equalsIgnoreCase(transport, "UDP")
+        ? Event.EventSubType.UDPCONNECTION
+        : StringUtils.equalsIgnoreCase(transport, "TLS")
+            ? Event.EventSubType.TLSCONNECTION
+            : Event.EventSubType.TCPCONNECTION;
+  }
 }
