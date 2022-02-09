@@ -365,6 +365,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
       String sgName = entry.getValue().getName();
       ServerGroup sg = entry.getValue();
+      if (!isServerGroupPingable(sg)) {
+        continue;
+      }
       sgNameList.add(sgName);
       sg.getElements().forEach(element -> sgeNameList.add(element.toUniqueElementString()));
     }
