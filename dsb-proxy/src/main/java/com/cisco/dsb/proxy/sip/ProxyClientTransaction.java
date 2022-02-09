@@ -70,6 +70,7 @@ public class ProxyClientTransaction {
   private ScheduledFuture timerC = null;
   private final ScheduledThreadPoolExecutor scheduledExecutor;
   private final DhruvaExecutorService dhruvaExecutorService;
+  @Getter private final ProxySIPRequest proxySIPRequest;
 
   protected ProxyClientTransaction(
       @NonNull ProxyTransaction proxy,
@@ -78,6 +79,7 @@ public class ProxyClientTransaction {
       @NonNull ProxySIPRequest proxySIPRequest) {
 
     SIPRequest request = proxySIPRequest.getRequest();
+    this.proxySIPRequest = proxySIPRequest;
     this.proxy = proxy;
     this.branch = branch;
     this.request = request;

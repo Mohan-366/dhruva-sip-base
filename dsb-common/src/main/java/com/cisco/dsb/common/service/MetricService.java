@@ -11,7 +11,7 @@ import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
-import com.cisco.dsb.common.transport.Connection;
+import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
 import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
+import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,6 +39,7 @@ import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -58,6 +60,7 @@ public class MetricService {
   @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
 
   @Getter private final Cache<String, Long> timers;
+  @Getter private final HashMap<String, StopWatch> stopWatchTimers = new HashMap<>();
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
   public static final Joiner joiner = Joiner.on(Token.Chars.Dot).skipNulls();
 
@@ -178,26 +181,42 @@ public class MetricService {
     sendMetric(metric);
   }
 
-  public void sendConnectionMetric(
-      String localIp,
-      int localPort,
-      String remoteIp,
-      int remotePort,
-      Transport transport,
-      DIRECTION direction,
-      Connection.STATE connectionState) {
+  public void emitConnectionMetrics(
+      String direction, ConnectionOrientedMessageChannel channel, String connectionState) {
+    try {
+      if (channel == null) {
+        return;
+      }
 
-    Metric metric =
-        Metrics.newMetric()
-            .measurement("connection")
-            .tag("transport", transport != null ? transport.name() : null)
-            .tag("direction", direction != null ? direction.name() : null)
-            .tag("connectionState", connectionState != null ? connectionState.name() : null)
-            .field("localIp", localIp)
-            .field("localPort", localPort)
-            .field("remoteIp", remoteIp)
-            .field("remotePort", remotePort);
-    sendMetric(metric);
+      String id = SipUtils.getConnectionId(direction, channel.getPeerProtocol(), channel);
+      String localAddress = channel.getHost();
+      int localPort = channel.getPort();
+      String viaAddress = channel.getViaHost();
+      int viaPort = channel.getViaPort();
+      String remoteAddress = channel.getPeerAddress();
+      int remotePort = channel.getPeerPort();
+
+      String transport = channel.getTransport();
+
+      Metric connectionMetric = Metrics.newMetric().measurement("connection");
+
+      connectionMetric.tag("direction", direction);
+      connectionMetric.tag("transport", transport);
+      connectionMetric.field("viaAddress", viaAddress);
+      connectionMetric.field("viaPort", viaPort);
+      connectionMetric.field("localAddress", localAddress);
+      connectionMetric.field("localPort", localPort);
+      connectionMetric.field("remoteAddress", remoteAddress);
+      connectionMetric.field("remotePort", remotePort);
+      connectionMetric.field("id", id);
+      connectionMetric.tag("connectionState", connectionState);
+
+      sendMetric(connectionMetric);
+
+    } catch (Exception e) {
+      // Only debug here since TLS connections with no handshake session are common and cause noisy
+      logger.debug("Unable to emit connection metric", e);
+    }
   }
 
   public void sendDNSMetric(
@@ -223,7 +242,9 @@ public class MetricService {
       boolean isMidCall,
       boolean isInternallyGenerated,
       long dhruvaProcessingDelayInMillis,
-      String requestUri) {
+      String requestUri
+      // String callType
+      ) {
 
     Metric metric =
         Metrics.newMetric()
@@ -242,6 +263,7 @@ public class MetricService {
       metric.field("responseReason", requestUri);
     } else if (messageType == REQUEST) {
       metric.field("requestUri", requestUri);
+      // metric.field("callType", callType);
     }
 
     if (direction == OUT && !isInternallyGenerated) {
@@ -266,12 +288,21 @@ public class MetricService {
 
   public void time(
       String metric, long duration, TimeUnit timeUnit, @Nullable SipMetricsContext context) {
-    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null);
+    String callId = null;
+    if (context != null) {
+      callId = context.getCallId();
+    }
+    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null, callId);
   }
 
   public void update(
-      String metric, long count, long duration, TimeUnit timeUnit, Boolean isSuccess) {
-    update(metric, count, duration, timeUnit, 0, null, isSuccess);
+      String metric,
+      long count,
+      long duration,
+      TimeUnit timeUnit,
+      Boolean isSuccess,
+      @Nullable String callId) {
+    update(metric, count, duration, timeUnit, 0, null, isSuccess, callId);
   }
 
   public void update(
@@ -281,7 +312,8 @@ public class MetricService {
       TimeUnit durationTimeUnit,
       long expectedDuration,
       TimeUnit expectedTimeUnit,
-      Boolean isSuccess) {
+      Boolean isSuccess,
+      String callId) {
 
     update(
         createMetric(
@@ -291,7 +323,8 @@ public class MetricService {
             durationTimeUnit,
             expectedDuration,
             expectedTimeUnit,
-            isSuccess));
+            isSuccess,
+            callId));
   }
 
   public void update(Metric influxPoint) {
@@ -326,7 +359,8 @@ public class MetricService {
       TimeUnit durationTimeUnit,
       long expectedDuration,
       TimeUnit expectedTimeUnit,
-      Boolean isSuccess) {
+      Boolean isSuccess,
+      String callId) {
 
     long normalizedDuration =
         duration > 0 && durationTimeUnit != null
@@ -356,6 +390,9 @@ public class MetricService {
       if (isSuccess != null) {
         point.field("eventSuccess", isSuccess);
       }
+      if (callId != null) {
+        point.field("callId", callId);
+      }
     }
 
     return point;
@@ -367,6 +404,55 @@ public class MetricService {
       String key = joiner.join(callId, metric);
       timers.put(key, System.nanoTime());
     }
+  }
+
+  public void startStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null && !stopWatch.isStarted()) {
+        stopWatch.start();
+      } else {
+        stopWatch = new StopWatch();
+        stopWatch.start();
+        stopWatchTimers.put(key, stopWatch);
+      }
+    }
+  }
+
+  public void pauseStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.suspend();
+      }
+    }
+  }
+
+  public void resumeStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.resume();
+      }
+    }
+  }
+
+  public long endStopWatch(String callId, String metric) {
+    final long noValidDuration = -1L;
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.stop();
+        long retVal = stopWatch.getTime(TimeUnit.MILLISECONDS);
+        stopWatchTimers.remove(key);
+        return retVal;
+      }
+    }
+    return noValidDuration;
   }
 
   // Stops timing operation on the given (metric, callId) pair and calculates

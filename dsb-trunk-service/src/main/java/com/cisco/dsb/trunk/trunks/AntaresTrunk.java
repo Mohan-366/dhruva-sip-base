@@ -48,8 +48,6 @@ public class AntaresTrunk extends B2BTrunk {
     // apply normalisation specific to Egress
 
     return sendToProxy(proxySIPRequest);
-
-    // proxySIPRequest.getResponse(int code)
   }
 
   protected void doPostRouteNorm(TrunkCookie cookie) {

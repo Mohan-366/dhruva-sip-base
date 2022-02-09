@@ -143,15 +143,16 @@ public class InfluxClientTest {
     // scenario where value, callid, success flag is not set
     SipMetricsContext testSipContext =
         new SipMetricsContext(
-            metricServiceMock, SipMetricsContext.State.latencyIncomingNewRequestStart, null);
+            metricServiceMock, SipMetricsContext.State.proxyNewRequestReceived, null);
 
     testSipContext.setSuccessful();
     Assert.assertTrue(testSipContext.isSuccessful());
     Assert.assertEquals(testSipContext.getCallId(), "");
     Assert.assertEquals(testSipContext.getValue(), 1);
 
-    testSipContext.setState(SipMetricsContext.State.latencyIncomingNewRequestEnd);
-    Assert.assertEquals(testSipContext.state, SipMetricsContext.State.latencyIncomingNewRequestEnd);
+    testSipContext.setState(SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
+    Assert.assertEquals(
+        testSipContext.state, SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
     testSipContext.setSuccessful("1-test@192.168.0.1");
     Assert.assertEquals(testSipContext.getCallId(), "1-test@192.168.0.1");
     testSipContext.setSuccessful();

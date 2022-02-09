@@ -5,12 +5,15 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.loadbalancer.LoadBalancer;
+import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -40,6 +43,10 @@ public abstract class AbstractTrunk implements LoadBalancable {
   protected Egress egress;
   private DnsServerGroupUtil dnsServerGroupUtil;
   private OptionsPingController optionsPingController;
+  private static MetricService metricService =
+      SpringApplicationContext.getAppContext() == null
+          ? null
+          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
 
   public AbstractTrunk(AbstractTrunk abstractTrunk) {
     this.name = abstractTrunk.name;
@@ -96,16 +103,22 @@ public abstract class AbstractTrunk implements LoadBalancable {
               // process Response, based on that send error signal to induce retry
               // if best response received or no more elements to try, onNext(bestResponse)
               logger.debug("Received Response {}", proxySIPResponse.getStatusCode());
+
               if (shouldFailover(proxySIPResponse, cookie)) {
                 logger.info(
                     "Received responseCode({}) is part of failOverCode, trying next element",
                     proxySIPResponse.getStatusCode());
+                // Measure latency
+                proxySIPRequest.handleProxyEvent(
+                    metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement);
                 sink.error(
                     new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT, "Trying next element"));
               } else if (proxySIPResponse.getResponseClass() == 3 && enableRedirection()) {
                 ContactList redirectionList = proxySIPResponse.getResponse().getContactHeaders();
                 cookie.getRedirectionSet().add(redirectionList);
                 logger.info("Following redirection");
+                proxySIPRequest.handleProxyEvent(
+                    metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement);
                 sink.error(
                     new DhruvaRuntimeException(
                         ErrorCode.TRUNK_RETRY_NEXT, "Following redirection"));
@@ -117,7 +130,9 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .onErrorResume(
             err -> {
               if (err instanceof DhruvaRuntimeException)
-                return ((DhruvaRuntimeException) err).getErrCode().equals(ErrorCode.TRUNK_NO_RETRY);
+                return !((DhruvaRuntimeException) err)
+                    .getErrCode()
+                    .equals(ErrorCode.TRUNK_RETRY_NEXT);
               logger.error("Received unhandled Exception", err);
               return true;
             },

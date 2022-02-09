@@ -19,8 +19,11 @@ public class SipMetricsContext implements AutoCloseable {
   private final long value;
 
   public enum State {
-    latencyIncomingNewRequestStart,
-    latencyIncomingNewRequestEnd,
+    proxyNewRequestReceived,
+    proxyNewRequestSendSuccess,
+    proxyNewRequestSendFailure,
+    proxyNewRequestRetryNextElement,
+    proxyNewRequestFinalResponseProcessed
   }
 
   public State state;

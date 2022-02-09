@@ -8,6 +8,7 @@ import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
+import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -180,5 +181,17 @@ public class Event {
 
     String msg = "ServerGroup Element DOWN: " + sge.toUniqueElementString() + " : " + sge;
     logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
+  }
+
+  public static void emitConnectionErrorEvent(
+      String transport, Map<String, String> additionalKeyValueInfo, Exception ex) {
+
+    logger.emitEvent(
+        Event.EventType.CONNECTION,
+        LMAUtil.getEventSubTypeFromTransport(transport),
+        Event.ErrorType.ConnectionError,
+        ex.getMessage(),
+        additionalKeyValueInfo,
+        ex);
   }
 }

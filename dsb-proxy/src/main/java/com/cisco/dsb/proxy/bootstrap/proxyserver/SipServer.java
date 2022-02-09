@@ -75,11 +75,12 @@ public class SipServer implements Server {
               handler,
               executorService,
               trustManager,
-              keyManager);
+              keyManager,
+              this.metricService);
       if (sipStack instanceof SipStackImpl) {
         SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
         ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-            .initFromApplication(commonConfigurationProperties, executorService);
+            .initFromApplication(commonConfigurationProperties, executorService, metricService);
       }
       serverStartFuture.complete(sipStack);
     } catch (Exception e) {
