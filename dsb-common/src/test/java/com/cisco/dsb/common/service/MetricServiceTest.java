@@ -5,11 +5,9 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
-import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.metric.SipMetricsContext;
-import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
@@ -201,25 +199,28 @@ public class MetricServiceTest {
     verify(metricClientMock, times(0)).sendMetric(any());
   }
 
-
   @DataProvider(name = "connectionMetricData")
   private Object[][] connectionMetricTestData() {
     return new Object[][] {
-            {5060, "127.0.0.1",5060, "127.0.0.1", 54317, "127.0.0.1", "TCP", "IN" , "CONNECTED"},
-            {5060, "127.0.0.1",5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT" , "CONNECTED"},
-            {5060, "127.0.0.1",5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT" , "DISCONNECTED"},
+      {5060, "127.0.0.1", 5060, "127.0.0.1", 54317, "127.0.0.1", "TCP", "IN", "CONNECTED"},
+      {5060, "127.0.0.1", 5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT", "CONNECTED"},
+      {5060, "127.0.0.1", 5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT", "DISCONNECTED"},
     };
   }
 
-  @Test(
-          description = "Testing emitted connection metric",
-          dataProvider = "connectionMetricData")
-  public void connectionMetricTestWithData(int localPort, String localAddress, int viaPort, String viaAddress,
-                                           int remotePort, String remoteAddress,
-                                           String transport, String direction, String connectionState) {
+  @Test(description = "Testing emitted connection metric", dataProvider = "connectionMetricData")
+  public void connectionMetricTestWithData(
+      int localPort,
+      String localAddress,
+      int viaPort,
+      String viaAddress,
+      int remotePort,
+      String remoteAddress,
+      String transport,
+      String direction,
+      String connectionState) {
 
     ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
-
 
     when(mockedChannel.getHost()).thenReturn(localAddress);
     when(mockedChannel.getPort()).thenReturn(localPort);
@@ -230,8 +231,7 @@ public class MetricServiceTest {
     when(mockedChannel.getTransport()).thenReturn(transport);
     when(mockedChannel.getPeerProtocol()).thenReturn(transport);
 
-    metricService.emitConnectionMetrics(
-            direction, mockedChannel, connectionState);
+    metricService.emitConnectionMetrics(direction, mockedChannel, connectionState);
     verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
@@ -264,7 +264,68 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedFields.get("viaAddress"), viaAddress);
     Assert.assertTrue(capturedFields.containsKey("viaPort"));
     Assert.assertEquals(capturedFields.get("viaPort"), viaPort);
+  }
 
+  @DataProvider(name = "connectionFailureMetricData")
+  private Object[][] connectionFailureMetricTestData() {
+    return new Object[][] {
+      {5060, "127.0.0.1", 54317, "127.0.0.1", "TCP", "Could not connect to /127.0.0.1:54317"},
+      {5070, "127.0.0.1", 7060, "127.0.0.1", "TCP", "Could not connect to /127.0.0.1:7060"},
+      {
+        5060,
+        "127.0.0.1",
+        7060,
+        "127.0.0.1",
+        "TLS",
+        "PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target"
+      },
+    };
+  }
+
+  @Test(
+      description = "Testing emitted connection failure metric",
+      dataProvider = "connectionFailureMetricData")
+  public void connectionMetricFailureTestWithData(
+      int localPort,
+      String localAddress,
+      int remotePort,
+      String remoteAddress,
+      String transport,
+      String errorMessage) {
+
+    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+
+    when(mockedChannel.getHost()).thenReturn(localAddress);
+    when(mockedChannel.getPort()).thenReturn(localPort);
+    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
+    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
+    when(mockedChannel.getTransport()).thenReturn(transport);
+    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+
+    metricService.emitConnectionErrorMetric(mockedChannel, errorMessage);
+    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+
+    Metric capturedMetric = metricArgumentCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+
+    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection.failure");
+
+    Map<String, String> capturedTags = capturedMetricPoint.getTags();
+    Map<String, Object> capturedFields = capturedMetricPoint.getFields();
+
+    Assert.assertTrue(capturedTags.containsKey("transport"));
+    Assert.assertEquals(capturedTags.get("transport"), transport);
+
+    Assert.assertTrue(capturedFields.containsKey("localAddress"));
+    Assert.assertEquals(capturedFields.get("localAddress"), localAddress);
+    Assert.assertTrue(capturedFields.containsKey("localPort"));
+    Assert.assertEquals(capturedFields.get("localPort"), localPort);
+    Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
+    Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
+    Assert.assertTrue(capturedFields.containsKey("remotePort"));
+    Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
   }
 
   public void sendDnsMetricTest() {

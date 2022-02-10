@@ -6,18 +6,27 @@ app:
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
 common:
+  tlsKeyStorePassword: dsb123
+  tlsTrustStoreFilePath: "/Users/ankabane/softwares/keystore.jks"
+  tlsTrustStorePassword: dsb123
+  tlsKeyStoreFilePath: "/Users/ankabane/softwares/keystore.jks"
+  tlsKeyStoreType: "jks"
+  tlsTrustStoreType: "jks"
   listenPoints:
     - name: *netsp
       port: 5060
-      transport: UDP
+      transport: TLS
+      tlsAuthType: NONE
       hostIPAddress: "127.0.0.1"
     - name: *netb2b
       port: 5070
-      transport: UDP
+      transport: TLS
+      tlsAuthType: NONE
       hostIPAddress: "127.0.0.1"
     - name: *netcc
       port: 5080
-      transport: UDP
+      transport: TLS
+      tlsAuthType: NONE
       hostIPAddress: "127.0.0.1"
   serverGroups:
     UsPoolA:
@@ -25,7 +34,7 @@ common:
       hostName: "UsPoolA"
       networkName: *netsp
       lbType: weight
-      pingOn: true
+      pingOn: false
       elements:
         - ipAddress: "127.0.0.1"
           port: 6060
