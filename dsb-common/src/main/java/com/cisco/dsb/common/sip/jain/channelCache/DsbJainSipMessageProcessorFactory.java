@@ -3,10 +3,7 @@ package com.cisco.dsb.common.sip.jain.channelCache;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
-import gov.nist.javax.sip.stack.MessageProcessor;
-import gov.nist.javax.sip.stack.MessageProcessorFactory;
-import gov.nist.javax.sip.stack.OIOMessageProcessorFactory;
-import gov.nist.javax.sip.stack.SIPTransactionStack;
+import gov.nist.javax.sip.stack.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import javax.sip.ListeningPoint;
@@ -22,8 +19,12 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
       SIPTransactionStack sipStack, InetAddress ipAddress, int port, String transport)
       throws IOException {
     if (transport.equalsIgnoreCase(ListeningPoint.UDP)) {
-      OIOMessageProcessorFactory factory = new OIOMessageProcessorFactory();
-      return factory.createMessageProcessor(sipStack, ipAddress, port, ListeningPoint.UDP);
+      // OIOMessageProcessorFactory factory = new OIOMessageProcessorFactory();
+      //  UDPMessageProcessor createdDummyMessageProcessor = (UDPMessageProcessor)
+      // factory.createMessageProcessor(sipStack, ipAddress, port, ListeningPoint.UDP);
+
+      return new DsbSipUdpMessageProcessor(
+          ipAddress, sipStack, port, sipProperties, executorService, metricService);
     }
     if (transport.equalsIgnoreCase(ListeningPoint.TCP)) {
 

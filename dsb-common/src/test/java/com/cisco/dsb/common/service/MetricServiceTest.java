@@ -266,6 +266,59 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedFields.get("viaPort"), viaPort);
   }
 
+  // ankabane
+  /*
+  @Test(description = "Test for connectionmetric for tcp/tls transport per interval ")
+  public void connectionOrientedTransportMetricTestPerInterval(
+          int localPort,
+          String localAddress,
+          int viaPort,
+          String viaAddress,
+          int remotePort,
+          String remoteAddress,
+          String transport,
+          String direction,
+          String connectionState) throws InterruptedException {
+
+    DsbSipTCPMessageProcessor mockedTcpMessageProcessor = mock(DsbSipTCPMessageProcessor.class);
+
+    ConnectionMetricRunnable connectionMetricRunnableForTest = new ConnectionMetricRunnable(mockedTcpMessageProcessor, metricService, dhruvaExecutorServiceMock);
+    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+
+    when(mockedChannel.getHost()).thenReturn(localAddress);
+    when(mockedChannel.getPort()).thenReturn(localPort);
+    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
+    when(mockedChannel.getViaPort()).thenReturn(viaPort);
+    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
+    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
+    when(mockedChannel.getTransport()).thenReturn(transport);
+    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+
+    // create 2 channels one for out one for in
+    when(mockedTcpMessageProcessor.getIncomingMessageChannels()).thenReturn();
+    when(mockedTcpMessageProcessor.getOutgoingMessageChannels()).thenReturn();
+
+    //
+    connectionMetricRunnableForTest.start();
+    Thread.sleep(100L);
+    connectionMetricRunnableForTest.stop();;
+
+    // this will be more than 1
+    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+
+    Metric capturedMetric = metricArgumentCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+
+    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
+
+    // add more assert to check the metrics
+
+
+
+  }*/
+
   @DataProvider(name = "connectionFailureMetricData")
   private Object[][] connectionFailureMetricTestData() {
     return new Object[][] {

@@ -44,6 +44,10 @@ import org.springframework.stereotype.Service;
 @CustomLog
 public class MetricService {
 
+  // should be configurable ?
+  public static final int CPS_METRIC_INTERVAL = 1;
+  public static final int UDP_CONNECTIONE_METRIC_INTERVAL = 30;
+
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
@@ -91,13 +95,10 @@ public class MetricService {
 
   @PostConstruct
   public void postBeanInitialization() {
-    this.initializeCPSMetric();
-    this.emitConnectionInfoMetricPerInterval(30, TimeUnit.SECONDS);
-  }
-
-  private void initializeCPSMetric() {
-
-    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
+    // initializing periodic metric for counting call per second
+    this.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);
+    // initializing metric for connection info for udp transports 30sec window
+    this.emitConnectionInfoMetricPerInterval(UDP_CONNECTIONE_METRIC_INTERVAL, TimeUnit.SECONDS);
   }
 
   public void registerPeriodicMetric(
@@ -367,7 +368,13 @@ public class MetricService {
     if (context != null) {
       callId = context.getCallId();
     }
-    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null, callId);
+    update(
+        metric,
+        1,
+        duration,
+        timeUnit,
+        context != null ? context.isSuccessful() : null,
+        callId);
   }
 
   public void update(
