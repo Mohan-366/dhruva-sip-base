@@ -48,6 +48,7 @@ import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 @CustomLog
@@ -134,7 +135,7 @@ public class SipProxyManager {
    * PlaceHolder for creating ProxyController for new Requests or getting existing ProxyController
    * for that transaction
    */
-  public Function<ProxySIPRequest, ProxySIPRequest> getProxyController(
+  public Function<ProxySIPRequest, Mono<ProxySIPRequest>> getProxyController(
       ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       SIPRequest sipRequest = proxySIPRequest.getRequest();

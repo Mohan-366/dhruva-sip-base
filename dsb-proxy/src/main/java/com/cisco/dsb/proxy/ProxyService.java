@@ -217,7 +217,7 @@ public class ProxyService {
         .name("proxyRequest")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
         .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
-        .mapNotNull(sipProxyManager.getProxyController(this.proxyAppConfig))
+        .flatMap(sipProxyManager.getProxyController(this.proxyAppConfig))
         .mapNotNull(sipProxyManager.validateRequest())
         .mapNotNull(sipProxyManager.proxyAppController(this.proxyAppConfig.isMidDialog()));
   }
