@@ -90,7 +90,7 @@ public class MetricService {
             .build();
 
     this.cpsCounterMap = new HashMap<>();
-    this.connectionInfoMap = new ConcurrentHashMap<>();
+    this.connectionInfoMap = new HashMap<>();
   }
 
   @PostConstruct
@@ -242,8 +242,8 @@ public class MetricService {
     String id = SipUtils.getConnectionId(direction, channel.getTransport().toUpperCase(), channel);
     String localAddress = channel.getHost();
     int localPort = channel.getPort();
-    String viaAddress = channel.getViaHost();
-    int viaPort = channel.getViaPort();
+    // String viaAddress = channel.getViaHost();
+    // int viaPort = channel.getViaPort();
     String remoteAddress = channel.getPeerAddress();
     int remotePort = channel.getPeerPort();
 
@@ -253,8 +253,8 @@ public class MetricService {
 
     connectionMetric.tag("direction", direction);
     connectionMetric.tag("transport", transport);
-    connectionMetric.field("viaAddress", viaAddress);
-    connectionMetric.field("viaPort", viaPort);
+    // connectionMetric.field("viaAddress", viaAddress);
+    // connectionMetric.field("viaPort", viaPort);
     connectionMetric.field("localAddress", localAddress);
     connectionMetric.field("localPort", localPort);
     connectionMetric.field("remoteAddress", remoteAddress);
@@ -368,13 +368,7 @@ public class MetricService {
     if (context != null) {
       callId = context.getCallId();
     }
-    update(
-        metric,
-        1,
-        duration,
-        timeUnit,
-        context != null ? context.isSuccessful() : null,
-        callId);
+    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null, callId);
   }
 
   public void update(

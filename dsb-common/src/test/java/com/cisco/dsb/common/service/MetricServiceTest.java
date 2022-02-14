@@ -8,6 +8,8 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.sip.jain.channelCache.ConnectionMetricRunnable;
+import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
 import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
@@ -16,13 +18,13 @@ import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.metrics.InfluxPoint;
 import com.google.common.cache.Cache;
+import gov.nist.core.Host;
+import gov.nist.core.HostPort;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.mockito.*;
@@ -72,6 +74,8 @@ public class MetricServiceTest {
     MockitoAnnotations.initMocks(this);
     when(dhruvaExecutorServiceMock.getExecutorThreadPool(ExecutorType.METRIC_SERVICE))
         .thenReturn(Executors.newSingleThreadExecutor());
+    when(dhruvaExecutorServiceMock.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE))
+        .thenReturn(new ScheduledThreadPoolExecutor(1));
     ReflectionTestUtils.setField(metricService, "executorService", Executors.newFixedThreadPool(1));
     // metricService.executorService = Executors.newFixedThreadPool(1);
     metricArgumentCaptor = ArgumentCaptor.forClass(Metric.class);
@@ -260,64 +264,121 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedFields.containsKey("remotePort"));
     Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
-    Assert.assertTrue(capturedFields.containsKey("viaAddress"));
-    Assert.assertEquals(capturedFields.get("viaAddress"), viaAddress);
-    Assert.assertTrue(capturedFields.containsKey("viaPort"));
-    Assert.assertEquals(capturedFields.get("viaPort"), viaPort);
   }
 
   // ankabane
-  /*
+
   @Test(description = "Test for connectionmetric for tcp/tls transport per interval ")
-  public void connectionOrientedTransportMetricTestPerInterval(
-          int localPort,
-          String localAddress,
-          int viaPort,
-          String viaAddress,
-          int remotePort,
-          String remoteAddress,
-          String transport,
-          String direction,
-          String connectionState) throws InterruptedException {
+  public void connectionOrientedTransportMetricTestPerInterval() throws InterruptedException {
 
     DsbSipTCPMessageProcessor mockedTcpMessageProcessor = mock(DsbSipTCPMessageProcessor.class);
 
-    ConnectionMetricRunnable connectionMetricRunnableForTest = new ConnectionMetricRunnable(mockedTcpMessageProcessor, metricService, dhruvaExecutorServiceMock);
-    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
+    ConnectionMetricRunnable connectionMetricRunnableForTest =
+        new ConnectionMetricRunnable(
+            mockedTcpMessageProcessor, metricService, dhruvaExecutorServiceMock);
+    ConnectionOrientedMessageChannel mockedChannel1 = mock(ConnectionOrientedMessageChannel.class);
 
-    when(mockedChannel.getHost()).thenReturn(localAddress);
-    when(mockedChannel.getPort()).thenReturn(localPort);
-    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
-    when(mockedChannel.getViaPort()).thenReturn(viaPort);
-    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
-    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
-    when(mockedChannel.getTransport()).thenReturn(transport);
-    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
+    when(mockedChannel1.getHost()).thenReturn("120.0.0.1");
+    when(mockedChannel1.getPort()).thenReturn(5060);
+    when(mockedChannel1.getPeerAddress()).thenReturn("127.0.0.1");
+    when(mockedChannel1.getPeerPort()).thenReturn(5070);
+
+    HostPort hostport1 = new HostPort();
+    hostport1.setHost(new Host("127.0.0.1"));
+    hostport1.setPort(5060);
+    when(mockedChannel1.getHostPort()).thenReturn(hostport1);
+
+    HostPort peerAddress1 = new HostPort();
+    peerAddress1.setHost(new Host("127.0.0.1"));
+    peerAddress1.setPort(5070);
+    when(mockedChannel1.getPeerHostPort()).thenReturn(peerAddress1);
+    when(mockedChannel1.getTransport()).thenReturn("TCP");
+    when(mockedChannel1.getPeerProtocol()).thenReturn("TCP");
+
+    ConnectionOrientedMessageChannel mockedChannel2 = mock(ConnectionOrientedMessageChannel.class);
+
+    when(mockedChannel2.getHost()).thenReturn("120.0.0.1");
+    when(mockedChannel2.getPort()).thenReturn(5070);
+    when(mockedChannel2.getPeerAddress()).thenReturn("127.0.0.1");
+    when(mockedChannel2.getPeerPort()).thenReturn(7060);
+
+    HostPort hostport2 = new HostPort();
+    hostport2.setHost(new Host("127.0.0.1"));
+    hostport2.setPort(5070);
+    when(mockedChannel1.getHostPort()).thenReturn(hostport2);
+
+    HostPort peerAddress2 = new HostPort();
+    peerAddress2.setHost(new Host("127.0.0.1"));
+    peerAddress2.setPort(7060);
+    when(mockedChannel1.getPeerHostPort()).thenReturn(peerAddress2);
+    when(mockedChannel1.getTransport()).thenReturn("TCP");
+    when(mockedChannel1.getPeerProtocol()).thenReturn("TCP");
 
     // create 2 channels one for out one for in
-    when(mockedTcpMessageProcessor.getIncomingMessageChannels()).thenReturn();
-    when(mockedTcpMessageProcessor.getOutgoingMessageChannels()).thenReturn();
+    when(mockedTcpMessageProcessor.getIncomingMessageChannels())
+        .thenReturn(Collections.singletonList(mockedChannel1));
+    when(mockedTcpMessageProcessor.getOutgoingMessageChannels())
+        .thenReturn(Collections.singletonList(mockedChannel2));
 
-    //
+    // Start runnable to emit connection metric with the inbound and outbound channel
+    connectionMetricRunnableForTest.setInitialDelay(10L);
+    connectionMetricRunnableForTest.setDelay(10L);
     connectionMetricRunnableForTest.start();
-    Thread.sleep(100L);
-    connectionMetricRunnableForTest.stop();;
+    Thread.sleep(30L);
+    connectionMetricRunnableForTest.stop();
 
-    // this will be more than 1
-    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
+    // this will be more than 1 in the interval
+    verify(metricClientMock, atLeast(2)).sendMetric(metricArgumentCaptor.capture());
 
-    Metric capturedMetric = metricArgumentCaptor.getValue();
+    List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
     Assert.assertNotNull(capturedMetric);
+    Assert.assertTrue(capturedMetric.size() >= 2);
 
-    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+    for (Metric eachMetric : capturedMetric) {
+      InfluxPoint capturedMetricPoint = (InfluxPoint) eachMetric.get();
+      Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
+      // add more assert to check the metrics
 
-    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
+      Map<String, String> capturedTags = capturedMetricPoint.getTags();
+      Map<String, Object> capturedFields = capturedMetricPoint.getFields();
 
-    // add more assert to check the metrics
+      Assert.assertTrue(capturedTags.containsKey("transport"));
+      Assert.assertTrue(capturedTags.containsKey("direction"));
+      Assert.assertTrue(capturedTags.containsKey("connectionState"));
+      Assert.assertTrue(capturedFields.containsKey("id"));
+      Assert.assertTrue(capturedFields.containsKey("localAddress"));
+      Assert.assertTrue(capturedFields.containsKey("localPort"));
+      Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
+      Assert.assertTrue(capturedFields.containsKey("remotePort"));
+    }
+  }
 
+  @Test(description = "To test tcp/tls channel info, when there are no active channels")
+  public void connectionMetricPerIntervalTestWithoutChannel() throws InterruptedException {
+    DsbSipTCPMessageProcessor mockedTcpMessageProcessor = mock(DsbSipTCPMessageProcessor.class);
 
+    // When there is no cached channel returning empty list
+    when(mockedTcpMessageProcessor.getIncomingMessageChannels())
+        .thenReturn(Collections.emptyList());
+    when(mockedTcpMessageProcessor.getOutgoingMessageChannels())
+        .thenReturn(Collections.emptyList());
 
-  }*/
+    // Start runnable to emit connection metric without inbound and outbound channel
+    ConnectionMetricRunnable connectionMetricRunnable =
+        new ConnectionMetricRunnable(
+            mockedTcpMessageProcessor, metricService, dhruvaExecutorServiceMock);
+    connectionMetricRunnable.setInitialDelay(10L);
+    connectionMetricRunnable.setDelay(10L);
+    connectionMetricRunnable.start();
+    Thread.sleep(30L);
+    connectionMetricRunnable.stop();
+
+    // this will be 0 as there are no channels
+    verify(metricClientMock, times(0)).sendMetric(metricArgumentCaptor.capture());
+
+    List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
+    Assert.assertTrue(capturedMetric == null || capturedMetric.isEmpty());
+  }
 
   @DataProvider(name = "connectionFailureMetricData")
   private Object[][] connectionFailureMetricTestData() {

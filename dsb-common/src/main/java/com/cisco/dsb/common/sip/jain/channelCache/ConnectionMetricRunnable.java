@@ -13,6 +13,8 @@ import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 
 /** Task to emit metrics with connection info for DSB */
 @CustomLog
@@ -23,6 +25,8 @@ public class ConnectionMetricRunnable implements Runnable, StartStoppable {
 
   private final DhruvaExecutorService executorService;
   private final ScheduledExecutorService scheduledExecutorService;
+  @Getter @Setter private long initialDelay = 1000L;
+  @Getter @Setter private long delay = 1000L;
 
   public ConnectionMetricRunnable(
       MessageChannelCache channelCache,
@@ -40,7 +44,8 @@ public class ConnectionMetricRunnable implements Runnable, StartStoppable {
   @SuppressFBWarnings(value = "PREDICTABLE_RANDOM", justification = "baseline suppression")
   public void start() {
     // Scheduling executor to emit metrics each second with connection info(1000 ms)
-    scheduledExecutorService.scheduleWithFixedDelay(this, 1000L, 1000L, TimeUnit.MILLISECONDS);
+    scheduledExecutorService.scheduleWithFixedDelay(
+        this, initialDelay, delay, TimeUnit.MILLISECONDS);
   }
 
   @Override
