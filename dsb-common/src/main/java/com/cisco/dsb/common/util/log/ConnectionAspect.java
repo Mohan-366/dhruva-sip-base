@@ -1,16 +1,11 @@
 package com.cisco.dsb.common.util.log;
 
-import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipTLSMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTCPMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTlsMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
+import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.jain.channelCache.*;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.stack.*;
 import java.net.InetAddress;
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.*;
 import lombok.CustomLog;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -46,7 +41,46 @@ public class ConnectionAspect {
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
 
+    MetricService metricService = fetchMetricServiceFromMessageChannel(messageChannel);
+    if (metricService != null) {
+      metricService.emitConnectionErrorMetric(messageChannel, ex.getMessage());
+    }
+
+    if (ex instanceof SSLHandshakeException) {
+      Event.emitHandshakeFailureEvent(transport, null, ex);
+    }
+
     Event.emitConnectionErrorEvent(transport, null, ex);
+  }
+
+  public MetricService fetchMetricServiceFromMessageChannel(MessageChannel messageChannel) {
+    MetricService metricService = null;
+
+    if (messageChannel.getMessageProcessor() != null) {
+      MessageProcessor messageProcessor = messageChannel.getMessageProcessor();
+      if (messageProcessor instanceof DsbNioTCPMessageProcessor) {
+        DsbNioTCPMessageProcessor dsbNioTcpMessageProcessor =
+            (DsbNioTCPMessageProcessor) messageProcessor;
+        metricService = dsbNioTcpMessageProcessor.getMetricService();
+      }
+
+      if (messageProcessor instanceof DsbSipTCPMessageProcessor) {
+        DsbSipTCPMessageProcessor dsbTcpMessageProcessor =
+            (DsbSipTCPMessageProcessor) messageProcessor;
+        metricService = dsbTcpMessageProcessor.getMetricService();
+      }
+      if (messageProcessor instanceof DsbJainSipTLSMessageProcessor) {
+        DsbJainSipTLSMessageProcessor dsbTlsMessageProcessor =
+            (DsbJainSipTLSMessageProcessor) messageProcessor;
+        metricService = dsbTlsMessageProcessor.getMetricService();
+      }
+      if (messageProcessor instanceof DsbNioTlsMessageProcessor) {
+        DsbNioTlsMessageProcessor dsbNioTlsMessageProcessor =
+            (DsbNioTlsMessageProcessor) messageProcessor;
+        metricService = dsbNioTlsMessageProcessor.getMetricService();
+      }
+    }
+    return metricService;
   }
 
   /**
@@ -142,6 +176,39 @@ public class ConnectionAspect {
     return String.format("peer=[%s:%d]", session.getPeerHost(), session.getPeerPort());
   }
 
+  @After(value = "execution(public void gov.nist.javax.sip.stack.UDPMessageChannel.close())")
+  @Order(0)
+  public void logWhenUdpChannelClosed(JoinPoint jp) throws Throwable {
+    Object[] args = jp.getArgs();
+
+    try {
+      UDPMessageChannel udpMessageChannel = (UDPMessageChannel) jp.getTarget();
+      if (udpMessageChannel.getMessageProcessor() instanceof DsbSipUdpMessageProcessor) {
+
+        DsbSipUdpMessageProcessor dsbSipUdpMessageProcessor =
+            (DsbSipUdpMessageProcessor) udpMessageChannel.getMessageProcessor();
+
+        logger.info(
+            "UDP MessageChannel connection closing {}, localhostport {} , peerHostPort {}, viaHostPort {}, stackName {}, MessageProcessor IP {} port {}",
+            udpMessageChannel.getKey(),
+            udpMessageChannel.getHostPort().toString(),
+            udpMessageChannel.getPeerHostPort().toString(),
+            udpMessageChannel.getViaHostPort(),
+            dsbSipUdpMessageProcessor.getStackName(),
+            dsbSipUdpMessageProcessor.getIpAddress(),
+            dsbSipUdpMessageProcessor.getPort());
+
+        MetricService metricService = dsbSipUdpMessageProcessor.getMetricService();
+
+        // Emit metrics for connection disconnected
+
+      }
+
+    } catch (Exception e) {
+      logger.warn(
+          "Failed to log information when UdpMessageChannelClosed via Aspect {}", e.getMessage());
+    }
+  }
   /**
    * Aspect for logging with information when TCP connection is closing
    *
