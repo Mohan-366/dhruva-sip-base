@@ -440,6 +440,8 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedFields.containsKey("remotePort"));
     Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
+    Assert.assertTrue(capturedFields.containsKey("errorMessage"));
+    Assert.assertEquals(capturedFields.get("errorMessage"), errorMessage);
   }
 
   public void sendDnsMetricTest() {

@@ -9,7 +9,6 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -34,6 +33,7 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
@@ -74,6 +74,9 @@ public class ProxyService {
   @Autowired DsbTrustManager dsbTrustManager;
 
   @Nullable @Autowired KeyManager keyManager;
+
+  public static final int CPS_METRIC_INTERVAL = 1;
+  public static final int UDP_CONNECTIONE_METRIC_INTERVAL = 30;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
@@ -159,8 +162,13 @@ public class ProxyService {
     listenPointFutures.forEach(CompletableFuture::join);
     // Start the Executor Service, while initialising the ProxyService, that is used for Timer C.
     // However, tasks will be scheduled in ProxyClientTransaction
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
     // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
+
+    // initializing periodic metric for counting call per second
+    metricService.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);
+    // initializing metric for connection info for udp transports 30sec window
+    metricService.emitConnectionInfoMetricPerInterval(
+        UDP_CONNECTIONE_METRIC_INTERVAL, TimeUnit.SECONDS);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {

@@ -19,9 +19,6 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
       SIPTransactionStack sipStack, InetAddress ipAddress, int port, String transport)
       throws IOException {
     if (transport.equalsIgnoreCase(ListeningPoint.UDP)) {
-      // OIOMessageProcessorFactory factory = new OIOMessageProcessorFactory();
-      //  UDPMessageProcessor createdDummyMessageProcessor = (UDPMessageProcessor)
-      // factory.createMessageProcessor(sipStack, ipAddress, port, ListeningPoint.UDP);
 
       return new DsbSipUdpMessageProcessor(
           ipAddress, sipStack, port, sipProperties, executorService, metricService);

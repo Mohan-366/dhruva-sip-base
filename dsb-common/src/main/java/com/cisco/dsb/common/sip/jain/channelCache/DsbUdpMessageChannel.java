@@ -33,55 +33,30 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
     super(stack, messageProcessor, packet);
   }
 
+  /**
+   * processes incoming messages to server overriden to emit connection information to capture
+   * inward information
+   *
+   * @param sipMessage
+   */
   @Override
   public void processMessage(SIPMessage sipMessage) {
     super.processMessage(sipMessage);
-    // logger.debug("messageProcessed");
     // emit metric with dir inward
-    DsbSipUdpMessageProcessor dsbUdpMessageProcessor =
-        (DsbSipUdpMessageProcessor) this.getMessageProcessor();
-    MetricService metricService = dsbUdpMessageProcessor.getMetricService();
-
-    String connectionId =
-        SipUtils.getConnectionId(
-            Event.DIRECTION.IN.toString(), this.getTransport().toUpperCase(), this);
-    ConnectionInfo connectionInfo =
-        ConnectionInfo.builder()
-            .direction(Event.DIRECTION.IN.toString())
-            .transport(this.getTransport().toUpperCase())
-            .messageChannel(this)
-            .connectionState(Connection.STATE.CONNECTED.toString())
-            .build();
-
-    metricService.insertConnectionInfo(connectionId, connectionInfo);
-
-    /*metricService.emitConnectionMetrics(
-    Event.DIRECTION.IN.toString(), this, Connection.STATE.CONNECTED.toString());*/
+    this.sendConnectionInfoMetric(
+        Event.DIRECTION.IN.toString(), Connection.STATE.CONNECTED.toString(), this);
   }
-
+  /**
+   * processes incoming messages to server overriden to emit connection information to capture
+   * outward information
+   */
   @Override
   protected void sendMessage(byte[] msg, InetAddress peerAddress, int peerPort, boolean reConnect) {
     try {
       super.sendMessage(msg, peerAddress, peerPort, reConnect);
-      DsbSipUdpMessageProcessor dsbUdpMessageProcessor =
-          (DsbSipUdpMessageProcessor) this.getMessageProcessor();
-      MetricService metricService = dsbUdpMessageProcessor.getMetricService();
-
-      String connectionId =
-          SipUtils.getConnectionId(
-              Event.DIRECTION.OUT.toString(), this.getTransport().toUpperCase(), this);
-      ConnectionInfo connectionInfo =
-          ConnectionInfo.builder()
-              .direction(Event.DIRECTION.OUT.toString())
-              .transport(this.getTransport().toUpperCase())
-              .messageChannel(this)
-              .connectionState(Connection.STATE.CONNECTED.toString())
-              .build();
-
-      metricService.insertConnectionInfo(connectionId, connectionInfo);
-      /*metricService.emitConnectionMetrics(
-            Event.DIRECTION.OUT.toString(), this, Connection.STATE.CONNECTED.toString());
-      */
+      // sending connection info metric
+      this.sendConnectionInfoMetric(
+          Event.DIRECTION.OUT.toString(), Connection.STATE.CONNECTED.toString(), this);
     } catch (IOException exp) {
       //  emit event and metrics
       Event.emitConnectionErrorEvent(this.getTransport(), null, exp);
@@ -93,22 +68,9 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
       byte[] msg, InetAddress peerAddress, int peerPort, String peerProtocol, boolean retry) {
     try {
       super.sendMessage(msg, peerAddress, peerPort, peerProtocol, retry);
-      DsbSipUdpMessageProcessor dsbUdpMessageProcessor =
-          (DsbSipUdpMessageProcessor) this.getMessageProcessor();
-      MetricService metricService = dsbUdpMessageProcessor.getMetricService();
+      this.sendConnectionInfoMetric(
+          Event.DIRECTION.OUT.toString(), Connection.STATE.CONNECTED.toString(), this);
 
-      String connectionId =
-          SipUtils.getConnectionId(
-              Event.DIRECTION.OUT.toString(), this.getTransport().toUpperCase(), this);
-      ConnectionInfo connectionInfo =
-          ConnectionInfo.builder()
-              .direction(Event.DIRECTION.OUT.toString())
-              .transport(this.getTransport().toUpperCase())
-              .messageChannel(this)
-              .connectionState(Connection.STATE.CONNECTED.toString())
-              .build();
-
-      metricService.insertConnectionInfo(connectionId, connectionInfo);
     } catch (IOException exp) {
       Event.emitConnectionErrorEvent(this.getTransport(), null, exp);
     }
@@ -118,5 +80,28 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
   public void close() {
     super.close();
     logger.debug("DsbSipUdpMessageChannel is closing");
+  }
+
+  public void sendConnectionInfoMetric(
+      String direction, String connectionState, MessageChannel channel) {
+    DsbSipUdpMessageProcessor dsbUdpMessageProcessor =
+        this.getMessageProcessor() != null
+            ? (DsbSipUdpMessageProcessor) this.getMessageProcessor()
+            : null;
+    MetricService metricService =
+        dsbUdpMessageProcessor != null ? dsbUdpMessageProcessor.getMetricService() : null;
+
+    String connectionId = SipUtils.getConnectionId(direction, channel.getTransport(), this);
+    ConnectionInfo connectionInfo =
+        ConnectionInfo.builder()
+            .direction(direction)
+            .transport(channel.getTransport())
+            .messageChannel(channel)
+            .connectionState(connectionState)
+            .build();
+
+    if (metricService != null) {
+      metricService.insertConnectionInfo(connectionId, connectionInfo);
+    }
   }
 }

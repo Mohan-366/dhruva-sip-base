@@ -16,6 +16,11 @@ import lombok.CustomLog;
 import lombok.Getter;
 import org.springframework.util.ReflectionUtils;
 
+/**
+ * This class in a wrapper over jain stacks UDPMessageProcessor to get control over stack's
+ * UdpMessageChannel to evaluate and emit metrics based on the direction of sip messages being
+ * emitted out
+ */
 @CustomLog
 public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
   @Getter private MetricService metricService;
@@ -43,29 +48,15 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
 
   @Override
   public MessageChannel createMessageChannel(HostPort targetHostPort) throws UnknownHostException {
+    return new DsbUdpMessageChannel(
+        targetHostPort.getInetAddress(), targetHostPort.getPort(), sipStack, this);
 
-    // MessageChannel createdMessageChannel = super.createMessageChannel(targetHostPort);
-    MessageChannel createdMessageChannel =
-        new DsbUdpMessageChannel(
-            targetHostPort.getInetAddress(), targetHostPort.getPort(), sipStack, this);
-
-    /*    metricService.emitConnectionMetrics(
-    Event.DIRECTION.IN.toString(),
-    createdMessageChannel,
-    Connection.STATE.CONNECTED.toString());*/
-    return createdMessageChannel;
   }
 
   @Override
   public MessageChannel createMessageChannel(InetAddress host, int port) throws IOException {
-    // MessageChannel createdMessageChannel = super.createMessageChannel(host, port);
 
-    MessageChannel createdMessageChannel = new DsbUdpMessageChannel(host, port, sipStack, this);
-    /*    metricService.emitConnectionMetrics(
-    Event.DIRECTION.IN.toString(),
-    createdMessageChannel,
-    Connection.STATE.CONNECTED.toString());*/
-    return createdMessageChannel;
+    return new DsbUdpMessageChannel(host, port, sipStack, this);
   }
 
   public String getStackName() {
@@ -76,6 +67,10 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
     }
   }
 
+  /**
+   * Overring the run method to inject DsbSipUdpMessageChannel, a wrapper over stack's
+   * UdpMessageChannel to emit logical information of connection in form of metric
+   */
   @Override
   public void run() {
     // Check for running flag.
@@ -83,7 +78,7 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
     // start all our messageChannels (unless the thread pool size is
     // infinity.
 
-    // sipStack.threadPoolSize
+    // fetching the value of threadPoolSize from sipStack
     Field threadPoolSizeField =
         ReflectionUtils.findField(SIPTransactionStack.class, "threadPoolSize");
     ReflectionUtils.makeAccessible(threadPoolSizeField);
@@ -91,9 +86,10 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
         ReflectionUtils.getField(threadPoolSizeField, sipStack) == null
             ? -1
             : (Integer) ReflectionUtils.getField(threadPoolSizeField, sipStack);
+
     if (threadPoolSize != -1) {
       for (int i = 0; i < threadPoolSize; i++) {
-        // UDPMessageChannel channel = new UDPMessageChannel(sipStack,
+        /* creating DsbUdpMessageChannel which is an extension over UdpMessageChannel to reuse there API's*/
         DsbUdpMessageChannel channel =
             new DsbUdpMessageChannel(
                 sipStack,
@@ -124,8 +120,7 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
 
         // Count of # of packets in process.
         // this.useCount++;
-        if (
-        /*sipStack.threadPoolSize */ threadPoolSize != -1) {
+        if (threadPoolSize != -1) {
           // Note: the only condition watched for by threads
           // synchronizing on the messageQueue member is that it is
           // not empty. As soon as you introduce some other
@@ -146,6 +141,7 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
           /*          if (logger.isLoggingEnabled(LogWriter.TRACE_DEBUG)) {
             logger.logDebug("UDPMessageProcessor: Stopping");
           }*/
+
           return;
         } else {
           reportSockeException(ex); // report exception but try to continue to receive data ...
