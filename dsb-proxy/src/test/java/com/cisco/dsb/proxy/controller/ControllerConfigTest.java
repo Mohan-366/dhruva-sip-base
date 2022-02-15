@@ -3,8 +3,16 @@ package com.cisco.dsb.proxy.controller;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.enums.DNSRecordSource;
+import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
+import com.cisco.dsb.common.sip.stack.dns.SipServerLocator;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
+import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
+import com.cisco.dsb.common.sip.stack.dto.SipDestination;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.util.HeaderHelper;
@@ -14,13 +22,19 @@ import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.header.SIPHeaderList;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import javax.sip.header.RecordRouteHeader;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 public class ControllerConfigTest {
   ControllerConfig controllerConfig;
@@ -132,4 +146,28 @@ public class ControllerConfigTest {
     verify(sipResponse, Mockito.times(1)).setApplicationData(eq("test_network_in"));
     verify(sipResponse, Mockito.times(0)).setApplicationData(eq("test2_network_in"));
   }
+
+  @Test
+
+  void testDnsException()  {
+    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
+
+
+
+    LocateSIPServersResponse locateSIPServersResponseMock = mock(LocateSIPServersResponse.class);
+
+    when(locateSIPServersResponseMock.getDnsException())
+            .thenReturn(Optional.of(new DnsException("DNS Exception")));
+
+    when(sipServerLocatorService.locateDestinationAsync(any(), any()))
+            .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponseMock));
+
+
+    Mono<Boolean> bool = controllerConfig.recognizeWithDns(null,"test.cisco.com", 5061, Transport.TLS);
+    StepVerifier.create(bool)
+            .expectNext(false)
+            .verifyComplete();
+
+  }
+
 }

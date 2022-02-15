@@ -475,38 +475,42 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       CompletableFuture<LocateSIPServersResponse> locateSIPServersResponseAsync =
           sipLocator.locateDestinationAsync(null, destination);
 
-      return Mono.defer(
-          () ->
-              Mono.fromFuture(locateSIPServersResponseAsync)
-                  .handle(
-                      (locateSIPServersResponse, synchronousSink) -> {
-                        List<Hop> hops = locateSIPServersResponse.getHops();
-                        if (hops == null || hops.isEmpty()) {
-                          logger.error("Exception in resolving, Null / Empty hops");
-                        } else {
-                          List<BindingInfo> bInfos =
-                              sipLocator.getBindingInfoMapFromHops(
-                                  null, null, 0, host, port, transport, locateSIPServersResponse);
+      return Mono.fromFuture(locateSIPServersResponseAsync)
+          .handle(
+              (locateSIPServersResponse, synchronousSink) -> {
+                if (locateSIPServersResponse.getDnsException().isPresent()) {
+                  logger.error(
+                          "Exception in resolving, returning false "
+                                  + locateSIPServersResponse.getDnsException().get());
+                }
+                List<Hop> hops = locateSIPServersResponse.getHops();
+                if (hops == null || hops.isEmpty()) {
+                  logger.error(
+                      "Exception in resolving, Null / Empty hops , returning false for " + host);
+                } else {
+                  List<BindingInfo> bInfos =
+                      sipLocator.getBindingInfoMapFromHops(
+                          null, null, 0, host, port, transport, locateSIPServersResponse);
 
-                          BindingInfo bInfo =
-                              bInfos.stream()
-                                  .filter(
-                                      b ->
-                                          recognize(
-                                              user,
-                                              b.getRemoteAddressStr(),
-                                              b.getRemotePort(),
-                                              b.getTransport()))
-                                  .findFirst()
-                                  .orElse(null);
+                  BindingInfo bInfo =
+                      bInfos.stream()
+                          .filter(
+                              b ->
+                                  recognize(
+                                      user,
+                                      b.getRemoteAddressStr(),
+                                      b.getRemotePort(),
+                                      b.getTransport()))
+                          .findFirst()
+                          .orElse(null);
 
-                          if (bInfo != null) {
-                            logger.info("found matching host after dns resolution", host);
-                            synchronousSink.next(true);
-                          }
-                        }
-                        synchronousSink.next(false);
-                      }));
+                  if (bInfo != null) {
+                    logger.info("found matching host after dns resolution", host);
+                    synchronousSink.next(true);
+                  }
+                }
+                synchronousSink.next(false);
+              });
     }
     return Mono.just(false);
   }
