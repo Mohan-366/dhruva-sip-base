@@ -9,6 +9,8 @@ import com.cisco.dsb.common.transport.Transport;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import lombok.CustomLog;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /** the class describing an interface (port/protocol for now) to listen on */
 @CustomLog
@@ -172,21 +174,23 @@ public class ListenIf implements ListenInterface {
   }
 
   /** Returns true if the port, protocol and address are the same. */
+  @Override
   public boolean equals(Object o) {
-    if (o == null) return false;
-
-    ListenIf listenIf = (ListenIf) o;
-
-    return listenIf.getPort() == this.port
-        && listenIf.getProtocol() == this.protocol
-        &&
-        // listenIf.getAddress().equals( this.getAddress() ) )
-        listenIf.getNonTranslatedInetAddress().equals(addressInet);
+    if (this == o) return true;
+    if (o instanceof ListenIf) {
+      ListenIf listenIf = (ListenIf) o;
+      return new EqualsBuilder()
+          .append(port, listenIf.getPort())
+          .append(protocol, listenIf.getProtocol())
+          .append(addressInet, listenIf.getNonTranslatedInetAddress())
+          .isEquals();
+    }
+    return false;
   }
 
+  @Override
   public int hashCode() {
-    long sum = (port * addressInet.hashCode() * protocol.ordinal());
-    return (int) (sum % Integer.MAX_VALUE);
+    return new HashCodeBuilder().append(port).append(protocol).append(addressInet).toHashCode();
   }
 
   public String toString() {

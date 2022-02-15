@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import reactor.core.publisher.Mono;
 
 /** Abstract class for all kinds of trunks */
@@ -58,6 +59,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof AbstractTrunk) {
       AbstractTrunk b = (AbstractTrunk) a;
       return new EqualsBuilder()
@@ -67,6 +69,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
           .isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(name).append(ingress).append(egress).toHashCode();
   }
 
   @Override

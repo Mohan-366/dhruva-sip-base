@@ -66,15 +66,15 @@ public class CertificateInfo {
 
   @Override
   public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) {
-      return false;
+    if (this == other) return true;
+    if (other instanceof CertificateInfo) {
+      CertificateInfo otherCertificateInfo = (CertificateInfo) other;
+      return new EqualsBuilder()
+          .append(this.subjectName, otherCertificateInfo.subjectName)
+          .append(this.sans, otherCertificateInfo.sans)
+          .isEquals();
     }
-
-    CertificateInfo otherCertificateInfo = (CertificateInfo) other;
-    return new EqualsBuilder()
-        .append(this.subjectName, otherCertificateInfo.subjectName)
-        .append(this.sans, otherCertificateInfo.sans)
-        .isEquals();
+    return false;
   }
 
   @Override

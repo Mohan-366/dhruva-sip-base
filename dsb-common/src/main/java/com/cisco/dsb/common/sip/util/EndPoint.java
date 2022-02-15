@@ -4,6 +4,7 @@ import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import lombok.*;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This class describes/represents the end address to a network application. It encapsulates the
@@ -70,12 +71,17 @@ public class EndPoint implements Cloneable {
   }
 
   /** our equals implementation */
+  @Override
   public boolean equals(Object obj) {
-    if (obj == null) return false;
-    EndPoint ep = (EndPoint) obj;
-    return (_intern.equals(ep._intern));
+    if (this == obj) return true;
+    if (obj instanceof EndPoint) {
+      EndPoint ep = (EndPoint) obj;
+      return new EqualsBuilder().append(_intern, ep._intern).isEquals();
+    }
+    return false;
   }
 
+  @Override
   public final int hashCode() {
     return hashCode;
   }

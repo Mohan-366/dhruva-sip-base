@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.sip.dto;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -23,7 +24,6 @@ public class WebexMeetingInfoTest {
     WebexMeetingInfo info2 = new WebexMeetingInfo.Builder(info1).buildIfValid();
     WebexMeetingInfo info3 = new WebexMeetingInfo.Builder(null).buildIfValid();
     Assert.assertTrue(info1.equals(info2));
-    Assert.assertTrue(info1.equals(info1));
     Assert.assertFalse(info1.equals(info3));
 
     String meetingNumber = "12345678";
@@ -32,5 +32,10 @@ public class WebexMeetingInfoTest {
     Assert.assertNotNull(info4);
     WebexMeetingInfo info5 = new WebexMeetingInfo.Builder().conferenceId("1234").buildIfValid();
     Assert.assertNotNull(info5);
+  }
+
+  @Test
+  public void testEqualsAndHashCode() {
+    EqualsVerifier.simple().forClass(WebexMeetingInfo.class).verify();
   }
 }

@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import lombok.CustomLog;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -507,5 +508,13 @@ public class SipServerLocatorTest {
       records.complete(aRecords.getOrDefault(lookup, new ArrayList<>()));
       return records;
     }
+  }
+
+  @Test
+  public void testEqualsOfHop() {
+    EqualsVerifier.simple()
+        .forClass(Hop.class)
+        .withOnlyTheseFields("hostname", "host", "transport", "port", "source")
+        .verify();
   }
 }

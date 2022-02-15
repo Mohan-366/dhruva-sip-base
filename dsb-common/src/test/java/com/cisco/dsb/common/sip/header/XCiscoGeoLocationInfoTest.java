@@ -2,6 +2,7 @@ package com.cisco.dsb.common.sip.header;
 
 import com.cisco.wx2.util.JsonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -45,5 +46,10 @@ public class XCiscoGeoLocationInfoTest {
     Assert.assertEquals(info.getSipCloudIngressDC(), "AFRA");
     info.setGeoDNSDialled(true);
     Assert.assertTrue(info.getGeoDNSDialled());
+  }
+
+  @Test
+  public void testEqualsAndHashCode() {
+    EqualsVerifier.simple().forClass(XCiscoGeoLocationInfo.class).verify();
   }
 }

@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -93,5 +94,16 @@ public class TrunkConfigurationPropertiesTest {
     egress1.setServerGroups(Collections.singletonList("SG3"));
     // throws exception as SG is not present in commonConfiguration
     configurationProperties.setPSTN(pstnTrunkMap);
+  }
+
+  @Test
+  public void testEqualsAndHashCodeOfEgressIngress() {
+    // Test Egress
+    EqualsVerifier.simple()
+        .forClass(Egress.class)
+        .withOnlyTheseFields("lbType", "serverGroupsConfig")
+        .verify();
+    // Test Ingress
+    EqualsVerifier.simple().forClass(Ingress.class).verify();
   }
 }

@@ -3,7 +3,8 @@ package com.cisco.dsb.common.sip.header;
 import com.cisco.wx2.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Objects;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class XCiscoGeoLocationInfo {
   // Note that Orpheus and Cloud Proxy name some of these fields differently, hence the JsonProperty
@@ -72,16 +73,25 @@ public class XCiscoGeoLocationInfo {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    XCiscoGeoLocationInfo that = (XCiscoGeoLocationInfo) o;
-    return Objects.equals(clientRegionCode, that.clientRegionCode)
-        && Objects.equals(clientCountryCode, that.clientCountryCode)
-        && Objects.equals(sipCloudIngressDC, that.sipCloudIngressDC)
-        && Objects.equals(geoDNSDialled, that.geoDNSDialled);
+    if (o instanceof XCiscoGeoLocationInfo) {
+      XCiscoGeoLocationInfo that = (XCiscoGeoLocationInfo) o;
+      return new EqualsBuilder()
+          .append(clientRegionCode, that.clientRegionCode)
+          .append(clientCountryCode, that.clientCountryCode)
+          .append(sipCloudIngressDC, that.sipCloudIngressDC)
+          .append(geoDNSDialled, that.geoDNSDialled)
+          .isEquals();
+    }
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(clientRegionCode, clientCountryCode, sipCloudIngressDC, geoDNSDialled);
+    return new HashCodeBuilder()
+        .append(clientRegionCode)
+        .append(clientCountryCode)
+        .append(sipCloudIngressDC)
+        .append(geoDNSDialled)
+        .toHashCode();
   }
 }
