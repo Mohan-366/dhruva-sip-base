@@ -240,7 +240,7 @@ public class LoadBalancerTest {
 class LbWeightRetryAnalyser implements IRetryAnalyzer {
 
   int counter = 0;
-  int retryLimit = 10;
+  int retryLimit = 20;
 
   @Override
   public boolean retry(ITestResult iTestResult) {

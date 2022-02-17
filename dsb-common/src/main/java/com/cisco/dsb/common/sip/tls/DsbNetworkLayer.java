@@ -151,7 +151,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   public ServerSocket createServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
 
-    return new DsbServerSocket(port, backlog, bindAddress);
+    return setServerSocketOptions(new DsbServerSocket(port, backlog, bindAddress));
   }
 
   @SuppressFBWarnings(value = "UNENCRYPTED_SERVER_SOCKET", justification = "baseline suppression")
@@ -187,7 +187,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   @Override
   public SSLServerSocket createSSLServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
-    return (SSLServerSocket) sslServerSocketFactory.createServerSocket(port, backlog, bindAddress);
+    return (SSLServerSocket) setServerSocketOptions(sslServerSocketFactory.createServerSocket(port, backlog, bindAddress));
   }
 
   @Override
@@ -252,6 +252,13 @@ public class DsbNetworkLayer implements NetworkLayer {
     socket.setTcpNoDelay(true);
     socket.setTrafficClass(trafficClass);
     return socket;
+  }
+
+  private static ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws SocketException{
+    //NOTE: some of the properties set here can be overridden by ConnectionOrientedMessageProcessor.
+    // check out the start() to see such properties
+    serverSocket.setReuseAddress(true);
+    return serverSocket;
   }
 
   @Override

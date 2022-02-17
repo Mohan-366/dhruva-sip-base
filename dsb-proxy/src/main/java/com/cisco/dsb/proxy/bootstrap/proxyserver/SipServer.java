@@ -15,6 +15,8 @@ import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
 import gov.nist.javax.sip.SipStackImpl;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +27,7 @@ import javax.sip.SipListener;
 import javax.sip.SipStack;
 import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.retry.annotation.Retryable;
 
 @CustomLog
 public class SipServer implements Server {
@@ -61,31 +64,49 @@ public class SipServer implements Server {
       CompletableFuture<SipStack> serverStartFuture) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
+    int retryCount = this.commonConfigurationProperties.getListenPointRetryCount();
+    int retryDelay = this.commonConfigurationProperties.getListenPointRetryDelay();
+    while(retryCount >=0) {
+      try {
+        SipStack sipStack =
+                JainStackInitializer.getSimpleStack(
+                        this.commonConfigurationProperties,
+                        sipFactory,
+                        sipFactory.getPathName(),
+                        getStackProperties(),
+                        address.getHostAddress(),
+                        port,
+                        transport.toString(),
+                        handler,
+                        executorService,
+                        trustManager,
+                        keyManager,
+                        this.metricService);
+        if (sipStack instanceof SipStackImpl) {
+          SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
+          ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
+                  .initFromApplication(commonConfigurationProperties, executorService, metricService);
+        }
+        serverStartFuture.complete(sipStack);
+        break;
+      } catch (Exception e) {
+        logger.error("Unable to start listenPoint", e.getMessage());
+        if (retryCount == 0 || !(e.getCause() instanceof IOException)) {
+          serverStartFuture.completeExceptionally(e);
+          break;
+        }
+        retryCount--;
+        logger.info("Retrying to bind on {}:{} after {}seconds." +
+                "Retries left:{}", address.getHostAddress(), port, retryDelay, retryCount);
 
-    try {
-      SipStack sipStack =
-          JainStackInitializer.getSimpleStack(
-              this.commonConfigurationProperties,
-              sipFactory,
-              sipFactory.getPathName(),
-              getStackProperties(),
-              address.getHostAddress(),
-              port,
-              transport.toString(),
-              handler,
-              executorService,
-              trustManager,
-              keyManager,
-              this.metricService);
-      if (sipStack instanceof SipStackImpl) {
-        SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
-        ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-            .initFromApplication(commonConfigurationProperties, executorService, metricService);
+        try {
+          Thread.sleep(retryDelay * 1000L);
+        } catch (InterruptedException ex) {
+          logger.error("Interrupted while waiting to retry creation on listenPoint");
+        }
       }
-      serverStartFuture.complete(sipStack);
-    } catch (Exception e) {
-      serverStartFuture.completeExceptionally(e.getCause());
     }
+
   }
 
   private Properties getStackProperties() {
