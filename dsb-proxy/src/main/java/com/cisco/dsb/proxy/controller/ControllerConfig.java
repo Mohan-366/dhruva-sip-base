@@ -41,6 +41,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -423,7 +424,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
    *     otherwise returns false
    */
   @Override
-  public Mono<Boolean> recognize(URI uri, boolean isRequestURI) {
+  public Mono<Boolean> recognize(@NotNull URI uri, boolean isRequestURI) {
 
     String ruri = uri.toString();
     ruri =
@@ -455,7 +456,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       } else {
         host = url.getMAddrParam();
         if (host == null) host = url.getHost();
-        return recognizeWithDns(user, host, port, transport);
+        return recognizeWithDns(user, host, port, transport).switchIfEmpty(Mono.just(false));
       }
     }
     return Mono.just(false);
@@ -476,17 +477,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
           sipLocator.locateDestinationAsync(null, destination);
 
       return Mono.fromFuture(locateSIPServersResponseAsync)
+          .onErrorResume(throwable -> Mono.empty())
           .handle(
               (locateSIPServersResponse, synchronousSink) -> {
                 if (locateSIPServersResponse.getDnsException().isPresent()) {
                   logger.error(
-                          "Exception in resolving, returning false "
-                                  + locateSIPServersResponse.getDnsException().get());
+                      "Exception in resolving, returning false ",
+                      locateSIPServersResponse.getDnsException().get());
                 }
                 List<Hop> hops = locateSIPServersResponse.getHops();
                 if (hops == null || hops.isEmpty()) {
                   logger.error(
-                      "Exception in resolving, Null / Empty hops , returning false for " + host);
+                      "Exception in resolving, Null / Empty hops , returning false for ", host);
                 } else {
                   List<BindingInfo> bInfos =
                       sipLocator.getBindingInfoMapFromHops(
