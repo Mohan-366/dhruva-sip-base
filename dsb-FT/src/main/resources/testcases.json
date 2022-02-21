@@ -1,0 +1,146 @@
+{
+  "testCaseConfig": [
+    {
+      "description": "Basic INVITE Flow",
+      "id": "1",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5061
+        },
+        "serverCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5067
+        },
+        "transport": "tcp"
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "192.168.1.5",
+        "port": 5075,
+        "transport": "tcp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@192.168.1.5:7000"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK",
+              "record-route": "<sip:rr$n=net_sp_tcp@127.0.0.1:5068;transport=tcp;lr>"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          },
+          {
+            "type": "request",
+            "name": "BYE",
+            "direction": "sends"
+          },
+          {
+            "type": "response",
+            "forRequest": "BYE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "192.168.1.5",
+          "port": 7000,
+          "transport": "tcp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:callee7@SG7",
+              "record-route": "<sip:rr$n=net_me_tcp@127.0.0.1:5067;transport=tcp;lr>"
+            }
+          },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            },
+            {
+              "description": "normal bye",
+              "type": "request",
+              "name": "BYE",
+              "direction": "receives"
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "BYE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+
+          ]
+        }
+      ]
+    }]
+}
