@@ -10,14 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -170,8 +163,8 @@ public class DsbNetworkLayer implements NetworkLayer {
       throws SocketException {
     DatagramSocket socket =
         port >= 0 && address != null ? new DatagramSocket(port, address) : new DatagramSocket();
-    socket.setTrafficClass(trafficClass);
-    return socket;
+
+    return setDatagramSocketOptions(socket);
   }
 
   @Override
@@ -187,7 +180,9 @@ public class DsbNetworkLayer implements NetworkLayer {
   @Override
   public SSLServerSocket createSSLServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
-    return (SSLServerSocket) setServerSocketOptions(sslServerSocketFactory.createServerSocket(port, backlog, bindAddress));
+    return (SSLServerSocket)
+        setServerSocketOptions(
+            sslServerSocketFactory.createServerSocket(port, backlog, bindAddress));
   }
 
   @Override
@@ -254,11 +249,19 @@ public class DsbNetworkLayer implements NetworkLayer {
     return socket;
   }
 
-  private static ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws SocketException{
-    //NOTE: some of the properties set here can be overridden by ConnectionOrientedMessageProcessor.
+  private static ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws IOException {
+    // NOTE: some of the properties set here can be overridden by
+    // ConnectionOrientedMessageProcessor.
     // check out the start() to see such properties
-    serverSocket.setReuseAddress(true);
+    serverSocket.setOption(StandardSocketOptions.SO_REUSEPORT, true);
     return serverSocket;
+  }
+
+  private static DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
+      throws SocketException {
+    datagramSocket.setTrafficClass(trafficClass);
+    datagramSocket.setReuseAddress(true);
+    return datagramSocket;
   }
 
   @Override

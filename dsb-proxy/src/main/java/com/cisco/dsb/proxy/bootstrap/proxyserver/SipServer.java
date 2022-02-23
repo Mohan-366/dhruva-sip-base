@@ -15,7 +15,6 @@ import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
 import gov.nist.javax.sip.SipStackImpl;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Properties;
@@ -27,7 +26,6 @@ import javax.sip.SipListener;
 import javax.sip.SipStack;
 import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.retry.annotation.Retryable;
 
 @CustomLog
 public class SipServer implements Server {
@@ -66,26 +64,26 @@ public class SipServer implements Server {
     SipFactory sipFactory = JainSipHelper.getSipFactory();
     int retryCount = this.commonConfigurationProperties.getListenPointRetryCount();
     int retryDelay = this.commonConfigurationProperties.getListenPointRetryDelay();
-    while(retryCount >=0) {
+    while (retryCount >= 0) {
       try {
         SipStack sipStack =
-                JainStackInitializer.getSimpleStack(
-                        this.commonConfigurationProperties,
-                        sipFactory,
-                        sipFactory.getPathName(),
-                        getStackProperties(),
-                        address.getHostAddress(),
-                        port,
-                        transport.toString(),
-                        handler,
-                        executorService,
-                        trustManager,
-                        keyManager,
-                        this.metricService);
+            JainStackInitializer.getSimpleStack(
+                this.commonConfigurationProperties,
+                sipFactory,
+                sipFactory.getPathName(),
+                getStackProperties(),
+                address.getHostAddress(),
+                port,
+                transport.toString(),
+                handler,
+                executorService,
+                trustManager,
+                keyManager,
+                this.metricService);
         if (sipStack instanceof SipStackImpl) {
           SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
           ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
-                  .initFromApplication(commonConfigurationProperties, executorService, metricService);
+              .initFromApplication(commonConfigurationProperties, executorService, metricService);
         }
         serverStartFuture.complete(sipStack);
         break;
@@ -96,8 +94,12 @@ public class SipServer implements Server {
           break;
         }
         retryCount--;
-        logger.info("Retrying to bind on {}:{} after {}seconds." +
-                "Retries left:{}", address.getHostAddress(), port, retryDelay, retryCount);
+        logger.info(
+            "Retrying to bind on {}:{} after {}seconds." + "Retries left:{}",
+            address.getHostAddress(),
+            port,
+            retryDelay,
+            retryCount);
 
         try {
           Thread.sleep(retryDelay * 1000L);
@@ -106,7 +108,6 @@ public class SipServer implements Server {
         }
       }
     }
-
   }
 
   private Properties getStackProperties() {
