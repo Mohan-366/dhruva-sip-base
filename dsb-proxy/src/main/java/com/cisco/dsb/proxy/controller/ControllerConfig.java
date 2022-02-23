@@ -41,7 +41,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -424,8 +423,9 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
    *     otherwise returns false
    */
   @Override
-  public Mono<Boolean> recognize(@NotNull URI uri, boolean isRequestURI) {
+  public Mono<Boolean> recognize(URI uri, boolean isRequestURI) {
 
+    if (uri == null) return Mono.just(false);
     String ruri = uri.toString();
     ruri =
         ruri.replaceAll(
@@ -493,7 +493,6 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
                   List<BindingInfo> bInfos =
                       sipLocator.getBindingInfoMapFromHops(
                           null, null, 0, host, port, transport, locateSIPServersResponse);
-
                   BindingInfo bInfo =
                       bInfos.stream()
                           .filter(

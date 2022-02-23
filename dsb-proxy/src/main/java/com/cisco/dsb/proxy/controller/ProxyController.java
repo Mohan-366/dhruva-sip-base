@@ -491,95 +491,97 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    * @return the proxySipRequst with FIX URI as described above
    * @throws RuntimeException if fix did not succeed.
    */
-
   Function<ProxySIPRequest, Mono<ProxySIPRequest>> incomingProxyRequestFixLr =
       proxySIPRequest -> {
         SIPRequest request = proxySIPRequest.getRequest();
         // lrfix - user recognizes the rURI
-
+        URI uriAsync = null;
         RouteHeader topRoute = (RouteHeader) request.getHeader(RouteHeader.NAME);
-        URI uriAsync = topRoute.getAddress().getURI();
-
-        return controllerConfig
-            .recognize(request.getRequestURI(), true)
-            .handle(
-                (response, sink) -> {
-                  if (response) {
-                    RouteHeader lastRouteHeader = null;
-                    RouteList routes = request.getRouteHeaders();
-                    if (routes != null) {
-                      lastRouteHeader = (RouteHeader) routes.getLast();
-                    }
-
-                    if (lastRouteHeader == null) {
-                      sink.error(
-                          new DhruvaRuntimeException(
-                              ErrorCode.PROXY_REQ_PROC_ERR,
-                              "Failed to fix the loose routing for the request"));
-                      return;
-                    }
-
-                    proxySIPRequest.setLrFixUri(request.getRequestURI());
-                    request.setRequestURI(lastRouteHeader.getAddress().getURI());
-                    request.removeLast(RouteHeader.NAME);
-
-                    // Top Most Route Header
-                    RouteHeader topMostRouteHeader =
-                        (RouteHeader) request.getHeader(RouteHeader.NAME);
-
-                    if (topMostRouteHeader == null) {
-
-                      URI lrfixUri = proxySIPRequest.getLrFixUri();
-                      URI lastRouteUri = lastRouteHeader.getAddress().getURI();
-
-                      SipURI lrfixSipUri = (SipURI) lrfixUri;
-                      SipURI lastRouteSipUri = (SipURI) lastRouteUri;
-
-                      if (ProxyUtils.checkSipUriMatches(lrfixSipUri, lastRouteSipUri)) {
-                        proxySIPRequest.setLrFixUri(lastRouteUri);
-                      }
-                    } else {
-                      URI uri = topMostRouteHeader.getAddress().getURI();
-                      URI lrfixUri = proxySIPRequest.getLrFixUri();
-
-                      SipURI sipUri = (SipURI) uri;
-                      SipURI sipLrFixUri = (SipURI) lrfixUri;
-                      if (ProxyUtils.checkSipUriMatches(sipUri, sipLrFixUri)) {
-                        logger.debug(
-                            "removing top most route header that matches dhruva addr:", uri);
-                        Optional<DhruvaNetwork> optionalDhruvaNetwork = getNetworkFromMyRoute();
-                        optionalDhruvaNetwork.ifPresent(
-                            dhruvaNetwork ->
-                                proxySIPRequest.setOutgoingNetwork(dhruvaNetwork.getName()));
-                        proxySIPRequest.setLrFixUri(uri);
-                        request.removeFirst(RouteHeader.NAME);
-                      }
-                    }
-                    sink.next(proxySIPRequest);
-
-                    if (uriAsync == null) sink.next(proxySIPRequest);
-                  }
-                })
-            .switchIfEmpty(
+        if (topRoute != null) uriAsync = topRoute.getAddress().getURI();
+        URI finalUriAsync = uriAsync;
+        return
                 controllerConfig
-                    .recognize(uriAsync, true)
+                    .recognize(request.getRequestURI(), true)
                     .handle(
                         (response, sink) -> {
-                          if (response) {
-                            Optional<DhruvaNetwork> optionalDhruvaNetwork = getNetworkFromMyRoute();
-                            optionalDhruvaNetwork.ifPresent(
-                                dhruvaNetwork ->
-                                    proxySIPRequest.setOutgoingNetwork(dhruvaNetwork.getName()));
 
-                            proxySIPRequest.setLrFixUri(uriAsync);
-                            request.removeFirst(RouteHeader.NAME);
-                            logger.debug(
-                                "removing top most route header that matches dhruva addr:",
-                                uriAsync);
+                          if (response) {
+                            RouteHeader lastRouteHeader = null;
+                            RouteList routes = request.getRouteHeaders();
+                            if (routes != null) {
+                              lastRouteHeader = (RouteHeader) routes.getLast();
+                            }
+                            if (lastRouteHeader == null) {
+                              sink.error(
+                                  new DhruvaRuntimeException(
+                                      ErrorCode.PROXY_REQ_PROC_ERR,
+                                      "Failed to fix the loose routing for the request"));
+                              return;
+                            }
+                            proxySIPRequest.setLrFixUri(request.getRequestURI());
+                            request.setRequestURI(lastRouteHeader.getAddress().getURI());
+                            request.removeLast(RouteHeader.NAME);
+
+                            // Top Most Route Header
+                            RouteHeader topMostRouteHeader =
+                                (RouteHeader) request.getHeader(RouteHeader.NAME);
+
+                            if (topMostRouteHeader == null) {
+
+                              URI lrfixUri = proxySIPRequest.getLrFixUri();
+                              URI lastRouteUri = lastRouteHeader.getAddress().getURI();
+
+                              SipURI lrfixSipUri = (SipURI) lrfixUri;
+                              SipURI lastRouteSipUri = (SipURI) lastRouteUri;
+                              if (ProxyUtils.checkSipUriMatches(lrfixSipUri, lastRouteSipUri)) {
+                                proxySIPRequest.setLrFixUri(lastRouteUri);
+                              }
+                            } else {
+                              URI uri = topMostRouteHeader.getAddress().getURI();
+                              URI lrfixUri = proxySIPRequest.getLrFixUri();
+
+                              SipURI sipUri = (SipURI) uri;
+                              SipURI sipLrFixUri = (SipURI) lrfixUri;
+                              if (ProxyUtils.checkSipUriMatches(sipUri, sipLrFixUri)) {
+                                logger.debug(
+                                    "removing top most route header that matches dhruva addr:",
+                                    uri);
+                                Optional<DhruvaNetwork> optionalDhruvaNetwork =
+                                    getNetworkFromMyRoute();
+                                optionalDhruvaNetwork.ifPresent(
+                                    dhruvaNetwork ->
+                                        proxySIPRequest.setOutgoingNetwork(
+                                            dhruvaNetwork.getName()));
+                                proxySIPRequest.setLrFixUri(uri);
+                                request.removeFirst(RouteHeader.NAME);
+                              }
+                            }
+                            sink.next(proxySIPRequest);
                           }
-                          sink.next(proxySIPRequest);
-                        }))
-            .cast(ProxySIPRequest.class);
+                        })
+                    .switchIfEmpty(
+                        controllerConfig
+                            .recognize(finalUriAsync, true)
+                            .handle(
+                                (response, sink) -> {
+                                  if (response) {
+
+                                    Optional<DhruvaNetwork> optionalDhruvaNetwork =
+                                        getNetworkFromMyRoute();
+                                    optionalDhruvaNetwork.ifPresent(
+                                        dhruvaNetwork ->
+                                            proxySIPRequest.setOutgoingNetwork(
+                                                dhruvaNetwork.getName()));
+
+                                    proxySIPRequest.setLrFixUri(finalUriAsync);
+                                    request.removeFirst(RouteHeader.NAME);
+                                    logger.debug(
+                                        "removing top most route header that matches dhruva addr:",
+                                        finalUriAsync);
+                                  }
+                                  sink.next(proxySIPRequest);
+                                }))
+                    .cast(ProxySIPRequest.class);
       };
 
   @Override
@@ -589,50 +591,56 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     ourRequest = proxySIPRequest;
 
     // As per RFC (Section 16.4), Route Information Preprocessing happens here
+    return
+            incomingProxyRequestFixLr
+                .apply(proxySIPRequest)
+                .flatMap(processIncomingProxyRequestMAddr)
+                .handle(
+                    (proxySIPReq, sink) -> {
 
-    return incomingProxyRequestFixLr
-        .apply(proxySIPRequest)
-        .flatMap(processIncomingProxyRequestMAddr)
-        .handle(
-            (proxySIPReq, sink) -> {
-              // Fetch the network from provider
-              SipProvider sipProvider = proxySIPRequest.getProvider();
-              Optional<String> networkFromProvider =
-                  DhruvaNetwork.getNetworkFromProvider(sipProvider);
-              String network =
-                  networkFromProvider.orElseThrow(
-                      () ->
-                          new DhruvaRuntimeException(
-                              ErrorCode.NO_INCOMING_NETWORK,
-                              "Unable to find network from provider"));
-              incomingNetwork = network;
-              proxySIPRequest.setNetwork(network);
+                      // Fetch the network from provider
+                      SipProvider sipProvider = proxySIPRequest.getProvider();
+                      Optional<String> networkFromProvider =
+                          DhruvaNetwork.getNetworkFromProvider(sipProvider);
+                      String network =
+                          networkFromProvider.orElseThrow(
+                              () ->
+                                  new DhruvaRuntimeException(
+                                      ErrorCode.NO_INCOMING_NETWORK,
+                                      "Unable to find network from provider"));
+                      incomingNetwork = network;
+                      proxySIPRequest.setNetwork(network);
 
-              // Create ProxyTransaction
-              // ProxyTransaction internally creates ProxyServerTransaction
-              proxyTransaction =
-                  createProxyTransaction(
-                      controllerConfig.isStateful(), request, serverTransaction, proxyFactory);
+                      // Create ProxyTransaction
+                      // ProxyTransaction internally creates ProxyServerTransaction
+                      proxyTransaction =
+                          createProxyTransaction(
+                              controllerConfig.isStateful(),
+                              request,
+                              serverTransaction,
+                              proxyFactory);
 
-              if (proxyTransaction == null) {
-                sink.error(
-                    new DhruvaRuntimeException(
-                        ErrorCode.TRANSACTION_ERROR,
-                        "unable to create ProxyTransaction for new incoming"
-                            + request.getMethod()
-                            + " request"));
-                return;
-              }
+                      if (proxyTransaction == null) {
+                        sink.error(
+                            new DhruvaRuntimeException(
+                                ErrorCode.TRANSACTION_ERROR,
+                                "unable to create ProxyTransaction for new incoming"
+                                    + request.getMethod()
+                                    + " request"));
+                        return;
+                      }
 
-              proxySIPRequest.setProxyStatelessTransaction(proxyTransaction);
-              proxySIPRequest.setMidCall(SipUtils.isMidDialogRequest(request));
+                      proxySIPRequest.setProxyStatelessTransaction(proxyTransaction);
+                      proxySIPRequest.setMidCall(SipUtils.isMidDialogRequest(request));
 
-              // Set the proxyTransaction in jain server transaction for future reference
-              if (serverTransaction != null) {
-                serverTransaction.setApplicationData(proxyTransaction);
-              }
-              sink.next(handleRequest().apply(proxySIPRequest));
-            });
+                      // Set the proxyTransaction in jain server transaction for future reference
+                      if (serverTransaction != null) {
+                        serverTransaction.setApplicationData(proxyTransaction);
+                      }
+                      ProxySIPRequest handledRequest = handleRequest().apply(proxySIPRequest);
+                      if (handledRequest!=null)
+                         sink.next(handledRequest);
+                    });
   }
 
   public Function<ProxySIPRequest, ProxySIPRequest> handleRequest() {
