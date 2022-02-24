@@ -605,11 +605,33 @@ public class MetricServiceTest {
     metricService.resumeStopWatch(callId, metric);
     Assert.assertTrue(stopWatch.isStarted());
 
+    // split
+    metricService.splitStopWatch(callId, metric);
+
+    TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    long splitTime1 = timeUnit.convert(stopWatch.getSplitNanoTime(), TimeUnit.NANOSECONDS);
+    Assert.assertTrue(splitTime1 >= 0);
+
+    long splitTime2 = metricService.getSplitTimeStopWatch(callId, metric);
+    Assert.assertEquals(splitTime2, splitTime1);
+
     // End
     metricService.endStopWatch(callId, metric);
     Assert.assertTrue(stopWatch.isStopped());
-
     // Make sure key is removed
     Assert.assertNull(timers.get(key));
+
+    metricService.startStopWatch(callId, metric);
+    doSomeTask(100);
+
+    Assert.assertTrue(metricService.getSplitTimeStopWatch(callId, metric) < 0);
+  }
+
+  private void doSomeTask(long sleep) {
+    try {
+      Thread.sleep(sleep);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }
