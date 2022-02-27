@@ -37,7 +37,7 @@ public class DsbJainSipMessageProcessorFactory implements MessageProcessorFactor
         return new DsbNioTlsMessageProcessor(
             ipAddress, sipStack, port, sipProperties, executorService, metricService);
       } else {
-        return new DsbJainSipTLSMessageProcessor(
+        return new DsbSipTLSMessageProcessor(
             ipAddress, sipStack, port, sipProperties, executorService, metricService);
       }
     } else {

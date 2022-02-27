@@ -9,6 +9,7 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -163,6 +164,7 @@ public class ProxyService {
     // Start the Executor Service, while initialising the ProxyService, that is used for Timer C.
     // However, tasks will be scheduled in ProxyClientTransaction
     // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
 
     // initializing periodic metric for counting call per second
     metricService.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);

@@ -79,7 +79,14 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
   @Override
   public void close() {
     super.close();
-    logger.debug("DsbSipUdpMessageChannel is closing");
+    logger.info(
+        "UDP MessageChannel connection closing {}, localhostport {} , peerHostPort {}, viaHostPort {}, MessageProcessor IP {} port {}",
+        this.getKey(),
+        this.getHostPort().toString(),
+        this.getPeerHostPort().toString(),
+        this.getViaHostPort(),
+        this.getMessageProcessor().getIpAddress(),
+        this.getMessageProcessor().getPort());
   }
 
   public void sendConnectionInfoMetric(

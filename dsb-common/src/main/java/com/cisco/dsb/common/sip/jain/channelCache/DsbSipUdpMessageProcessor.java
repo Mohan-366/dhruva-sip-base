@@ -50,7 +50,6 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
   public MessageChannel createMessageChannel(HostPort targetHostPort) throws UnknownHostException {
     return new DsbUdpMessageChannel(
         targetHostPort.getInetAddress(), targetHostPort.getPort(), sipStack, this);
-
   }
 
   @Override

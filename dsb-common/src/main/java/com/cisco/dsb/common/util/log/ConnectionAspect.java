@@ -2,6 +2,7 @@ package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.channelCache.*;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.stack.*;
 import java.net.InetAddress;
@@ -15,6 +16,11 @@ import org.springframework.core.annotation.Order;
 @Aspect
 @CustomLog
 public class ConnectionAspect {
+
+  private static MetricService metricServiceBean =
+      SpringApplicationContext.getAppContext() == null
+          ? null
+          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
 
   /**
    * Aspect to capture IO exceptions and create DSB connection failure Event for procesing messages
@@ -41,9 +47,9 @@ public class ConnectionAspect {
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
 
-    MetricService metricService = fetchMetricServiceFromMessageChannel(messageChannel);
-    if (metricService != null) {
-      metricService.emitConnectionErrorMetric(messageChannel, ex.getMessage());
+    if (metricServiceBean != null) {
+      metricServiceBean.emitConnectionErrorMetric(
+          messageChannel, contactPort, ex.getClass().getSimpleName() + ": " + ex.getMessage());
     }
 
     if (ex instanceof SSLHandshakeException) {
@@ -51,36 +57,6 @@ public class ConnectionAspect {
     }
 
     Event.emitConnectionErrorEvent(transport, null, ex);
-  }
-
-  public MetricService fetchMetricServiceFromMessageChannel(MessageChannel messageChannel) {
-    MetricService metricService = null;
-
-    if (messageChannel.getMessageProcessor() != null) {
-      MessageProcessor messageProcessor = messageChannel.getMessageProcessor();
-      if (messageProcessor instanceof DsbNioTCPMessageProcessor) {
-        DsbNioTCPMessageProcessor dsbNioTcpMessageProcessor =
-            (DsbNioTCPMessageProcessor) messageProcessor;
-        metricService = dsbNioTcpMessageProcessor.getMetricService();
-      }
-
-      if (messageProcessor instanceof DsbSipTCPMessageProcessor) {
-        DsbSipTCPMessageProcessor dsbTcpMessageProcessor =
-            (DsbSipTCPMessageProcessor) messageProcessor;
-        metricService = dsbTcpMessageProcessor.getMetricService();
-      }
-      if (messageProcessor instanceof DsbJainSipTLSMessageProcessor) {
-        DsbJainSipTLSMessageProcessor dsbTlsMessageProcessor =
-            (DsbJainSipTLSMessageProcessor) messageProcessor;
-        metricService = dsbTlsMessageProcessor.getMetricService();
-      }
-      if (messageProcessor instanceof DsbNioTlsMessageProcessor) {
-        DsbNioTlsMessageProcessor dsbNioTlsMessageProcessor =
-            (DsbNioTlsMessageProcessor) messageProcessor;
-        metricService = dsbNioTlsMessageProcessor.getMetricService();
-      }
-    }
-    return metricService;
   }
 
   /**
@@ -176,39 +152,6 @@ public class ConnectionAspect {
     return String.format("peer=[%s:%d]", session.getPeerHost(), session.getPeerPort());
   }
 
-  @After(value = "execution(public void gov.nist.javax.sip.stack.UDPMessageChannel.close())")
-  @Order(0)
-  public void logWhenUdpChannelClosed(JoinPoint jp) throws Throwable {
-    Object[] args = jp.getArgs();
-
-    try {
-      UDPMessageChannel udpMessageChannel = (UDPMessageChannel) jp.getTarget();
-      if (udpMessageChannel.getMessageProcessor() instanceof DsbSipUdpMessageProcessor) {
-
-        DsbSipUdpMessageProcessor dsbSipUdpMessageProcessor =
-            (DsbSipUdpMessageProcessor) udpMessageChannel.getMessageProcessor();
-
-        logger.info(
-            "UDP MessageChannel connection closing {}, localhostport {} , peerHostPort {}, viaHostPort {}, stackName {}, MessageProcessor IP {} port {}",
-            udpMessageChannel.getKey(),
-            udpMessageChannel.getHostPort().toString(),
-            udpMessageChannel.getPeerHostPort().toString(),
-            udpMessageChannel.getViaHostPort(),
-            dsbSipUdpMessageProcessor.getStackName(),
-            dsbSipUdpMessageProcessor.getIpAddress(),
-            dsbSipUdpMessageProcessor.getPort());
-
-        MetricService metricService = dsbSipUdpMessageProcessor.getMetricService();
-
-        // Emit metrics for connection disconnected
-
-      }
-
-    } catch (Exception e) {
-      logger.warn(
-          "Failed to log information when UdpMessageChannelClosed via Aspect {}", e.getMessage());
-    }
-  }
   /**
    * Aspect for logging with information when TCP connection is closing
    *
@@ -282,9 +225,9 @@ public class ConnectionAspect {
 
     try {
       TLSMessageChannel tlsMessageChannel = ((TLSMessageChannel) jp.getTarget());
-      if (tlsMessageChannel.getMessageProcessor() instanceof DsbJainSipTLSMessageProcessor) {
-        DsbJainSipTLSMessageProcessor dsbJainSipTLSMessageProcessor =
-            (DsbJainSipTLSMessageProcessor) tlsMessageChannel.getMessageProcessor();
+      if (tlsMessageChannel.getMessageProcessor() instanceof DsbSipTLSMessageProcessor) {
+        DsbSipTLSMessageProcessor dsbSipTLSMessageProcessor =
+            (DsbSipTLSMessageProcessor) tlsMessageChannel.getMessageProcessor();
 
         logger.info(
             "TLSMessageChannel connection closing {}, removeSocket {}, stopKeepAliveTask {}, peerHostPort {}, viaHostPort {}, stackName {}, MessageProcessor IP {} port {}",
@@ -293,9 +236,9 @@ public class ConnectionAspect {
             stopKeepAliveTask,
             tlsMessageChannel.getPeerHostPort().toString(),
             tlsMessageChannel.getViaHostPort(),
-            dsbJainSipTLSMessageProcessor.getStackName(),
-            dsbJainSipTLSMessageProcessor.getIpAddress(),
-            dsbJainSipTLSMessageProcessor.getPort());
+            dsbSipTLSMessageProcessor.getStackName(),
+            dsbSipTLSMessageProcessor.getIpAddress(),
+            dsbSipTLSMessageProcessor.getPort());
       }
 
       if (tlsMessageChannel.getMessageProcessor() instanceof DsbNioTlsMessageProcessor) {
