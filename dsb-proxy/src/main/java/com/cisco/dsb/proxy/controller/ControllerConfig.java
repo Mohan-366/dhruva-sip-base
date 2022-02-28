@@ -469,7 +469,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     if (!IPValidator.hostIsIPAddr(host)) {
       LocateSIPServerTransportType transportType = LocateSIPServerTransportType.TLS;
       if (transport == Transport.TCP) transportType = LocateSIPServerTransportType.TCP;
-      if (transport == Transport.UDP) transportType = LocateSIPServerTransportType.UDP;
+      else if (transport == Transport.UDP) transportType = LocateSIPServerTransportType.UDP;
 
       DnsDestination destination = new DnsDestination(host, port, transportType);
 

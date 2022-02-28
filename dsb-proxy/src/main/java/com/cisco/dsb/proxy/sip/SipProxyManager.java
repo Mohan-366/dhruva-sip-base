@@ -166,7 +166,8 @@ public class SipProxyManager {
       }
 
       ProxyController controller = createNewProxyController(proxyAppConfig).apply(proxySIPRequest);
-      return controller.onNewRequest(proxySIPRequest);
+      return controller.onNewRequest(proxySIPRequest)
+             .onErrorResume(throwable -> Mono.empty());
     };
   }
 
@@ -315,6 +316,7 @@ public class SipProxyManager {
           return null;
         }
       }
+
       return request;
     };
   }
@@ -411,6 +413,7 @@ public class SipProxyManager {
         logger.info("Mid-dialog Call: Route call based on request");
         ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
         proxyInterface.sendRequestToApp(false);
+
         // for now only IP:port is supported. Route based routing
         proxyInterface
             .proxyRequest(proxySIPRequest)
@@ -420,6 +423,7 @@ public class SipProxyManager {
                     proxySIPResponse.proxy();
                     return;
                   }
+
                   if (throwable != null) {
                     logger.error(
                         "Error while sending out mid dialog request based on rURI/Route Header",
