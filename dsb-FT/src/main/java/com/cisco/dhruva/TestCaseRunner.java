@@ -7,28 +7,33 @@ import com.cisco.dhruva.util.UAC;
 import com.cisco.dhruva.util.UAS;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import lombok.Getter;
 import org.cafesip.sipunit.SipStack;
 
 public class TestCaseRunner {
 
   private TestCaseConfig testCaseConfig;
+  @Getter CountDownLatch completionLatch;
+  @Getter List<UAS> uasList = new ArrayList<>();
+  @Getter UAC uac;
 
   public TestCaseRunner(TestCaseConfig testCaseConfig) {
     this.testCaseConfig = testCaseConfig;
   }
 
   public void prepareAndRunTest() throws Exception {
-    prepareTest();
-  }
-
-  private void prepareTest() throws Exception {
     SipStack.setTraceEnabled(true);
     NicIpPort clientCommunication = this.testCaseConfig.getDSB().getClientCommunicationInfo();
-    UAC uac = new UAC(this.testCaseConfig.getUacConfig(), clientCommunication);
+
     UasConfig[] uasConfigs = this.testCaseConfig.getUasCofig();
-    List<UAS> uasList = new ArrayList<>();
+
+    completionLatch = new CountDownLatch(uasConfigs.length + 1);
+    uac = new UAC(this.testCaseConfig.getUacConfig(), clientCommunication, completionLatch);
+
     for (int i = 0; i < uasConfigs.length; i++) {
-      uasList.add(new UAS(this.testCaseConfig.getUasCofig()[i]));
+      uasList.add(new UAS(this.testCaseConfig.getUasCofig()[i], completionLatch));
     }
     uasList.forEach(
         uas -> {
@@ -37,7 +42,6 @@ public class TestCaseRunner {
         });
     Thread ut = new Thread(uac);
     ut.start();
+    completionLatch.await(10, TimeUnit.SECONDS);
   }
-
-  private void runTest() {}
 }

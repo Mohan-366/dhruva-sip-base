@@ -2,26 +2,32 @@ package com.cisco.dhruva.util;
 
 import static org.testng.Assert.*;
 
-import com.cisco.dhruva.util.TestInput.Message;
 import com.cisco.dhruva.util.TestInput.NicIpPort;
 import com.cisco.dhruva.util.TestInput.UacConfig;
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import lombok.SneakyThrows;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipPhone;
 import org.cafesip.sipunit.SipStack;
 
-public class UAC implements Runnable {
+public class UAC implements UA, Runnable {
 
   private UacConfig uacConfig;
   private SipStack sipStack;
   private NicIpPort proxyCommunication;
+  private CountDownLatch completionLatch;
+  private List<TestMessage> testMessages = new ArrayList<>();
 
-  public UAC(UacConfig uacConfig, NicIpPort proxyCommunication) throws Exception {
+  public UAC(UacConfig uacConfig, NicIpPort proxyCommunication, CountDownLatch completionLatch)
+      throws Exception {
     this.uacConfig = uacConfig;
     this.sipStack = SipStackUtil.getSipStackUAC(uacConfig.getPort(), uacConfig.getTransport());
     this.proxyCommunication = proxyCommunication;
+    this.completionLatch = completionLatch;
   }
 
   @SneakyThrows
@@ -36,14 +42,30 @@ public class UAC implements Runnable {
         "UAC: IP:" + sipStack.getSipProvider().getListeningPoints()[0].getIPAddress());
     SipPhone uac = sipStack.createSipPhone(myUri);
     SipCall callUac = uac.createSipCall();
-    List<Message> messageList = Arrays.asList(this.uacConfig.getMessages());
     Arrays.stream(this.uacConfig.getMessages())
         .forEach(
             message -> {
-              SipStackUtil.actOnMessage(message, callUac, stackIp, true, this.proxyCommunication);
+              try {
+                System.out.println("UAC: Next message: " + message);
+                SipStackUtil.actOnMessage(
+                    message, callUac, stackIp, true, this.proxyCommunication, this);
+              } catch (ParseException e) {
+                e.printStackTrace();
+              }
             });
-
-    Thread.sleep(10000);
+    System.out.println("UAC: Latching down");
     System.out.println("UAC: All messages: " + callUac.getAllReceivedResponses());
+    completionLatch.countDown();
+    uac.dispose();
+  }
+
+  @Override
+  public void addTestMessage(TestMessage testMessage) {
+    this.testMessages.add(testMessage);
+  }
+
+  @Override
+  public List<TestMessage> getTestMessages() {
+    return this.testMessages;
   }
 }

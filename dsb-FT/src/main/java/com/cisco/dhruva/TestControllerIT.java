@@ -10,6 +10,7 @@ import java.text.ParseException;
 import java.util.Map;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,9 +45,15 @@ public class TestControllerIT {
   @Test(dataProvider = "testInput")
   public void testDSB(Object object) throws Exception {
     TestCaseConfig testCaseConfig = (TestCaseConfig) object;
-    System.out.println(testCaseConfig.getDescription());
+    if (testCaseConfig.isSkipTest()) {
+      throw new SkipException("Skipping test: " + testCaseConfig.getDescription());
+    }
+    System.out.println("Executing FT: " + testCaseConfig.getDescription());
     TestCaseRunner testCaseRunner = new TestCaseRunner(testCaseConfig);
     testCaseRunner.prepareAndRunTest();
-    Thread.sleep(30000);
+
+    System.out.println("Flow validation complete. Validating headers now");
+    Validator validator = new Validator(testCaseRunner.getUac(), testCaseRunner.getUasList());
+    validator.validate();
   }
 }
