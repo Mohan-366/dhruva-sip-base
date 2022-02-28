@@ -163,8 +163,8 @@ public class ProxyService {
     listenPointFutures.forEach(CompletableFuture::join);
     // Start the Executor Service, while initialising the ProxyService, that is used for Timer C.
     // However, tasks will be scheduled in ProxyClientTransaction
-    // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
     dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
+    // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
 
     // initializing periodic metric for counting call per second
     metricService.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);
