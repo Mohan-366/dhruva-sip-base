@@ -166,8 +166,7 @@ public class SipProxyManager {
       }
 
       ProxyController controller = createNewProxyController(proxyAppConfig).apply(proxySIPRequest);
-      return controller.onNewRequest(proxySIPRequest)
-             .onErrorResume(throwable -> Mono.empty());
+      return controller.onNewRequest(proxySIPRequest);
     };
   }
 
