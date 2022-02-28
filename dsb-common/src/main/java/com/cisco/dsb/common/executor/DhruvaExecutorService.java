@@ -1,10 +1,14 @@
 package com.cisco.dsb.common.executor;
 
+import static com.cisco.wx2.metrics.MonitoredExecutorMetrics.*;
+import static com.codahale.metrics.MetricRegistry.name;
+
 import com.cisco.wx2.util.MonitoredExecutorProvider;
-import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.*;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.concurrent.*;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +24,8 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
       new ConcurrentHashMap<>();
 
   private final String servername;
+  private final MetricRegistry metricRegistry;
+  private boolean isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD;
 
   public DhruvaExecutorService(
       final String servername,
@@ -33,6 +39,9 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         applicationInstanceIndex,
         isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD);
     this.servername = servername;
+    this.metricRegistry = metricRegistry;
+    this.isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD =
+        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD;
     // Project reactor MDC context switching using Schedulers onHook
     Schedulers.onScheduleHook("mdc", CustomThreadPoolExecutor::wrapWithMdcContext);
   }
@@ -118,7 +127,22 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
               tfb.setNameFormat(name + "-%d");
               tfb.setDaemon(true);
               // return this.newScheduledExecutorService(key, null, maxThreads);
-              return new CustomScheduledThreadPoolExecutor(maxThreads, tfb.build());
+              CustomScheduledThreadPoolExecutor newCustomScheduledThreadPoolExecutor =
+                  new CustomScheduledThreadPoolExecutor(maxThreads, tfb.build());
+              /* Code added from monitoredExecutorProvider
+              *  to include metrics supported via CSB
+              * */
+              String configPrefix = name("executor", key);
+              // applicationIndex set as 0
+              String metricNamePrefix =
+                  isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+                      ? name(configPrefix)
+                      : name(configPrefix, "0" + "");
+              // TODO check value, rejection handler
+              configureCustomScheduleExecutorForMetrics(
+                  newCustomScheduledThreadPoolExecutor, metricNamePrefix, null, 1, maxThreads);
+
+              return newCustomScheduledThreadPoolExecutor;
             });
 
     e.setRemoveOnCancelPolicy(true);
@@ -128,6 +152,73 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         name,
         maxThreads,
         maxThreads);
+  }
+
+
+  private void configureCustomScheduleExecutorForMetrics(
+      final ThreadPoolExecutor executor,
+      String prefix,
+      final RejectedExecutionHandler handler,
+      final int min,
+      final int max) {
+
+    final Meter rejected =
+        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+            ? metricRegistry.meter(name(prefix, REJECTED))
+            : metricRegistry.meter(prefix + ".rejected-gauge");
+    final Counter rejectedCounter = metricRegistry.counter(prefix + ".rejected-counter");
+
+    executor.setRejectedExecutionHandler(
+        (r, executor1) -> {
+          rejected.mark();
+          rejectedCounter.inc();
+
+          logger.warn(
+              "Task rejected in executor ({}). Queue size: {}, pool size: {}, max pool size: {}, shutdown: {}",
+              prefix,
+              executor1.getQueue().size(),
+              executor1.getPoolSize(),
+              executor1.getMaximumPoolSize(),
+              executor1.isShutdown());
+
+          if (handler != null) {
+            // rejectedExecution() can throw an unchecked RejectedExecutionException
+            handler.rejectedExecution(r, executor1);
+          }
+        });
+
+    String queueMetricName =
+        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+            ? name(prefix, QUEUE)
+            : name(prefix, "queue");
+
+    String minMetricName =
+        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+            ? name(prefix, POOL_MIN)
+            : name(prefix, "min");
+    String maxMetricName =
+        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+            ? name(prefix, POOL_MAX)
+            : name(prefix, "max");
+    String sizeMetricName = name(prefix, POOL_SIZE);
+
+    SortedSet<String> metricNames = metricRegistry.getNames();
+
+    if (!metricNames.contains(minMetricName)) {
+      metricRegistry.register(minMetricName, (Gauge<Integer>) () -> min);
+    }
+    if (!metricNames.contains(maxMetricName)) {
+      metricRegistry.register(maxMetricName, (Gauge<Integer>) () -> max);
+    }
+    if (isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
+        && !metricNames.contains(sizeMetricName)) {
+      metricRegistry.register(sizeMetricName, (Gauge<Integer>) () -> executor.getPoolSize());
+    }
+    if (!metricNames.contains(queueMetricName)) {
+      metricRegistry.register(queueMetricName, (Gauge<Integer>) () -> executor.getQueue().size());
+    }
+
+    logger.info("Prestart thread pool with executor: {}, min: {}, max: {}", prefix, min, max);
   }
 
   public boolean isExecutorServiceRunning(String name) {
@@ -399,6 +490,10 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
     public CustomScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory) {
       super(corePoolSize, threadFactory);
+    }
+
+    public CustomScheduledThreadPoolExecutor(int corePoolSize) {
+      super(corePoolSize);
     }
 
     @Override
