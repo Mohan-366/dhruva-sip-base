@@ -144,7 +144,9 @@ public class DsbNetworkLayer implements NetworkLayer {
   public ServerSocket createServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
 
-    return setServerSocketOptions(new DsbServerSocket(port, backlog, bindAddress));
+    ServerSocket serverSocket = setServerSocketOptions(new DsbServerSocket());
+    serverSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    return serverSocket;
   }
 
   @SuppressFBWarnings(value = "UNENCRYPTED_SERVER_SOCKET", justification = "baseline suppression")
@@ -153,36 +155,44 @@ public class DsbNetworkLayer implements NetworkLayer {
       super(port, backlog, bindAddr);
     }
 
+    public DsbServerSocket() throws IOException {
+      super();
+    }
+
     @Override
     public Socket accept() throws IOException {
       return setSocketOptions(super.accept());
     }
   }
 
-  private DatagramSocket createDataGramSocket(int port, InetAddress address)
+  private DatagramSocket createDataGramSocket()
       throws SocketException {
-    DatagramSocket socket =
-        port >= 0 && address != null ? new DatagramSocket(port, address) : new DatagramSocket();
+    DatagramSocket socket = new DatagramSocket(null);
 
     return setDatagramSocketOptions(socket);
   }
 
   @Override
   public DatagramSocket createDatagramSocket() throws SocketException {
-    return createDataGramSocket(-1, null);
+    DatagramSocket socket = createDataGramSocket();
+    socket.bind(new InetSocketAddress(0));
+    return socket;
   }
 
   @Override
   public DatagramSocket createDatagramSocket(int port, InetAddress laddr) throws SocketException {
-    return createDataGramSocket(port, laddr);
+    DatagramSocket socket =  createDataGramSocket();
+    socket.bind(new InetSocketAddress(laddr,port));
+    return socket;
   }
 
   @Override
   public SSLServerSocket createSSLServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
-    return (SSLServerSocket)
-        setServerSocketOptions(
-            sslServerSocketFactory.createServerSocket(port, backlog, bindAddress));
+    SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
+    sslServerSocket = (SSLServerSocket) setServerSocketOptions(sslServerSocket);
+    sslServerSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    return sslServerSocket;
   }
 
   @Override
