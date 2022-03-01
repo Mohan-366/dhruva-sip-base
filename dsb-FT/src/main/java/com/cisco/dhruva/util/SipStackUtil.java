@@ -1,5 +1,6 @@
 package com.cisco.dhruva.util;
 
+import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
 import static org.testng.Assert.assertTrue;
 
 import com.cisco.dhruva.util.TestInput.Direction;
@@ -12,51 +13,22 @@ import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.sip.address.Address;
-import javax.sip.header.Header;
 import javax.sip.message.Response;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipResponse;
 import org.cafesip.sipunit.SipStack;
 import org.cafesip.sipunit.SipTransaction;
+import org.junit.Assert;
 
 public class SipStackUtil {
 
   private static Map<String, SipStack> sipStackUAC = new HashMap<>();
   private static Map<String, SipStack> sipStackUAS = new HashMap<>();
-
-  private static final Properties defaultPropertiesUAC = new Properties();
-  private static final Properties defaultPropertiesUAS = new Properties();
-
-  static {
-    defaultPropertiesUAC.setProperty("javax.sip.STACK_NAME", "testAgent1");
-    // By default, the trace level is 16 which shows the messages and their contents.
-    defaultPropertiesUAC.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
-    // Additionally, the gov.nist.javax.sip.TRACE_LEVEL property should be 32 for debugging to be
-    // enabled.
-    defaultPropertiesUAC.setProperty("gov.nist.javax.sip.DEBUG_LOG", "testAgent1_debug.txt");
-    // Additionally, the gov.nist.javax.sip.TRACE_LEVEL should be 16 or higher for this to be
-    // available
-    defaultPropertiesUAC.setProperty("gov.nist.javax.sip.SERVER_LOG", "testAgent1_log.txt");
-    defaultPropertiesUAC.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
-    defaultPropertiesUAC.setProperty("gov.nist.javax.sip.CACHE_SERVER_CONNECTIONS", "false");
-    //    defaultProperties1.setProperty("javax.sip.IP_ADDRESS", "127.0.0.1");
-
-    defaultPropertiesUAS.setProperty("javax.sip.STACK_NAME", "testAgent2");
-        defaultPropertiesUAS.setProperty("javax.sip.IP_ADDRESS", "127.0.0.1");
-//    defaultPropertiesUAS.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
-    defaultPropertiesUAS.setProperty("gov.nist.javax.sip.DEBUG_LOG", "testAgent2_debug.txt");
-    defaultPropertiesUAS.setProperty("gov.nist.javax.sip.SERVER_LOG", "testAgent2_log.txt");
-    defaultPropertiesUAS.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
-    defaultPropertiesUAS.setProperty("gov.nist.javax.sip.CACHE_SERVER_CONNECTIONS", "false");
-  }
-
-  private static Properties propertiesUAC = new Properties(defaultPropertiesUAC);
-  private static Properties propertiesUAS = new Properties(defaultPropertiesUAS);
 
   private static SipTransaction clientMidCallINVITETransaction;
   private static SipTransaction serverMidCallINVITETransaction;
@@ -64,38 +36,26 @@ public class SipStackUtil {
   private static SipTransaction serverMidCallCancelTransaction;
   private static final int TIMEOUT = 1000;
 
-  public static SipStack getSipStackUAC(int port, Transport transport) throws Exception {
-    String key = port + ":" + transport;
-    System.out.println("KALPA: Printing uac stack map entries. Key required: " + key);
-    sipStackUAC.entrySet().stream()
-        .forEach(entry -> System.out.println(entry.getKey() + " : " + entry.getValue()));
-    boolean lpExists =
-        sipStackUAC.entrySet().stream().anyMatch(entry -> entry.getKey().equals(key));
-    if (lpExists) {
-      System.out.println("KALPA: UAC LP exists");
-      return sipStackUAC.get(key);
-    }
-    System.out.println("KALPA: UAC LP doesn't exist. Creating new one.");
-    SipStack sipStack = new SipStack(transport.name(), port, propertiesUAC);
-    sipStackUAC.put(key, sipStack);
-    return sipStack;
+  public static SipStack getSipStackUAC(String ip, int port, Transport transport) throws Exception {
+    return getSipStack(true, ip, port, transport);
   }
 
-  public static SipStack getSipStackUAS(int port, Transport transport) throws Exception {
-    String key = port + ":" + transport;
-    System.out.println("KALPA: Printing uas stack map entries. Key required:" + key);
-    sipStackUAS.entrySet().stream()
-        .forEach(entry -> System.out.println(entry.getKey() + " : " + entry.getValue()));
-    boolean lpExists =
-        sipStackUAS.entrySet().stream().anyMatch(entry -> entry.getKey().equals(key));
+  public static SipStack getSipStackUAS(String ip, int port, Transport transport) throws Exception {
+    return getSipStack(false, ip, port, transport);
+  }
+
+  private static SipStack getSipStack(boolean isUac, String ip, int port, Transport transport)
+      throws Exception {
+    String key = ip + ":" + port + ":" + transport;
+    Map<String, SipStack> sipStack = isUac ? sipStackUAC : sipStackUAS;
+    boolean lpExists = sipStack.entrySet().stream().anyMatch(entry -> entry.getKey().equals(key));
     if (lpExists) {
-      System.out.println("KALPA: UAS LP exists");
-      return sipStackUAS.get(key);
+      return sipStack.get(key);
     }
-    System.out.println("KALPA: UAS LP doesn't exist. Creating new one.");
-    SipStack sipStack = new SipStack(transport.name(), port, propertiesUAS);
-    sipStackUAS.put(key, sipStack);
-    return sipStack;
+    Properties properties = getProperties(isUac, ip);
+    SipStack sipStackNew = new SipStack(transport.name(), port, properties);
+    sipStack.put(key, sipStackNew);
+    return sipStackNew;
   }
 
   public static void actOnMessage(
@@ -106,7 +66,6 @@ public class SipStackUtil {
       NicIpPort proxyCommunication,
       UA ua)
       throws ParseException {
-    System.out.println("UAS: " + message);
     if (message.getDirection() == Direction.sends) {
       if (message.getType().equals(Type.request)) {
         if (message.getName().equalsIgnoreCase("INVITE")) {
@@ -142,6 +101,24 @@ public class SipStackUtil {
     }
   }
 
+  private static Properties getProperties(boolean isUac, String ip) {
+    String testAgent;
+    if (isUac) {
+      testAgent = "testAgentUAC";
+    } else {
+      testAgent = "testAgentUAS";
+    }
+    Properties properties = new Properties();
+    properties.setProperty("javax.sip.STACK_NAME", testAgent);
+    properties.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
+    properties.setProperty("gov.nist.javax.sip.DEBUG_LOG", testAgent + "_debug.txt");
+    properties.setProperty("gov.nist.javax.sip.SERVER_LOG", testAgent + "_log.txt");
+    properties.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
+    properties.setProperty("gov.nist.javax.sip.CACHE_SERVER_CONNECTIONS", "false");
+    properties.setProperty("javax.sip.IP_ADDRESS", ip);
+    return properties;
+  }
+
   private static void sendInvite(
       Message message, SipCall call, String stackIp, boolean isUac, NicIpPort proxyCommunication) {
     String ruri = message.parameters.getRequestParameters().getHeaderAdditions().get("requestUri");
@@ -149,42 +126,39 @@ public class SipStackUtil {
       ruri = "sip:" + (isUac ? "uas@" : "uac@") + stackIp + ":" + "5061";
     }
     if (proxyCommunication == null) {
-      System.out.println(
+      FT_LOGGER.error(
           "proxy communication is null.If, UAC please add clientCommunicationInfo in config. If UAS, you mustn't be here!");
     } else {
       if (!call.initiateOutgoingCall(
           ruri,
           proxyCommunication.getIp() + ":" + proxyCommunication.getPort() + ";lr/" + Token.TCP)) {
-        System.out.println("Unable to initiate a call. Ending test.");
+        FT_LOGGER.error("Unable to initiate a call. Ending test.");
       } else {
-        System.out.println("UAC: Sending INVITE message: ");
+        FT_LOGGER.info("Sending INVITE message: ");
       }
     }
   }
 
   private static void sendAck(SipCall call, Message message) {
-    System.out.println("KALPA: Send ACK for message: " + message);
     if ((message.getForRequest() != null)
         && message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
-      System.out.println("Sending ACK message for Re-INVITE: ");
+      FT_LOGGER.info("Sending ACK message for Re-INVITE: ");
       while (true) {
-        System.out.println(
-            "In ACK. Last reponse received is \n: " + call.getLastReceivedResponse());
         if (call.getLastReceivedResponse().getStatusCode() >= 200) {
           call.sendReinviteOkAck(clientMidCallINVITETransaction);
           break;
         } else {
-          System.out.println("Waiting for mid call response before sending ACK");
+          FT_LOGGER.info("Waiting for mid call response before sending ACK");
         }
       }
     } else {
-      System.out.println("Sending ACK for fresh INVITE");
+      FT_LOGGER.info("Sending ACK for fresh INVITE");
       while (true) {
-        System.out.println("Before sending fresh ACK" + call.getLastReceivedResponse());
         if (call.getLastReceivedResponse() != null
             && (call.getLastReceivedResponse().getStatusCode() >= 200)) {
           if (!call.sendInviteOkAck()) {
-            System.out.println("Unable to send ACK for INVITE");
+            FT_LOGGER.error("Unable to send ACK for INVITE");
+            Assert.fail();
           }
           break;
         }
@@ -193,9 +167,10 @@ public class SipStackUtil {
   }
 
   private static void sendBye(SipCall call) {
-    System.out.println("UAC: Sending BYE message: ");
+    FT_LOGGER.info("Sending BYE");
     if (!call.disconnect()) {
-      System.out.println("unable to disconnect the call");
+      FT_LOGGER.error("unable to disconnect the call: {}", call.getErrorMessage());
+      Assert.fail();
     }
   }
 
@@ -211,7 +186,7 @@ public class SipStackUtil {
         System.out.println(call.getLastReceivedResponse());
         break;
       } else {
-        System.out.println("Still waiting for 180: " + call.getLastReceivedResponse());
+        FT_LOGGER.info("Still waiting for 180");
       }
     }
     try {
@@ -220,24 +195,24 @@ public class SipStackUtil {
       e.printStackTrace();
     }
     if ((clientMidCallCancelTransaction = call.sendCancel()) != null) {
-      System.out.println("Sending Cancel");
+      FT_LOGGER.info("Sending Cancel");
     } else {
-      System.out.println(
-          "Error Sending Cancel: " + call.getErrorMessage() + " : " + call.getException());
+      FT_LOGGER.error("Error Sending Cancel: {}", call.getErrorMessage());
+      Assert.fail();
     }
   }
 
   private static void sendResponse(Message message, SipCall call) throws ParseException {
-    String reasonPhrase = message.getParameters().getResponseParameters().getResponsePhrase();
+    String reasonPhrase = message.getParameters().getResponseParameters().getReasonPhrase();
     String forRequest = message.getForRequest();
     String responseCode = message.getParameters().getResponseParameters().getResponseCode();
     if (reasonPhrase.equalsIgnoreCase("Ringing")) {
       while (!call.sendIncomingCallResponse(Response.RINGING, null, -1)) {
-        System.out.println("UAS: Trying to send 180 to client");
+        FT_LOGGER.info("Trying to send 180 to client");
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("INVITE")) {
       while (!call.sendIncomingCallResponse(Response.OK, null, -1)) {
-        System.out.println("UAS: Trying to send 200 to client");
+        FT_LOGGER.info("Trying to send 200 to client");
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("Re-INVITE")) {
       call.respondToReinvite(
@@ -255,22 +230,20 @@ public class SipStackUtil {
       Address address = new AddressImpl();
       address.setDisplayName("uas");
       SipUri uri = new SipUri();
-      uri.setHost("192.168.1.5");
+      uri.setHost("127.0.0.1");
       uri.setPort(7001);
       uri.setUser("uas");
       uri.setParameter("transport", "tcp");
       uri.setLrParam();
       address.setURI(uri);
       contactHeader.setAddress(address);
-      ArrayList<Header> headers = new ArrayList<>();
-      headers.add(contactHeader);
-      System.out.println("KALPA: Setting contact header as: " + contactHeader);
+      FT_LOGGER.info("Setting contact header as: {}", contactHeader);
       call.sendIncomingCallResponse(
           Response.MOVED_TEMPORARILY,
           null,
           -1,
           null,
-          new ArrayList<Header>(Arrays.asList(contactHeader)),
+          new ArrayList<>(Collections.singletonList(contactHeader)),
           null);
     } else if (responseCode.equalsIgnoreCase(String.valueOf(Response.REQUEST_TERMINATED))) {
       call.sendIncomingCallResponse(Response.REQUEST_TERMINATED, null, -1, null, null, null);
@@ -279,9 +252,9 @@ public class SipStackUtil {
     } else {
       if (!call.sendMessageResponse(
           Integer.parseInt(message.getParameters().getResponseParameters().getResponseCode()),
-          message.getParameters().getResponseParameters().getResponsePhrase(),
+          message.getParameters().getResponseParameters().getReasonPhrase(),
           -1)) {
-        System.out.println("Error sending response message: " + message);
+        FT_LOGGER.error("Error sending response message: {}", message);
       }
     }
   }
@@ -292,7 +265,7 @@ public class SipStackUtil {
         if (call.waitForIncomingCall(TIMEOUT)) {
           assertTrue(call.getLastReceivedRequest().isInvite());
           ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-          System.out.println("Received INVITE request");
+          FT_LOGGER.info("Received INVITE request");
           break;
         }
       }
@@ -304,11 +277,11 @@ public class SipStackUtil {
     while (true) {
       if (call.waitForAck(TIMEOUT)) {
         assertTrue(call.getLastReceivedRequest().isAck());
-        System.out.println("Received message: " + call.getLastReceivedRequest());
+        FT_LOGGER.info("Received message: {}", call.getLastReceivedRequest());
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
         break;
       } else {
-        System.out.println("Waiting for ACK");
+        FT_LOGGER.info("Waiting for ACK");
       }
     }
   }
@@ -318,11 +291,11 @@ public class SipStackUtil {
       while (true) {
         if (call.waitForDisconnect(TIMEOUT)) {
           assertTrue(call.getLastReceivedRequest().isBye());
-          System.out.println("Received message: " + call.getLastReceivedRequest());
+          FT_LOGGER.info("Received message: {}", call.getLastReceivedRequest());
           ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
           break;
         } else {
-          System.out.println("Waiting for BYE");
+          FT_LOGGER.info("Waiting for BYE");
         }
       }
     }
@@ -333,8 +306,7 @@ public class SipStackUtil {
     while (true) {
       serverMidCallINVITETransaction = call.waitForReinvite(TIMEOUT);
       if (serverMidCallINVITETransaction != null) {
-        System.out.println(
-            "KALPA: Received Re-INVITE: " + serverMidCallINVITETransaction.toString());
+        FT_LOGGER.info("Received Re-INVITE");
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
         break;
       }
@@ -343,15 +315,13 @@ public class SipStackUtil {
 
   private static void waitForCancel(Message message, SipCall call, UA ua) {
     if (call.listenForCancel()) {
-      System.out.println("Listening for cancel");
-      System.out.println(
-          "KALPA: Error: " + call.getErrorMessage() + " Exception: " + call.getException());
+      FT_LOGGER.info("Listening for cancel");
     }
     while (true) {
-      System.out.println("Waiting for cancel");
+      FT_LOGGER.info("Waiting for cancel");
       serverMidCallCancelTransaction = call.waitForCancel(TIMEOUT);
       if (serverMidCallCancelTransaction != null) {
-        System.out.println("KALPA: Received Cancel: " + serverMidCallCancelTransaction);
+        FT_LOGGER.info("Received Cancel");
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
         break;
       }
@@ -363,23 +333,17 @@ public class SipStackUtil {
       while (true) {
         if (call.waitReinviteResponse(clientMidCallINVITETransaction, TIMEOUT)) {
           if (call.getLastReceivedResponse().getStatusCode() >= 200) {
-            System.out.println("Received 200 OK for Re-Invite:" + call.getLastReceivedResponse());
+            FT_LOGGER.info("Received 200 OK for Re-Invite");
             ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
             break;
           }
         }
       }
-      //      call.waitReinviteResponse(clientMidCallINVITETransaction, 1000);
-      //      while (call.getLastReceivedResponse().getStatusCode() == Response.TRYING) {
-      //        call.waitReinviteResponse(clientMidCallINVITETransaction, 1000);
-      //      }
-      //      System.out.println("Received 200 OK for Re-Invite:" + call.getLastReceivedResponse());
-
     } else if (message.getForRequest().equalsIgnoreCase("CANCEL")) {
       while (true) {
         if (call.waitForCancelResponse(clientMidCallCancelTransaction, TIMEOUT)) {
           if (call.getLastReceivedResponse().getStatusCode() == 200) {
-            System.out.println("Received 200 OK for Cancel:" + call.getLastReceivedResponse());
+            FT_LOGGER.info("Received 200 OK for Cancel");
             ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
             break;
           }
@@ -397,9 +361,9 @@ public class SipStackUtil {
                 .getHeader("CSeq")
                 .toString()
                 .contains(message.getForRequest())) {
-          System.out.println(
-              "Received response: "
-                  + call.getLastReceivedResponse().getResponseEvent().getResponse());
+          FT_LOGGER.info(
+              "Received response: {}",
+              call.getLastReceivedResponse().getResponseEvent().getResponse());
           ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
           break;
         }

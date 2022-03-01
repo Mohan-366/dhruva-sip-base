@@ -19,7 +19,9 @@ public class UAS implements UA, Runnable {
 
   public UAS(UasConfig uasConfig, CountDownLatch completionLatch) throws Exception {
     this.uasConfig = uasConfig;
-    this.sipStack = SipStackUtil.getSipStackUAS(uasConfig.getPort(), uasConfig.getTransport());
+    this.sipStack =
+        SipStackUtil.getSipStackUAS(
+            uasConfig.getIp(), uasConfig.getPort(), uasConfig.getTransport());
     this.completionLatch = completionLatch;
   }
 

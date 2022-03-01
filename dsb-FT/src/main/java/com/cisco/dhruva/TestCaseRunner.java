@@ -25,15 +25,15 @@ public class TestCaseRunner {
 
   public void prepareAndRunTest() throws Exception {
     SipStack.setTraceEnabled(true);
-    NicIpPort clientCommunication = this.testCaseConfig.getDSB().getClientCommunicationInfo();
+    NicIpPort clientCommunication = this.testCaseConfig.getDsb().getClientCommunicationInfo();
 
-    UasConfig[] uasConfigs = this.testCaseConfig.getUasCofig();
+    UasConfig[] uasConfigs = this.testCaseConfig.getUasConfigs();
 
     completionLatch = new CountDownLatch(uasConfigs.length + 1);
     uac = new UAC(this.testCaseConfig.getUacConfig(), clientCommunication, completionLatch);
 
     for (int i = 0; i < uasConfigs.length; i++) {
-      uasList.add(new UAS(this.testCaseConfig.getUasCofig()[i], completionLatch));
+      uasList.add(new UAS(this.testCaseConfig.getUasConfigs()[i], completionLatch));
     }
     uasList.forEach(
         uas -> {

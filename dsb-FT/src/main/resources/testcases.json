@@ -17,7 +17,7 @@
       },
       "uac": {
         "myUri" : "sip:uac@nist.gov",
-        "ip": "192.168.1.5",
+        "ip": "127.0.0.1",
         "port": 5075,
         "transport": "tcp",
         "messages": [{
@@ -27,7 +27,7 @@
           "parameters": {
             "requestParameters": {
               "headerAdditions": {
-                "requestUri": "sip:uas@192.168.1.5:7000"
+                "requestUri": "sip:uas@127.0.0.1:7000"
               }
             }
           }
@@ -76,7 +76,7 @@
       "uasGroup": [
         {
           "myUri": "sip:uas@nist.gov",
-          "ip": "192.168.1.5",
+          "ip": "127.0.0.1",
           "port": 7000,
           "transport": "tcp",
           "elementStatus": "up",
@@ -86,7 +86,7 @@
             "name": "INVITE",
             "direction": "receives",
             "validation": {
-              "requestUri": "sip:uas@192.168.1.5:7000",
+              "requestUri": "sip:uas@127.0.0.1:7000",
               "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
             }
           },
@@ -161,7 +161,7 @@
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",
-        "ip": "192.168.1.5",
+        "ip": "127.0.0.1",
         "port": 5075,
         "transport": "tcp",
         "messages": [
@@ -172,7 +172,7 @@
             "parameters": {
               "requestParameters": {
                 "headerAdditions": {
-                  "requestUri": "sip:uas@192.168.1.5:7000"
+                  "requestUri": "sip:uas@127.0.0.1:7000"
                 }
               }
             }
@@ -208,7 +208,7 @@
             "parameters": {
               "requestParameters": {
                 "headerAdditions": {
-                  "requestUri": "sip:uas@192.168.1.5:7000;transport=tcp;lr"
+                  "requestUri": "sip:uas@127.0.0.1:7000;transport=tcp;lr"
                 }
               }
             }
@@ -247,7 +247,7 @@
       "uasGroup": [
         {
           "myUri": "sip:uas@nist.gov",
-          "ip": "192.168.1.5",
+          "ip": "127.0.0.1",
           "port": 7000,
           "transport": "tcp",
           "elementStatus": "up",
@@ -258,7 +258,7 @@
               "name": "INVITE",
               "direction": "receives",
               "validation": {
-                "requestUri": "sip:uas@192.168.1.5:7000",
+                "requestUri": "sip:uas@127.0.0.1:7000",
                 "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
               }
             },
@@ -298,7 +298,7 @@
               "name": "Re-INVITE",
               "direction": "receives",
               "validation": {
-                "requestUri": "sip:uas@192.168.1.5:7000;transport=tcp;lr",
+                "requestUri": "sip:uas@127.0.0.1:7000;transport=tcp;lr",
                 "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
               }
             },

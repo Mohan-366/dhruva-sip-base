@@ -25,7 +25,9 @@ public class UAC implements UA, Runnable {
   public UAC(UacConfig uacConfig, NicIpPort proxyCommunication, CountDownLatch completionLatch)
       throws Exception {
     this.uacConfig = uacConfig;
-    this.sipStack = SipStackUtil.getSipStackUAC(uacConfig.getPort(), uacConfig.getTransport());
+    this.sipStack =
+        SipStackUtil.getSipStackUAC(
+            uacConfig.getIp(), uacConfig.getPort(), uacConfig.getTransport());
     this.proxyCommunication = proxyCommunication;
     this.completionLatch = completionLatch;
   }
