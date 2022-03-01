@@ -1,5 +1,7 @@
 package com.cisco.dhruva.util;
 
+import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+
 import com.cisco.dhruva.util.TestInput.UasConfig;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ public class UAS implements UA, Runnable {
           .forEach(
               message -> {
                 try {
-                  System.out.println("UAS: Next message: " + message);
+                  FT_LOGGER.info("UAS: Next message: {}", message);
                   SipStackUtil.actOnMessage(message, callA, stackIp, false, null, this);
                 } catch (ParseException e) {
                   e.printStackTrace();
@@ -53,9 +55,10 @@ public class UAS implements UA, Runnable {
               });
     }
     //    uas.dispose();
-    System.out.println("UAS: Latching down");
-    System.out.println("UAS: All messages: " + callA.getAllReceivedRequests());
+    FT_LOGGER.info("UAS: Latching down");
+    FT_LOGGER.info("UAS: All messages: {}", callA.getAllReceivedRequests());
     completionLatch.countDown();
+    uas.dispose();
   }
 
   @Override

@@ -1,6 +1,6 @@
 package com.cisco.dhruva.util;
 
-import static org.testng.Assert.*;
+import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
 
 import com.cisco.dhruva.util.TestInput.NicIpPort;
 import com.cisco.dhruva.util.TestInput.UacConfig;
@@ -48,15 +48,15 @@ public class UAC implements UA, Runnable {
         .forEach(
             message -> {
               try {
-                System.out.println("UAC: Next message: " + message);
+                FT_LOGGER.info("UAC: Next message: {}", message);
                 SipStackUtil.actOnMessage(
                     message, callUac, stackIp, true, this.proxyCommunication, this);
               } catch (ParseException e) {
                 e.printStackTrace();
               }
             });
-    System.out.println("UAC: Latching down");
-    System.out.println("UAC: All messages: " + callUac.getAllReceivedResponses());
+    FT_LOGGER.info("UAC: Latching down");
+    FT_LOGGER.info("UAC: All messages: " + callUac.getAllReceivedResponses());
     completionLatch.countDown();
     uac.dispose();
   }

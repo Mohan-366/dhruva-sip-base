@@ -1,5 +1,7 @@
 package com.cisco.dhruva;
 
+import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+
 import com.cisco.dhruva.util.TestInput.Type;
 import com.cisco.dhruva.util.TestMessage;
 import com.cisco.dhruva.util.UAC;
@@ -25,7 +27,7 @@ public class Validator {
         .forEach(
             uas -> {
               try {
-                System.out.println("Validating UAS");
+                FT_LOGGER.info("Validating UAS");
                 validate(uas.getTestMessages());
               } catch (Exception e) {
                 e.printStackTrace();
@@ -46,11 +48,10 @@ public class Validator {
                     String key = entry.getKey();
                     // since call flow is already validated that is why we are here, we won't
                     // validate it again.
-                    System.out.println(
-                        "Validating Sip Message: \n"
-                            + testMessage.getSipMessage().toString()
-                            + " against: \n"
-                            + testMessage.getMessage().getValidation().entrySet());
+                    FT_LOGGER.info(
+                        "============ VALIDATING SIP MESSAGE ========:\n{}",
+                        testMessage.getSipMessage().toString());
+                    FT_LOGGER.info(" ============ AGAINST ===============: {}", entry);
                     if (!key.equals("responseCode") && !key.equals("reasonPhrase")) {
                       if (key.equals("requestUri")) {
                         if (testMessage.getMessage().getType().equals(Type.request)) {
@@ -59,18 +60,18 @@ public class Validator {
                         }
                         return;
                       }
-                      System.out.println("Validating header: " + entry.getKey());
+                      FT_LOGGER.info("Validating header: {}", entry.getKey());
                       Header header =
                           testMessage.getSipMessage().getMessage().getHeader(entry.getKey());
                       if (header == null) {
-                        System.out.println("No header found in the message for: " + entry.getKey());
+                        FT_LOGGER.error("No header found in the message for: {}", entry.getKey());
                         Assert.fail();
                       }
                       Assert.assertEquals(
                           header.toString().split(": ")[1].trim(),
                           entry.getValue().toString().trim());
                     }
-                    System.out.println("It's valid");
+                    FT_LOGGER.info("============ IT'S VALID ============");
                   });
         });
   }

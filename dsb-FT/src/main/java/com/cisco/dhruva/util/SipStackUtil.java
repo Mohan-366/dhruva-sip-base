@@ -183,10 +183,9 @@ public class SipStackUtil {
     while (true) {
       if (call.getLastReceivedResponse() != null
           && call.getLastReceivedResponse().getStatusCode() == Response.RINGING) {
-        System.out.println(call.getLastReceivedResponse());
         break;
       } else {
-        FT_LOGGER.info("Still waiting for 180");
+        FT_LOGGER.info("Still waiting for 180 before sending cancel");
       }
     }
     try {
@@ -207,12 +206,13 @@ public class SipStackUtil {
     String forRequest = message.getForRequest();
     String responseCode = message.getParameters().getResponseParameters().getResponseCode();
     if (reasonPhrase.equalsIgnoreCase("Ringing")) {
-      while (!call.sendIncomingCallResponse(Response.RINGING, null, -1)) {
-        FT_LOGGER.info("Trying to send 180 to client");
+      if (!call.sendIncomingCallResponse(Response.RINGING, null, -1)) {
+        FT_LOGGER.error("Error sending 180 Ringing");
+        Assert.fail();
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("INVITE")) {
-      while (!call.sendIncomingCallResponse(Response.OK, null, -1)) {
-        FT_LOGGER.info("Trying to send 200 to client");
+      if (!call.sendIncomingCallResponse(Response.OK, null, -1)) {
+        FT_LOGGER.error("Error sending 200 to client");
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("Re-INVITE")) {
       call.respondToReinvite(

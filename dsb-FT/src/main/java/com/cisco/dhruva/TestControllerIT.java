@@ -34,7 +34,7 @@ public class TestControllerIT {
     if (testCaseConfig.isSkipTest()) {
       throw new SkipException("Skipping test: " + testCaseConfig.getDescription());
     }
-    FT_LOGGER.info("Executing FT: ", testCaseConfig.getDescription());
+    FT_LOGGER.info("Executing FT: {}" + "", testCaseConfig.getDescription());
     TestCaseRunner testCaseRunner = new TestCaseRunner(testCaseConfig);
     testCaseRunner.prepareAndRunTest();
 
