@@ -44,7 +44,8 @@ public class TestControllerIT {
   }
 
   private void readTestCasesJsonFile() throws IOException, ParseException {
-    String testFilePath = SplitIT.class.getClassLoader().getResource("testcases.json").getPath();
+    String testFilePath =
+        TestControllerIT.class.getClassLoader().getResource("testcases.json").getPath();
     ObjectMapper mapper = new ObjectMapper();
     JSONParser parser = new JSONParser();
     Object object = parser.parse(new FileReader(testFilePath));
