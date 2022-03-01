@@ -1,0 +1,141 @@
+<!-- Use the  Trace Viewer in src/tools/tracesviewer to view this  trace  
+Here are the stack configuration properties 
+javax.sip.IP_ADDRESS= null
+javax.sip.STACK_NAME= testAgent2
+javax.sip.ROUTER_PATH= null
+javax.sip.OUTBOUND_PROXY= null
+-->
+<description
+ logDescription="testAgent2"
+ name="testAgent2"
+ auxInfo="null"/>
+ 
+<message
+from="127.0.0.1:60865" 
+to="127.0.0.1:7000" 
+time="1646047637880"
+isSender="false" 
+transactionId="z9hg4bk3b4ad54258f9ff127fc3a0e6ffe1d275" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="INVITE sip:uas@127.0.0.1:7000 SIP/2.0" 
+>
+<![CDATA[INVITE sip:uas@127.0.0.1:7000 SIP/2.0
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+CSeq: 1 INVITE
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bK3b4ad54258f9ff127fc3a0e6ffe1d275;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-ec7f0c496f50ec7684252036189e2aff;received=127.0.0.1;rport=60864
+Max-Forwards: 69
+Contact: <sip:uac@127.0.0.1:5075;transport=tcp;lr>
+Record-Route: <sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>
+Content-Length: 0
+
+]]>
+</message>
+
+<message
+from="127.0.0.1:7000" 
+to="127.0.0.1:60865" 
+time="1646047637902"
+isSender="true" 
+transactionId="z9hg4bk3b4ad54258f9ff127fc3a0e6ffe1d275" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="SIP/2.0 180 Ringing" 
+>
+<![CDATA[SIP/2.0 180 Ringing
+CSeq: 1 INVITE
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>;tag=748827978
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bK3b4ad54258f9ff127fc3a0e6ffe1d275;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-ec7f0c496f50ec7684252036189e2aff;received=127.0.0.1;rport=60864
+Record-Route: <sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>
+Contact: <sip:uas@127.0.0.1:7000;transport=tcp;lr>
+Content-Length: 0
+
+]]>
+</message>
+
+<message
+from="127.0.0.1:7000" 
+to="127.0.0.1:60865" 
+time="1646047637907"
+isSender="true" 
+transactionId="z9hg4bk3b4ad54258f9ff127fc3a0e6ffe1d275" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="SIP/2.0 200 OK" 
+>
+<![CDATA[SIP/2.0 200 OK
+CSeq: 1 INVITE
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>;tag=748827978
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bK3b4ad54258f9ff127fc3a0e6ffe1d275;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-ec7f0c496f50ec7684252036189e2aff;received=127.0.0.1;rport=60864
+Record-Route: <sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>
+Contact: <sip:uas@127.0.0.1:7000;transport=tcp;lr>
+Content-Length: 0
+
+]]>
+</message>
+
+<message
+from="127.0.0.1:60865" 
+to="127.0.0.1:7000" 
+time="1646047638069"
+isSender="false" 
+transactionId="z9hg4bk9d262c6282ef1e00b1c26a7d7a91e163" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="ACK sip:uas@127.0.0.1:7000;transport=tcp;lr SIP/2.0" 
+>
+<![CDATA[ACK sip:uas@127.0.0.1:7000;transport=tcp;lr SIP/2.0
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+CSeq: 1 ACK
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bK9d262c6282ef1e00b1c26a7d7a91e163;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-576fde636b33d5200153b458b01bfd7e;received=127.0.0.1;rport=60864
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>;tag=748827978
+Max-Forwards: 69
+Content-Length: 0
+
+]]>
+</message>
+
+<message
+from="127.0.0.1:60865" 
+to="127.0.0.1:7000" 
+time="1646047638080"
+isSender="false" 
+transactionId="z9hg4bkf11277ae7b54489826f704f7438392f3" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="BYE sip:uas@127.0.0.1:7000;transport=tcp;lr SIP/2.0" 
+>
+<![CDATA[BYE sip:uas@127.0.0.1:7000;transport=tcp;lr SIP/2.0
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bKf11277ae7b54489826f704f7438392f3;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-858e629ed26906cad0f5904cc24bb71e;received=127.0.0.1;rport=60864
+CSeq: 2 BYE
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>;tag=748827978
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+Max-Forwards: 69
+Content-Length: 0
+
+]]>
+</message>
+
+<message
+from="127.0.0.1:7000" 
+to="127.0.0.1:60865" 
+time="1646047638091"
+isSender="true" 
+transactionId="z9hg4bkf11277ae7b54489826f704f7438392f3" 
+callId="6a534243b82bacfebe4bab795c6bb3df@127.0.0.1" 
+firstLine="SIP/2.0 200 OK" 
+>
+<![CDATA[SIP/2.0 200 OK
+CSeq: 2 BYE
+Call-ID: 6a534243b82bacfebe4bab795c6bb3df@127.0.0.1
+From: <sip:uac@nist.gov>;tag=344069723
+To: <sip:uas@127.0.0.1:7000>;tag=748827978
+Via: SIP/2.0/TCP 127.0.0.1:5061;branch=z9hG4bKf11277ae7b54489826f704f7438392f3;rport=60865,SIP/2.0/TCP 127.0.0.1:5075;branch=z9hG4bK-383637-858e629ed26906cad0f5904cc24bb71e;received=127.0.0.1;rport=60864
+Content-Length: 0
+
+]]>
+</message>
+

@@ -9,13 +9,13 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>dsb-FT</artifactId>
+  <artifactId>dsb-proxy-ft</artifactId>
   <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
       <groupId>com.cisco</groupId>
-      <artifactId>sample-app</artifactId>
+      <artifactId>dsb-proxy-app-sample</artifactId>
       <version>1.0-SNAPSHOT</version>
       <type>war</type>
       <scope>test</scope>
@@ -111,7 +111,7 @@
           <deployables>
             <deployable>
               <groupId>com.cisco</groupId>
-              <artifactId>sample-app</artifactId>
+              <artifactId>dsb-proxy-app-sample</artifactId>
               <type>war</type>
               <properties>
                 <context>/</context>
