@@ -165,7 +165,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>3.8.0</version>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -174,10 +174,7 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                            <source>1.9</source>
-                            <target>1.9</target>
-                            <compilerArgument>-Xlint:-processing</compilerArgument>
-                            <failOnWarning>true</failOnWarning>
+                            <release>11</release>
                         </configuration>
                     </execution>
                     <execution>
@@ -193,8 +190,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>1.9</source>
+                    <target>1.9</target>
                 </configuration>
             </plugin>
             <!-- jacoco -->

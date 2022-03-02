@@ -48,18 +48,18 @@ public class SIPProxy {
 
   @Override
   public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) {
-      return false;
+    if (this == other) return true;
+    if (other instanceof SIPProxy) {
+      SIPProxy otherProxy = (SIPProxy) other;
+      return new EqualsBuilder()
+          .append(errorAggregator, otherProxy.isErrorAggregator())
+          .append(createDNSServerGroup, otherProxy.isCreateDNSServerGroup())
+          .append(processRouteHeader, otherProxy.isProcessRouteHeader())
+          .append(processRegisterRequest, otherProxy.isProcessRegisterRequest())
+          .append(timerCIntervalInMilliSec, otherProxy.getTimerCIntervalInMilliSec())
+          .isEquals();
     }
-
-    SIPProxy otherProxy = (SIPProxy) other;
-    return new EqualsBuilder()
-        .append(errorAggregator, otherProxy.isErrorAggregator())
-        .append(createDNSServerGroup, otherProxy.isCreateDNSServerGroup())
-        .append(processRouteHeader, otherProxy.isProcessRouteHeader())
-        .append(processRegisterRequest, otherProxy.isProcessRegisterRequest())
-        .append(timerCIntervalInMilliSec, otherProxy.getTimerCIntervalInMilliSec())
-        .isEquals();
+    return false;
   }
 
   @Override

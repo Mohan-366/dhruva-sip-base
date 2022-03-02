@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Egress {
   @Getter private LBType lbType;
@@ -26,15 +27,20 @@ public class Egress {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof Egress) {
       Egress b = (Egress) a;
       return new EqualsBuilder()
           .append(this.lbType, b.lbType)
           .append(this.serverGroupsConfig, b.serverGroupsConfig)
-          .append(this.serverGroupMap, b.serverGroupMap)
           .isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(lbType).append(serverGroupsConfig).toHashCode();
   }
 
   @Override

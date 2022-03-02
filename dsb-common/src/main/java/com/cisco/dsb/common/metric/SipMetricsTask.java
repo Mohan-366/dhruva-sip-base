@@ -32,6 +32,10 @@ public class SipMetricsTask implements Runnable {
     return metricsService.endStopWatch(metricsContext.getCallId(), metric);
   }
 
+  private long getSplitTimeStopWatch(String metric) {
+    return metricsService.getSplitTimeStopWatch(metricsContext.getCallId(), metric);
+  }
+
   // Record timing operation for given metric
   private void time(String metric) {
     final long duration = getTime(metric);
@@ -41,9 +45,18 @@ public class SipMetricsTask implements Runnable {
   }
 
   private void timeStopWatch(String metric) {
+    long splitDuration = getSplitTimeStopWatch(metric);
+    // Stop the stopwatch and clean the cache
     final long duration = getTimeStopWatch(metric);
-
-    if (duration > 0) metricsService.time(metric, duration, TimeUnit.MILLISECONDS, metricsContext);
+    logger.debug("total duration {} split duration", duration, splitDuration);
+    // If splitDuration is invalid due to invalid state , consider the total duration returned by
+    // stop api of stop watch
+    if (splitDuration < 0 && duration > 0) {
+      splitDuration = duration;
+    }
+    // We will consider split time
+    if (splitDuration > 0)
+      metricsService.time(metric, splitDuration, TimeUnit.MILLISECONDS, metricsContext);
     else logger.debug("duration is invalid, skipping sending the metric: {}", metric);
   }
 
@@ -56,20 +69,20 @@ public class SipMetricsTask implements Runnable {
   private void handleState() {
     switch (metricsContext.state) {
       case proxyNewRequestReceived:
-        logger.debug("incoming new request timer start {}", metricsContext.getCallId());
+        logger.info("incoming new request timer start {}", metricsContext.getCallId());
         metricsService.startStopWatch(metricsContext.getCallId(), incomingRequest);
         break;
       case proxyNewRequestSendSuccess:
       case proxyNewRequestSendFailure:
-        logger.debug("pause the request timer {}", metricsContext.getCallId());
-        metricsService.pauseStopWatch(metricsContext.getCallId(), incomingRequest);
-        break;
       case proxyNewRequestRetryNextElement:
-        logger.debug("resume the request timer {}", metricsContext.getCallId());
-        metricsService.resumeStopWatch(metricsContext.getCallId(), incomingRequest);
+        logger.info(
+            "split the request timer {} for event {}",
+            metricsContext.getCallId(),
+            metricsContext.state);
+        metricsService.splitStopWatch(metricsContext.getCallId(), incomingRequest);
         break;
       case proxyNewRequestFinalResponseProcessed:
-        logger.debug(
+        logger.info(
             "incoming new request processing latency time end {}", metricsContext.getCallId());
         timeStopWatch(incomingRequest);
         break;

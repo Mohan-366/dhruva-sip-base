@@ -7,6 +7,8 @@ import com.cisco.dsb.common.transport.Transport;
 import java.util.Arrays;
 import java.util.List;
 import lombok.*;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @CustomLog
 @Getter
@@ -19,7 +21,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   private String hostName;
   private String networkName;
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
-  private boolean pingOn = false;
+  @Builder.Default private boolean pingOn = false;
   private List<ServerGroupElement> elements;
   private SGPolicy sgPolicy;
   private String sgPolicyConfig;
@@ -33,10 +35,17 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof ServerGroup) {
-      return ((ServerGroup) a).hostName.equals(hostName);
+      ServerGroup sg = (ServerGroup) a;
+      return new EqualsBuilder().append(sg.name, this.name).isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(name).toHashCode();
   }
 
   public void setSgPolicy(String sgPolicy) {

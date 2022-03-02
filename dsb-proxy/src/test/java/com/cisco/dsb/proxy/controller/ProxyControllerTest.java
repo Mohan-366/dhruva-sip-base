@@ -500,10 +500,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     // Mock Trunk Service
     EndPoint endPoint =
@@ -555,7 +556,7 @@ public class ProxyControllerTest {
     Assert.assertEquals(proxyTransaction, proxySIPRequest.getProxyStatelessTransaction());
   }
 
-  @Test(description = "stack send request throws SipException due to Destination Unreachable")
+   @Test(description = "stack send request throws SipException due to Destination Unreachable")
   public void testOutgoingRequestSendStackException()
       throws SipException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -570,8 +571,9 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
 
@@ -581,7 +583,7 @@ public class ProxyControllerTest {
 
     when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     // setProcessRoute: lrescape will be invoked, it will put the top route header to requri and
     // requri to bottom of route list
@@ -602,9 +604,9 @@ public class ProxyControllerTest {
     Assert.assertEquals(response.getStatusCode(), Response.BAD_GATEWAY);
   }
 
-  @Test(
-      description =
-          "stack send request throws DhruvaException since provider for that network is not specified")
+    @Test(
+        description =
+            "stack send request throws DhruvaException since provider for that network is not specified")
   public void testOutgoingRequestProviderException()
       throws SipException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -623,10 +625,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     EndPoint endPoint =
         new EndPoint(outgoingNetwork.getName(), "9.9.9.9", 5061, outgoingNetwork.getTransport());
@@ -692,7 +695,7 @@ public class ProxyControllerTest {
     when(sipStack.getRouter()).thenReturn(router);
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     CompletableFuture<ProxySIPResponse> responseCF = proxyController.proxyRequest(proxySIPRequest);
     // ACK is sent out and CF will be completed with null
@@ -742,8 +745,9 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxyController.proxyRequest(proxySIPRequest);
   }
@@ -760,8 +764,9 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxySIPRequest.setOutgoingNetwork("invalid");
     proxyController.proxyRequest(proxySIPRequest);
@@ -781,7 +786,7 @@ public class ProxyControllerTest {
         JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     sipRequest.getRouteHeaders().addFirst((Route) ownRouteHeader);
     assert sipRequest.getRouteHeaders().size() == 1;
-    proxyController.onNewRequest(proxySIPRequest);
+    proxyController.onNewRequest(proxySIPRequest).block();
 
     proxyController.proxyRequest(proxySIPRequest);
     Thread.sleep(200);
@@ -807,7 +812,7 @@ public class ProxyControllerTest {
         JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "tcp");
     routeHeaders.addFirst(((Route) routeHeader1));
     routeHeaders.addFirst(((Route) ownRouteHeader));
-    proxyController.onNewRequest(proxySIPRequest);
+    proxyController.onNewRequest(proxySIPRequest).block();
 
     proxyController.proxyRequest(proxySIPRequest);
     Thread.sleep(200);
@@ -838,10 +843,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     // proxyController.proxyRequest(proxySIPRequest, location);
     // using stepVerifier
@@ -946,7 +952,7 @@ public class ProxyControllerTest {
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
     // Check that lrfix variable is set even if requri does not belong to proxy and has top route
     // matching the proxy
     assert proxySIPRequest.getLrFixUri() != null;
@@ -994,9 +1000,10 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
     // Check that lrfix variable is set even if requri does not belong to proxy and has top route
     // not matching the proxy
     assert proxySIPRequest.getLrFixUri() == null;
@@ -1039,9 +1046,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
-    proxySIPRequest = proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
+    proxySIPRequest =
+        proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
     SipURI requestURI = (SipURI) proxySIPRequest.getRequest().getRequestURI();
 
     assert requestURI.getMAddrParam() == null;
@@ -1070,9 +1079,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
-    proxySIPRequest = proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
+    proxySIPRequest =
+        proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
     SipURI requestURI = (SipURI) proxySIPRequest.getRequest().getRequestURI();
 
     assert requestURI.getMAddrParam() != null;
@@ -1095,10 +1106,11 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest);
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
 
     ArgumentCaptor<ProxyTransaction> argumentCaptor =
         ArgumentCaptor.forClass(ProxyTransaction.class);
@@ -1362,9 +1374,10 @@ public class ProxyControllerTest {
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
-    when(sipServerLocatorService.locateDestination(nullable(User.class), any(SipDestination.class)))
-        .thenReturn(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(
+            nullable(User.class), any(SipDestination.class)))
+        .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
-    proxyController.onNewRequest(proxySIPRequest);
+    proxyController.onNewRequest(proxySIPRequest).block();
   }
 }

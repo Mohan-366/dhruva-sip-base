@@ -8,6 +8,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import lombok.CustomLog;
 import lombok.Getter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @CustomLog
 public abstract class FilterNode {
@@ -106,7 +108,16 @@ public abstract class FilterNode {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof FilterNode) return filterId.equals(((FilterNode) obj).getFilterId());
+    if (this == obj) return true;
+    if (obj instanceof FilterNode) {
+      FilterNode that = (FilterNode) obj;
+      return new EqualsBuilder().append(filterId, that.getFilterId()).isEquals();
+    }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(filterId).toHashCode();
   }
 }

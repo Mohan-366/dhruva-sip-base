@@ -10,14 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -151,7 +144,9 @@ public class DsbNetworkLayer implements NetworkLayer {
   public ServerSocket createServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
 
-    return new DsbServerSocket(port, backlog, bindAddress);
+    ServerSocket serverSocket = setServerSocketOptions(new DsbServerSocket());
+    serverSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    return serverSocket;
   }
 
   @SuppressFBWarnings(value = "UNENCRYPTED_SERVER_SOCKET", justification = "baseline suppression")
@@ -160,34 +155,44 @@ public class DsbNetworkLayer implements NetworkLayer {
       super(port, backlog, bindAddr);
     }
 
+    public DsbServerSocket() throws IOException {
+      super();
+    }
+
     @Override
     public Socket accept() throws IOException {
       return setSocketOptions(super.accept());
     }
   }
 
-  private DatagramSocket createDataGramSocket(int port, InetAddress address)
+  private DatagramSocket createDataGramSocket()
       throws SocketException {
-    DatagramSocket socket =
-        port >= 0 && address != null ? new DatagramSocket(port, address) : new DatagramSocket();
-    socket.setTrafficClass(trafficClass);
-    return socket;
+    DatagramSocket socket = new DatagramSocket(null);
+
+    return setDatagramSocketOptions(socket);
   }
 
   @Override
   public DatagramSocket createDatagramSocket() throws SocketException {
-    return createDataGramSocket(-1, null);
+    DatagramSocket socket = createDataGramSocket();
+    socket.bind(new InetSocketAddress(0));
+    return socket;
   }
 
   @Override
   public DatagramSocket createDatagramSocket(int port, InetAddress laddr) throws SocketException {
-    return createDataGramSocket(port, laddr);
+    DatagramSocket socket =  createDataGramSocket();
+    socket.bind(new InetSocketAddress(laddr,port));
+    return socket;
   }
 
   @Override
   public SSLServerSocket createSSLServerSocket(int port, int backlog, InetAddress bindAddress)
       throws IOException {
-    return (SSLServerSocket) sslServerSocketFactory.createServerSocket(port, backlog, bindAddress);
+    SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
+    sslServerSocket = (SSLServerSocket) setServerSocketOptions(sslServerSocket);
+    sslServerSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    return sslServerSocket;
   }
 
   @Override
@@ -252,6 +257,21 @@ public class DsbNetworkLayer implements NetworkLayer {
     socket.setTcpNoDelay(true);
     socket.setTrafficClass(trafficClass);
     return socket;
+  }
+
+  private static ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws IOException {
+    // NOTE: some of the properties set here can be overridden by
+    // ConnectionOrientedMessageProcessor.
+    // check out the start() to see such properties
+    serverSocket.setOption(StandardSocketOptions.SO_REUSEPORT, true);
+    return serverSocket;
+  }
+
+  private static DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
+      throws SocketException {
+    datagramSocket.setTrafficClass(trafficClass);
+    datagramSocket.setReuseAddress(true);
+    return datagramSocket;
   }
 
   @Override

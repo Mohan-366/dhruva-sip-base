@@ -3,6 +3,8 @@ package com.cisco.dsb.trunk.trunks;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @NoArgsConstructor
 @Getter
@@ -12,8 +14,17 @@ public class Ingress {
 
   @Override
   public boolean equals(Object a) {
-    if (a instanceof Ingress) return this.name.equals(((Ingress) a).name);
+    if (this == a) return true;
+    if (a instanceof Ingress) {
+      Ingress b = (Ingress) a;
+      return new EqualsBuilder().append(this.name, b.name).isEquals();
+    }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(name).toHashCode();
   }
 
   @Override

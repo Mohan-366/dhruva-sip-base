@@ -111,32 +111,16 @@ public class SIPListenPoint {
 
   @Override
   public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) {
-      return false;
+    if (this == other) return true;
+    if (other instanceof SIPListenPoint) {
+      SIPListenPoint otherListenPoint = (SIPListenPoint) other;
+      return new EqualsBuilder().append(name, otherListenPoint.getName()).isEquals();
     }
-
-    SIPListenPoint otherListenPoint = (SIPListenPoint) other;
-    return new EqualsBuilder()
-        .append(name, otherListenPoint.getName())
-        .append(hostIPAddress, otherListenPoint.getHostIPAddress())
-        .append(port, otherListenPoint.getPort())
-        .append(transport, otherListenPoint.getTransport())
-        .append(recordRoute, otherListenPoint.isRecordRoute())
-        .append(attachExternalIP, otherListenPoint.isAttachExternalIP())
-        .append(tlsAuthType, otherListenPoint.getTlsAuthType())
-        .append(enableCertService, ((SIPListenPoint) other).isEnableCertService())
-        .isEquals();
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder()
-        .append(name)
-        .append(hostIPAddress)
-        .append(port)
-        .append(transport)
-        .append(recordRoute)
-        .append(attachExternalIP)
-        .toHashCode();
+    return new HashCodeBuilder().append(name).toHashCode();
   }
 }

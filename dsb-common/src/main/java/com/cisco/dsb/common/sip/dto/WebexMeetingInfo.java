@@ -47,16 +47,15 @@ public class WebexMeetingInfo {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-
-    if (o == null || getClass() != o.getClass()) return false;
-
-    WebexMeetingInfo that = (WebexMeetingInfo) o;
-
-    return new EqualsBuilder()
-        .append(webExSite, that.webExSite)
-        .append(meetingNumber, that.meetingNumber)
-        .append(conferenceId, that.conferenceId)
-        .isEquals();
+    if (o instanceof WebexMeetingInfo) {
+      WebexMeetingInfo that = (WebexMeetingInfo) o;
+      return new EqualsBuilder()
+          .append(webExSite, that.webExSite)
+          .append(meetingNumber, that.meetingNumber)
+          .append(conferenceId, that.conferenceId)
+          .isEquals();
+    }
+    return false;
   }
 
   @Override

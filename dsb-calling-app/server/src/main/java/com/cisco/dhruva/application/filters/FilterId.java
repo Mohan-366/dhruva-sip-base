@@ -1,5 +1,8 @@
 package com.cisco.dhruva.application.filters;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class FilterId {
   public enum Id {
     ROOT,
@@ -18,15 +21,17 @@ public class FilterId {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof FilterNode) return this.equals(((FilterNode) obj).getFilterId());
-    else if (obj instanceof FilterId) {
-      return this.id == ((FilterId) obj).id;
+    if (this == obj) return true;
+    if (obj instanceof FilterNode) {
+      return this.equals(((FilterNode) obj).getFilterId());
+    } else if (obj instanceof FilterId) {
+      return new EqualsBuilder().append(id, ((FilterId) obj).id).isEquals();
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return id.hashCode();
+    return new HashCodeBuilder().append(id).toHashCode();
   }
 }
