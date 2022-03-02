@@ -39,15 +39,6 @@
             <artifactId>sipunit</artifactId>
             <version>2.0.0</version>
         </dependency>
-        <!-- com.ciscospark.integration.TestNGRunner main class to begin execution for the jar is located in here -->
-        <dependency>
-            <groupId>com.ciscospark</groupId>
-            <artifactId>cisco-spark-integration</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-        </dependency>
     </dependencies>
 
     <properties>
@@ -74,6 +65,11 @@
                 <configuration>
                     <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
                     <testSourceDirectory>${project.build.sourceDirectory}</testSourceDirectory>
+                    <environmentVariables>
+                        <dhruvaHost>127.0.0.1</dhruvaHost>
+                        <testHost>127.0.0.1</testHost>
+                        <dhruvaSipTcpPort>5060</dhruvaSipTcpPort>
+                    </environmentVariables>
                 </configuration>
             </plugin>
 
@@ -94,7 +90,6 @@
                             <enableLettuceRedisDataSourceForUserCache>false</enableLettuceRedisDataSourceForUserCache>
                             <enableLettuceRedisDataSourceForOrgCache>false</enableLettuceRedisDataSourceForOrgCache>
                             <enableLettuceRedisDataSourceForAuthCache>false</enableLettuceRedisDataSourceForAuthCache>
-                            <spring.profiles.active>it</spring.profiles.active>
                         </systemProperties>
                     </container>
                     <configuration>
@@ -157,7 +152,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.ciscospark.integration.TestNGRunner</mainClass>
-                    <finalName>dsb-calling-integration-tests</finalName>
+                    <finalName>dsb-integration-tests</finalName>
                 </configuration>
                 <executions>
                     <execution>

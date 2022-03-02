@@ -1,4 +1,4 @@
-package com.cisco.dhruva.callingIntegration.util;
+package com.cisco.dhruva.util;
 
 import java.util.Collections;
 import java.util.HashSet;
