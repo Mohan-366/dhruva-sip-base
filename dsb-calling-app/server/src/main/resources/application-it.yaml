@@ -1,0 +1,155 @@
+app:
+  networkPSTN: &netsp "net_sp"
+  networkB2B: &netb2b "net_antares"
+  networkCallingCore: &netcc "net_cc"
+  b2b-egress: "Antares"
+  calling-egress: "NS"
+  pstn-ingress: "CcpFusionUS"
+common:
+  listenPoints:
+    - name: *netsp
+      port: 5065
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netb2b
+      port: 5062
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netcc
+      port: 5080
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+  serverGroups:
+    UsPoolA:
+      name: &UsPoolA UsPoolA
+      hostName: "UsPoolA"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7000
+          transport: UDP
+          priority: 10
+          weight: 100
+        - ipAddress: "127.0.0.1"
+          port: 7001
+          transport: UDP
+          priority: 5
+          weight: 100
+      sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
+      priority: 10
+      weight: 100
+    UsPoolB:
+      name: &UsPoolB UsPoolB
+      hostName: "UsPoolB"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7002
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
+      priority: 20
+      weight: 100
+    InPoolA:
+      name: &InPoolA InPoolA
+      hostName: "InPoolA"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 4000
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
+      priority: 10
+      weight: 100
+    Antares:
+      name: &Antares Antares
+      hostName: "test.beech.com"
+      networkName: *netb2b
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6000
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
+      priority: 10
+      weight: 100
+    NS1:
+      name: &NS1 NS1
+      hostName: "ns1.cc.com"
+      networkName: *netcc
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7000
+          transport: UDP
+          priority: 10
+          weight: 100
+      sgPolicy: policy1
+      optionsPingPolicy: opPolicy1
+      priority: 10
+      weight: 100
+  sgPolicy:
+    policy1:
+      name: policy1
+      failoverResponseCodes:
+        - 501
+        - 502
+  optionsPingPolicy:
+    opPolicy1:
+      name: opPolicy1
+      failoverResponseCodes:
+        - 501
+        - 502
+        - 503
+      upTimeInterval: 30000
+      downTimeInterval: 5000
+      pingTimeOut: 500
+trunk:
+  PSTN:
+    CcpFusionUS:
+      name: CcpFusionUS
+      ingress:
+        name: ingress1
+      egress:
+        lbType: weight
+        serverGroups:
+          - *UsPoolA
+          - *UsPoolB
+    CcpFusionIN:
+      name: CcpFusionIN
+      ingress:
+        name: ingress1
+      egress:
+        lbType: weight
+        serverGroups:
+          - *InPoolA
+  B2B:
+    Antares:
+      name: Antares
+      ingress:
+        name: antares_ig
+      egress:
+        lbType: ONCE
+        serverGroups:
+          - *Antares
+  CallingCore:
+    NS:
+      name: NS
+      ingress:
+        name: ns_ig
+      egress:
+        lbType: ONCE
+        serverGroups:
+          - *NS1

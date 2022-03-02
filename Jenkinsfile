@@ -67,6 +67,7 @@ node() {
             archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
             archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
             archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/integration/target/dsb-calling-integration-tests.jar', allowEmptyArchive: true
         }
         stage('build and publish wbx3 images') {
             try {
