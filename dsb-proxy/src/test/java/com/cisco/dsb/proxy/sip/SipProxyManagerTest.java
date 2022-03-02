@@ -43,6 +43,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
 
 public class SipProxyManagerTest {
 
@@ -310,7 +311,10 @@ public class SipProxyManagerTest {
 
   @Test(description = "Creates a new ProxyController for a proxy SIP Request")
   public void testProxyControllerCreation() {
+
     ProxySIPRequest proxySIPRequest = mock(ProxySIPRequest.class);
+    Mono<ProxySIPRequest> proxySIPRequestMock = Mono.just(proxySIPRequest);
+
     SIPRequest request = mock(SIPRequest.class);
     ProxyController proxyController = mock(ProxyController.class);
 
@@ -319,11 +323,11 @@ public class SipProxyManagerTest {
     TriFunction<ServerTransaction, SipProvider, ProxyAppConfig, ProxyController>
         mockProxyController = (stx, spd, pc) -> proxyController;
     when(proxyControllerFactory.proxyController()).thenReturn(mockProxyController);
-    when(proxyController.onNewRequest(proxySIPRequest)).thenReturn(proxySIPRequest);
+    when(proxyController.onNewRequest(proxySIPRequest)).thenReturn(proxySIPRequestMock);
 
     Assert.assertEquals(
         sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest),
-        proxySIPRequest);
+        proxySIPRequestMock);
     verify(proxySIPRequest).setProxyInterface(proxyController);
     verify(proxyController).onNewRequest(proxySIPRequest);
   }

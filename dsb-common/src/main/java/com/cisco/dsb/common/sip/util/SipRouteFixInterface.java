@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.sip.util;
 
 import javax.sip.address.URI;
+import reactor.core.publisher.Mono;
 
 /**
  * This interface is used to implement the procedures described in rfc3261 paragraph 16.4 necessary
@@ -21,8 +22,9 @@ public interface SipRouteFixInterface {
    *
    * @param uri a URI from the SIP request as described above
    * @param isRequestURI boolean to indicate whether the uri is a request-uri
-   * @return <code>true</code> if the uri is recognized as a uri that was inserted into a
-   *     Record-Route header, otherwise returns <code>false</code>
+   * @return <code>Mono true</code> if the uri is recognized as a uri that was inserted into a
+   *     Record-Route header, otherwise returns <code>Mono false</code>
    */
-  boolean recognize(URI uri, boolean isRequestURI);
+
+  Mono<Boolean> recognize(URI uri, boolean isRequestURI);
 }

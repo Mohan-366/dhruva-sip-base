@@ -80,7 +80,7 @@ public class CommonConfigurationProperties {
   @Getter @Setter private String reliableKeepAlivePeriod = "25";
   @Getter @Setter private String minKeepAliveTimeSeconds = "20";
   @Getter @Setter private boolean logKeepAlivesEnabled = false;
-  @Getter @Setter private String trustedSipSources = "";
+  @Setter private String trustedSipSources = "";
   @Getter @Setter private boolean requiredTrustedSipSources = false;
 
   // DSBNetworkLayer is using this as static variable
