@@ -12,8 +12,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
-import org.testng.IRetryAnalyzer;
-import org.testng.ITestResult;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
