@@ -1,4 +1,4 @@
-package com.cisco.dhruva.util;
+package com.cisco.dhruva.callingIntegration.util;
 
 public class Token {
 
