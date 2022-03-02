@@ -1,5 +1,7 @@
 package com.cisco.dhruva;
 
+import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+
 import com.cisco.dhruva.util.TestInput.NicIpPort;
 import com.cisco.dhruva.util.TestInput.TestCaseConfig;
 import com.cisco.dhruva.util.TestInput.UasConfig;
@@ -11,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.cafesip.sipunit.SipStack;
+import org.testng.Assert;
 
 public class TestCaseRunner {
 
@@ -43,5 +46,9 @@ public class TestCaseRunner {
     Thread ut = new Thread(uac);
     ut.start();
     completionLatch.await(10, TimeUnit.SECONDS);
+    if (completionLatch.getCount() != 0) {
+      FT_LOGGER.info("Some issue with the call flow. Failing the test");
+      Assert.fail();
+    }
   }
 }

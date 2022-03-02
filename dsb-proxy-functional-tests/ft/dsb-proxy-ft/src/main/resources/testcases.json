@@ -145,7 +145,7 @@
       ]
     },
     {
-      "description": "Redirect INVITE Flow",
+      "description": "Re-invite INVITE Flow",
       "id": "2",
       "skipTest": false,
       "dsb": {
@@ -360,7 +360,7 @@
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",
-        "ip": "192.168.1.5",
+        "ip": "127.0.0.1",
         "port": 5075,
         "transport": "tcp",
         "messages": [
@@ -371,7 +371,7 @@
             "parameters": {
               "requestParameters": {
                 "headerAdditions": {
-                  "requestUri": "sip:uas@192.168.1.5:7000"
+                  "requestUri": "sip:uas@127.0.0.1:7000"
                 }
               }
             }
@@ -392,7 +392,7 @@
             "parameters": {
               "requestParameters": {
                 "headerAdditions": {
-                  "requestUri": "sip:uas@192.168.1.5:7000"
+                  "requestUri": "sip:uas@127.0.0.1:7000"
                 }
               }
             }
@@ -425,7 +425,7 @@
       "uasGroup": [
         {
           "myUri": "sip:uas@nist.gov",
-          "ip": "192.168.1.5",
+          "ip": "127.0.0.1",
           "port": 7000,
           "transport": "tcp",
           "elementStatus": "up",
@@ -492,6 +492,116 @@
               "name": "ACK",
               "direction": "receives"
             }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Redirect INVITE Flow",
+      "skipTest": true,
+      "id": "4",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5061
+        },
+        "serverCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5067
+        },
+        "transport": "tcp"
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "tcp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@127.0.0.1:7000"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK",
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          },
+          {
+            "type": "request",
+            "name": "BYE",
+            "direction": "sends"
+          },
+          {
+            "type": "response",
+            "forRequest": "BYE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7000,
+          "transport": "tcp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@127.0.0.1:7000",
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:uas@127.0.0.1:7001"
+                  }
+                }
+              }
+            }
+
           ]
         }
       ]

@@ -46,12 +46,12 @@ public class Validator {
               .forEach(
                   entry -> {
                     String key = entry.getKey();
-                    // since call flow is already validated that is why we are here, we won't
-                    // validate it again.
                     FT_LOGGER.info(
                         "============ VALIDATING SIP MESSAGE ========:\n{}",
                         testMessage.getSipMessage().toString());
                     FT_LOGGER.info(" ============ AGAINST ===============: {}", entry);
+                    // since call flow is already validated that is why we are here, we won't
+                    // validate it again.
                     if (!key.equals("responseCode") && !key.equals("reasonPhrase")) {
                       if (key.equals("requestUri")) {
                         if (testMessage.getMessage().getType().equals(Type.request)) {

@@ -8,6 +8,7 @@ import com.cisco.dhruva.util.TestInput.Message;
 import com.cisco.dhruva.util.TestInput.NicIpPort;
 import com.cisco.dhruva.util.TestInput.Transport;
 import com.cisco.dhruva.util.TestInput.Type;
+import gov.nist.javax.sip.address.AddressFactoryImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
@@ -175,7 +176,7 @@ public class SipStackUtil {
   }
 
   private static void sendReInvite(SipCall call) {
-    System.out.println("Sending Re-INVITE");
+    FT_LOGGER.info("Sending Re-INVITE");
     clientMidCallINVITETransaction = call.sendReinvite(null, null, (String) null, null, null);
   }
 
@@ -218,7 +219,7 @@ public class SipStackUtil {
       call.respondToReinvite(
           serverMidCallINVITETransaction,
           SipResponse.OK,
-          "ok reinvite response",
+          "OK",
           -1,
           null,
           null,
@@ -227,6 +228,12 @@ public class SipStackUtil {
           null);
     } else if (reasonPhrase.equalsIgnoreCase("Redirect")) {
       Contact contactHeader = new Contact();
+      SipUri myUri =
+          (SipUri)
+              new AddressFactoryImpl()
+                  .createURI(
+                      message.getParameters().responseParameters.headerAdditions.get("contact"));
+      FT_LOGGER.info("KALPA:" + myUri);
       Address address = new AddressImpl();
       address.setDisplayName("uas");
       SipUri uri = new SipUri();
@@ -267,6 +274,8 @@ public class SipStackUtil {
           ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
           FT_LOGGER.info("Received INVITE request");
           break;
+        } else {
+          FT_LOGGER.info("Waiting for INVITE");
         }
       }
     }
@@ -309,6 +318,8 @@ public class SipStackUtil {
         FT_LOGGER.info("Received Re-INVITE");
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
         break;
+      } else {
+        FT_LOGGER.warn("Waiting for Re-INVITE");
       }
     }
   }
@@ -324,37 +335,45 @@ public class SipStackUtil {
         FT_LOGGER.info("Received Cancel");
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
         break;
+      } else {
+        FT_LOGGER.warn("Waiting for Cancel");
       }
     }
   }
 
   private static void waitForResponse(Message message, SipCall call, UA ua) {
+    Integer expectedResponse = (Integer) message.getValidation().get("responseCode");
     if (message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
       while (true) {
-        if (call.waitReinviteResponse(clientMidCallINVITETransaction, TIMEOUT)) {
-          if (call.getLastReceivedResponse().getStatusCode() >= 200) {
-            FT_LOGGER.info("Received 200 OK for Re-Invite");
-            ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
-            break;
-          }
+        call.waitReinviteResponse(clientMidCallINVITETransaction, TIMEOUT);
+        SipResponse lastReceivedResponse = call.getLastReceivedResponse();
+        if (lastReceivedResponse != null
+            && lastReceivedResponse.getStatusCode() == expectedResponse) {
+          FT_LOGGER.info("Received {} for Re-INVITE", expectedResponse);
+          ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
+          break;
+        } else {
+          FT_LOGGER.warn("Waiting for {} response", expectedResponse);
         }
       }
     } else if (message.getForRequest().equalsIgnoreCase("CANCEL")) {
       while (true) {
-        if (call.waitForCancelResponse(clientMidCallCancelTransaction, TIMEOUT)) {
-          if (call.getLastReceivedResponse().getStatusCode() == 200) {
-            FT_LOGGER.info("Received 200 OK for Cancel");
-            ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
-            break;
-          }
+        call.waitForCancelResponse(clientMidCallCancelTransaction, TIMEOUT);
+        SipResponse lastReceivedResponse = call.getLastReceivedResponse();
+        if (lastReceivedResponse != null
+            && lastReceivedResponse.getStatusCode() == expectedResponse) {
+          FT_LOGGER.info("Received {} for Cancel", expectedResponse);
+          ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
+          break;
+        } else {
+          FT_LOGGER.warn("Waiting for {} response", expectedResponse);
         }
       }
     } else {
       while (true) {
         call.waitOutgoingCallResponse(TIMEOUT);
         if (call.getLastReceivedResponse() != null
-            && call.getLastReceivedResponse().getStatusCode()
-                == (Integer) message.getValidation().get("responseCode")
+            && call.getLastReceivedResponse().getStatusCode() == expectedResponse
             && call.getLastReceivedResponse()
                 .getResponseEvent()
                 .getResponse()
@@ -366,6 +385,8 @@ public class SipStackUtil {
               call.getLastReceivedResponse().getResponseEvent().getResponse());
           ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
           break;
+        } else {
+          FT_LOGGER.warn("Waiting for {} response", expectedResponse);
         }
       }
     }
