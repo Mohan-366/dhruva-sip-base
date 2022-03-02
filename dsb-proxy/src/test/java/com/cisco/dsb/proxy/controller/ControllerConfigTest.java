@@ -3,15 +3,8 @@ package com.cisco.dsb.proxy.controller;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
-import com.cisco.dsb.common.sip.jain.JainSipHelper;
-import com.cisco.dsb.common.sip.stack.dns.SipServerLocator;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
-import com.cisco.dsb.common.sip.stack.dto.SipDestination;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.util.HeaderHelper;
@@ -22,32 +15,21 @@ import gov.nist.javax.sip.header.SIPHeaderList;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import javax.sip.header.RecordRouteHeader;
-import org.mockito.*;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 public class ControllerConfigTest {
   ControllerConfig controllerConfig;
-
-  @Mock CommonConfigurationProperties props = mock(CommonConfigurationProperties.class);
-
-  @Mock DhruvaExecutorService service = mock(DhruvaExecutorService.class);
-
-  @Spy
-  SipServerLocatorService sipServerLocatorService = new SipServerLocatorService(props, service);
-
-  @Mock SipServerLocator locator;
-
+  @Mock SipServerLocatorService sipServerLocatorService;
   @Mock ProxyConfigurationProperties proxyConfigurationProperties;
 
   @BeforeTest
   public void setup() {
-    MockitoAnnotations.openMocks(this);
+    MockitoAnnotations.initMocks(this);
     DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
   }
 
@@ -149,37 +131,5 @@ public class ControllerConfigTest {
     // pick topmost match
     verify(sipResponse, Mockito.times(1)).setApplicationData(eq("test_network_in"));
     verify(sipResponse, Mockito.times(0)).setApplicationData(eq("test2_network_in"));
-  }
-
-  @Test
-  void testDnsException() throws ExecutionException, InterruptedException, ParseException {
-    when(service.getExecutorThreadPool(ExecutorType.DNS_LOCATOR_SERVICE))
-        .thenReturn(Executors.newSingleThreadExecutor());
-
-    sipServerLocatorService = new SipServerLocatorService(props, service);
-    controllerConfig = new ControllerConfig(sipServerLocatorService, proxyConfigurationProperties);
-
-    SipDestination sipDestination =
-        new DnsDestination("test.cisco.com", 5061, LocateSIPServerTransportType.UDP);
-    locator = mock(SipServerLocator.class);
-
-    sipServerLocatorService.setLocator(locator);
-
-    InterruptedException iEx =
-        new InterruptedException("SipServerLocatorService: InterruptedException");
-    System.out.println(iEx.getMessage());
-
-    when(locator.resolve(
-            sipDestination.getAddress(),
-            sipDestination.getTransportLookupType(),
-            sipDestination.getPort(),
-            null))
-        .thenThrow(iEx);
-
-    SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:test.cisco.com:5061;");
-
-    Mono<Boolean> booleanMono = controllerConfig.recognize(sipUri, false);
-
-    StepVerifier.create(booleanMono).expectNext(false).verifyComplete();
   }
 }

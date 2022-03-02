@@ -302,8 +302,8 @@ public class ProxyServiceTest {
     when(function1.apply(any(RequestEvent.class))).thenReturn(proxySIPRequest);
     when(sipProxyManager.createServerTransactionAndProxySIPRequest()).thenReturn(function1);
 
-    Function<ProxySIPRequest, Mono<ProxySIPRequest>> function2 = mock(Function.class);
-    when(function2.apply(any(ProxySIPRequest.class))).thenReturn(Mono.just(proxySIPRequest));
+    Function<ProxySIPRequest, ProxySIPRequest> function2 = mock(Function.class);
+    when(function2.apply(any(ProxySIPRequest.class))).thenReturn(proxySIPRequest);
     when(sipProxyManager.getProxyController(any(ProxyAppConfig.class))).thenReturn(function2);
 
     Function<ProxySIPRequest, ProxySIPRequest> function3 = mock(Function.class);

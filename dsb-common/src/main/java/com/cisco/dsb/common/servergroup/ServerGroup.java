@@ -21,7 +21,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   private String hostName;
   private String networkName;
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
-  @Builder.Default private boolean pingOn = false;
+  private boolean pingOn = false;
   private List<ServerGroupElement> elements;
   private SGPolicy sgPolicy;
   private String sgPolicyConfig;

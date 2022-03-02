@@ -276,7 +276,6 @@ public class BindingInfo implements Cloneable, Serializable {
    *
    * @deprecated it is not intended to be used by user code and might be removed.
    */
-  @Deprecated
   public void determineLocalBindingFlag() {
     if (m_LocalAddress == null) {
       if (m_LocalPort == LOCAL_PORT_UNSPECIFIED) {
