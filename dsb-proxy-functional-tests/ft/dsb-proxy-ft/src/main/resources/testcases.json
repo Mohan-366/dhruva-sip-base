@@ -2,7 +2,7 @@
   "testCaseConfig": [
     {
       "description": "Basic INVITE Flow",
-      "skipTest": true,
+      "skipTest": false,
       "id": "1",
       "dsb": {
         "clientCommunicationInfo": {

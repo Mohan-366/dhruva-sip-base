@@ -145,7 +145,7 @@ public class DsbNetworkLayer implements NetworkLayer {
       throws IOException {
 
     ServerSocket serverSocket = setServerSocketOptions(new DsbServerSocket());
-    serverSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    serverSocket.bind(new InetSocketAddress(bindAddress, port), backlog);
     return serverSocket;
   }
 
@@ -165,8 +165,7 @@ public class DsbNetworkLayer implements NetworkLayer {
     }
   }
 
-  private DatagramSocket createDataGramSocket()
-      throws SocketException {
+  private DatagramSocket createDataGramSocket() throws SocketException {
     DatagramSocket socket = new DatagramSocket(null);
 
     return setDatagramSocketOptions(socket);
@@ -181,8 +180,8 @@ public class DsbNetworkLayer implements NetworkLayer {
 
   @Override
   public DatagramSocket createDatagramSocket(int port, InetAddress laddr) throws SocketException {
-    DatagramSocket socket =  createDataGramSocket();
-    socket.bind(new InetSocketAddress(laddr,port));
+    DatagramSocket socket = createDataGramSocket();
+    socket.bind(new InetSocketAddress(laddr, port));
     return socket;
   }
 
@@ -191,7 +190,7 @@ public class DsbNetworkLayer implements NetworkLayer {
       throws IOException {
     SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
     sslServerSocket = (SSLServerSocket) setServerSocketOptions(sslServerSocket);
-    sslServerSocket.bind(new InetSocketAddress(bindAddress,port),backlog);
+    sslServerSocket.bind(new InetSocketAddress(bindAddress, port), backlog);
     return sslServerSocket;
   }
 
