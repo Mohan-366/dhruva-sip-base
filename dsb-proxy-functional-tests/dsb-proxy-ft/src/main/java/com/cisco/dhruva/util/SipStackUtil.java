@@ -189,11 +189,6 @@ public class SipStackUtil {
         FT_LOGGER.info("Still waiting for 180 before sending cancel");
       }
     }
-    try {
-      Thread.sleep(500);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
     if ((clientMidCallCancelTransaction = call.sendCancel()) != null) {
       FT_LOGGER.info("Sending Cancel");
     } else {
@@ -228,18 +223,13 @@ public class SipStackUtil {
           null);
     } else if (reasonPhrase.equalsIgnoreCase("Redirect")) {
       Contact contactHeader = new Contact();
-      SipUri myUri =
+      SipUri uri =
           (SipUri)
               new AddressFactoryImpl()
                   .createURI(
                       message.getParameters().responseParameters.headerAdditions.get("contact"));
-      FT_LOGGER.info("KALPA:" + myUri);
       Address address = new AddressImpl();
       address.setDisplayName("uas");
-      SipUri uri = new SipUri();
-      uri.setHost("127.0.0.1");
-      uri.setPort(7001);
-      uri.setUser("uas");
       uri.setParameter("transport", "tcp");
       uri.setLrParam();
       address.setURI(uri);
