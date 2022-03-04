@@ -154,7 +154,15 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         maxThreads);
   }
 
-
+  /**
+   * temporary solution for CSB to decorate dhruva's CustomScheduledExecutor to have executor metrics support
+   * later we can have a cleaner solution once pr is merged in CSB, url: https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/pull/6101
+   * @param executor
+   * @param prefix
+   * @param handler
+   * @param min
+   * @param max
+   */
   private void configureCustomScheduleExecutorForMetrics(
       final ThreadPoolExecutor executor,
       String prefix,
