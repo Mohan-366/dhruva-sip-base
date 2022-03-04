@@ -80,7 +80,7 @@ public class CommonConfigurationProperties {
   @Getter @Setter private String reliableKeepAlivePeriod = "25";
   @Getter @Setter private String minKeepAliveTimeSeconds = "20";
   @Getter @Setter private boolean logKeepAlivesEnabled = false;
-  @Getter @Setter private String trustedSipSources = "";
+  @Setter private String trustedSipSources = "";
   @Getter @Setter private boolean requiredTrustedSipSources = false;
 
   // DSBNetworkLayer is using this as static variable
@@ -97,6 +97,8 @@ public class CommonConfigurationProperties {
   private List<SIPListenPoint> listenPoints =
       Collections.singletonList(SIPListenPoint.SIPListenPointBuilder().build());
 
+  @Getter @Setter private int listenPointRetryCount = 0;
+  @Getter @Setter private int listenPointRetryDelay = 10;
   @Getter private int dnsCacheSize = 1000;
   @Getter private long timeOutDnsCache = 32_000L;
   @Getter private long timeOutDns = 10_000L;

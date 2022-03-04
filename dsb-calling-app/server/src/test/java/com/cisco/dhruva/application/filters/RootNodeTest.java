@@ -9,6 +9,7 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.HashMap;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -91,6 +92,11 @@ public class RootNodeTest {
     Boolean f4 = Boolean.FALSE;
     Assert.assertEquals(f1, f2);
     Assert.assertNotEquals(f1, f3);
-    Assert.assertFalse(f1.equals(f4));
+    Assert.assertNotEquals(f4, f1);
+  }
+
+  @Test
+  public void testEqualsOfFilterId() {
+    EqualsVerifier.simple().forClass(FilterId.class).verify();
   }
 }

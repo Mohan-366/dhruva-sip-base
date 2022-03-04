@@ -145,26 +145,28 @@ public abstract class SipListenPoint {
     return sipListenPointString.toString();
   }
 
+  @Override
   public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) {
-      return false;
+    if (this == other) return true;
+    if (other instanceof SipListenPoint) {
+      SipListenPoint otherListenPoint = (SipListenPoint) other;
+      return new EqualsBuilder()
+          .append(name, otherListenPoint.name)
+          .append(alias, otherListenPoint.alias)
+          .append(ip, otherListenPoint.ip)
+          .append(port, otherListenPoint.port)
+          .append(transport, otherListenPoint.transport)
+          .append(type, otherListenPoint.type)
+          .append(attachExternalIP, otherListenPoint.attachExternalIP)
+          .append(contactPort, otherListenPoint.contactPort)
+          .append(clientAuth, otherListenPoint.clientAuth)
+          .append(sipServiceTypes, otherListenPoint.sipServiceTypes)
+          .isEquals();
     }
-
-    SipListenPoint otherListenPoint = (SipListenPoint) other;
-    return new EqualsBuilder()
-        .append(name, otherListenPoint.name)
-        .append(alias, otherListenPoint.alias)
-        .append(ip, otherListenPoint.ip)
-        .append(port, otherListenPoint.port)
-        .append(transport, otherListenPoint.transport)
-        .append(type, otherListenPoint.type)
-        .append(attachExternalIP, otherListenPoint.attachExternalIP)
-        .append(contactPort, otherListenPoint.contactPort)
-        .append(clientAuth, otherListenPoint.clientAuth)
-        .append(sipServiceTypes, otherListenPoint.sipServiceTypes)
-        .isEquals();
+    return false;
   }
 
+  @Override
   public int hashCode() {
     return new HashCodeBuilder()
         .append(name)
@@ -176,7 +178,7 @@ public abstract class SipListenPoint {
         .append(attachExternalIP)
         .append(contactPort)
         .append(clientAuth)
-        .append(this.sipServiceTypes)
+        .append(sipServiceTypes)
         .toHashCode();
   }
 

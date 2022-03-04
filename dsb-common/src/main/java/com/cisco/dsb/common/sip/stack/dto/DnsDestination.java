@@ -1,7 +1,8 @@
 package com.cisco.dsb.common.sip.stack.dto;
 
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
-import java.util.Objects;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class DnsDestination implements SipDestination {
   private final String address;
@@ -45,15 +46,23 @@ public class DnsDestination implements SipDestination {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DnsDestination that = (DnsDestination) o;
-    return port == that.port
-        && Objects.equals(address, that.address)
-        && transportLookupType == that.transportLookupType;
+    if (o instanceof DnsDestination) {
+      DnsDestination that = (DnsDestination) o;
+      return new EqualsBuilder()
+          .append(port, that.port)
+          .append(address, that.address)
+          .append(transportLookupType, that.transportLookupType)
+          .isEquals();
+    }
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, port, transportLookupType);
+    return new HashCodeBuilder()
+        .append(address)
+        .append(port)
+        .append(transportLookupType)
+        .toHashCode();
   }
 }

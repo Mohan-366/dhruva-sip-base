@@ -514,6 +514,16 @@ public class MetricService {
     }
   }
 
+  public void splitStopWatch(String callId, String metric) {
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        stopWatch.split();
+      }
+    }
+  }
+
   public void resumeStopWatch(String callId, String metric) {
     if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
       String key = joiner.join(callId, metric);
@@ -522,6 +532,24 @@ public class MetricService {
         stopWatch.resume();
       }
     }
+  }
+
+  public long getSplitTimeStopWatch(String callId, String metric) {
+    final long noValidDuration = -1L;
+    if (!Strings.isNullOrEmpty(metric) && !Strings.isNullOrEmpty(callId)) {
+      String key = joiner.join(callId, metric);
+      StopWatch stopWatch = stopWatchTimers.get(key);
+      if (stopWatch != null) {
+        TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+        try {
+          return timeUnit.convert(stopWatch.getSplitNanoTime(), TimeUnit.NANOSECONDS);
+        } catch (IllegalStateException e) {
+          logger.info("exception while we get split time {}", e.getMessage());
+          return noValidDuration;
+        }
+      }
+    }
+    return noValidDuration;
   }
 
   public long endStopWatch(String callId, String metric) {

@@ -13,4 +13,13 @@ export TOMCAT_http_port=8080
 #        -storepass changeit -noprompt \
 #        -file /test/server.pem
 #fi
+if (echo >/dev/tcp/localhost/8080) &>/dev/null
+then
+  echo "Tomcat is listening on 8080 already! Trying to listen on 8081"
+  export TOMCAT_http_port=8081
+elif (echo >/dev/tcp/localhost/8081) &>/dev/null
+then
+  echo "Tomcat is listening on 8081 already! Trying to listen on 8080"
+  export TOMCAT_http_port=8080
+fi
 echo "DONE env.sh"

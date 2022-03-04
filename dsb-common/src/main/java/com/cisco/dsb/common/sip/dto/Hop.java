@@ -5,6 +5,8 @@ import com.cisco.dsb.common.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Hop {
   @Getter private String hostname;
@@ -45,33 +47,29 @@ public class Hop {
     if (obj == this) {
       return true;
     }
-
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
+    if (obj instanceof Hop) {
+      Hop that = (Hop) obj;
+      return new EqualsBuilder()
+          .append(
+              hostname != null ? hostname.toLowerCase() : null,
+              that.hostname != null ? that.hostname.toLowerCase() : null)
+          .append(host, that.host)
+          .append(transport, that.transport)
+          .append(port, that.port)
+          .append(source, that.source)
+          .isEquals();
     }
-
-    Hop that = (Hop) obj;
-    return com.google.common.base.Objects.equal(
-            hostname != null ? hostname.toLowerCase() : null,
-            that.hostname != null ? that.hostname.toLowerCase() : null)
-        && com.google.common.base.Objects.equal(host, that.host)
-        && com.google.common.base.Objects.equal(transport, that.transport)
-        && com.google.common.base.Objects.equal(port, that.port)
-        && com.google.common.base.Objects.equal(priority, that.priority)
-        && com.google.common.base.Objects.equal(weight, that.weight)
-        && com.google.common.base.Objects.equal(source, that.source);
+    return false;
   }
 
   @Override
   public int hashCode() {
-    // Guava has hash, but it's deprecated, recommends use java.util instead.
-    return java.util.Objects.hash(
-        hostname != null ? hostname.toLowerCase() : null,
-        host,
-        transport,
-        port,
-        priority,
-        weight,
-        source);
+    return new HashCodeBuilder()
+        .append(hostname != null ? hostname.toLowerCase() : null)
+        .append(host)
+        .append(transport)
+        .append(port)
+        .append(source)
+        .toHashCode();
   }
 }

@@ -105,16 +105,6 @@
             <version>2.1.1</version>
         </dependency>
         <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bc-fips</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.3</version>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20090211</version>
@@ -173,6 +163,12 @@
             <artifactId>ci-client</artifactId>
             <version>3.2.4</version>
         </dependency>
+        <dependency>
+            <groupId>nl.jqno.equalsverifier</groupId>
+            <artifactId>equalsverifier</artifactId>
+            <version>3.9</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <testResources>
@@ -211,6 +207,7 @@
                 -->
                 <groupId>com.nickwongdev</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.12.6</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.aspectj</groupId>
@@ -224,9 +221,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <complianceLevel>${maven.compiler.target}</complianceLevel>
-                    <source>${maven.compiler.target}</source>
-                    <target>${maven.compiler.target}</target>
+
                     <showWeaveInfo>true</showWeaveInfo>
                     <verbose>true</verbose>
                     <Xlint>ignore</Xlint>

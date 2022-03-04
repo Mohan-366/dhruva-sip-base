@@ -3,6 +3,7 @@ package com.cisco.dsb.common.dto;
 import com.cisco.wx2.dto.ErrorList;
 import java.util.HashSet;
 import javax.sip.InvalidArgumentException;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -68,12 +69,8 @@ public class TrustedSipSourcesTest {
     trustedSipSources.add("127.apple.0.1");
   }
 
-  @Test(description = "no trusted sip sources provided as input, uses default empty set")
-  public void validateEmptySourcesInput() {
-    TrustedSipSources sipSource1 = new TrustedSipSources();
-    TrustedSipSources sipSource2 = new TrustedSipSources();
-    sipSource2.setTrustedSipSources(null);
-    Assert.assertTrue(sipSource1.equals(sipSource2));
-    Assert.assertFalse(sipSource1.equals(new HashSet<>()));
+  @Test
+  public void validateEquals() {
+    EqualsVerifier.simple().forClass(TrustedSipSources.class).verify();
   }
 }

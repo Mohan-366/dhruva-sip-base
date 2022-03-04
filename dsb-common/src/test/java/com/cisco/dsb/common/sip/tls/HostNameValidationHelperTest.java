@@ -3,6 +3,7 @@ package com.cisco.dsb.common.sip.tls;
 import io.netty.handler.ssl.util.LazyX509Certificate;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -53,5 +54,10 @@ public class HostNameValidationHelperTest {
         HostNameValidationHelper.toString(new LazyX509Certificate("AAAAAAAA".getBytes("UTF-8"))));
     Assert.assertEquals(
         "Subject: null, Common Names and SANs: null", HostNameValidationHelper.toString(null));
+  }
+
+  @Test
+  public void testEqualsAndHashCodeOfCertificateInfo() {
+    EqualsVerifier.simple().forClass(CertificateInfo.class).verify();
   }
 }

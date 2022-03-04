@@ -227,7 +227,7 @@ public class ProxyService {
         .name("proxyRequest")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
         .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
-        .mapNotNull(sipProxyManager.getProxyController(this.proxyAppConfig))
+        .flatMap(sipProxyManager.getProxyController(this.proxyAppConfig))
         .mapNotNull(sipProxyManager.validateRequest())
         .mapNotNull(sipProxyManager.proxyAppController(this.proxyAppConfig.isMidDialog()));
   }
@@ -235,7 +235,7 @@ public class ProxyService {
   private BiConsumer<Throwable, Object> requestErrorHandler() {
     return (err, o) -> {
       try {
-        logger.error("Exception while processing request");
+        logger.error("Exception while processing request  " , err);
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;

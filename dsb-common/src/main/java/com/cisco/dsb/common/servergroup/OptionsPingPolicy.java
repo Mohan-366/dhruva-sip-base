@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @Getter
 @Setter
@@ -25,16 +26,16 @@ public class OptionsPingPolicy {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof OptionsPingPolicy) {
       OptionsPingPolicy b = ((OptionsPingPolicy) a);
-      return new EqualsBuilder()
-          .append(name, b.name)
-          .append(failoverResponseCodes, b.failoverResponseCodes)
-          .append(upTimeInterval, b.upTimeInterval)
-          .append(downTimeInterval, b.downTimeInterval)
-          .append(pingTimeOut, b.pingTimeOut)
-          .isEquals();
+      return new EqualsBuilder().append(name, b.name).isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(name).toHashCode();
   }
 }

@@ -8,6 +8,7 @@ import gov.nist.javax.sip.stack.ClientAuthType;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -75,5 +76,10 @@ public class SipListenPointTest {
   public void getListenPointsFromInvalidJSON() throws JsonProcessingException {
     String json = "{ \"name\": \"invalidJson\", ip\": \"1.1.1.3\", \"port\": 5063 }";
     SipListenPoint slp = new ObjectMapper().readerFor(SampleListenPoint.class).readValue(json);
+  }
+
+  @Test
+  public void testEqualsAndHashCode() {
+    EqualsVerifier.simple().forClass(SipListenPoint.class).verify();
   }
 }
