@@ -99,4 +99,25 @@ public class LMAUtil {
             ? Event.EventSubType.TLSCONNECTION
             : Event.EventSubType.TCPCONNECTION;
   }
+
+  /*
+  @NotNull
+  static HashMap<String, String> buildConnectionInfoMap(
+          boolean serverMode, InetSocketAddress localAddress, InetSocketAddress remoteAddress) {
+    HashMap<String, String> connectionMap =
+            Maps.newHashMap(
+                    ImmutableMap.of(
+                            Event.LOCALIP,
+                            localAddress.getAddress().getHostAddress(),
+                            Event.LOCALPORT,
+                            String.valueOf(localAddress.getPort()),
+                            Event.REMOTEIP,
+                            remoteAddress.getAddress().getHostAddress(),
+                            Event.REMOTEPORT,
+                            String.valueOf((remoteAddress.getPort())),
+                            Event.DIRECTION,
+                            serverMode ? "IN" : "OUT"));
+    return connectionMap;
+  }*/
+
 }

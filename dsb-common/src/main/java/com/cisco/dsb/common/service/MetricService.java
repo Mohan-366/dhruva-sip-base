@@ -251,10 +251,9 @@ public class MetricService {
     connectionMetric.tag("transport", transport);
     connectionMetric.field("localAddress", localAddress);
     connectionMetric.field("localPort", localPort);
-    if(StringUtils.equalsIgnoreCase(OUT.toString(),direction)){
+    if (StringUtils.equalsIgnoreCase(OUT.toString(), direction)) {
       connectionMetric.field("localPortStr", "Ephemeral port");
-    }
-    else{
+    } else {
       connectionMetric.field("localPortStr", String.valueOf(localPort));
     }
     connectionMetric.field("remoteAddress", remoteAddress);

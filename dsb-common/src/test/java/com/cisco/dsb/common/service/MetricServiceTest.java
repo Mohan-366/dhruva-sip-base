@@ -5,11 +5,11 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
-import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.metric.SipMetricsContext;
-import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.sip.jain.channelCache.ConnectionMetricRunnable;
+import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
 import com.cisco.dsb.common.transport.Connection;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
@@ -18,13 +18,13 @@ import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.metrics.InfluxPoint;
 import com.google.common.cache.Cache;
+import gov.nist.core.Host;
+import gov.nist.core.HostPort;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.mockito.*;
@@ -225,7 +225,6 @@ public class MetricServiceTest {
       String connectionState) {
 
     ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
-
 
     when(mockedChannel.getHost()).thenReturn(localAddress);
     when(mockedChannel.getPort()).thenReturn(localPort);
@@ -436,17 +435,13 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedFields.containsKey("localAddress"));
     Assert.assertEquals(capturedFields.get("localAddress"), localAddress);
     Assert.assertTrue(capturedFields.containsKey("localPort"));
-    Assert.assertEquals(capturedFields.get("localPort"), String.valueOf(localPort));
+    Assert.assertEquals(capturedFields.get("localPort"), localPort);
     Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
     Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedFields.containsKey("remotePort"));
     Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
     Assert.assertTrue(capturedFields.containsKey("errorMessage"));
     Assert.assertEquals(capturedFields.get("errorMessage"), errorMessage);
-    Assert.assertTrue(capturedFields.containsKey("viaAddress"));
-    Assert.assertEquals(capturedFields.get("viaAddress"), viaAddress);
-    Assert.assertTrue(capturedFields.containsKey("viaPort"));
-    Assert.assertEquals(capturedFields.get("viaPort"), viaPort);
   }
 
   public void sendDnsMetricTest() {

@@ -49,7 +49,7 @@ public class ConnectionAspect {
 
     if (metricServiceBean != null) {
       metricServiceBean.emitConnectionErrorMetric(
-          messageChannel, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+          messageChannel, isClient, ex.getClass().getSimpleName() + ": " + ex.getMessage());
     }
 
     if (ex instanceof SSLHandshakeException) {
