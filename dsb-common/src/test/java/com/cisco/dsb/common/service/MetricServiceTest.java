@@ -416,7 +416,7 @@ public class MetricServiceTest {
     when(mockedChannel.getTransport()).thenReturn(transport);
     when(mockedChannel.getPeerProtocol()).thenReturn(transport);
 
-    metricService.emitConnectionErrorMetric(mockedChannel, errorMessage);
+    metricService.emitConnectionErrorMetric(mockedChannel, false, errorMessage);
     verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
 
     Metric capturedMetric = metricArgumentCaptor.getValue();
@@ -435,7 +435,7 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedFields.containsKey("localAddress"));
     Assert.assertEquals(capturedFields.get("localAddress"), localAddress);
     Assert.assertTrue(capturedFields.containsKey("localPort"));
-    Assert.assertEquals(capturedFields.get("localPort"), localPort);
+    Assert.assertEquals(capturedFields.get("localPort"), String.valueOf(localPort));
     Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
     Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
     Assert.assertTrue(capturedFields.containsKey("remotePort"));

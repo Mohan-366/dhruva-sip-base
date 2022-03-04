@@ -34,6 +34,7 @@ import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +91,11 @@ public class MetricService {
   }
 
   @PostConstruct
-  public void postBeanInitialization() {}
+  public void postBeanInitialization() {
+    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
+    // initializing metric for connection info for udp transports 30sec window
+    this.emitConnectionInfoMetricPerInterval(30, TimeUnit.SECONDS);
+  }
 
   public void registerPeriodicMetric(
       String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
@@ -244,10 +249,14 @@ public class MetricService {
 
     connectionMetric.tag("direction", direction);
     connectionMetric.tag("transport", transport);
-    // connectionMetric.field("viaAddress", viaAddress);
-    // connectionMetric.field("viaPort", viaPort);
     connectionMetric.field("localAddress", localAddress);
     connectionMetric.field("localPort", localPort);
+    if(StringUtils.equalsIgnoreCase(OUT.toString(),direction)){
+      connectionMetric.field("localPortStr", "Ephemeral port");
+    }
+    else{
+      connectionMetric.field("localPortStr", String.valueOf(localPort));
+    }
     connectionMetric.field("remoteAddress", remoteAddress);
     connectionMetric.field("remotePort", remotePort);
     connectionMetric.field("id", id);
@@ -255,7 +264,8 @@ public class MetricService {
     return connectionMetric;
   }
 
-  public void emitConnectionErrorMetric(MessageChannel channel, String exceptionMessage) {
+  public void emitConnectionErrorMetric(
+      MessageChannel channel, boolean isClient, String exceptionMessage) {
     try {
       if (channel == null) {
         return;
@@ -264,6 +274,7 @@ public class MetricService {
       // String id = SipUtils.getConnectionId(direction, channel.getTransport(), channel);
       String localAddress = channel.getHost();
       int localPort = channel.getPort();
+      String localPortStr = String.valueOf(localPort);
 
       String remoteAddress = channel.getPeerAddress();
       int remotePort = channel.getPeerPort();
@@ -275,6 +286,12 @@ public class MetricService {
       connectionMetric.tag("transport", transport);
       connectionMetric.field("localAddress", localAddress);
       connectionMetric.field("localPort", localPort);
+
+      if (isClient) {
+        connectionMetric.field("localPortStr", "Ephemeral port");
+      } else {
+        connectionMetric.field("localPortStr", localPortStr);
+      }
       connectionMetric.field("remoteAddress", remoteAddress);
       connectionMetric.field("remotePort", remotePort);
       connectionMetric.field("errorMessage", exceptionMessage);
