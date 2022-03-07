@@ -3,7 +3,6 @@ package com.cisco.dhruva.util;
 import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
 
 import com.cisco.dhruva.util.TestInput.UasConfig;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +48,7 @@ public class UAS implements UA, Runnable {
                 try {
                   FT_LOGGER.info("UAS: Next message: {}", message);
                   SipStackUtil.actOnMessage(message, callA, stackIp, false, null, this);
-                } catch (ParseException e) {
+                } catch (Exception e) {
                   e.printStackTrace();
                 }
               });

@@ -4,7 +4,6 @@ import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
 
 import com.cisco.dhruva.util.TestInput.NicIpPort;
 import com.cisco.dhruva.util.TestInput.UacConfig;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +50,7 @@ public class UAC implements UA, Runnable {
                 FT_LOGGER.info("UAC: Next message: {}", message);
                 SipStackUtil.actOnMessage(
                     message, callUac, stackIp, true, this.proxyCommunication, this);
-              } catch (ParseException e) {
+              } catch (Exception e) {
                 e.printStackTrace();
               }
             });
