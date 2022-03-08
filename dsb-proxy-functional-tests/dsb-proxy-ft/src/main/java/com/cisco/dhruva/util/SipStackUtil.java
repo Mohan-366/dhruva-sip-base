@@ -35,7 +35,37 @@ public class SipStackUtil {
   private static SipTransaction serverMidCallINVITETransaction;
   private static SipTransaction clientMidCallCancelTransaction;
   private static SipTransaction serverMidCallCancelTransaction;
+  private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
+  private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
   private static final int TIMEOUT = 1000;
+
+  static {
+    CustomConsumer<SipCall, Message, UA> consumerSendInvite = SipStackUtil::sendInvite;
+    CustomConsumer<SipCall, Message, UA> consumerSendAck = SipStackUtil::sendAck;
+    CustomConsumer<SipCall, Message, UA> consumerSendResponse = SipStackUtil::sendResponse;
+    CustomConsumer<SipCall, Message, UA> consumerSendReInvite = SipStackUtil::sendReInvite;
+    CustomConsumer<SipCall, Message, UA> consumerSendCancel = SipStackUtil::sendCancel;
+    CustomConsumer<SipCall, Message, UA> consumerSendBye = SipStackUtil::sendBye;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForInvite = SipStackUtil::waitForInvite;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForAck = SipStackUtil::waitForAck;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForBye = SipStackUtil::waitForBye;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForReInvite = SipStackUtil::waitForReInvite;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForResponse = SipStackUtil::waitForResponse;
+    CustomConsumer<SipCall, Message, UA> consumerWaitForCancel = SipStackUtil::waitForCancel;
+    consumerMapSend.put("INVITE", consumerSendInvite);
+    consumerMapSend.put("ACK", consumerSendAck);
+    consumerMapSend.put("CANCEL", consumerSendCancel);
+    consumerMapSend.put("BYE", consumerSendBye);
+    consumerMapSend.put("RE-INVITE", consumerSendReInvite);
+    consumerMapSend.put("RESPONSE", consumerSendResponse);
+
+    consumerMapReceive.put("INVITE", consumerWaitForInvite);
+    consumerMapReceive.put("ACK", consumerWaitForAck);
+    consumerMapReceive.put("CANCEL", consumerWaitForCancel);
+    consumerMapReceive.put("BYE", consumerWaitForBye);
+    consumerMapReceive.put("RE-INVITE", consumerWaitForReInvite);
+    consumerMapReceive.put("RESPONSE", consumerWaitForResponse);
+  }
 
   public static SipStack getSipStackUAC(String ip, int port, Transport transport) throws Exception {
     return getSipStack(true, ip, port, transport);
@@ -43,6 +73,22 @@ public class SipStackUtil {
 
   public static SipStack getSipStackUAS(String ip, int port, Transport transport) throws Exception {
     return getSipStack(false, ip, port, transport);
+  }
+
+  public static void actOnMessage(Message message, SipCall call, UA ua) throws ParseException {
+    if (message.getDirection() == Direction.sends) {
+      if (message.getType().equals(Type.request)) {
+        consumerMapSend.get(message.getName().toUpperCase()).consume(call, message, ua);
+      } else {
+        consumerMapSend.get("RESPONSE").consume(call, message, ua);
+      }
+    } else {
+      if (message.getType().equals(Type.request)) {
+        consumerMapReceive.get(message.getName().toUpperCase()).consume(call, message, ua);
+      } else {
+        consumerMapReceive.get("RESPONSE").consume(call, message, ua);
+      }
+    }
   }
 
   private static SipStack getSipStack(boolean isUac, String ip, int port, Transport transport)
@@ -57,49 +103,6 @@ public class SipStackUtil {
     SipStack sipStackNew = new SipStack(transport.name(), port, properties);
     sipStack.put(key, sipStackNew);
     return sipStackNew;
-  }
-
-  public static void actOnMessage(
-      Message message,
-      SipCall call,
-      String stackIp,
-      boolean isUac,
-      NicIpPort proxyCommunication,
-      UA ua)
-      throws ParseException {
-    if (message.getDirection() == Direction.sends) {
-      if (message.getType().equals(Type.request)) {
-        if (message.getName().equalsIgnoreCase("INVITE")) {
-          sendInvite(message, call, stackIp, isUac, proxyCommunication);
-        } else if (message.getName().equalsIgnoreCase("ACK")) {
-          sendAck(call, message);
-        } else if (message.getName().equalsIgnoreCase("BYE")) {
-          sendBye(call);
-        } else if (message.getName().equalsIgnoreCase("Re-INVITE")) {
-          sendReInvite(call);
-        } else if (message.getName().equalsIgnoreCase("CANCEL")) {
-          sendCancel(call);
-        }
-      } else { // message is a response
-        sendResponse(message, call);
-      }
-    } else { // direction is receives
-      if (message.getType().equals(Type.request)) {
-        if (message.getName().equalsIgnoreCase("INVITE")) {
-          waitForInvite(message, call, ua);
-        } else if (message.getName().equalsIgnoreCase("ACK")) {
-          waitForAck(message, call, ua);
-        } else if (message.getName().equalsIgnoreCase("BYE")) {
-          waitForBye(message, call, ua);
-        } else if (message.getName().equalsIgnoreCase("Re-INVITE")) {
-          waitForReInvite(message, call, ua);
-        } else if (message.getName().equalsIgnoreCase("CANCEL")) {
-          waitForCancel(message, call, ua);
-        }
-      } else {
-        waitForResponse(message, call, ua);
-      }
-    }
   }
 
   private static Properties getProperties(boolean isUac, String ip) {
@@ -120,84 +123,70 @@ public class SipStackUtil {
     return properties;
   }
 
-  private static void sendInvite(
-      Message message, SipCall call, String stackIp, boolean isUac, NicIpPort proxyCommunication) {
-    String ruri = message.parameters.getRequestParameters().getHeaderAdditions().get("requestUri");
-    if (ruri == null) {
-      ruri = "sip:" + (isUac ? "uas@" : "uac@") + stackIp + ":" + "5061";
+  private static void sendInvite(SipCall call, Message message, UA ua) {
+    String stackIp;
+    if (ua instanceof UAC) {
+      stackIp = ((UAC) ua).getSipStack().getSipProvider().getListeningPoints()[0].getIPAddress();
+    } else {
+      Assert.fail("Only UAC sends INVITE");
+      return;
     }
+
+    String ruri =
+        message.getParameters().getRequestParameters().getHeaderAdditions().get("requestUri");
+    if (ruri == null) { // using default
+      ruri = "sip:uas@" + stackIp + ":" + "5061";
+    }
+    NicIpPort proxyCommunication = ((UAC) ua).getProxyCommunication();
     if (proxyCommunication == null) {
-      FT_LOGGER.error(
-          "proxy communication is null.If, UAC please add clientCommunicationInfo in config. If UAS, you mustn't be here!");
+      FT_LOGGER.error("proxy communication is null. Please add clientCommunicationInfo in config.");
     } else {
       if (!call.initiateOutgoingCall(
           ruri,
           proxyCommunication.getIp() + ":" + proxyCommunication.getPort() + ";lr/" + Token.TCP)) {
         FT_LOGGER.error("Unable to initiate a call. Ending test.");
-      } else {
-        FT_LOGGER.info("Sending INVITE message: ");
       }
     }
   }
 
-  private static void sendAck(SipCall call, Message message) {
+  private static void sendAck(SipCall call, Message message, UA ua) {
     if ((message.getForRequest() != null)
         && message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
-      FT_LOGGER.info("Sending ACK message for Re-INVITE: ");
-      while (true) {
-        if (call.getLastReceivedResponse().getStatusCode() >= 200) {
-          call.sendReinviteOkAck(clientMidCallINVITETransaction);
-          break;
-        } else {
-          FT_LOGGER.info("Waiting for mid call response before sending ACK");
-        }
+      if (!call.sendReinviteOkAck(clientMidCallINVITETransaction)) {
+        FT_LOGGER.error("Error sending ACK for Re-INVITE");
+        Assert.fail();
       }
     } else {
-      FT_LOGGER.info("Sending ACK for fresh INVITE");
-      while (true) {
-        if (call.getLastReceivedResponse() != null
-            && (call.getLastReceivedResponse().getStatusCode() >= 200)) {
-          if (!call.sendInviteOkAck()) {
-            FT_LOGGER.error("Unable to send ACK for INVITE");
-            Assert.fail();
-          }
-          break;
-        }
+      if (!call.sendInviteOkAck()) {
+        FT_LOGGER.error("Error sending ACK for INVITE");
+        Assert.fail();
       }
     }
   }
 
-  private static void sendBye(SipCall call) {
-    FT_LOGGER.info("Sending BYE");
+  private static void sendBye(SipCall call, Message message, UA ua) {
     if (!call.disconnect()) {
-      FT_LOGGER.error("unable to disconnect the call: {}", call.getErrorMessage());
+      FT_LOGGER.error("Error while disconnecting the call");
       Assert.fail();
     }
   }
 
-  private static void sendReInvite(SipCall call) {
-    FT_LOGGER.info("Sending Re-INVITE");
-    clientMidCallINVITETransaction = call.sendReinvite(null, null, (String) null, null, null);
-  }
-
-  private static void sendCancel(SipCall call) {
-    while (true) {
-      if (call.getLastReceivedResponse() != null
-          && call.getLastReceivedResponse().getStatusCode() == Response.RINGING) {
-        break;
-      } else {
-        FT_LOGGER.info("Still waiting for 180 before sending cancel");
-      }
-    }
-    if ((clientMidCallCancelTransaction = call.sendCancel()) != null) {
-      FT_LOGGER.info("Sending Cancel");
-    } else {
-      FT_LOGGER.error("Error Sending Cancel: {}", call.getErrorMessage());
+  private static void sendReInvite(SipCall call, Message message, UA ua) {
+    if ((clientMidCallINVITETransaction = call.sendReinvite(null, null, (String) null, null, null))
+        == null) {
+      FT_LOGGER.error("Error sending Re-INVITE");
       Assert.fail();
     }
   }
 
-  private static void sendResponse(Message message, SipCall call) throws ParseException {
+  private static void sendCancel(SipCall call, Message message, UA ua) {
+    if ((clientMidCallCancelTransaction = call.sendCancel()) == null) {
+      FT_LOGGER.error("Error Sending Cancel");
+      Assert.fail();
+    }
+  }
+
+  private static void sendResponse(SipCall call, Message message, UA ua) throws ParseException {
     String reasonPhrase = message.getParameters().getResponseParameters().getReasonPhrase();
     String forRequest = message.getForRequest();
     String responseCode = message.getParameters().getResponseParameters().getResponseCode();
@@ -256,82 +245,67 @@ public class SipStackUtil {
     }
   }
 
-  private static void waitForInvite(Message message, SipCall call, UA ua) {
+  private static void waitForInvite(SipCall call, Message message, UA ua) {
     if (message.getName().equalsIgnoreCase("INVITE")) {
-      while (true) {
-        if (call.waitForIncomingCall(TIMEOUT)) {
-          assertTrue(call.getLastReceivedRequest().isInvite());
-          ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-          FT_LOGGER.info("Received INVITE request");
-          break;
-        } else {
-          FT_LOGGER.info("Waiting for INVITE");
-        }
+      if (call.waitForIncomingCall(TIMEOUT)) {
+        assertTrue(call.getLastReceivedRequest().isInvite());
+        ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
+      } else {
+        FT_LOGGER.error("Error: INVITE not received");
+        Assert.fail();
       }
     }
   }
 
-  private static void waitForAck(Message message, SipCall call, UA ua) {
+  private static void waitForAck(SipCall call, Message message, UA ua) {
     call.listenForAck();
-    while (true) {
-      if (call.waitForAck(TIMEOUT)) {
-        assertTrue(call.getLastReceivedRequest().isAck());
-        FT_LOGGER.info("Received message: {}", call.getLastReceivedRequest());
-        ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-        break;
-      } else {
-        FT_LOGGER.info("Waiting for ACK");
-      }
+    if (call.waitForAck(TIMEOUT)) {
+      assertTrue(call.getLastReceivedRequest().isAck());
+      FT_LOGGER.info("Received message: {}", call.getLastReceivedRequest());
+      ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
+
+    } else {
+      FT_LOGGER.error("Error: ACK not received");
+      Assert.fail();
     }
   }
 
-  private static void waitForBye(Message message, SipCall call, UA ua) {
+  private static void waitForBye(SipCall call, Message message, UA ua) {
     if (call.listenForDisconnect()) {
-      while (true) {
-        if (call.waitForDisconnect(TIMEOUT)) {
-          assertTrue(call.getLastReceivedRequest().isBye());
-          FT_LOGGER.info("Received message: {}", call.getLastReceivedRequest());
-          ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-          break;
-        } else {
-          FT_LOGGER.info("Waiting for BYE");
-        }
+      if (call.waitForDisconnect(TIMEOUT)) {
+        assertTrue(call.getLastReceivedRequest().isBye());
+        ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
+      } else {
+        FT_LOGGER.error("Error: BYE not received");
+        Assert.fail();
       }
     }
   }
 
-  private static void waitForReInvite(Message message, SipCall call, UA ua) {
+  private static void waitForReInvite(SipCall call, Message message, UA ua) {
     call.listenForReinvite();
-    while (true) {
-      serverMidCallINVITETransaction = call.waitForReinvite(TIMEOUT);
-      if (serverMidCallINVITETransaction != null) {
-        FT_LOGGER.info("Received Re-INVITE");
-        ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-        break;
-      } else {
-        FT_LOGGER.warn("Waiting for Re-INVITE");
-      }
+    serverMidCallINVITETransaction = call.waitForReinvite(TIMEOUT);
+    if (serverMidCallINVITETransaction != null) {
+      ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
+    } else {
+      FT_LOGGER.error("Error: Re-INVITE not received");
+      Assert.fail();
     }
   }
 
-  private static void waitForCancel(Message message, SipCall call, UA ua) {
-    if (call.listenForCancel()) {
-      FT_LOGGER.info("Listening for cancel");
-    }
-    while (true) {
-      FT_LOGGER.info("Waiting for cancel");
-      serverMidCallCancelTransaction = call.waitForCancel(TIMEOUT);
-      if (serverMidCallCancelTransaction != null) {
-        FT_LOGGER.info("Received Cancel");
-        ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
-        break;
-      } else {
-        FT_LOGGER.warn("Waiting for Cancel");
-      }
+  private static void waitForCancel(SipCall call, Message message, UA ua) {
+    call.listenForCancel();
+
+    serverMidCallCancelTransaction = call.waitForCancel(TIMEOUT);
+    if (serverMidCallCancelTransaction != null) {
+      ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
+    } else {
+      FT_LOGGER.error("Error: Cancel not received");
+      Assert.fail();
     }
   }
 
-  private static void waitForResponse(Message message, SipCall call, UA ua) {
+  private static void waitForResponse(SipCall call, Message message, UA ua) {
     Integer expectedResponse = (Integer) message.getValidation().get("responseCode");
     if (message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
       while (true) {

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipPhone;
@@ -16,8 +17,8 @@ import org.cafesip.sipunit.SipStack;
 public class UAC implements UA, Runnable {
 
   private UacConfig uacConfig;
-  private SipStack sipStack;
-  private NicIpPort proxyCommunication;
+  @Getter private SipStack sipStack;
+  @Getter private NicIpPort proxyCommunication;
   private CountDownLatch completionLatch;
   private List<TestMessage> testMessages = new ArrayList<>();
 
@@ -48,8 +49,7 @@ public class UAC implements UA, Runnable {
             message -> {
               try {
                 FT_LOGGER.info("UAC: Next message: {}", message);
-                SipStackUtil.actOnMessage(
-                    message, callUac, stackIp, true, this.proxyCommunication, this);
+                SipStackUtil.actOnMessage(message, callUac, this);
               } catch (Exception e) {
                 e.printStackTrace();
               }

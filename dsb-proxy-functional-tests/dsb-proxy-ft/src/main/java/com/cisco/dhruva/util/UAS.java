@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipPhone;
@@ -14,7 +15,8 @@ import org.cafesip.sipunit.SipStack;
 
 public class UAS implements UA, Runnable {
   private UasConfig uasConfig;
-  private SipStack sipStack;
+
+  @Getter private SipStack sipStack;
   private CountDownLatch completionLatch;
   private List<TestMessage> testMessages = new ArrayList<>();
 
@@ -47,7 +49,7 @@ public class UAS implements UA, Runnable {
               message -> {
                 try {
                   FT_LOGGER.info("UAS: Next message: {}", message);
-                  SipStackUtil.actOnMessage(message, callA, stackIp, false, null, this);
+                  SipStackUtil.actOnMessage(message, callA, this);
                 } catch (Exception e) {
                   e.printStackTrace();
                 }
