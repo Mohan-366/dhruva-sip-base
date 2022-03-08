@@ -69,52 +69,6 @@ public class MetricServiceV2Test {
 
     Assert.assertTrue(capturedMetricSet.size() > 9);
   }
-  // ankabane
-  /*
-    @Test(description = "Test to check udp connection metric emission")
-    public void testUdpConnectionMetric(){
-      Map<String, ConnectionInfo> connectionInfoMap = new ConcurrentHashMap<>() ;
-      String transport = "UDP" ;
-
-      DsbUdpMessageChannel mockedUdpChannelForInbound1 = mock(DsbUdpMessageChannel.class);
-
-      when(mockedUdpChannelForInbound1.getHost()).thenReturn("127.0.0.1");
-      when(mockedUdpChannelForInbound1.getPort()).thenReturn(5060);
-      when(mockedUdpChannelForInbound1.getPeerAddress()).thenReturn("127.0.0.1");
-      when(mockedUdpChannelForInbound1.getPeerPort()).thenReturn(5085);
-      when(mockedUdpChannelForInbound1.getTransport()).thenReturn(transport);
-      when(mockedUdpChannelForInbound1.getPeerProtocol()).thenReturn(transport);
-
-      ConnectionInfo inboundUdpConnection1 = ConnectionInfo.builder()
-              .connectionState(Connection.STATE.CONNECTED.toString())
-              .transport("UDP")
-              .messageChannel(mockedUdpChannelForInbound1)
-              .direction(Event.DIRECTION.IN.toString())
-              .build();
-
-
-      DsbUdpMessageChannel mockedUdpChannelForInbound2 = mock(DsbUdpMessageChannel.class);
-
-      when(mockedUdpChannelForInbound2.getHost()).thenReturn("127.0.0.1");
-      when(mockedUdpChannelForInbound2.getPort()).thenReturn(5070);
-      when(mockedUdpChannelForInbound2.getPeerAddress()).thenReturn("127.0.0.1");
-      when(mockedUdpChannelForInbound2.getPeerPort()).thenReturn(5085);
-      when(mockedUdpChannelForInbound2.getTransport()).thenReturn(transport);
-      when(mockedUdpChannelForInbound2.getPeerProtocol()).thenReturn(transport);
-
-      ConnectionInfo inboundUdpConnection2 = ConnectionInfo.builder()
-              .connectionState(Connection.STATE.CONNECTED.toString())
-              .transport("UDP")
-              .messageChannel(mockedUdpChannelForInbound2)
-              .direction(Event.DIRECTION.IN.toString())
-              .build();
-
-
-      // add the message channels --
-      metricService.getConnectionInfoMap();
-
-    }
-  */
   @Test(description = "Test to check supplier emitting metric set with cps counter information")
   public void testCpsMetricSupplier() {
     Map<String, AtomicInteger> cpsCounterMapTest = new HashMap<>();

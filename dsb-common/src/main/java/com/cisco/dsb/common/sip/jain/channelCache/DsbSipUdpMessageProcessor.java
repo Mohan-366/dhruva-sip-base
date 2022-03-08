@@ -137,10 +137,7 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
         // This socket timeout allows us to ping the thread auditor periodically
       } catch (SocketException ex) {
         if (!isRunning) {
-          /*          if (logger.isLoggingEnabled(LogWriter.TRACE_DEBUG)) {
-            logger.logDebug("UDPMessageProcessor: Stopping");
-          }*/
-
+          logger.debug("UDPMessageProcessor: Stopping");
           return;
         } else {
           reportSockeException(ex); // report exception but try to continue to receive data ...
@@ -154,6 +151,6 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
   }
 
   private void reportSockeException(Exception e) {
-    logger.warn("Currently stub but recived exception in DsbUdpMessageChannel");
+    logger.warn("Exception caught while receiving data via UdpMessageChannel at localAddress:{}, localport: {}, error:{}", String.valueOf(sock.getLocalAddress()), sock.getLocalPort(), e.getMessage());
   }
 }

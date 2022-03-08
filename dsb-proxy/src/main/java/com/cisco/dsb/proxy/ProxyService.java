@@ -77,7 +77,7 @@ public class ProxyService {
   @Nullable @Autowired KeyManager keyManager;
 
   public static final int CPS_METRIC_INTERVAL = 1;
-  public static final int UDP_CONNECTIONE_METRIC_INTERVAL = 30;
+  public static final int UDP_CONNECTION_METRIC_INTERVAL = 30;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
@@ -170,7 +170,7 @@ public class ProxyService {
     metricService.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);
     // initializing metric for connection info for udp transports 30sec window
     metricService.emitConnectionInfoMetricPerInterval(
-        UDP_CONNECTIONE_METRIC_INTERVAL, TimeUnit.SECONDS);
+        UDP_CONNECTION_METRIC_INTERVAL, TimeUnit.SECONDS);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
@@ -235,7 +235,7 @@ public class ProxyService {
   private BiConsumer<Throwable, Object> requestErrorHandler() {
     return (err, o) -> {
       try {
-        logger.error("Exception while processing request  " , err);
+        logger.error("Exception while processing request  ", err);
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;
