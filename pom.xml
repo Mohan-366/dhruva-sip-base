@@ -39,6 +39,7 @@
         <module>sample-app</module>
         <module>dsb-connectivity-monitor</module>
         <module>dsb-trunk-service</module>
+        <module>dsb-test-framework</module>
     </modules>
 
     <properties>
