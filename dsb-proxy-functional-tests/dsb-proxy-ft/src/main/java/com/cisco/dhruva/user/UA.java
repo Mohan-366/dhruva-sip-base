@@ -1,5 +1,6 @@
-package com.cisco.dhruva.util;
+package com.cisco.dhruva.user;
 
+import com.cisco.dhruva.util.TestMessage;
 import java.util.List;
 
 public interface UA {

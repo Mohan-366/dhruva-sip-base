@@ -1,8 +1,11 @@
-package com.cisco.dhruva.util;
+package com.cisco.dhruva.user;
 
-import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
-import com.cisco.dhruva.util.TestInput.UasConfig;
+import com.cisco.dhruva.application.MessageHandler;
+import com.cisco.dhruva.input.TestInput.UasConfig;
+import com.cisco.dhruva.util.SipStackUtil;
+import com.cisco.dhruva.util.TestMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,16 +51,15 @@ public class UAS implements UA, Runnable {
           .forEach(
               message -> {
                 try {
-                  FT_LOGGER.info("UAS: Next message: {}", message);
-                  SipStackUtil.actOnMessage(message, callA, this);
+                  TEST_LOGGER.info("UAS: Next message: {}", message);
+                  MessageHandler.actOnMessage(message, callA, this);
                 } catch (Exception e) {
                   e.printStackTrace();
                 }
               });
     }
-    //    uas.dispose();
-    FT_LOGGER.info("UAS: Latching down");
-    FT_LOGGER.info("UAS: All messages: {}", callA.getAllReceivedRequests());
+    TEST_LOGGER.info("UAS: Latching down");
+    TEST_LOGGER.info("UAS: All messages: {}", callA.getAllReceivedRequests());
     completionLatch.countDown();
     uas.dispose();
   }

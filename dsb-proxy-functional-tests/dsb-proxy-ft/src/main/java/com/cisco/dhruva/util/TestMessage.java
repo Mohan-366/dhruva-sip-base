@@ -1,6 +1,6 @@
 package com.cisco.dhruva.util;
 
-import com.cisco.dhruva.util.TestInput.Message;
+import com.cisco.dhruva.input.TestInput.Message;
 import lombok.Getter;
 import org.cafesip.sipunit.SipMessage;
 

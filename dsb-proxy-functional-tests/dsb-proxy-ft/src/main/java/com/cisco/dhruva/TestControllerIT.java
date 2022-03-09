@@ -1,9 +1,11 @@
 package com.cisco.dhruva;
 
-import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
-import com.cisco.dhruva.util.TestInput;
-import com.cisco.dhruva.util.TestInput.TestCaseConfig;
+import com.cisco.dhruva.application.TestCaseRunner;
+import com.cisco.dhruva.input.TestInput;
+import com.cisco.dhruva.input.TestInput.TestCaseConfig;
+import com.cisco.dhruva.validator.Validator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileReader;
 import java.io.IOException;
@@ -34,11 +36,11 @@ public class TestControllerIT {
     if (testCaseConfig.isSkipTest()) {
       throw new SkipException("Skipping test: " + testCaseConfig.getDescription());
     }
-    FT_LOGGER.info("Executing FT: {}" + "", testCaseConfig.getDescription());
+    TEST_LOGGER.info("Executing FT: {}" + "", testCaseConfig.getDescription());
     TestCaseRunner testCaseRunner = new TestCaseRunner(testCaseConfig);
     testCaseRunner.prepareAndRunTest();
 
-    FT_LOGGER.info("Flow validation complete. Validating headers now");
+    TEST_LOGGER.info("Flow validation complete. Validating headers now");
     Validator validator = new Validator(testCaseRunner.getUac(), testCaseRunner.getUasList());
     validator.validate();
   }
@@ -51,6 +53,6 @@ public class TestControllerIT {
     Object object = parser.parse(new FileReader(testFilePath));
     JSONObject jsonObject = (JSONObject) object;
     testCases = mapper.readValue(jsonObject.toJSONString(), TestInput.class);
-    FT_LOGGER.info("Input JSON: \n" + jsonObject.toJSONString());
+    TEST_LOGGER.info("Input JSON: \n" + jsonObject.toJSONString());
   }
 }

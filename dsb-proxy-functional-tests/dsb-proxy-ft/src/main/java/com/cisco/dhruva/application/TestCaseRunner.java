@@ -1,12 +1,12 @@
-package com.cisco.dhruva;
+package com.cisco.dhruva.application;
 
-import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
-import com.cisco.dhruva.util.TestInput.NicIpPort;
-import com.cisco.dhruva.util.TestInput.TestCaseConfig;
-import com.cisco.dhruva.util.TestInput.UasConfig;
-import com.cisco.dhruva.util.UAC;
-import com.cisco.dhruva.util.UAS;
+import com.cisco.dhruva.input.TestInput.NicIpPort;
+import com.cisco.dhruva.input.TestInput.TestCaseConfig;
+import com.cisco.dhruva.input.TestInput.UasConfig;
+import com.cisco.dhruva.user.UAC;
+import com.cisco.dhruva.user.UAS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -47,7 +47,7 @@ public class TestCaseRunner {
     ut.start();
     completionLatch.await(10, TimeUnit.SECONDS);
     if (completionLatch.getCount() != 0) {
-      FT_LOGGER.info("Some issue with the call flow. Failing the test");
+      TEST_LOGGER.info("Some issue with the call flow. Failing the test");
       Assert.fail();
     }
   }

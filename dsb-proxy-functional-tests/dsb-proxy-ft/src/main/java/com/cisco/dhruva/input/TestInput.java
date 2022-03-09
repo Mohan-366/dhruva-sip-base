@@ -1,4 +1,4 @@
-package com.cisco.dhruva.util;
+package com.cisco.dhruva.input;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

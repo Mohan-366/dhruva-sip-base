@@ -1,9 +1,12 @@
-package com.cisco.dhruva.util;
+package com.cisco.dhruva.user;
 
-import static com.cisco.dhruva.util.FTLog.FT_LOGGER;
+import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
-import com.cisco.dhruva.util.TestInput.NicIpPort;
-import com.cisco.dhruva.util.TestInput.UacConfig;
+import com.cisco.dhruva.application.MessageHandler;
+import com.cisco.dhruva.input.TestInput.NicIpPort;
+import com.cisco.dhruva.input.TestInput.UacConfig;
+import com.cisco.dhruva.util.SipStackUtil;
+import com.cisco.dhruva.util.TestMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,14 +51,14 @@ public class UAC implements UA, Runnable {
         .forEach(
             message -> {
               try {
-                FT_LOGGER.info("UAC: Next message: {}", message);
-                SipStackUtil.actOnMessage(message, callUac, this);
+                TEST_LOGGER.info("UAC: Next message: {}", message);
+                MessageHandler.actOnMessage(message, callUac, this);
               } catch (Exception e) {
                 e.printStackTrace();
               }
             });
-    FT_LOGGER.info("UAC: Latching down");
-    FT_LOGGER.info("UAC: All messages: " + callUac.getAllReceivedResponses());
+    TEST_LOGGER.info("UAC: Latching down");
+    TEST_LOGGER.info("UAC: All messages: " + callUac.getAllReceivedResponses());
     completionLatch.countDown();
     uac.dispose();
   }
