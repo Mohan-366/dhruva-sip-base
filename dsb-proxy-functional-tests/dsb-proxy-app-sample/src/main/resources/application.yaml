@@ -13,5 +13,5 @@ common:
   listen-points:
     - name: "SampleNetwork" #DO not change this name as it's embedded into sample-app
       port: 5061
-      transport: TCP
+      transport: UDP
       hostIPAddress: "127.0.0.1"

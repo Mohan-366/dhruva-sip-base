@@ -145,14 +145,15 @@ public class TestInput {
   public static class DSB {
 
     // DSB IP for client communication - Public IP
-    @Getter private NicIpPort clientCommunicationInfo;
+    @Getter private ProxyCommunication clientCommunicationInfo;
   }
 
   /** Nic - Network Interface Card */
   @ToString
-  public static class NicIpPort {
+  public static class ProxyCommunication {
 
     @Getter private String ip;
     @Getter private int port;
+    @Getter private String transport;
   }
 }

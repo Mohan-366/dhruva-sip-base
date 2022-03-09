@@ -7,19 +7,15 @@
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
-          "port": 5061
-        },
-        "serverCommunicationInfo": {
-          "ip": "127.0.0.1",
-          "port": 5067
-        },
-        "transport": "tcp"
+          "port": 5061,
+          "transport": "udp"
+        }
       },
       "uac": {
         "myUri" : "sip:uac@nist.gov",
         "ip": "127.0.0.1",
         "port": 5075,
-        "transport": "tcp",
+        "transport": "udp",
         "messages": [{
           "type": "request",
           "name": "INVITE",
@@ -36,6 +32,7 @@
             "type": "response",
             "forRequest": "INVITE",
             "direction": "receives",
+            "optional" : true,
             "validation": {
               "responseCode": 180,
               "reasonPhrase": "Ringing"
@@ -48,7 +45,7 @@
             "validation": {
               "responseCode": 200,
               "reasonPhrase": "OK",
-              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
             }
           },
           {
@@ -78,7 +75,7 @@
           "myUri": "sip:uas@nist.gov",
           "ip": "127.0.0.1",
           "port": 7000,
-          "transport": "tcp",
+          "transport": "udp",
           "elementStatus": "up",
           "messages": [{
             "description": "normal invite",
@@ -87,7 +84,7 @@
             "direction": "receives",
             "validation": {
               "requestUri": "sip:uas@127.0.0.1:7000",
-              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
             }
           },
             {
@@ -147,7 +144,7 @@
     {
       "description": "Re-invite INVITE Flow",
       "id": "2",
-      "skipTest": false,
+      "skipTest": true,
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
@@ -157,13 +154,13 @@
           "ip": "127.0.0.1",
           "port": 5067
         },
-        "transport": "tcp"
+        "transport": "udp"
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",
         "ip": "127.0.0.1",
         "port": 5075,
-        "transport": "tcp",
+        "transport": "udp",
         "messages": [
           {
             "type": "request",
@@ -181,6 +178,7 @@
             "type": "response",
             "forRequest": "INVITE",
             "direction": "receives",
+            "optional" : true,
             "validation": {
               "responseCode": 180,
               "reasonPhrase": "Ringing"
@@ -193,7 +191,7 @@
             "validation": {
               "responseCode": 200,
               "reasonPhrase": "OK",
-              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
             }
           },
           {
@@ -208,7 +206,7 @@
             "parameters": {
               "requestParameters": {
                 "headerAdditions": {
-                  "requestUri": "sip:uas@127.0.0.1:7000;transport=tcp;lr"
+                  "requestUri": "sip:uas@127.0.0.1:7000;transport=udp;lr"
                 }
               }
             }
@@ -249,7 +247,7 @@
           "myUri": "sip:uas@nist.gov",
           "ip": "127.0.0.1",
           "port": 7000,
-          "transport": "tcp",
+          "transport": "udp",
           "elementStatus": "up",
           "messages": [
             {
@@ -259,7 +257,7 @@
               "direction": "receives",
               "validation": {
                 "requestUri": "sip:uas@127.0.0.1:7000",
-                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
               }
             },
             {
@@ -298,8 +296,8 @@
               "name": "Re-INVITE",
               "direction": "receives",
               "validation": {
-                "requestUri": "sip:uas@127.0.0.1:7000;transport=tcp;lr",
-                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+                "requestUri": "sip:uas@127.0.0.1:7000;transport=udp;lr",
+                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
               }
             },
             {
@@ -356,13 +354,13 @@
           "ip": "127.0.0.1",
           "port": 5067
         },
-        "transport": "tcp"
+        "transport": "udp"
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",
         "ip": "127.0.0.1",
         "port": 5075,
-        "transport": "tcp",
+        "transport": "udp",
         "messages": [
           {
             "type": "request",
@@ -380,6 +378,7 @@
             "type": "response",
             "forRequest": "INVITE",
             "direction": "receives",
+            "optional" : true,
             "validation": {
               "responseCode": 180,
               "reasonPhrase": "Ringing"
@@ -427,7 +426,7 @@
           "myUri": "sip:uas@nist.gov",
           "ip": "127.0.0.1",
           "port": 7000,
-          "transport": "tcp",
+          "transport": "udp",
           "elementStatus": "up",
           "messages": [
             {
@@ -437,7 +436,7 @@
               "direction": "receives",
               "validation": {
                 "requestUri": "sip:callee7@SG7",
-                "record-route": "<sip:rr$n=net_me_tcp@127.0.0.1:5067;transport=tcp;lr>"
+                "record-route": "<sip:rr$n=net_me_udp@127.0.0.1:5067;transport=udp;lr>"
               }
             },
             {
@@ -459,7 +458,7 @@
               "direction": "receives",
               "validation": {
                 "requestUri": "sip:callee7@SG7",
-                "record-route": "<sip:rr$n=net_me_tcp@127.0.0.1:5067;transport=tcp;lr>"
+                "record-route": "<sip:rr$n=net_me_udp@127.0.0.1:5067;transport=udp;lr>"
               }
             },
             {
@@ -509,13 +508,13 @@
           "ip": "127.0.0.1",
           "port": 5067
         },
-        "transport": "tcp"
+        "transport": "udp"
       },
       "uac": {
         "myUri" : "sip:uac@nist.gov",
         "ip": "127.0.0.1",
         "port": 5075,
-        "transport": "tcp",
+        "transport": "udp",
         "messages": [{
           "type": "request",
           "name": "INVITE",
@@ -532,6 +531,7 @@
             "type": "response",
             "forRequest": "INVITE",
             "direction": "receives",
+            "optional" : true,
             "validation": {
               "responseCode": 180,
               "reasonPhrase": "Ringing"
@@ -544,7 +544,7 @@
             "validation": {
               "responseCode": 200,
               "reasonPhrase": "OK",
-              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
             }
           },
           {
@@ -574,7 +574,7 @@
           "myUri": "sip:uas@nist.gov",
           "ip": "127.0.0.1",
           "port": 7000,
-          "transport": "tcp",
+          "transport": "udp",
           "elementStatus": "up",
           "messages": [{
             "description": "normal invite",
@@ -583,7 +583,7 @@
             "direction": "receives",
             "validation": {
               "requestUri": "sip:uas@127.0.0.1:7000",
-              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=tcp;lr>"
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
             }
           },
             {

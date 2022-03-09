@@ -11,11 +11,10 @@ import static org.testng.Assert.assertTrue;
 
 import com.cisco.dhruva.input.TestInput.Direction;
 import com.cisco.dhruva.input.TestInput.Message;
-import com.cisco.dhruva.input.TestInput.NicIpPort;
+import com.cisco.dhruva.input.TestInput.ProxyCommunication;
 import com.cisco.dhruva.input.TestInput.Type;
 import com.cisco.dhruva.user.UA;
 import com.cisco.dhruva.user.UAC;
-import com.cisco.dhruva.util.Constants;
 import com.cisco.dhruva.util.CustomConsumer;
 import com.cisco.dhruva.util.TestMessage;
 import gov.nist.javax.sip.address.AddressFactoryImpl;
@@ -42,6 +41,7 @@ public class MessageHandler {
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
   private static final int TIMEOUT = 1000;
+  private static boolean isOptionalReceived = false;
 
   static {
     CustomConsumer<SipCall, Message, UA> consumerSendInvite = MessageHandler::sendInvite;
@@ -101,7 +101,7 @@ public class MessageHandler {
     if (ruri == null) { // using default
       ruri = "sip:uas@" + stackIp + ":" + "5061";
     }
-    NicIpPort proxyCommunication = ((UAC) ua).getProxyCommunication();
+    ProxyCommunication proxyCommunication = ((UAC) ua).getProxyCommunication();
     if (proxyCommunication == null) {
       TEST_LOGGER.error(
           "proxy communication is null. Please add clientCommunicationInfo in config.");
@@ -112,7 +112,7 @@ public class MessageHandler {
               + ":"
               + proxyCommunication.getPort()
               + ";lr/"
-              + Constants.TCP)) {
+              + proxyCommunication.getTransport())) {
         TEST_LOGGER.error("Unable to initiate a call. Ending test.");
       }
     }
@@ -193,7 +193,7 @@ public class MessageHandler {
                           .get("contact"));
       Address address = new AddressImpl();
       address.setDisplayName("uas");
-      uri.setParameter("transport", "tcp");
+      uri.setParameter("transport", "udp");
       uri.setLrParam();
       address.setURI(uri);
       contactHeader.setAddress(address);
@@ -280,7 +280,7 @@ public class MessageHandler {
   }
 
   private static void waitForResponse(SipCall call, Message message, UA ua) {
-    Integer expectedResponse = (Integer) message.getValidation().get("responseCode");
+    Integer expectedResponseCode = (Integer) message.getValidation().get("responseCode");
     if (message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
       call.listenForReinvite();
       if (call.waitReinviteResponse(clientMidCallINVITETransaction, TIMEOUT)) {
@@ -290,11 +290,11 @@ public class MessageHandler {
       }
       SipResponse lastReceivedResponse = call.getLastReceivedResponse();
       if (lastReceivedResponse != null
-          && lastReceivedResponse.getStatusCode() == expectedResponse) {
-        TEST_LOGGER.info("Received {} for Re-INVITE", expectedResponse);
+          && lastReceivedResponse.getStatusCode() == expectedResponseCode) {
+        TEST_LOGGER.info("Received {} for Re-INVITE", expectedResponseCode);
         ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
       } else {
-        TEST_LOGGER.error("Error: response {} for Re-INVITE not received", expectedResponse);
+        TEST_LOGGER.error("Error: response {} for Re-INVITE not received", expectedResponseCode);
         Assert.fail();
       }
 
@@ -302,18 +302,22 @@ public class MessageHandler {
       call.waitForCancelResponse(clientMidCallCancelTransaction, TIMEOUT);
       SipResponse lastReceivedResponse = call.getLastReceivedResponse();
       if (lastReceivedResponse != null
-          && lastReceivedResponse.getStatusCode() == expectedResponse) {
-        TEST_LOGGER.info("Received {} for Cancel", expectedResponse);
+          && lastReceivedResponse.getStatusCode() == expectedResponseCode) {
+        TEST_LOGGER.info("Received {} for Cancel", expectedResponseCode);
         ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
       } else {
-        TEST_LOGGER.warn("Waiting for {} response", expectedResponse);
+        TEST_LOGGER.warn("Waiting for {} response", expectedResponseCode);
         Assert.fail();
       }
     } else {
       while (true) {
-        call.waitOutgoingCallResponse(TIMEOUT);
+        if (isOptionalReceived) {
+          isOptionalReceived = false;
+        } else {
+          call.waitOutgoingCallResponse(TIMEOUT);
+        }
         if (call.getLastReceivedResponse() != null
-            && call.getLastReceivedResponse().getStatusCode() == expectedResponse
+            && call.getLastReceivedResponse().getStatusCode() >= expectedResponseCode
             && call.getLastReceivedResponse()
                 .getResponseEvent()
                 .getResponse()
@@ -321,12 +325,21 @@ public class MessageHandler {
                 .toString()
                 .contains(message.getForRequest())) {
           TEST_LOGGER.info(
-              "Received response: {}",
-              call.getLastReceivedResponse().getResponseEvent().getResponse());
-          ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
-          break;
+              "Received response: {} for message: {}",
+              call.getLastReceivedResponse().getResponseEvent().getResponse(),
+              message);
+          if (call.getLastReceivedResponse().getStatusCode() != expectedResponseCode) {
+            if (message.isOptional()) {
+              TEST_LOGGER.info("Ignoring response {} as it is optional", expectedResponseCode);
+              isOptionalReceived = true;
+              break;
+            }
+          } else {
+            ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
+            break;
+          }
         } else {
-          TEST_LOGGER.warn("Waiting for {} response", expectedResponse);
+          TEST_LOGGER.warn("Waiting for {} response", expectedResponseCode);
         }
       }
     }

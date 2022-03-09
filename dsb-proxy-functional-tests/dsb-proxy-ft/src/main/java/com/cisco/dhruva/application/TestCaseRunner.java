@@ -2,7 +2,7 @@ package com.cisco.dhruva.application;
 
 import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
-import com.cisco.dhruva.input.TestInput.NicIpPort;
+import com.cisco.dhruva.input.TestInput.ProxyCommunication;
 import com.cisco.dhruva.input.TestInput.TestCaseConfig;
 import com.cisco.dhruva.input.TestInput.UasConfig;
 import com.cisco.dhruva.user.UAC;
@@ -28,7 +28,8 @@ public class TestCaseRunner {
 
   public void prepareAndRunTest() throws Exception {
     SipStack.setTraceEnabled(true);
-    NicIpPort clientCommunication = this.testCaseConfig.getDsb().getClientCommunicationInfo();
+    ProxyCommunication clientCommunication =
+        this.testCaseConfig.getDsb().getClientCommunicationInfo();
 
     UasConfig[] uasConfigs = this.testCaseConfig.getUasConfigs();
 

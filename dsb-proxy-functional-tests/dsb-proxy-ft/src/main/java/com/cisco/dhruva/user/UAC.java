@@ -3,7 +3,7 @@ package com.cisco.dhruva.user;
 import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
 import com.cisco.dhruva.application.MessageHandler;
-import com.cisco.dhruva.input.TestInput.NicIpPort;
+import com.cisco.dhruva.input.TestInput.ProxyCommunication;
 import com.cisco.dhruva.input.TestInput.UacConfig;
 import com.cisco.dhruva.util.SipStackUtil;
 import com.cisco.dhruva.util.TestMessage;
@@ -21,11 +21,12 @@ public class UAC implements UA, Runnable {
 
   private UacConfig uacConfig;
   @Getter private SipStack sipStack;
-  @Getter private NicIpPort proxyCommunication;
+  @Getter private ProxyCommunication proxyCommunication;
   private CountDownLatch completionLatch;
   private List<TestMessage> testMessages = new ArrayList<>();
 
-  public UAC(UacConfig uacConfig, NicIpPort proxyCommunication, CountDownLatch completionLatch)
+  public UAC(
+      UacConfig uacConfig, ProxyCommunication proxyCommunication, CountDownLatch completionLatch)
       throws Exception {
     this.uacConfig = uacConfig;
     this.sipStack =
