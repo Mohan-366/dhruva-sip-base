@@ -130,8 +130,8 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
               CustomScheduledThreadPoolExecutor newCustomScheduledThreadPoolExecutor =
                   new CustomScheduledThreadPoolExecutor(maxThreads, tfb.build());
               /* Code added from monitoredExecutorProvider
-              *  to include metrics supported via CSB
-              * */
+               *  to include metrics supported via CSB
+               * */
               String configPrefix = name("executor", key);
               // applicationIndex set as 0
               String metricNamePrefix =
@@ -155,8 +155,10 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
   }
 
   /**
-   * temporary solution for CSB to decorate dhruva's CustomScheduledExecutor to have executor metrics support
-   * later we can have a cleaner solution once pr is merged in CSB, url: https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/pull/6101
+   * temporary solution for CSB to decorate dhruva's CustomScheduledExecutor to have executor
+   * metrics support later we can have a cleaner solution once pr is merged in CSB, url:
+   * https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/pull/6101
+   *
    * @param executor
    * @param prefix
    * @param handler

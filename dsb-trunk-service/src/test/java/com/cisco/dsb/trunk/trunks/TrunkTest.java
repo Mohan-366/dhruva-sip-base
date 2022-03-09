@@ -267,12 +267,14 @@ public class TrunkTest {
     when(optionsPingController.getStatus(serverGroupElements.get(0))).thenReturn(false);
     when(optionsPingController.getStatus(serverGroupElements.get(1))).thenReturn(false);
     when(optionsPingController.getStatus(serverGroupElements.get(2))).thenReturn(false);
-
+    // Verify when SG and all elements are down, we send back 502 response
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
         .expectErrorMatches(
             err ->
                 err instanceof DhruvaRuntimeException
-                    && ((DhruvaRuntimeException) err).getErrCode().equals(ErrorCode.APP_REQ_PROC))
+                    && ((DhruvaRuntimeException) err)
+                        .getErrCode()
+                        .equals(ErrorCode.FETCH_ENDPOINT_ERROR))
         .verify();
   }
 
