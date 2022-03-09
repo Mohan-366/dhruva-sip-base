@@ -225,7 +225,8 @@ public class ProxyService {
   private BiConsumer<Throwable, Object> requestErrorHandler() {
     return (err, o) -> {
       try {
-        logger.error("Exception while processing request  " , err);
+
+        logger.error("Exception while processing request  ", err);
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;

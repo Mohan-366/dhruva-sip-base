@@ -1,5 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -22,5 +23,10 @@ public class SIPProxyTest {
     Assert.assertTrue(sipProxy.isProcessRouteHeader());
     Assert.assertTrue(sipProxy.isProcessRegisterRequest());
     Assert.assertEquals(sipProxy.getTimerCIntervalInMilliSec(), 60000);
+  }
+
+  @Test
+  public void testEqualsAndHashCode() {
+    EqualsVerifier.simple().forClass(SIPProxy.class).verify();
   }
 }

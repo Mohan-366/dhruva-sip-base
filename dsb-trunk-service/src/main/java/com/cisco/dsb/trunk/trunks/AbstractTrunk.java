@@ -29,7 +29,9 @@ import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 /** Abstract class for all kinds of trunks */
 @Getter
@@ -47,6 +49,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
       SpringApplicationContext.getAppContext() == null
           ? null
           : SpringApplicationContext.getAppContext().getBean(MetricService.class);
+  private static int MAX_ELEMENT_RETRIES = 100;
 
   public AbstractTrunk(AbstractTrunk abstractTrunk) {
     this.name = abstractTrunk.name;
@@ -58,6 +61,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof AbstractTrunk) {
       AbstractTrunk b = (AbstractTrunk) a;
       return new EqualsBuilder()
@@ -67,6 +71,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
           .isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(name).append(ingress).append(egress).toHashCode();
   }
 
   @Override
@@ -126,26 +135,24 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 sink.next(cookie.getBestResponse());
               }
             })
-        // error gating so that only RETRY_NEXT error reaches retryWhen()
+        // retry only it matches TRUNK_RETRY ERROR CODE
+        .retryWhen(this.retryTrunkOnException)
         .onErrorResume(
-            err -> {
-              if (err instanceof DhruvaRuntimeException)
-                return !((DhruvaRuntimeException) err)
-                    .getErrCode()
-                    .equals(ErrorCode.TRUNK_RETRY_NEXT);
-              logger.error("Received unhandled Exception", err);
-              return true;
-            },
             err ->
                 Mono.defer(
                     () -> {
                       ProxySIPResponse bestResponse = cookie.getBestResponse();
                       if (bestResponse == null) {
-                        return Mono.empty();
+                        if (err instanceof DhruvaRuntimeException) {
+                          return Mono.error(err);
+                        } else {
+                          return Mono.error(
+                              new DhruvaRuntimeException(
+                                  ErrorCode.APP_REQ_PROC, "no best response found", err));
+                        }
                       }
                       return Mono.just(bestResponse);
                     }))
-        .retry()
         .timeout(Duration.ofSeconds(egress.getOverallResponseTimeout()))
         .onErrorResume(
             TimeoutException.class,
@@ -158,13 +165,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 return Mono.empty();
               }
               return Mono.just(bestResponse);
-            })
-        .switchIfEmpty(
-            Mono.error(
-                new DhruvaRuntimeException(
-                    ErrorCode.APP_REQ_PROC,
-                    " No response Received, maybe request was handled statelessly(ACK) or"
-                        + " exception sendinout message!!!")));
+            });
   }
 
   private boolean shouldFailover(ProxySIPResponse proxySIPResponse, TrunkCookie cookie) {
@@ -239,7 +240,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
         if (serverGroup == null)
           return Mono.error(
-              new DhruvaRuntimeException(ErrorCode.TRUNK_NO_RETRY, "None of the SGs are up"));
+              new DhruvaRuntimeException(ErrorCode.FETCH_ENDPOINT_ERROR, "None of the SGs are up"));
 
         // TODO: modify logic when taking up DNS serverGroup optionsPing
         if (serverGroup.getSgType() == SGType.STATIC) {
@@ -258,7 +259,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
           }
           if (serverGroupElement == null)
             return Mono.error(
-                new DhruvaRuntimeException(ErrorCode.TRUNK_NO_RETRY, "None of the SGEs are up "));
+                new DhruvaRuntimeException(
+                    ErrorCode.FETCH_ENDPOINT_ERROR, "None of the SGEs are up "));
 
           cookie.setSgeLoadBalancer(sgeLB);
           return Mono.just(
@@ -333,6 +335,19 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .setTransport(transport)
         .build();
   }
+
+  /*
+   We want to trigger retry error only on certain error code
+  */
+  private final Retry retryTrunkOnException =
+      Retry.max(MAX_ELEMENT_RETRIES)
+          .doBeforeRetry((s) -> logger.debug("Retrying after retryTrunkOnException", s.failure()))
+          .filter(
+              (err) ->
+                  err instanceof DhruvaRuntimeException
+                      && ((DhruvaRuntimeException) err)
+                          .getErrCode()
+                          .equals(ErrorCode.TRUNK_RETRY_NEXT));
 
   @Override
   public String toString() {

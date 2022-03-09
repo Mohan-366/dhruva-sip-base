@@ -4,12 +4,13 @@ spring:
     consul:
       config:
         enabled: false
-    kubernetes:
-      config:
-        sources:
-          - name: dhruva-static-config-map
-          - name: dhruva-dynamic-config-map
-#        namespace: pushed as part of helm chart
+#    kubernetes:
+#      config:
+#        sources:
+#          - name: dhruva-static-config-map
+#          - name: dhruva-dynamic-config-map
+
+      #        namespace: pushed as part of helm chart
       reload:
         enabled: true
         mode: polling

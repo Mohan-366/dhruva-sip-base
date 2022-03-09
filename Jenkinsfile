@@ -51,7 +51,7 @@ node() {
                 --mount type=bind,src="\$(pwd)"/settings.xml,dst=/src/settings.xml \\
                 --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11 \\
                 containers.cisco.com/ayogalin/maven-builder:one \\
-                sh -c "/setenv.sh; java -version; /usr/share/maven/bin/mvn clean verify; /usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
+                sh -c "/setenv.sh; java -version;/usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
                 step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/target/classes/com/cisco/', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
@@ -67,6 +67,7 @@ node() {
             archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
             archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
             archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dsb-calling-app/integration/target/dsb-calling-integration-tests.jar', allowEmptyArchive: true
         }
         stage('build and publish wbx3 images') {
             try {

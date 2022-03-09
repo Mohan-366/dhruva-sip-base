@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -139,6 +140,10 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
         new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
   }
 
+  @Test
+  public void testEqualsOfDnsDestination() {
+    EqualsVerifier.simple().forClass(DnsDestination.class).verify();
+  }
   /*this is end-to-end test of locateDestinationAsync API
   @Test(enabled = false)
   public void testE2E(){

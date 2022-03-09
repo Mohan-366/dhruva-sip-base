@@ -276,6 +276,14 @@ public class OptionsPingMonitorTest {
     server1.setOptionsPingPolicyFromConfig(opPolicy);
     map = new HashMap<>();
     map.put(server1.getName(), server1);
+    ServerGroup server2 =
+        ServerGroup.builder()
+            .setName("sg2")
+            .setHostName("sg2")
+            .setNetworkName(network.getName())
+            .build();
+    // adding one SG without elements. This one must not be considered by OPTIONS ping module.
+    map.put(server2.getName(), server2);
   }
 
   @BeforeMethod

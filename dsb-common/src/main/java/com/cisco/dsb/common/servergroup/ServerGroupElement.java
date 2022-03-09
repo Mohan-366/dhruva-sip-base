@@ -6,6 +6,7 @@ import java.util.StringTokenizer;
 import javax.validation.constraints.NotBlank;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @Getter
 @Setter
@@ -29,19 +30,22 @@ public class ServerGroupElement implements LBElement, Pingable {
 
   @Override
   public boolean equals(Object a) {
+    if (this == a) return true;
     if (a instanceof ServerGroupElement) {
       ServerGroupElement b = ((ServerGroupElement) a);
       return new EqualsBuilder()
           .append(ipAddress, b.ipAddress)
           .append(port, b.port)
           .append(transport, b.transport)
-          .append(priority, b.priority)
-          .append(weight, b.weight)
           .isEquals();
     }
     return false;
   }
 
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(ipAddress).append(port).append(transport).toHashCode();
+  }
   /**
    * Compares this object to the object passed as an argument. If this object has a higher q-value,
    * the operation returns a negative integer. If this object has a lower q-value, the operation
@@ -85,8 +89,8 @@ public class ServerGroupElement implements LBElement, Pingable {
     int compare = 0;
     if (!domain1.equals(domain2)) {
 
-      StringTokenizer st1 = new StringTokenizer(domain1.toString(), ".");
-      StringTokenizer st2 = new StringTokenizer(domain2.toString(), ".");
+      StringTokenizer st1 = new StringTokenizer(domain1, ".");
+      StringTokenizer st2 = new StringTokenizer(domain2, ".");
 
       String[] list1 = new String[st1.countTokens()];
       String[] list2 = new String[st2.countTokens()];

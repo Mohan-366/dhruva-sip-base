@@ -10,6 +10,8 @@ import com.google.common.net.InternetDomainName;
 import java.util.ArrayList;
 import java.util.HashSet;
 import javax.sip.InvalidArgumentException;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class TrustedSipSources {
   private HashSet<String> trustedSipSources = new HashSet<>();
@@ -104,10 +106,16 @@ public class TrustedSipSources {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj) return true;
     if (obj instanceof TrustedSipSources) {
       TrustedSipSources obj_t = (TrustedSipSources) obj;
-      return obj_t.trustedSipSources.equals(this.trustedSipSources);
+      return new EqualsBuilder().append(obj_t.trustedSipSources, this.trustedSipSources).isEquals();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().append(trustedSipSources).toHashCode();
   }
 }
