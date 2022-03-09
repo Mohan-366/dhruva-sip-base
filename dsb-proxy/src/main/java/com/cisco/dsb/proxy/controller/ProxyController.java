@@ -556,7 +556,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 })
             .switchIfEmpty(
                 controllerConfig
-                    .recognize(finalUriAsync, true)
+                    .recognize(finalUriAsync, false)
                     .handle(
                         (response, sink) -> {
                           if (response) {

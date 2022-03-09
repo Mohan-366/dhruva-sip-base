@@ -30,7 +30,6 @@ public interface ControllerInterface {
    * @param proxySIPRequest received request
    * @return Mono ProxyTransaction
    */
-
   Mono<ProxySIPRequest> onNewRequest(ProxySIPRequest proxySIPRequest);
 
   /* =============================================================== */
