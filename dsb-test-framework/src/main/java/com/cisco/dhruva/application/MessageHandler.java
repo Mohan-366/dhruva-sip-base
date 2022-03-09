@@ -40,7 +40,7 @@ public class MessageHandler {
   private static SipTransaction serverMidCallCancelTransaction;
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
-  private static final int TIMEOUT = 1000;
+  private static final int TIMEOUT = 2000;
   private static boolean isOptionalReceived = false;
 
   static {
@@ -306,15 +306,17 @@ public class MessageHandler {
         TEST_LOGGER.info("Received {} for Cancel", expectedResponseCode);
         ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
       } else {
-        TEST_LOGGER.warn("Waiting for {} response", expectedResponseCode);
+        TEST_LOGGER.error("Error: response {} not received", expectedResponseCode);
         Assert.fail();
       }
     } else {
-      while (true) {
         if (isOptionalReceived) {
           isOptionalReceived = false;
         } else {
           call.waitOutgoingCallResponse(TIMEOUT);
+          if( call.getLastReceivedResponse().getStatusCode() == 100) {
+            call.waitOutgoingCallResponse(TIMEOUT);
+          }
         }
         if (call.getLastReceivedResponse() != null
             && call.getLastReceivedResponse().getStatusCode() >= expectedResponseCode
@@ -332,16 +334,15 @@ public class MessageHandler {
             if (message.isOptional()) {
               TEST_LOGGER.info("Ignoring response {} as it is optional", expectedResponseCode);
               isOptionalReceived = true;
-              break;
             }
           } else {
             ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
-            break;
           }
         } else {
-          TEST_LOGGER.warn("Waiting for {} response", expectedResponseCode);
+          TEST_LOGGER.error("Error: response {} not received", expectedResponseCode);
+          Assert.fail();
         }
-      }
+
     }
   }
 }
