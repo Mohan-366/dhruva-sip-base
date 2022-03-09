@@ -203,69 +203,6 @@ public class MetricServiceTest {
     verify(metricClientMock, times(0)).sendMetric(any());
   }
 
-  @DataProvider(name = "connectionMetricData")
-  private Object[][] connectionMetricTestData() {
-    return new Object[][] {
-      {5060, "127.0.0.1", 5060, "127.0.0.1", 54317, "127.0.0.1", "TCP", "IN", "CONNECTED"},
-      {5060, "127.0.0.1", 5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT", "CONNECTED"},
-      {5060, "127.0.0.1", 5060, "127.0.0.1", 7060, "127.0.0.1", "TCP", "OUT", "DISCONNECTED"},
-    };
-  }
-
-  @Test(description = "Testing emitted connection metric", dataProvider = "connectionMetricData")
-  public void connectionMetricTestWithData(
-      int localPort,
-      String localAddress,
-      int viaPort,
-      String viaAddress,
-      int remotePort,
-      String remoteAddress,
-      String transport,
-      String direction,
-      String connectionState) {
-
-    ConnectionOrientedMessageChannel mockedChannel = mock(ConnectionOrientedMessageChannel.class);
-
-    when(mockedChannel.getHost()).thenReturn(localAddress);
-    when(mockedChannel.getPort()).thenReturn(localPort);
-    when(mockedChannel.getViaHost()).thenReturn(viaAddress);
-    when(mockedChannel.getViaPort()).thenReturn(viaPort);
-    when(mockedChannel.getPeerAddress()).thenReturn(remoteAddress);
-    when(mockedChannel.getPeerPort()).thenReturn(remotePort);
-    when(mockedChannel.getTransport()).thenReturn(transport);
-    when(mockedChannel.getPeerProtocol()).thenReturn(transport);
-
-    metricService.emitConnectionMetrics(direction, mockedChannel, connectionState);
-    verify(metricClientMock, times(1)).sendMetric(metricArgumentCaptor.capture());
-
-    Metric capturedMetric = metricArgumentCaptor.getValue();
-    Assert.assertNotNull(capturedMetric);
-
-    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
-
-    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
-
-    Map<String, String> capturedTags = capturedMetricPoint.getTags();
-    Map<String, Object> capturedFields = capturedMetricPoint.getFields();
-
-    Assert.assertTrue(capturedTags.containsKey("transport"));
-    Assert.assertEquals(capturedTags.get("transport"), transport);
-    Assert.assertTrue(capturedTags.containsKey("direction"));
-    Assert.assertEquals(capturedTags.get("direction"), direction);
-    Assert.assertTrue(capturedTags.containsKey("connectionState"));
-    Assert.assertEquals(capturedTags.get("connectionState"), connectionState);
-
-    Assert.assertTrue(capturedFields.containsKey("id"));
-    Assert.assertTrue(capturedFields.containsKey("localAddress"));
-    Assert.assertEquals(capturedFields.get("localAddress"), localAddress);
-    Assert.assertTrue(capturedFields.containsKey("localPort"));
-    Assert.assertEquals(capturedFields.get("localPort"), localPort);
-    Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
-    Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
-    Assert.assertTrue(capturedFields.containsKey("remotePort"));
-    Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
-  }
-
   @Test(description = "Test for connectionmetric for tcp/tls transport per interval ")
   public void connectionOrientedTransportMetricTestPerInterval() throws InterruptedException {
 

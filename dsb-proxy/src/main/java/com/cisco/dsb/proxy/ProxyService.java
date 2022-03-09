@@ -76,9 +76,6 @@ public class ProxyService {
 
   @Nullable @Autowired KeyManager keyManager;
 
-  public static final int CPS_METRIC_INTERVAL = 1;
-  public static final int UDP_CONNECTION_METRIC_INTERVAL = 30;
-
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
   private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
