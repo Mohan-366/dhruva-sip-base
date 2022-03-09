@@ -37,6 +37,7 @@ public interface CallType {
     TrunkManager trunkManager = getTrunkManager();
     String ingress = getIngressKey();
     String egress = getEgressKey(proxySIPRequest);
+    proxySIPRequest.setCallTypeName(this.getClass().getSimpleName());
     if (getMetricService() != null) {
       this.incrementCPSCounter(proxySIPRequest);
     }

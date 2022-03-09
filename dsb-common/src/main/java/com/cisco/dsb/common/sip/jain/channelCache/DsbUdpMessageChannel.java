@@ -80,11 +80,7 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
   public void close() {
     super.close();
     logger.info(
-        "UDP MessageChannel connection closing {}, localhostport {} , peerHostPort {}, viaHostPort {}, MessageProcessor IP {} port {}",
-        this.getKey(),
-        this.getHostPort().toString(),
-        this.getPeerHostPort().toString(),
-        this.getViaHostPort(),
+        "UDP MessageChannel connection closing on localhostport {} , port {}",
         this.getMessageProcessor().getIpAddress(),
         this.getMessageProcessor().getPort());
   }
@@ -98,16 +94,15 @@ public class DsbUdpMessageChannel extends UDPMessageChannel {
     MetricService metricService =
         dsbUdpMessageProcessor != null ? dsbUdpMessageProcessor.getMetricService() : null;
 
-    String connectionId = SipUtils.getConnectionId(direction, channel.getTransport(), this);
-    ConnectionInfo connectionInfo =
-        ConnectionInfo.builder()
-            .direction(direction)
-            .transport(channel.getTransport())
-            .messageChannel(channel)
-            .connectionState(connectionState)
-            .build();
-
     if (metricService != null) {
+      String connectionId = SipUtils.getConnectionId(direction, channel.getTransport(), this);
+      ConnectionInfo connectionInfo =
+          ConnectionInfo.builder()
+              .direction(direction)
+              .transport(channel.getTransport())
+              .messageChannel(channel)
+              .connectionState(connectionState)
+              .build();
       metricService.insertConnectionInfo(connectionId, connectionInfo);
     }
   }

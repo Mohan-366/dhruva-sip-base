@@ -167,10 +167,11 @@ public class ProxyService {
     // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
 
     // initializing periodic metric for counting call per second
-    metricService.emitCPSMetricPerInterval(CPS_METRIC_INTERVAL, TimeUnit.SECONDS);
+    metricService.emitCPSMetricPerInterval(
+        commonConfigurationProperties.getCpsMetricInterval(), TimeUnit.SECONDS);
     // initializing metric for connection info for udp transports 30sec window
     metricService.emitConnectionInfoMetricPerInterval(
-        UDP_CONNECTION_METRIC_INTERVAL, TimeUnit.SECONDS);
+        commonConfigurationProperties.getUdpConnectionMetricInterval(), TimeUnit.SECONDS);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {

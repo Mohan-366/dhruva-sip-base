@@ -14,6 +14,7 @@ import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
+import com.cisco.dsb.common.util.log.ConnectionAspect;
 import com.cisco.wx2.dto.IdentityMachineAccount;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
 import lombok.CustomLog;
+import org.aspectj.lang.Aspects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.*;
@@ -168,6 +170,14 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     return new DhruvaProperties(env);
   }
 
+  /*
+  To inject ConnectionAspect, used for LMA of connection related information
+  */
+  @Bean
+  public ConnectionAspect connectionAspectBean() {
+    ConnectionAspect connectionAspect = Aspects.aspectOf(ConnectionAspect.class);
+    return connectionAspect;
+  }
   // this will be needed in future for http requests
   /*
   @Bean

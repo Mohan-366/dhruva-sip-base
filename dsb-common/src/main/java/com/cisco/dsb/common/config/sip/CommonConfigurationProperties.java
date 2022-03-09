@@ -83,6 +83,10 @@ public class CommonConfigurationProperties {
   @Setter private String trustedSipSources = "";
   @Getter @Setter private boolean requiredTrustedSipSources = false;
 
+  // metric emitting interval configs
+  @Getter @Setter private int cpsMetricInterval = 1;
+  @Getter @Setter private int udpConnectionMetricInterval = 30;
+
   // DSBNetworkLayer is using this as static variable
   @Getter private static int socketConnectionTimeout = 8000;
   // TODO: this is hack, inject spring object everywhere instead of static field

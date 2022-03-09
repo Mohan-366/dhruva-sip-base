@@ -266,8 +266,6 @@ public class MetricServiceTest {
     Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
   }
 
-  // ankabane
-
   @Test(description = "Test for connectionmetric for tcp/tls transport per interval ")
   public void connectionOrientedTransportMetricTestPerInterval() throws InterruptedException {
 

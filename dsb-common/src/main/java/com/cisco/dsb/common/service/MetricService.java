@@ -30,7 +30,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -88,13 +87,6 @@ public class MetricService {
 
     this.cpsCounterMap = new HashMap<>();
     this.connectionInfoMap = new HashMap<>();
-  }
-
-  @PostConstruct
-  public void postBeanInitialization() {
-    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
-    // initializing metric for connection info for udp transports 30sec window
-    this.emitConnectionInfoMetricPerInterval(30, TimeUnit.SECONDS);
   }
 
   public void registerPeriodicMetric(

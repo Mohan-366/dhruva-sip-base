@@ -2,7 +2,6 @@ package com.cisco.dsb.common.util.log;
 
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.channelCache.*;
-import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.stack.*;
 import java.net.InetAddress;
@@ -11,16 +10,14 @@ import lombok.CustomLog;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 
 @Aspect
 @CustomLog
 public class ConnectionAspect {
 
-  private static MetricService metricServiceBean =
-      SpringApplicationContext.getAppContext() == null
-          ? null
-          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
+  @Autowired private MetricService metricService;
 
   /**
    * Aspect to capture IO exceptions and create DSB connection failure Event for procesing messages
@@ -47,8 +44,8 @@ public class ConnectionAspect {
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
 
-    if (metricServiceBean != null) {
-      metricServiceBean.emitConnectionErrorMetric(
+    if (metricService != null) {
+      metricService.emitConnectionErrorMetric(
           messageChannel, isClient, ex.getClass().getSimpleName() + ": " + ex.getMessage());
     }
 

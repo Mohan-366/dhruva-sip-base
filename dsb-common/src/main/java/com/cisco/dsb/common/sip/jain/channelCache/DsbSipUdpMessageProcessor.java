@@ -72,6 +72,7 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
    */
   @Override
   public void run() {
+
     // Check for running flag.
     this.messageChannels = new LinkedList();
     // start all our messageChannels (unless the thread pool size is
@@ -151,6 +152,10 @@ public class DsbSipUdpMessageProcessor extends UDPMessageProcessor {
   }
 
   private void reportSockeException(Exception e) {
-    logger.warn("Exception caught while receiving data via UdpMessageChannel at localAddress:{}, localport: {}, error:{}", String.valueOf(sock.getLocalAddress()), sock.getLocalPort(), e.getMessage());
+    logger.warn(
+        "Exception caught while receiving data via UdpMessageChannel at localAddress:{}, localport: {}, error:{}",
+        String.valueOf(sock.getLocalAddress()),
+        sock.getLocalPort(),
+        e.getMessage());
   }
 }
