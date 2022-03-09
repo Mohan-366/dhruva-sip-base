@@ -144,7 +144,7 @@
     {
       "description": "Re-invite INVITE Flow",
       "id": "2",
-      "skipTest": true,
+      "skipTest": false,
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
