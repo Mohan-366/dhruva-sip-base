@@ -54,7 +54,7 @@ node() {
                 sh -c "/setenv.sh; java -version;/usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
                 '''
                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
-                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/target/classes/com/cisco/', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/dsb-calling-app/server/target/classes/com/cisco,**/dsb-common/target/classes/com/cisco,**/dsb-connectivity-monitor/target/classes/com/cisco,**/dsb-proxy/target/classes/com/cisco,**/dsb-trunk-service/target/classes/com/cisco', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
             }
         }
         stage('postBuild') {
@@ -141,7 +141,7 @@ node() {
         } else {
             message = "DSB: Build finished."
         }
-        junit '**/target/surefire-reports/**/TEST-*.xml'
+        junit '**/target/surefire-reports/**/TEST-TestSuite.xml,**/target/failsafe-reports/**/TEST-TestSuite.xml'
         if (env.CHANGE_ID == null) {
             notifyPipelineRoom("$message $details", roomId: notifySparkRoomId)
         } else {

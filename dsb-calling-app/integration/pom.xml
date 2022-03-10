@@ -54,6 +54,7 @@
         <tomcat.server.port>9221</tomcat.server.port>
         <tomcat.ajp.port>9222</tomcat.ajp.port>
         <tomcat.rmi.port>9223</tomcat.rmi.port>
+        <dhruvaPublicUrl>http://localhost:${tomcat.server.port}/api/v1</dhruvaPublicUrl>
     </properties>
 
     <build>
@@ -74,6 +75,9 @@
                 <configuration>
                     <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
                     <testSourceDirectory>${project.build.sourceDirectory}</testSourceDirectory>
+                    <environmentVariables>
+                        <dhruvaPublicUrl>${dhruvaPublicUrl}</dhruvaPublicUrl>
+                    </environmentVariables>
                 </configuration>
             </plugin>
 
@@ -103,9 +107,9 @@
                             <cargo.servlet.port>${tomcat.server.port}</cargo.servlet.port>
                             <cargo.rmi.port>${tomcat.rmi.port}</cargo.rmi.port>
                             <cargo.tomcat.ajp.port>${tomcat.ajp.port}</cargo.tomcat.ajp.port>
-                            <!--<cargo.jvmargs>
+                            <cargo.jvmargs>
                                 -javaagent:${user.home}/.m2/repository/org/jacoco/org.jacoco.agent/${jacoco.version}/org.jacoco.agent-${jacoco.version}-runtime.jar=destfile=${project.build.directory}/jacoco-it.exec,append=true
-                            </cargo.jvmargs>-->
+                            </cargo.jvmargs>
                         </properties>
                     </configuration>
                     <deployables>
@@ -146,6 +150,14 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>org.jacoco.agent</artifactId>
+                        <classifier>runtime</classifier>
+                        <version>${jacoco.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <!--Create a shaded jar that contains the integration tests so they can be run independently from

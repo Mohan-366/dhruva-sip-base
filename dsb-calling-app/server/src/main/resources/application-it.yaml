@@ -27,18 +27,18 @@ common:
       lbType: weight
       elements:
         - ipAddress: "127.0.0.1"
-          port: 7000
+          port: 4101
           transport: UDP
           priority: 10
           weight: 100
         - ipAddress: "127.0.0.1"
-          port: 7001
+          port: 4102
           transport: UDP
           priority: 5
           weight: 100
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 10
+      priority: 20
       weight: 100
     UsPoolB:
       name: &UsPoolB UsPoolB
@@ -47,13 +47,13 @@ common:
       lbType: weight
       elements:
         - ipAddress: "127.0.0.1"
-          port: 7002
+          port: 4200
           transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 20
+      priority: 10
       weight: 100
     InPoolA:
       name: &InPoolA InPoolA
@@ -75,27 +75,21 @@ common:
       hostName: "test.beech.com"
       networkName: *netb2b
       lbType: weight
-      elements:
-        - ipAddress: "127.0.0.1"
-          port: 6000
-          transport: UDP
-          priority: 10
-          weight: 100
+      sgType: A_RECORD
+      port: 6000
+      transport: UDP
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
       priority: 10
       weight: 100
     NS1:
       name: &NS1 NS1
-      hostName: "ns1.cc.com"
+      hostName: "test1.ns.cisco.com"
       networkName: *netcc
       lbType: weight
-      elements:
-        - ipAddress: "127.0.0.1"
-          port: 7000
-          transport: UDP
-          priority: 10
-          weight: 100
+      sgType: A_RECORD
+      port: 7000
+      transport: UDP
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
       priority: 10
