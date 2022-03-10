@@ -194,4 +194,16 @@ public class Event {
         additionalKeyValueInfo,
         ex);
   }
+
+  public static void emitHandshakeFailureEvent(
+      String transport, Map<String, String> additionalKeyValueInfo, Exception ex) {
+
+    logger.emitEvent(
+        Event.EventType.CONNECTION,
+        LMAUtil.getEventSubTypeFromTransport(transport),
+        Event.ErrorType.SslHandShakeFailed,
+        ex.getMessage(),
+        additionalKeyValueInfo,
+        ex);
+  }
 }
