@@ -154,7 +154,7 @@
         </executions>
       </plugin>
 
-      <!--Create a shaded jar that contains the integration tests so they can be run independently from
+      <!--Create a shaded jar that contains the functional tests so they can be run independently from
           maven. By changing properties, like helloWorldApiUrl, the tests can be configured to run against
           different environments. E.g. integration, production and load test.-->
       <!--A simple test runner that is used to run JUnit based integration tests that have been shaded into a jar.-->
@@ -163,7 +163,7 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
           <mainClass>com.ciscospark.integration.TestNGRunner</mainClass>
-          <finalName>dsb-FT</finalName>
+          <finalName>dsb-proxy-ft</finalName>
         </configuration>
         <executions>
           <execution>
