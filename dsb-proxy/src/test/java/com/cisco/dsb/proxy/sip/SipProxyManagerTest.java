@@ -44,6 +44,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 public class SipProxyManagerTest {
 
@@ -348,8 +349,9 @@ public class SipProxyManagerTest {
     when(serverTransaction.getApplicationData()).thenReturn(proxyTransaction);
     when(proxyTransaction.getController()).thenReturn(proxyController);
 
-    Assert.assertNull(
-        sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest));
+    Mono<ProxySIPRequest> sipRequestMono =
+        sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest);
+    StepVerifier.create(sipRequestMono).verifyComplete();
     verify(proxyController).onAck(proxyTransaction);
   }
 
