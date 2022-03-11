@@ -1,0 +1,35 @@
+- name: kubed-dhruva-tests-docker
+  # Location of docker file in reference to manifest.yaml
+  repository: https://sqbu-github.cisco.com/SIPEdge/dhruva-sip-base.git
+  metadata: # send metadata | optional`
+    - url: "https://metadata.prod.infra.webex.com"
+      cert-id: "metadataservice-api"
+      key-id: "metadataservice-api-key"
+  # Docker registries
+  registries:
+    - name: "containers.cisco.com"
+      namespace: edge_group
+      component: dhruva-test-client
+      type: docker
+      publish: false
+      jenkins-id: dhruva_ccc_bot
+      docker:
+        - dockerfile: docker/dsb-calling-app-integration.Dockerfile
+          lint:
+            enable: false
+          scan:
+            enable: false
+  security:
+    # Repository where policy bundles lives
+    - policy-repo: https://sqbu-github.cisco.com/WebexPlatform/wbx3-policies.git
+      # Bundle to apply
+      bundle: meetpaas_default_bundle.json
+      jenkins-id: arunsrin-sqbu-github-authtoken
+      # threat level for anchore CVEs
+      threat-levels: # List of levels: Critical, High, Medium, Low
+        - "Critical"
+      gate: true
+  contact:
+    # Mailer used to contact owners
+    - mailer:  # wxc-edge-platform-team@cisco.com
+        - sipedge@cisco.com
