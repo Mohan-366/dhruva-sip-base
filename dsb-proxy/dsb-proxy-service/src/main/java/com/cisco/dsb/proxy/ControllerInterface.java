@@ -13,6 +13,7 @@ import com.cisco.dsb.proxy.sip.ProxyServerTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import gov.nist.javax.sip.message.SIPRequest;
 import javax.annotation.Nullable;
+import reactor.core.publisher.Mono;
 
 /**
  * This interface is used to control a proxy. The proxy will invoke the various public methods of
@@ -27,9 +28,10 @@ public interface ControllerInterface {
    * * the received request
    *
    * @param proxySIPRequest received request
-   * @return ProxyTransaction
+   * @return Mono ProxyTransaction
    */
-  ProxySIPRequest onNewRequest(ProxySIPRequest proxySIPRequest);
+
+  Mono<ProxySIPRequest> onNewRequest(ProxySIPRequest proxySIPRequest);
 
   /* =============================================================== */
   /* =============================================================== */

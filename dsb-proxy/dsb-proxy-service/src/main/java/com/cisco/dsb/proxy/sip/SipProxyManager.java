@@ -48,6 +48,7 @@ import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 @CustomLog
@@ -134,7 +135,7 @@ public class SipProxyManager {
    * PlaceHolder for creating ProxyController for new Requests or getting existing ProxyController
    * for that transaction
    */
-  public Function<ProxySIPRequest, ProxySIPRequest> getProxyController(
+  public Function<ProxySIPRequest, Mono<ProxySIPRequest>> getProxyController(
       ProxyAppConfig proxyAppConfig) {
     return proxySIPRequest -> {
       SIPRequest sipRequest = proxySIPRequest.getRequest();
@@ -314,6 +315,7 @@ public class SipProxyManager {
           return null;
         }
       }
+
       return request;
     };
   }
@@ -410,6 +412,7 @@ public class SipProxyManager {
         logger.info("Mid-dialog Call: Route call based on request");
         ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
         proxyInterface.sendRequestToApp(false);
+
         // for now only IP:port is supported. Route based routing
         proxyInterface
             .proxyRequest(proxySIPRequest)
@@ -419,6 +422,7 @@ public class SipProxyManager {
                     proxySIPResponse.proxy();
                     return;
                   }
+
                   if (throwable != null) {
                     logger.error(
                         "Error while sending out mid dialog request based on rURI/Route Header",

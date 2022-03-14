@@ -31,8 +31,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
@@ -43,6 +43,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
 @CustomLog
@@ -422,9 +423,9 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
    *     otherwise returns false
    */
   @Override
-  public boolean recognize(URI uri, boolean isRequestURI) {
-    boolean b = false;
+  public Mono<Boolean> recognize(URI uri, boolean isRequestURI) {
 
+    if (uri == null) return Mono.just(false);
     String ruri = uri.toString();
     ruri =
         ruri.replaceAll(
@@ -438,75 +439,81 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       String host = null;
       int port = url.getPort();
 
-      Transport transport;
+      Transport transport = Transport.UDP;
       if (url.getTransportParam() != null) {
         Optional<Transport> optionalTransport =
             Transport.getTypeFromString(url.getTransportParam());
-        transport = optionalTransport.orElse(Transport.NONE);
-      } else {
-        transport = Transport.NONE;
+        transport = optionalTransport.orElse(Transport.UDP);
       }
 
-      if (transport == Transport.NONE) transport = Transport.UDP;
-
       String user = url.getUser();
-
+      boolean b;
       if (isRequestURI) {
         host = url.getHost();
         b = (null != checkRecordRoutes(user, host, port, transport.toString().toLowerCase()));
         if (b) logger.debug("request-uri matches with one of Record-Route interfaces");
+        return Mono.just(b);
       } else {
         host = url.getMAddrParam();
         if (host == null) host = url.getHost();
-        b = recognizeWithDns(user, host, port, transport);
+        return recognizeWithDns(user, host, port, transport).switchIfEmpty(Mono.just(false));
       }
     }
-    logger.debug("Leaving recognize(), returning " + b);
-    return b;
+    return Mono.just(false);
   }
 
-  public boolean recognizeWithDns(String user, String host, int port, Transport transport) {
+  public Mono<Boolean> recognizeWithDns(String user, String host, int port, Transport transport) {
     // check for IP and cases where host matches aliases.
-    if (recognize(user, host, port, transport)) return true;
+    if (recognize(user, host, port, transport)) return Mono.just(true);
 
     if (!IPValidator.hostIsIPAddr(host)) {
-      try {
-        LocateSIPServerTransportType transportType = LocateSIPServerTransportType.TLS;
-        if (transport == Transport.TCP) transportType = LocateSIPServerTransportType.TCP;
-        if (transport == Transport.UDP) transportType = LocateSIPServerTransportType.UDP;
+      LocateSIPServerTransportType transportType = LocateSIPServerTransportType.TLS;
+      if (transport == Transport.TCP) transportType = LocateSIPServerTransportType.TCP;
+      else if (transport == Transport.UDP) transportType = LocateSIPServerTransportType.UDP;
 
-        DnsDestination destination = new DnsDestination(host, port, transportType);
-        LocateSIPServersResponse locateSIPServersResponse =
-            sipLocator.locateDestination(null, destination);
+      DnsDestination destination = new DnsDestination(host, port, transportType);
 
-        List<Hop> hops = locateSIPServersResponse.getHops();
+      CompletableFuture<LocateSIPServersResponse> locateSIPServersResponseAsync =
+          sipLocator.locateDestinationAsync(null, destination);
 
-        if (hops == null || hops.isEmpty()) {
-          throw new UnknownHostException("unable to locate destination");
-        }
+      return Mono.fromFuture(locateSIPServersResponseAsync)
+          .onErrorResume(throwable -> Mono.empty())
+          .handle(
+              (locateSIPServersResponse, synchronousSink) -> {
+                if (locateSIPServersResponse.getDnsException().isPresent()) {
+                  logger.error(
+                      "Exception in resolving, returning false ",
+                      locateSIPServersResponse.getDnsException().get());
+                }
+                List<Hop> hops = locateSIPServersResponse.getHops();
+                if (hops == null || hops.isEmpty()) {
+                  logger.error(
+                      "Exception in resolving, Null / Empty hops , returning false for ", host);
+                } else {
+                  List<BindingInfo> bInfos =
+                      sipLocator.getBindingInfoMapFromHops(
+                          null, null, 0, host, port, transport, locateSIPServersResponse);
+                  BindingInfo bInfo =
+                      bInfos.stream()
+                          .filter(
+                              b ->
+                                  recognize(
+                                      user,
+                                      b.getRemoteAddressStr(),
+                                      b.getRemotePort(),
+                                      b.getTransport()))
+                          .findFirst()
+                          .orElse(null);
 
-        List<BindingInfo> bInfos =
-            sipLocator.getBindingInfoMapFromHops(
-                null, null, 0, host, port, transport, locateSIPServersResponse);
-
-        BindingInfo bInfo =
-            bInfos.stream()
-                .filter(
-                    b ->
-                        recognize(
-                            user, b.getRemoteAddressStr(), b.getRemotePort(), b.getTransport()))
-                .findFirst()
-                .orElse(null);
-        if (bInfo != null) {
-          logger.info("found matching host after dns resolution", host);
-          return true;
-        }
-
-      } catch (UnknownHostException | InterruptedException | ExecutionException e) {
-        logger.error("Exception in resolving " + host, e);
-      }
+                  if (bInfo != null) {
+                    logger.info("found matching host after dns resolution", host);
+                    synchronousSink.next(true);
+                  }
+                }
+                synchronousSink.next(false);
+              });
     }
-    return false;
+    return Mono.just(false);
   }
 
   /**
