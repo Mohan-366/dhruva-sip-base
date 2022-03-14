@@ -1,25 +1,23 @@
 package com.cisco.dsb.common.util.log;
 
-import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipTLSMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTCPMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbNioTlsMessageProcessor;
-import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
+import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.jain.channelCache.*;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.stack.*;
 import java.net.InetAddress;
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.*;
 import lombok.CustomLog;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 
 @Aspect
 @CustomLog
 public class ConnectionAspect {
+
+  @Autowired private MetricService metricService;
 
   /**
    * Aspect to capture IO exceptions and create DSB connection failure Event for procesing messages
@@ -45,6 +43,15 @@ public class ConnectionAspect {
     String transport = String.valueOf(args[3]);
     boolean isClient = (Boolean) args[5];
     MessageChannel messageChannel = (MessageChannel) args[6];
+
+    if (metricService != null) {
+      metricService.emitConnectionErrorMetric(
+          messageChannel, isClient, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+
+    if (ex instanceof SSLHandshakeException) {
+      Event.emitHandshakeFailureEvent(transport, null, ex);
+    }
 
     Event.emitConnectionErrorEvent(transport, null, ex);
   }
@@ -215,9 +222,9 @@ public class ConnectionAspect {
 
     try {
       TLSMessageChannel tlsMessageChannel = ((TLSMessageChannel) jp.getTarget());
-      if (tlsMessageChannel.getMessageProcessor() instanceof DsbJainSipTLSMessageProcessor) {
-        DsbJainSipTLSMessageProcessor dsbJainSipTLSMessageProcessor =
-            (DsbJainSipTLSMessageProcessor) tlsMessageChannel.getMessageProcessor();
+      if (tlsMessageChannel.getMessageProcessor() instanceof DsbSipTLSMessageProcessor) {
+        DsbSipTLSMessageProcessor dsbSipTLSMessageProcessor =
+            (DsbSipTLSMessageProcessor) tlsMessageChannel.getMessageProcessor();
 
         logger.info(
             "TLSMessageChannel connection closing {}, removeSocket {}, stopKeepAliveTask {}, peerHostPort {}, viaHostPort {}, stackName {}, MessageProcessor IP {} port {}",
@@ -226,9 +233,9 @@ public class ConnectionAspect {
             stopKeepAliveTask,
             tlsMessageChannel.getPeerHostPort().toString(),
             tlsMessageChannel.getViaHostPort(),
-            dsbJainSipTLSMessageProcessor.getStackName(),
-            dsbJainSipTLSMessageProcessor.getIpAddress(),
-            dsbJainSipTLSMessageProcessor.getPort());
+            dsbSipTLSMessageProcessor.getStackName(),
+            dsbSipTLSMessageProcessor.getIpAddress(),
+            dsbSipTLSMessageProcessor.getPort());
       }
 
       if (tlsMessageChannel.getMessageProcessor() instanceof DsbNioTlsMessageProcessor) {

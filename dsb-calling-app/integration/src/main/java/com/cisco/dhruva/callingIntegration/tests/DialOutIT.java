@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import com.cisco.dhruva.callingIntegration.util.Token;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.EventObject;
 import java.util.List;
@@ -43,6 +44,16 @@ public class DialOutIT extends DhruvaIT {
     destroyStacks();
   }
 
+  @BeforeMethod
+  public void injectDnsOverrides() throws IOException {
+    injectDNS();
+  }
+
+  @AfterMethod
+  public void deleteDnsOverrides() throws IOException {
+    deleteDns();
+  }
+
   @Test
   public void testDialOutWxC() throws InvalidArgumentException, ParseException {
     wxc =
@@ -55,7 +66,8 @@ public class DialOutIT extends DhruvaIT {
     HeaderFactory wxcHeaderFactory = wxc.getParent().getHeaderFactory();
 
     URI request_uri =
-        wxcAddrFactory.createURI("sip:antares-it-guest@test.beech.com;dtg=CcpFusionIN");
+        wxcAddrFactory.createURI(
+            "sip:antares-it-guest@" + antaresARecord + ";x-cisco-test;dtg=CcpFusionIN");
     CallIdHeader callId = wxc.getParent().getSipProvider().getNewCallId();
     CSeqHeader cseq = wxcHeaderFactory.createCSeqHeader((long) 1, Request.INVITE);
     FromHeader from_header =
@@ -92,7 +104,9 @@ public class DialOutIT extends DhruvaIT {
     SipRequest antaresRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
         "Requri assertion failed",
-        "sip:antares-it-guest@test.beech.com;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
+        "sip:antares-it-guest@"
+            + antaresARecord
+            + ";x-cisco-test;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
         antaresRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",
@@ -196,7 +210,9 @@ public class DialOutIT extends DhruvaIT {
 
     URI request_uri =
         antaresAddrFactory.createURI(
-            "sip:pstn-it-guest@test.beech.com;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099");
+            "sip:pstn-it-guest@"
+                + antaresARecord
+                + ";x-cisco-test;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099");
     CallIdHeader callId = antares.getParent().getSipProvider().getNewCallId();
     CSeqHeader cseq = antaresHeaderFactory.createCSeqHeader((long) 1, Request.INVITE);
     FromHeader from_header =
@@ -234,7 +250,9 @@ public class DialOutIT extends DhruvaIT {
 
     SipRequest pstnRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
-        "Requri assertion failed", "sip:pstn-it-guest@InPoolA", pstnRcvdInv.getRequestURI());
+        "Requri assertion failed",
+        "sip:pstn-it-guest@InPoolA;x-cisco-test",
+        pstnRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",
         pstnRcvdInv,
@@ -315,7 +333,7 @@ public class DialOutIT extends DhruvaIT {
     assertEquals(Request.ACK, incReq.getRequest().getMethod());
     LOGGER.info("ACK successfully received by PSTN !!!");
 
-    antares.dispose();
     pstn.dispose();
+    antares.dispose();
   }
 }

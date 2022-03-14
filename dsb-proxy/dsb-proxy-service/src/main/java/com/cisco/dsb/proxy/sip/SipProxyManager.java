@@ -159,7 +159,7 @@ public class SipProxyManager {
           // Note : only for non2xx-ACK request at this point - consume and do nothing
           logger.debug("Calling onAck() in proxyController");
           controller.onAck(proxyTransaction);
-          return null;
+          return Mono.empty();
         } else {
           logger.info("No Proxy Transaction exists for {}", requestType);
         }

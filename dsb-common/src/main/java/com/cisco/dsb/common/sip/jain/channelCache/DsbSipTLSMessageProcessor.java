@@ -17,8 +17,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 
 @CustomLog
-public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
-    implements MessageChannelCache {
+public class DsbSipTLSMessageProcessor extends TLSMessageProcessor implements MessageChannelCache {
   private final StartStoppable keepAliveTimerTask;
   private final StartStoppable connectionMetricTask;
   @Getter private MetricService metricService;
@@ -30,7 +29,7 @@ public class DsbJainSipTLSMessageProcessor extends TLSMessageProcessor
    * @param sipStack SIPStack structure.
    * @param port port where this message processor listens.
    */
-  public DsbJainSipTLSMessageProcessor(
+  public DsbSipTLSMessageProcessor(
       InetAddress ipAddress,
       SIPTransactionStack sipStack,
       int port,

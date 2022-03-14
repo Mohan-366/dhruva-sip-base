@@ -34,6 +34,7 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
@@ -161,6 +162,13 @@ public class ProxyService {
     // However, tasks will be scheduled in ProxyClientTransaction
     dhruvaExecutorService.startScheduledExecutorService(ExecutorType.PROXY_CLIENT_TIMEOUT, 3);
     // dhruvaExecutorService.startExecutorService(ExecutorType.PROXY_SEND_MESSAGE, 20);
+
+    // initializing periodic metric for counting call per second
+    metricService.emitCPSMetricPerInterval(
+        commonConfigurationProperties.getCpsMetricInterval(), TimeUnit.SECONDS);
+    // initializing metric for connection info for udp transports 30sec window
+    metricService.emitConnectionInfoMetricPerInterval(
+        commonConfigurationProperties.getUdpConnectionMetricInterval(), TimeUnit.SECONDS);
   }
 
   public Optional<SipStack> getSipStack(String sipListenPointName) {
@@ -225,7 +233,8 @@ public class ProxyService {
   private BiConsumer<Throwable, Object> requestErrorHandler() {
     return (err, o) -> {
       try {
-        logger.error("Exception while processing request  " , err);
+
+        logger.error("Exception while processing request  ", err);
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;

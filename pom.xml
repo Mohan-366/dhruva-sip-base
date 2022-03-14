@@ -211,11 +211,6 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
-                        <configuration>
-                            <excludes>
-                                <exclude>**/integration/*</exclude>
-                            </excludes>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>default-report</id>
