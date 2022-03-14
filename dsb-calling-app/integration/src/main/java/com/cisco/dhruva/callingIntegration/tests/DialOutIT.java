@@ -2,8 +2,8 @@ package com.cisco.dhruva.callingIntegration.tests;
 
 import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
 import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertNotNull;
 
 import com.cisco.dhruva.callingIntegration.util.Token;
 import java.io.IOException;
@@ -29,35 +29,38 @@ public class DialOutIT extends DhruvaIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DialOutIT.class);
 
-  private SipPhone pstn;
+  private SipPhone pstnUsPoolB;
+  private SipPhone pstnUsPoolASg1;
+  private SipPhone pstnUsPoolAsg2;
   private SipPhone antares;
   private SipPhone wxc;
 
   /** Initialize the sipStack and a user agent for the test. */
   @BeforeClass
   public void setUp() throws Exception {
-    setUpStacks();
+    nsStack = new SipStack(Token.UDP, nsPort, getProperties("nsAgent"));
+    antaresStack = new SipStack(Token.UDP, antaresPort, getProperties("antaresAgent"));
+    pstnUsPoolBStack = new SipStack(Token.UDP, pstnUsPoolBPort, getProperties("UsPoolB-PstnAgent"));
+    pstnUsPoolASg1Stack =
+        new SipStack(Token.UDP, pstnUsPoolASg1Port, getProperties("UsPoolASGE-1-PstnAgent"));
+    pstnUsPoolASg2Stack =
+        new SipStack(Token.UDP, pstnUsPoolASg2Port, getProperties("UsPoolASGE-2-PstnAgent"));
   }
 
   @AfterClass
   public void tearDown() {
-    destroyStacks();
+    nsStack.dispose();
+    antaresStack.dispose();
+    pstnUsPoolBStack.dispose();
+    pstnUsPoolASg1Stack.dispose();
+    pstnUsPoolASg2Stack.dispose();
   }
 
-  @BeforeMethod
-  public void injectDnsOverrides() throws IOException {
+  @Test(description = "Tests the call-flow from 'WxCalling core (AS) -> Dhruva -> Antares'")
+  public void testDialOutWxC() throws InvalidArgumentException, ParseException, IOException {
     injectDNS();
-  }
-
-  @AfterMethod
-  public void deleteDnsOverrides() throws IOException {
-    deleteDns();
-  }
-
-  @Test
-  public void testDialOutWxC() throws InvalidArgumentException, ParseException {
     wxc =
-        wxcStack.createSipPhone(
+        nsStack.createSipPhone(
             dhruvaAddress, Token.UDP, dhruvaNetCcPort, wxcContactAddr); // simulates AS behaviours
     antares = antaresStack.createSipPhone(antaresContactAddr);
     antares.setLoopback(true);
@@ -193,17 +196,27 @@ public class DialOutIT extends DhruvaIT {
     assertEquals(Request.ACK, incReq.getRequest().getMethod());
     LOGGER.info("ACK successfully received by Antares !!!");
 
+    deleteDns();
     antares.dispose();
     wxc.dispose();
   }
 
-  @Test
+  @Test(
+      description =
+          "Tests the call-flow from 'Antares -> Dhruva -> PSTN'"
+              + "Also includes SG & SGE failover scenario (i.e) call gets routed to PSTN Pool 1(has only one SGE) which returns an error response code."
+              + "Dhruva now tries the next PSTN Pool 2(has 2 SGEs), wherein the 1st chosen SGE also returns an error response and the 2nd SGE accepts the call")
   public void testDailOutB2B() throws InvalidArgumentException, ParseException {
     antares =
         antaresStack.createSipPhone(
             dhruvaAddress, Token.UDP, dhruvaNetAntaresPort, antaresContactAddr);
-    pstn = pstnStack.createSipPhone(pstnContactAddr);
-    pstn.setLoopback(true);
+
+    pstnUsPoolB = pstnUsPoolBStack.createSipPhone(pstnContactAddr);
+    pstnUsPoolB.setLoopback(true);
+    pstnUsPoolASg1 = pstnUsPoolASg1Stack.createSipPhone(pstnContactAddr);
+    pstnUsPoolASg1.setLoopback(true);
+    pstnUsPoolAsg2 = pstnUsPoolASg2Stack.createSipPhone(pstnContactAddr);
+    pstnUsPoolAsg2.setLoopback(true);
 
     AddressFactory antaresAddrFactory = antares.getParent().getAddressFactory();
     HeaderFactory antaresHeaderFactory = antares.getParent().getHeaderFactory();
@@ -212,7 +225,7 @@ public class DialOutIT extends DhruvaIT {
         antaresAddrFactory.createURI(
             "sip:pstn-it-guest@"
                 + antaresARecord
-                + ";x-cisco-test;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099");
+                + ";x-cisco-test;dtg=CcpFusionUS;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099");
     CallIdHeader callId = antares.getParent().getSipProvider().getNewCallId();
     CSeqHeader cseq = antaresHeaderFactory.createCSeqHeader((long) 1, Request.INVITE);
     FromHeader from_header =
@@ -240,18 +253,21 @@ public class DialOutIT extends DhruvaIT {
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // antares -> INVITE -> PSTN (via Dhruva)
-    pstn.listenRequestMessage();
-    SipTransaction trans = antares.sendRequestWithTransaction(invite, true, null);
-    assertNotNull("Antares initiate call failed", trans);
+    pstnUsPoolB.listenRequestMessage();
+    pstnUsPoolASg1.listenRequestMessage();
+    pstnUsPoolAsg2.listenRequestMessage();
+
+    SipTransaction antaresTrans = antares.sendRequestWithTransaction(invite, true, null);
+    assertNotNull("Antares initiate call failed", antaresTrans);
     LOGGER.info("INVITE successfully sent by Antares !!!");
-    RequestEvent incReq = pstn.waitRequest(timeout);
-    assertNotNull("PSTN wait incoming call failed - " + pstn.format(), incReq);
-    LOGGER.info("INVITE successfully received by PSTN !!!");
+    RequestEvent incReq = pstnUsPoolB.waitRequest(timeout);
+    assertNotNull("PSTN UsPoolB wait incoming call failed - " + pstnUsPoolB.format(), incReq);
+    LOGGER.info("INVITE successfully received by PSTN UsPoolB!!!");
 
     SipRequest pstnRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
         "Requri assertion failed",
-        "sip:pstn-it-guest@InPoolA;x-cisco-test",
+        "sip:pstn-it-guest@UsPoolB;x-cisco-test",
         pstnRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",
@@ -262,7 +278,7 @@ public class DialOutIT extends DhruvaIT {
         "Route header assertion failed",
         pstnRcvdInv,
         RouteHeader.NAME,
-        "<sip:" + testHostAddress + ":" + pstnPort + ";transport=udp;lr>");
+        "<sip:" + testHostAddress + ":" + pstnUsPoolBPort + ";transport=udp;lr>");
     assertHeaderContains(
         "Record-Route assertion failed",
         pstnRcvdInv,
@@ -270,54 +286,180 @@ public class DialOutIT extends DhruvaIT {
         "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetSpPort + ";transport=udp;lr>");
 
     // antares will receive 100 from Dhruva
-    EventObject responseEvent = antares.waitResponse(trans, timeout);
+    EventObject responseEvent = antares.waitResponse(antaresTrans, timeout);
     assertNotNull("Antares await 100 response failed - " + antares.format(), responseEvent);
     assertEquals(Response.TRYING, ((ResponseEvent) responseEvent).getResponse().getStatusCode());
     LOGGER.info("100 Trying successfully received by Antares from Dhruva !!!");
 
-    // Dhruva <- 100 <- PSTN
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva <- 100 <- PSTN UsPoolB
     Response response_100 =
-        pstn.getParent().getMessageFactory().createResponse(Response.TRYING, incReq.getRequest());
-    SipTransaction pstnTrans = pstn.sendReply(incReq, response_100);
-    assertNotNull("PSTN send 100 failed - " + pstn.format(), pstnTrans);
-    LOGGER.info("100 Trying successfully sent by PSTN to Dhruva !!!");
+        pstnUsPoolB
+            .getParent()
+            .getMessageFactory()
+            .createResponse(Response.TRYING, incReq.getRequest());
+    SipTransaction pstnTrans = pstnUsPoolB.sendReply(incReq, response_100);
+    assertNotNull("PSTN UsPoolB send 100 failed - " + pstnUsPoolB.format(), pstnTrans);
+    LOGGER.info("100 Trying successfully sent by PSTN UsPoolB to Dhruva !!!");
 
-    // antares <- 180 <- PSTN (via Dhruva)
-    URI pstnContact =
-        pstn.getParent()
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva <- 502 <- PSTN UsPoolB
+    URI pstnUsPoolBContactUri =
+        pstnUsPoolB
+            .getParent()
             .getAddressFactory()
-            .createURI("sip:pstn-it-guest@" + testHostAddress + ":" + pstnPort);
-    Address pstnContactAddr = pstn.getParent().getAddressFactory().createAddress(pstnContact);
-    String to = pstn.generateNewTag();
-    // PSTN sending 180
-    pstn.sendReply(pstnTrans, Response.RINGING, null, to, pstnContactAddr, -1);
-    assertLastOperationSuccess("PSTN send 180 failed - " + pstn.format(), pstn);
-    LOGGER.info("180 Ringing successfully sent by PSTN to Dhruva !!!");
+            .createURI("sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolBPort);
+    Address pstnUsPoolBContactAddr =
+        pstnUsPoolB.getParent().getAddressFactory().createAddress(pstnUsPoolBContactUri);
+    String to = pstnUsPoolB.generateNewTag();
+    // PSTN UsPoolA SGE 2 sending 180
+    pstnUsPoolB.sendReply(pstnTrans, Response.BAD_GATEWAY, null, to, pstnUsPoolBContactAddr, -1);
+    assertLastOperationSuccess(
+        "PSTN UsPoolB send 502 failed - " + pstnUsPoolB.format(), pstnUsPoolB);
+    LOGGER.info("502 Bad Gateway successfully sent by PSTN UsPoolB to Dhruva !!!");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva (fails-over to next SG) -> INVITE -> PSTN UsPoolA SGE 1
+    incReq = pstnUsPoolASg1.waitRequest(timeout);
+    assertNotNull(
+        "PSTN UsPoolA SGE 1 wait incoming call failed - " + pstnUsPoolASg1.format(), incReq);
+    LOGGER.info("INVITE successfully received by PSTN UsPoolA SGE 1 !!!");
+    pstnRcvdInv = new SipRequest(incReq.getRequest());
+    assertEquals(
+        "Requri assertion failed",
+        "sip:pstn-it-guest@UsPoolA;x-cisco-test",
+        pstnRcvdInv.getRequestURI());
+    assertHeaderContains(
+        "Via header assertion failed",
+        pstnRcvdInv,
+        ViaHeader.NAME,
+        "SIP/2.0/UDP " + dhruvaAddress + ":" + dhruvaNetSpPort);
+    assertHeaderContains(
+        "Route header assertion failed",
+        pstnRcvdInv,
+        RouteHeader.NAME,
+        "<sip:" + testHostAddress + ":" + pstnUsPoolASg1Port + ";transport=udp;lr>");
+    assertHeaderContains(
+        "Record-Route assertion failed",
+        pstnRcvdInv,
+        RecordRouteHeader.NAME,
+        "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetSpPort + ";transport=udp;lr>");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva <- 100 <- PSTN UsPoolA SGE 1
+    response_100 =
+        pstnUsPoolASg1
+            .getParent()
+            .getMessageFactory()
+            .createResponse(Response.TRYING, incReq.getRequest());
+    pstnTrans = pstnUsPoolASg1.sendReply(incReq, response_100);
+    assertNotNull("PSTN UsPoolA SGE 1 send 100 failed - " + pstnUsPoolASg1.format(), pstnTrans);
+    LOGGER.info("100 Trying successfully sent by PSTN UsPoolA SGE 1 to Dhruva !!!");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva <- 502 <- PSTN UsPoolA SGE 1
+    URI pstnUsPoolASg1ContactUri =
+        pstnUsPoolASg1
+            .getParent()
+            .getAddressFactory()
+            .createURI("sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolASg1Port);
+    Address pstnUsPoolASg1ContactAddr =
+        pstnUsPoolASg1.getParent().getAddressFactory().createAddress(pstnUsPoolASg1ContactUri);
+    to = pstnUsPoolASg1.generateNewTag();
+    // PSTN UsPoolA SGE 2 sending 180
+    pstnUsPoolASg1.sendReply(
+        pstnTrans, Response.BAD_GATEWAY, null, to, pstnUsPoolASg1ContactAddr, -1);
+    assertLastOperationSuccess(
+        "PSTN UsPoolA SGE 1 send 502 failed - " + pstnUsPoolASg1.format(), pstnUsPoolASg1);
+    LOGGER.info("502 Bad Gateway successfully sent by PSTN UsPoolA SGE 1 to Dhruva !!!");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva (fails-over to next SGE) -> INVITE -> PSTN UsPoolA SGE 2
+    incReq = pstnUsPoolAsg2.waitRequest(timeout);
+    assertNotNull(
+        "PSTN UsPoolA SGE 2 wait incoming call failed - " + pstnUsPoolAsg2.format(), incReq);
+    LOGGER.info("INVITE successfully received by PSTN UsPoolA SGE 2 !!!");
+
+    pstnRcvdInv = new SipRequest(incReq.getRequest());
+    assertEquals(
+        "Requri assertion failed",
+        "sip:pstn-it-guest@UsPoolA;x-cisco-test",
+        pstnRcvdInv.getRequestURI());
+    assertHeaderContains(
+        "Via header assertion failed",
+        pstnRcvdInv,
+        ViaHeader.NAME,
+        "SIP/2.0/UDP " + dhruvaAddress + ":" + dhruvaNetSpPort);
+    assertHeaderContains(
+        "Route header assertion failed",
+        pstnRcvdInv,
+        RouteHeader.NAME,
+        "<sip:" + testHostAddress + ":" + pstnUsPoolASg2Port + ";transport=udp;lr>");
+    assertHeaderContains(
+        "Record-Route assertion failed",
+        pstnRcvdInv,
+        RecordRouteHeader.NAME,
+        "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetSpPort + ";transport=udp;lr>");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Dhruva <- 100 <- PSTN UsPoolA SGE 2
+    response_100 =
+        pstnUsPoolAsg2
+            .getParent()
+            .getMessageFactory()
+            .createResponse(Response.TRYING, incReq.getRequest());
+    pstnTrans = pstnUsPoolAsg2.sendReply(incReq, response_100);
+    assertNotNull("PSTN UsPoolA SGE 2 send 100 failed - " + pstnUsPoolAsg2.format(), pstnTrans);
+    LOGGER.info("100 Trying successfully sent by PSTN UsPoolA SGE 2 to Dhruva !!!");
+
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // antares <- 180 <- PSTN UsPoolA SGE 2 (via Dhruva)
+    URI pstnUsPoolASg2ContactUri =
+        pstnUsPoolAsg2
+            .getParent()
+            .getAddressFactory()
+            .createURI("sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolASg2Port);
+    Address pstnUsPoolASg2ContactAddr =
+        pstnUsPoolAsg2.getParent().getAddressFactory().createAddress(pstnUsPoolASg2ContactUri);
+    to = pstnUsPoolAsg2.generateNewTag();
+    // PSTN UsPoolA SGE 2 sending 180
+    pstnUsPoolAsg2.sendReply(pstnTrans, Response.RINGING, null, to, pstnUsPoolASg2ContactAddr, -1);
+    assertLastOperationSuccess(
+        "PSTN UsPoolA SGE 2 send 180 failed - " + pstnUsPoolAsg2.format(), pstnUsPoolAsg2);
+    LOGGER.info("180 Ringing successfully sent by PSTN UsPoolA SGE 2 to Dhruva !!!");
     // antares receiving 180
-    responseEvent = antares.waitResponse(trans, timeout);
+    responseEvent = antares.waitResponse(antaresTrans, timeout);
     assertNotNull("Antares await 180 response failed - " + antares.format(), responseEvent);
     assertEquals(Response.RINGING, ((ResponseEvent) responseEvent).getResponse().getStatusCode());
     LOGGER.info("180 Ringing successfully received by Antares from Dhruva !!!");
 
     // ---- ---- ---- ---- ---- ----
-    // dhruva <- 200 <- PSTN
+    // antares <- 200 <- PSTN UsPoolA SGE 2 (via Dhruva)
     Response response_200 =
-        pstn.getParent().getMessageFactory().createResponse(Response.OK, incReq.getRequest());
+        pstnUsPoolAsg2
+            .getParent()
+            .getMessageFactory()
+            .createResponse(Response.OK, incReq.getRequest());
     response_200.addHeader(
-        pstn.getParent().getHeaderFactory().createContactHeader(pstnContactAddr));
-    // PSTN sending 200
-    pstn.sendReply(pstnTrans, response_200);
-    assertLastOperationSuccess("PSTN send 200 failed - " + pstn.format(), pstn);
-    LOGGER.info("200 OK successfully sent by PSTN to Dhruva !!!");
+        pstnUsPoolAsg2
+            .getParent()
+            .getHeaderFactory()
+            .createContactHeader(pstnUsPoolASg2ContactAddr));
+    // PSTN UsPoolA SGE 2 sending 200
+    pstnUsPoolAsg2.sendReply(pstnTrans, response_200);
+    assertLastOperationSuccess(
+        "PSTN UsPoolA SGE 2 send 200 failed - " + pstnUsPoolAsg2.format(), pstnUsPoolAsg2);
+    LOGGER.info("200 OK successfully sent by PSTN UsPoolA SGE 2 to Dhruva !!!");
     // antares receiving 200
-    responseEvent = antares.waitResponse(trans, timeout);
+    responseEvent = antares.waitResponse(antaresTrans, timeout);
     assertNotNull("Antares await 200 response failed - " + antares.format(), responseEvent);
     ResponseEvent respEvent = ((ResponseEvent) responseEvent);
     Response rcvdResponse = respEvent.getResponse();
     assertEquals(Response.OK, rcvdResponse.getStatusCode());
     LOGGER.info("200 OK successfully received by Antares from Dhruva !!!");
 
-    // Antares -> ACKs -> PSTN (via Dhruva)
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
+    // Antares -> ACKs -> PSTN UsPoolA SGE 2 (via Dhruva)
     CSeqHeader cSeqHeader = (CSeqHeader) rcvdResponse.getHeader(CSeqHeader.NAME);
     if (cSeqHeader.getMethod().equals(Request.INVITE)) {
       try {
@@ -328,12 +470,15 @@ public class DialOutIT extends DhruvaIT {
         LOGGER.error("Antares failed to send ACK for received 200 !!!");
       }
     }
-    incReq = pstn.waitRequest(timeout);
-    assertNotNull("PSTN await ACK for 200 failed - " + pstn.format(), incReq);
+    incReq = pstnUsPoolAsg2.waitRequest(timeout);
+    assertNotNull(
+        "PSTN UsPoolA SGE 2 await ACK for 200 failed - " + pstnUsPoolAsg2.format(), incReq);
     assertEquals(Request.ACK, incReq.getRequest().getMethod());
-    LOGGER.info("ACK successfully received by PSTN !!!");
+    LOGGER.info("ACK successfully received by PSTN UsPoolA SGE 2 !!!");
 
-    pstn.dispose();
+    pstnUsPoolB.dispose();
+    pstnUsPoolASg1.dispose();
+    pstnUsPoolAsg2.dispose();
     antares.dispose();
   }
 }
