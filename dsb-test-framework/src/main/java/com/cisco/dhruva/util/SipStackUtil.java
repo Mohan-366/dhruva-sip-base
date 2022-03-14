@@ -42,7 +42,6 @@ public class SipStackUtil {
       testAgent = "testAgentUAS_" + ++uasStackCount;
     }
     Properties properties = new Properties();
-    System.out.println("KALPA: STACK_NAME: " + testAgent);
     properties.setProperty("javax.sip.STACK_NAME", testAgent);
     properties.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
     properties.setProperty("gov.nist.javax.sip.DEBUG_LOG", testAgent + "_debug.txt");

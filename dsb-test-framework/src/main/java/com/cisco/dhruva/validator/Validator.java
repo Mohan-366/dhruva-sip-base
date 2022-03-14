@@ -57,6 +57,7 @@ public class Validator {
                         if (testMessage.getMessage().getType().equals(Type.request)) {
                           SipRequest request = (SipRequest) testMessage.getSipMessage();
                           Assert.assertEquals(request.getRequestURI(), entry.getValue());
+                          TEST_LOGGER.info("============ IT'S VALID ============");
                         }
                         return;
                       }
