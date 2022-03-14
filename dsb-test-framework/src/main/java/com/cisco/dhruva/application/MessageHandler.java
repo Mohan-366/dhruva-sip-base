@@ -40,7 +40,7 @@ public class MessageHandler {
   private static SipTransaction serverMidCallCancelTransaction;
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
-  private static final int TIMEOUT = 2000;
+  private static final int TIMEOUT = 5000;
   private static boolean isOptionalReceived = false;
 
   static {
@@ -310,39 +310,38 @@ public class MessageHandler {
         Assert.fail();
       }
     } else {
-        if (isOptionalReceived) {
-          isOptionalReceived = false;
-        } else {
+      if (isOptionalReceived) {
+        isOptionalReceived = false;
+      } else {
+        call.waitOutgoingCallResponse(TIMEOUT);
+        if (call.getLastReceivedResponse().getStatusCode() == 100) {
           call.waitOutgoingCallResponse(TIMEOUT);
-          if( call.getLastReceivedResponse().getStatusCode() == 100) {
-            call.waitOutgoingCallResponse(TIMEOUT);
-          }
         }
-        if (call.getLastReceivedResponse() != null
-            && call.getLastReceivedResponse().getStatusCode() >= expectedResponseCode
-            && call.getLastReceivedResponse()
-                .getResponseEvent()
-                .getResponse()
-                .getHeader("CSeq")
-                .toString()
-                .contains(message.getForRequest())) {
-          TEST_LOGGER.info(
-              "Received response: {} for message: {}",
-              call.getLastReceivedResponse().getResponseEvent().getResponse(),
-              message);
-          if (call.getLastReceivedResponse().getStatusCode() != expectedResponseCode) {
-            if (message.isOptional()) {
-              TEST_LOGGER.info("Ignoring response {} as it is optional", expectedResponseCode);
-              isOptionalReceived = true;
-            }
-          } else {
-            ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
+      }
+      if (call.getLastReceivedResponse() != null
+          && call.getLastReceivedResponse().getStatusCode() >= expectedResponseCode
+          && call.getLastReceivedResponse()
+              .getResponseEvent()
+              .getResponse()
+              .getHeader("CSeq")
+              .toString()
+              .contains(message.getForRequest())) {
+        TEST_LOGGER.info(
+            "Received response: {} for message: {}",
+            call.getLastReceivedResponse().getResponseEvent().getResponse(),
+            message);
+        if (call.getLastReceivedResponse().getStatusCode() != expectedResponseCode) {
+          if (message.isOptional()) {
+            TEST_LOGGER.info("Ignoring response {} as it is optional", expectedResponseCode);
+            isOptionalReceived = true;
           }
         } else {
-          TEST_LOGGER.error("Error: response {} not received", expectedResponseCode);
-          Assert.fail();
+          ua.addTestMessage(new TestMessage(call.getLastReceivedResponse(), message));
         }
-
+      } else {
+        TEST_LOGGER.error("Error: response {} not received", expectedResponseCode);
+        Assert.fail();
+      }
     }
   }
 }

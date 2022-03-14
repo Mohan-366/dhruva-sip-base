@@ -10,6 +10,7 @@ public class SipStackUtil {
 
   private static Map<String, SipStack> sipStackUAC = new HashMap<>();
   private static Map<String, SipStack> sipStackUAS = new HashMap<>();
+  private static int uasStackCount = 0;
 
   public static SipStack getSipStackUAC(String ip, int port, Transport transport) throws Exception {
     return getSipStack(true, ip, port, transport);
@@ -38,9 +39,10 @@ public class SipStackUtil {
     if (isUac) {
       testAgent = "testAgentUAC";
     } else {
-      testAgent = "testAgentUAS";
+      testAgent = "testAgentUAS_" + ++uasStackCount;
     }
     Properties properties = new Properties();
+    System.out.println("KALPA: STACK_NAME: " + testAgent);
     properties.setProperty("javax.sip.STACK_NAME", testAgent);
     properties.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
     properties.setProperty("gov.nist.javax.sip.DEBUG_LOG", testAgent + "_debug.txt");

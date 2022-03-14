@@ -1,0 +1,69 @@
+app:
+  networkIn: &netIn "net_in"
+  networkOut: &netOut "net_out"
+  default-egress: "Default"
+common:
+  listenPoints:
+    - name: *netIn
+      port: 5060
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netOut
+      port: 5070
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+  serverGroups:
+    DefaultSg1:
+      name: &DefaultSg1 DefaultSg1
+      hostName: "DefaultSg1"
+      networkName: *netOut
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6060
+          transport: UDP
+          priority: 10
+          weight: 100
+        - ipAddress: "127.0.0.1"
+          port: 6061
+          transport: UDP
+          priority: 5
+          weight: 100
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+    DefaultSg2:
+      name: &DefaultSg2 DefaultSg2
+      hostName: "DefaultSg2"
+      networkName: *netOut
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6060
+          transport: UDP
+          priority: 10
+          weight: 100
+        - ipAddress: "127.0.0.1"
+          port: 6061
+          transport: UDP
+          priority: 5
+          weight: 100
+      sgPolicy: policy1
+      priority: 10
+      weight: 100
+  sgPolicy:
+    policy1:
+      name: policy1
+      failoverResponseCodes:
+        - 501
+        - 502
+        - 503
+trunk:
+  DEFAULT:
+    Default:
+      name: Default
+      egress:
+        lbType: weight
+        serverGroups:
+          - *DefaultSg1
+          - *DefaultSg2

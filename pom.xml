@@ -38,8 +38,8 @@
         <module>dsb-proxy</module>
         <module>sample-app</module>
         <module>dsb-connectivity-monitor</module>
-        <module>dsb-trunk-service</module>
         <module>dsb-test-framework</module>
+        <module>dsb-trunk</module>
     </modules>
 
     <properties>
