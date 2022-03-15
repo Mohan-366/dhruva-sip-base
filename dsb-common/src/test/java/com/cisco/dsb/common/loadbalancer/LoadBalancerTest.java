@@ -3,6 +3,7 @@ package com.cisco.dsb.common.loadbalancer;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.LbWeightRetryAnalyser;
 import com.google.common.collect.Comparators;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -11,8 +12,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
-import org.testng.IRetryAnalyzer;
-import org.testng.ITestResult;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -234,20 +233,5 @@ public class LoadBalancerTest {
       }
       return Integer.compare(o2.getWeight(), o1.getWeight());
     };
-  }
-}
-
-class LbWeightRetryAnalyser implements IRetryAnalyzer {
-
-  int counter = 0;
-  int retryLimit = 20;
-
-  @Override
-  public boolean retry(ITestResult iTestResult) {
-    if (counter < retryLimit) {
-      counter++;
-      return true;
-    }
-    return false;
   }
 }
