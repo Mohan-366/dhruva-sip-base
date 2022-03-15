@@ -18,9 +18,7 @@ spring:
         mode: polling
         period: 10000 # event based missed some config changes, testing polling
 
-    kubernetes:
-      config:
-        enabled: true
+
 
 
   main:

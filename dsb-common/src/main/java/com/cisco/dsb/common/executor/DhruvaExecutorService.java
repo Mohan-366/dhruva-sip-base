@@ -1,26 +1,32 @@
 package com.cisco.dsb.common.executor;
 
-import static com.cisco.wx2.metrics.MonitoredExecutorMetrics.*;
-import static com.codahale.metrics.MetricRegistry.name;
-
 import com.cisco.wx2.util.MonitoredExecutorProvider;
-import com.codahale.metrics.*;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.concurrent.*;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.env.Environment;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.concurrent.*;
+
+import static com.cisco.wx2.metrics.MonitoredExecutorMetrics.*;
+import static com.codahale.metrics.MetricRegistry.name;
 
 @CustomLog
 public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
   private final ConcurrentMap<String, ExecutorService> executorMap = new ConcurrentHashMap<>();
 
-  private final ConcurrentMap<String, CustomScheduledThreadPoolExecutor> scheduledExecutorMap =
+
+
+  private final ConcurrentMap<String, ScheduledExecutorService> scheduledExecutorMap =
       new ConcurrentHashMap<>();
 
   private final String servername;
@@ -115,37 +121,20 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
   /**
    * provide the thread name that you want to assign
    *
-   * @param name Name of thread
+   * @param name Name of xthread
    * @param maxThreads Accepts the max threads to be configured as input
    */
   public void startScheduledExecutorService(String name, int maxThreads) {
-    CustomScheduledThreadPoolExecutor e =
+
+    ScheduledExecutorService e =
         this.scheduledExecutorMap.compute(
             name,
             (key, value) -> {
               ThreadFactoryBuilder tfb = new ThreadFactoryBuilder();
               tfb.setNameFormat(name + "-%d");
               tfb.setDaemon(true);
-              // return this.newScheduledExecutorService(key, null, maxThreads);
-              CustomScheduledThreadPoolExecutor newCustomScheduledThreadPoolExecutor =
-                  new CustomScheduledThreadPoolExecutor(maxThreads, tfb.build());
-              /* Code added from monitoredExecutorProvider
-               *  to include metrics supported via CSB
-               * */
-              String configPrefix = name("executor", key);
-              // applicationIndex set as 0
-              String metricNamePrefix =
-                  isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-                      ? name(configPrefix)
-                      : name(configPrefix, "0" + "");
-              // TODO check value, rejection handler
-              configureCustomScheduleExecutorForMetrics(
-                  newCustomScheduledThreadPoolExecutor, metricNamePrefix, null, 1, maxThreads);
-
-              return newCustomScheduledThreadPoolExecutor;
+              return this.newScheduledExecutorService(key, null, maxThreads);
             });
-
-    e.setRemoveOnCancelPolicy(true);
 
     logger.info(
         "Starting Scheduled executor service name={}, corePoolSize={}, maxPoolSize={}",
@@ -247,11 +236,11 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     return getExecutor(type.getExecutorName(this.servername));
   }
 
-  private ScheduledThreadPoolExecutor getScheduledExecutor(String executorName) {
+  private ScheduledExecutorService getScheduledExecutor(String executorName) {
     return this.scheduledExecutorMap.get(executorName);
   }
 
-  public ScheduledThreadPoolExecutor getScheduledExecutorThreadPool(final ExecutorType type) {
+  public ScheduledExecutorService getScheduledExecutorThreadPool(final ExecutorType type) {
     return getScheduledExecutor(type.getExecutorName(this.servername));
   }
 
@@ -578,5 +567,15 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
       int min, int max, int keepalive, BlockingQueue<Runnable> queue) {
     return new DhruvaExecutorService.CustomThreadPoolExecutor(
         min, max, keepalive, TimeUnit.SECONDS, queue);
+  }
+
+  /**
+   * CSB's API overriden to inject our own customScheduledThreadPoolExecutor with mdc support
+   * @param minThreads
+   * @return
+   */
+  @Override
+  public ScheduledThreadPoolExecutor getScheduledThreadPoolExecutor(int minThreads) {
+    return new CustomScheduledThreadPoolExecutor(minThreads);
   }
 }
