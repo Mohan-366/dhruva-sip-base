@@ -41,8 +41,8 @@ public class MessageHandler {
   private static SipTransaction serverMidCallCancelTransaction;
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
-  private static final int INVITE_TIMEOUT = 32000;
-  private static final int TIMEOUT = 1000;
+  private static final int INVITE_TIMEOUT = 5000; // to handle multiple uas
+  private static final int TIMEOUT = 2000;
   private static boolean isOptionalReceived = false;
 
   static {
