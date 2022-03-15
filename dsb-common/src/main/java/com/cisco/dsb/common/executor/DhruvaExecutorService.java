@@ -1,9 +1,6 @@
 package com.cisco.dsb.common.executor;
 
 import com.cisco.wx2.util.MonitoredExecutorProvider;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -13,18 +10,12 @@ import org.springframework.core.env.Environment;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
-import java.util.SortedSet;
 import java.util.concurrent.*;
-
-import static com.cisco.wx2.metrics.MonitoredExecutorMetrics.*;
-import static com.codahale.metrics.MetricRegistry.name;
 
 @CustomLog
 public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
   private final ConcurrentMap<String, ExecutorService> executorMap = new ConcurrentHashMap<>();
-
-
 
   private final ConcurrentMap<String, ScheduledExecutorService> scheduledExecutorMap =
       new ConcurrentHashMap<>();
@@ -141,83 +132,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         name,
         maxThreads,
         maxThreads);
-  }
-
-  /**
-   * temporary solution for CSB to decorate dhruva's CustomScheduledExecutor to have executor
-   * metrics support later we can have a cleaner solution once pr is merged in CSB, url:
-   * https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/pull/6101
-   *
-   * @param executor
-   * @param prefix
-   * @param handler
-   * @param min
-   * @param max
-   */
-  private void configureCustomScheduleExecutorForMetrics(
-      final ThreadPoolExecutor executor,
-      String prefix,
-      final RejectedExecutionHandler handler,
-      final int min,
-      final int max) {
-
-    final Meter rejected =
-        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-            ? metricRegistry.meter(name(prefix, REJECTED))
-            : metricRegistry.meter(prefix + ".rejected-gauge");
-    final Counter rejectedCounter = metricRegistry.counter(prefix + ".rejected-counter");
-
-    executor.setRejectedExecutionHandler(
-        (r, executor1) -> {
-          rejected.mark();
-          rejectedCounter.inc();
-
-          logger.warn(
-              "Task rejected in executor ({}). Queue size: {}, pool size: {}, max pool size: {}, shutdown: {}",
-              prefix,
-              executor1.getQueue().size(),
-              executor1.getPoolSize(),
-              executor1.getMaximumPoolSize(),
-              executor1.isShutdown());
-
-          if (handler != null) {
-            // rejectedExecution() can throw an unchecked RejectedExecutionException
-            handler.rejectedExecution(r, executor1);
-          }
-        });
-
-    String queueMetricName =
-        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-            ? name(prefix, QUEUE)
-            : name(prefix, "queue");
-
-    String minMetricName =
-        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-            ? name(prefix, POOL_MIN)
-            : name(prefix, "min");
-    String maxMetricName =
-        isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-            ? name(prefix, POOL_MAX)
-            : name(prefix, "max");
-    String sizeMetricName = name(prefix, POOL_SIZE);
-
-    SortedSet<String> metricNames = metricRegistry.getNames();
-
-    if (!metricNames.contains(minMetricName)) {
-      metricRegistry.register(minMetricName, (Gauge<Integer>) () -> min);
-    }
-    if (!metricNames.contains(maxMetricName)) {
-      metricRegistry.register(maxMetricName, (Gauge<Integer>) () -> max);
-    }
-    if (isEnableMonitoredExecutorServiceMetricsToInfluxFromStatsD
-        && !metricNames.contains(sizeMetricName)) {
-      metricRegistry.register(sizeMetricName, (Gauge<Integer>) () -> executor.getPoolSize());
-    }
-    if (!metricNames.contains(queueMetricName)) {
-      metricRegistry.register(queueMetricName, (Gauge<Integer>) () -> executor.getQueue().size());
-    }
-
-    logger.info("Prestart thread pool with executor: {}, min: {}, max: {}", prefix, min, max);
   }
 
   public boolean isExecutorServiceRunning(String name) {
@@ -571,6 +485,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
 
   /**
    * CSB's API overriden to inject our own customScheduledThreadPoolExecutor with mdc support
+   *
    * @param minThreads
    * @return
    */
