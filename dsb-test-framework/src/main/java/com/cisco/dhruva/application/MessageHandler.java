@@ -23,10 +23,11 @@ import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sip.address.Address;
+import javax.sip.header.Header;
 import javax.sip.message.Response;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipResponse;
@@ -40,7 +41,8 @@ public class MessageHandler {
   private static SipTransaction serverMidCallCancelTransaction;
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
-  private static final int TIMEOUT = 5000;
+  private static final int INVITE_TIMEOUT = 32000;
+  private static final int TIMEOUT = 1000;
   private static boolean isOptionalReceived = false;
 
   static {
@@ -121,15 +123,9 @@ public class MessageHandler {
   private static void sendAck(SipCall call, Message message, UA ua) {
     if ((message.getForRequest() != null)
         && message.getForRequest().equalsIgnoreCase("Re-INVITE")) {
-      if (!call.sendReinviteOkAck(clientMidCallINVITETransaction)) {
-        TEST_LOGGER.error("Error sending ACK for Re-INVITE");
-        Assert.fail();
-      }
+      call.sendReinviteOkAck(clientMidCallINVITETransaction);
     } else {
-      if (!call.sendInviteOkAck()) {
-        TEST_LOGGER.error("Error sending ACK for INVITE");
-        Assert.fail();
-      }
+      call.sendInviteOkAck();
     }
   }
 
@@ -181,30 +177,52 @@ public class MessageHandler {
           (String) null,
           null);
     } else if (reasonPhrase.equalsIgnoreCase("Redirect")) {
-      Contact contactHeader = new Contact();
-      SipUri uri =
-          (SipUri)
-              new AddressFactoryImpl()
-                  .createURI(
-                      message
-                          .getParameters()
-                          .getResponseParameters()
-                          .getHeaderAdditions()
-                          .get("contact"));
-      Address address = new AddressImpl();
-      address.setDisplayName("uas");
-      uri.setParameter("transport", "udp");
-      uri.setLrParam();
-      address.setURI(uri);
-      contactHeader.setAddress(address);
-      TEST_LOGGER.info("Setting contact header as: {}", contactHeader);
+      String contactListString =
+          message.getParameters().getResponseParameters().getHeaderAdditions().get("contact");
+      if (contactListString == null || contactListString.isEmpty()) {
+        TEST_LOGGER.error("contacts header cannot be empty in redirect message. Please add");
+        Assert.fail();
+      }
+      String[] contactListFromTestMessage = contactListString.split(",");
+      ArrayList<Header> contactArrayList = new ArrayList<>();
+      Arrays.stream(contactListFromTestMessage)
+          .forEach(
+              contactString -> {
+                Contact contactHeader = new Contact();
+                SipUri uri = null;
+                try {
+                  uri = (SipUri) new AddressFactoryImpl().createURI(contactString);
+                } catch (ParseException e) {
+                  TEST_LOGGER.error(
+                      "Error: Unable to parse contact header {} from Redirect message, ",
+                      contactString);
+                }
+                Address address = new AddressImpl();
+                try {
+                  address.setDisplayName("uas");
+                } catch (ParseException e) {
+                  TEST_LOGGER.error(
+                      "Error: Unable to set display name for contact header {} from Redirect message, ",
+                      contactString);
+                }
+                try {
+                  uri.setParameter("transport", "udp");
+                } catch (ParseException e) {
+                  TEST_LOGGER.error(
+                      "Error: Unable to set transport for contact header {} from Redirect message, ",
+                      contactString);
+                }
+                uri.setLrParam();
+                address.setURI(uri);
+                contactHeader.setAddress(address);
+                TEST_LOGGER.info("Adding contact header, {} in contactList", contactHeader);
+                contactArrayList.add(contactHeader);
+              });
+
+      //      Contact multipleContactHeader = new Contact();
+      //      multipleContactHeader.setContactList(contactList);
       call.sendIncomingCallResponse(
-          Response.MOVED_TEMPORARILY,
-          null,
-          -1,
-          null,
-          new ArrayList<>(Collections.singletonList(contactHeader)),
-          null);
+          Response.MOVED_TEMPORARILY, null, -1, null, contactArrayList, null);
     } else if (responseCode.equalsIgnoreCase(String.valueOf(Response.REQUEST_TERMINATED))) {
       call.sendIncomingCallResponse(Response.REQUEST_TERMINATED, null, -1, null, null, null);
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("CANCEL")) {
@@ -221,7 +239,7 @@ public class MessageHandler {
 
   private static void waitForInvite(SipCall call, Message message, UA ua) {
     if (message.getName().equalsIgnoreCase("INVITE")) {
-      if (call.waitForIncomingCall(TIMEOUT)) {
+      if (call.waitForIncomingCall(INVITE_TIMEOUT)) {
         assertTrue(call.getLastReceivedRequest().isInvite());
         ua.addTestMessage(new TestMessage(call.getLastReceivedRequest(), message));
       } else {

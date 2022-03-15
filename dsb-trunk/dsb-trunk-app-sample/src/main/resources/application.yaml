@@ -30,7 +30,7 @@ common:
           priority: 5
           weight: 100
       sgPolicy: policy1
-      priority: 10
+      priority: 5
       weight: 100
     DefaultSg2:
       name: &DefaultSg2 DefaultSg2
@@ -39,12 +39,12 @@ common:
       lbType: weight
       elements:
         - ipAddress: "127.0.0.1"
-          port: 6060
+          port: 6062
           transport: UDP
           priority: 10
           weight: 100
         - ipAddress: "127.0.0.1"
-          port: 6061
+          port: 6063
           transport: UDP
           priority: 5
           weight: 100
