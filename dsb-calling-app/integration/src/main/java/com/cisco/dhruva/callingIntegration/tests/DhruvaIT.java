@@ -3,7 +3,6 @@ package com.cisco.dhruva.callingIntegration.tests;
 import com.cisco.dhruva.callingIntegration.DhruvaCallingTestProperties;
 import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
 import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
-import com.cisco.dhruva.callingIntegration.util.Token;
 import com.cisco.wx2.test.BaseTestConfig;
 import java.io.IOException;
 import java.util.Properties;
@@ -34,14 +33,18 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
   protected static int dhruvaNetAntaresPort;
   protected static int dhruvaNetCcPort;
 
-  protected static int pstnPort;
+  protected static int pstnUsPoolBPort;
+  protected static int pstnUsPoolASg1Port;
+  protected static int pstnUsPoolASg2Port;
   protected static String pstnContactAddr;
 
   protected static int antaresPort;
   protected static String antaresContactAddr;
   protected static String antaresARecord;
 
-  protected static int wxcPort;
+  protected static int nsPort;
+  protected static int as1Port;
+  protected static int as2Port;
   protected static String wxcContactAddr;
   protected static String nsARecord;
   protected static String as1ARecord;
@@ -53,9 +56,13 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
   protected static String injectedDnsUuid;
   protected static String sipOverrideUrl;
 
-  protected SipStack pstnStack;
+  protected SipStack pstnUsPoolBStack;
+  protected SipStack pstnUsPoolASg1Stack;
+  protected SipStack pstnUsPoolASg2Stack;
   protected SipStack antaresStack;
-  protected SipStack wxcStack;
+  protected SipStack nsStack;
+  protected SipStack as1Stack;
+  protected SipStack as2Stack;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DialInIT.class);
 
@@ -70,9 +77,14 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
     dhruvaNetAntaresPort = testPro.getDhruvaNetAntaresPort();
     dhruvaNetCcPort = testPro.getDhruvaNetCcPort();
 
-    pstnPort = testPro.getTestPstnPort();
+    pstnUsPoolBPort = testPro.getTestPstnUsPoolBPort();
+    pstnUsPoolASg1Port = testPro.getTestPstnUsPoolASG1Port();
+    pstnUsPoolASg2Port = testPro.getTestPstnUsPoolASG2Port();
+
     antaresPort = testPro.getTestAntaresPort();
-    wxcPort = testPro.getTestWxCPort();
+    nsPort = testPro.getTestNsPort();
+    as1Port = testPro.getTestAs1Port();
+    as2Port = testPro.getTestAs2Port();
 
     pstnContactAddr = "sip:pstn-it-guest@" + testHostAddress;
     antaresContactAddr = "sip:antares-it-guest@" + testHostAddress;
@@ -88,7 +100,7 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
     sipOverrideUrl = dhruvaPublicUrl + "/admin/SipRoutingOverrides/" + injectedDnsUuid;
   }
 
-  private Properties getProperties(String stackName) {
+  protected Properties getProperties(String stackName) {
     Properties props = new Properties();
     props.setProperty("javax.sip.STACK_NAME", stackName);
     props.setProperty("gov.nist.javax.sip.READ_TIMEOUT", "1000");
@@ -96,19 +108,6 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
     props.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "32");
     props.setProperty("javax.sip.IP_ADDRESS", testHostAddress);
     return props;
-  }
-
-  /** Initialize the sipStack and a user agent for the test. */
-  public void setUpStacks() throws Exception {
-    pstnStack = new SipStack(Token.UDP, pstnPort, getProperties("pstnAgent"));
-    antaresStack = new SipStack(Token.UDP, antaresPort, getProperties("antaresAgent"));
-    wxcStack = new SipStack(Token.UDP, wxcPort, getProperties("wxcAgent"));
-  }
-
-  public void destroyStacks() {
-    pstnStack.dispose();
-    antaresStack.dispose();
-    wxcStack.dispose();
   }
 
   public void injectDNS() throws IOException {
@@ -168,6 +167,11 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
       dns.setEntity(se);
       CloseableHttpResponse response = httpClient.execute(dns);
       LOGGER.info("Sip override Response : {}", response);
+      if (response.getStatusLine().getStatusCode() == 200) {
+        LOGGER.info("Sip override Successful. Response = {}", response);
+      } else {
+        LOGGER.info("Sip override failed. Response = {}", response);
+      }
     } catch (Exception ex) {
       // handle exception here
     } finally {
@@ -182,6 +186,11 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
       HttpDelete dns = new HttpDelete(deleteDnsUri);
       CloseableHttpResponse response = httpClient.execute(dns);
       LOGGER.info("Sip override delete Response : {}", response);
+      if (response.getStatusLine().getStatusCode() == 200) {
+        LOGGER.info("Sip override delete Successful. Response = {}", response);
+      } else {
+        LOGGER.info("Sip override delete failed. Response = {}", response);
+      }
     } catch (Exception ex) {
       // handle exception here
     } finally {

@@ -69,6 +69,7 @@ public class MetricServiceV2Test {
 
     Assert.assertTrue(capturedMetricSet.size() > 9);
   }
+
   @Test(description = "Test to check supplier emitting metric set with cps counter information")
   public void testCpsMetricSupplier() {
     Map<String, AtomicInteger> cpsCounterMapTest = new HashMap<>();

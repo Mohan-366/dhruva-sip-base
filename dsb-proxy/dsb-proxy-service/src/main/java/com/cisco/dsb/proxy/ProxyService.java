@@ -226,8 +226,25 @@ public class ProxyService {
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
         .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
         .flatMap(sipProxyManager.getProxyController(this.proxyAppConfig))
-        .mapNotNull(sipProxyManager.validateRequest())
-        .mapNotNull(sipProxyManager.proxyAppController(this.proxyAppConfig.isMidDialog()));
+        .transform(this::validateAndApplyAppFilter);
+  }
+
+  public Mono<ProxySIPRequest> validateAndApplyAppFilter(
+      Mono<ProxySIPRequest> proxySIPRequestMono) {
+    return proxySIPRequestMono.handle(
+        (proxySipRequest, sink) -> {
+          ProxySIPRequest proxySIPRequest =
+              sipProxyManager.validateRequest().apply(proxySipRequest);
+          if (proxySIPRequest != null) {
+            proxySIPRequest =
+                sipProxyManager
+                    .proxyAppController(this.proxyAppConfig.isMidDialog())
+                    .apply(proxySIPRequest);
+            if (proxySIPRequest != null) {
+              sink.next(proxySIPRequest);
+            }
+          }
+        });
   }
 
   private BiConsumer<Throwable, Object> requestErrorHandler() {
@@ -303,15 +320,21 @@ public class ProxyService {
     return responseEventMono
         .name("proxyResponse")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForResponse())
-        .mapNotNull(sipProxyManager.findProxyTransaction())
-        .mapNotNull(sipProxyManager.processProxyTransaction());
-    //        .mapNotNull(
-    //            proxySIPResponse ->
-    //                sipProxyManager.processToApp(
-    //                    proxySIPResponse,
-    //                    this.appConfig.getInterest(proxySIPResponse.getResponseClass())));
+        .transform(this::manageProxyTransaction);
+  }
 
-    // .subscribe()
+  public Mono<ProxySIPResponse> manageProxyTransaction(Mono<ResponseEvent> responseEventMono) {
+    return responseEventMono.handle(
+        (responseEvent, sink) -> {
+          ProxySIPResponse proxySIPResponse =
+              sipProxyManager.findProxyTransaction().apply(responseEvent);
+          if (proxySIPResponse != null) {
+            proxySIPResponse = sipProxyManager.processProxyTransaction().apply(proxySIPResponse);
+            if (proxySIPResponse != null) {
+              sink.next(proxySIPResponse);
+            }
+          }
+        });
   }
 
   /** placeholder for processing the timeoutEvent from Stack */

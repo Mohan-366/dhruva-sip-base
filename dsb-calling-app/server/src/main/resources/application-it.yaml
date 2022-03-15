@@ -29,12 +29,12 @@ common:
         - ipAddress: "127.0.0.1"
           port: 4101
           transport: UDP
-          priority: 10
+          priority: 5
           weight: 100
         - ipAddress: "127.0.0.1"
           port: 4102
           transport: UDP
-          priority: 5
+          priority: 10
           weight: 100
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
@@ -100,6 +100,7 @@ common:
       failoverResponseCodes:
         - 501
         - 502
+        - 404
   optionsPingPolicy:
     opPolicy1:
       name: opPolicy1
