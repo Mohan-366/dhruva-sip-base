@@ -42,7 +42,7 @@ public class SipServerLocatorService {
     this.props = props;
     this.executorService = executorService;
     executorService.startExecutorService(
-        ExecutorType.DNS_LOCATOR_SERVICE, 100); // TODO make number of thread as property
+        ExecutorType.DNS_LOCATOR_SERVICE, props.getSipServerLocatorThreads());
   }
 
   // using for testing
