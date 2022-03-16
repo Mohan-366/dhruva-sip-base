@@ -137,6 +137,10 @@ public class MessageHandler {
   }
 
   private static void sendReInvite(SipCall call, Message message, UA ua) {
+    try {
+      Thread.sleep(500); // To avoid Re-INVITE reaching before the previous ACK
+    } catch (InterruptedException e) {
+    }
     if ((clientMidCallINVITETransaction = call.sendReinvite(null, null, (String) null, null, null))
         == null) {
       TEST_LOGGER.error("Error sending Re-INVITE");
