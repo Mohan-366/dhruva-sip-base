@@ -14,7 +14,7 @@ spring:
 
       #        namespace: pushed as part of helm chart
       reload:
-        enabled: false
+        enabled: true
         mode: polling
         period: 10000 # event based missed some config changes, testing polling
 

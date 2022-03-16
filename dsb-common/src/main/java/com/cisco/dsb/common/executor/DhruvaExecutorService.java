@@ -112,7 +112,7 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
   /**
    * provide the thread name that you want to assign
    *
-   * @param name Name of xthread
+   * @param name Name of thread
    * @param maxThreads Accepts the max threads to be configured as input
    */
   public void startScheduledExecutorService(String name, int maxThreads) {
