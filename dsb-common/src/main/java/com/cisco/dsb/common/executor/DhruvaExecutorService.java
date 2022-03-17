@@ -3,7 +3,6 @@ package com.cisco.dsb.common.executor;
 import com.cisco.wx2.util.MonitoredExecutorProvider;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.env.Environment;
@@ -121,9 +120,6 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
         this.scheduledExecutorMap.compute(
             name,
             (key, value) -> {
-              ThreadFactoryBuilder tfb = new ThreadFactoryBuilder();
-              tfb.setNameFormat(name + "-%d");
-              tfb.setDaemon(true);
               return this.newScheduledExecutorService(key, null, maxThreads);
             });
 
