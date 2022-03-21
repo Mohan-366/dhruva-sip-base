@@ -1,5 +1,7 @@
 # Export SPRING_CLOUD_CONSUL_CONFIG_ENABLED=true to enable consul based configuration.
 spring:
+  profiles:
+    active: local
   cloud:
     consul:
       config:
@@ -15,3 +17,9 @@ spring:
         enabled: true
         mode: polling
         period: 10000 # event based missed some config changes, testing polling
+
+
+
+
+  main:
+    allow-circular-references: true

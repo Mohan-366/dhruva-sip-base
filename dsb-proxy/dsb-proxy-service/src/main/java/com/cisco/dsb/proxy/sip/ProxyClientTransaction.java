@@ -13,8 +13,8 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.sip.ClientTransaction;
 import javax.sip.SipProvider;
@@ -68,7 +68,7 @@ public class ProxyClientTransaction {
   // other way so that we don't hold the references unnecessarily (this
   // will enable garbage collection)
   private ScheduledFuture timerC = null;
-  private final ScheduledThreadPoolExecutor scheduledExecutor;
+  private final ScheduledExecutorService scheduledExecutor;
   private final DhruvaExecutorService dhruvaExecutorService;
   @Getter private final ProxySIPRequest proxySIPRequest;
 

@@ -4,10 +4,6 @@
 
 package com.cisco.dsb.common.service;
 
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
-
 import com.cisco.dsb.common.dto.ConnectionInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
@@ -25,11 +21,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import gov.nist.javax.sip.stack.MessageChannel;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,6 +31,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
+
 @Service
 @CustomLog
 public class MetricService {
@@ -47,7 +54,7 @@ public class MetricService {
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
-  private final ScheduledThreadPoolExecutor scheduledExecutor;
+  private final ScheduledExecutorService scheduledExecutor;
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
