@@ -1,0 +1,736 @@
+{
+  "testCaseConfig": [
+    {
+      "description": "Basic INVITE Flow through a SG",
+      "skipTest": false,
+      "id": "1",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            }
+
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Redirect Flow",
+      "skipTest": false,
+      "id": "2",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:uas@127.0.0.1:7001"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            }
+
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Redirect Flow with multiple contacts",
+      "skipTest": true,
+      "id": "3",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:uas@127.0.0.1:7001,sip:uas@127.0.0.1:7002"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 404,
+                  "reasonPhrase": "Not Found"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Failover Flow",
+      "skipTest": false,
+      "id": "4",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6060,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            }
+
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Failover Flow with all elements returning failover response (503)",
+      "skipTest": false,
+      "id": "5",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 503,
+              "reasonPhrase": "Service Unavailable"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6060,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6063,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6062,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Failover Flow with element returning non-failover response (404)",
+      "skipTest": false,
+      "id": "6",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5060,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5075,
+        "transport": "udp",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@nist.gov"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 404,
+              "reasonPhrase": "Not Found"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@nist.gov"
+            }
+          },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 404,
+                  "reasonPhrase": "Not Found"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }]
+}

@@ -116,6 +116,7 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
                    priority: 5
                    weight: 100
                 sgPolicy: policy1
+		pingOn: true
                 optionsPingPolicy: opPolicy1
                 priority: 10
                 weight: 100

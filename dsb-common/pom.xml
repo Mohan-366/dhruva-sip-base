@@ -110,12 +110,6 @@
             <version>20090211</version>
         </dependency>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.14.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.cisco.wx2</groupId>
             <artifactId>core-test</artifactId>
             <scope>test</scope>

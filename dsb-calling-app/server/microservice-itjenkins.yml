@@ -106,7 +106,12 @@ fedramp:
 wbx3:
   files:
     - dsb-calling-app/server/docker/dsb-calling-app-server.Dockerfile
+    - dsb-calling-app/integration/docker/dsb-calling-app-integration.Dockerfile
   artifacts:
     containers.cisco.com/edge_group/dhruva:
       dockerRegistry: https://containers.cisco.com
       dockerFile: dsb-calling-app/server/docker/dsb-calling-app-server.Dockerfile
+    containers.cisco.com/edge_group/dhruva-test-client:
+      dockerRegistry: https://containers.cisco.com
+      dockerFile: dsb-calling-app/integration/docker/dsb-calling-app-integration.Dockerfile
+

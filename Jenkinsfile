@@ -40,67 +40,73 @@ node() {
                 notifyPipelineRoom("DSB: Build started.", toPersonEmail: env.CHANGE_AUTHOR_EMAIL)
             }
         }
-        stage('buildAndDeploy') {
-            withCredentials([file(credentialsId: 'SETTINGS_FILE', variable: 'settingsFile')]) {
-                currentBuild.result = 'SUCCESS'
-                sh '''
-                env
-                ls -lrt
-                cp $settingsFile \$(pwd)/settings.xml
-                docker run \\
-                --mount type=bind,src="\$(pwd)"/settings.xml,dst=/src/settings.xml \\
-                --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11 \\
-                containers.cisco.com/ayogalin/maven-builder:one \\
-                sh -c "/setenv.sh; java -version;/usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
-                '''
-                //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
-                step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/target/classes/com/cisco/', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
-            }
-        }
-        stage('postBuild') {
-            // Report SpotBugs static analysis warnings (also sets build result on failure)
-            def spotbugs = scanForIssues tool: spotBugs(pattern: '**/spotbugsXml.xml')
-            publishIssues issues: [spotbugs]
-            failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
-        }
-        stage('archive') {
-            archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'dsb-calling-app/integration/target/dsb-calling-integration-tests.jar', allowEmptyArchive: true
-        }
-        stage('build and publish wbx3 images') {
-            try {
-                if (env.GIT_BRANCH == 'master') {
-                    sh 'ls -lrth'
-                    def TAG="2."+env.BUILD_NUMBER
-                    /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
-                to determine where to build and push (in our case, containers.cisco.com/edge_group)
-                */
-                    // TODO will be nice to have a BUILD_ID+TIMESTAMP+GIT_COMMIT_ID here instead of just BUILD_NUMBER
-                    // Since the existing pipeline currently uses
-                    // dockerhub.cisco.com but the new build pipeline uses containers.cisco.com, we
-                    // pass a file called microservice-itjenkins.yml in this case (which lets us handle
-                    // both requirements for now).
+         stage('buildAndDeploy') {
+             withCredentials([file(credentialsId: 'SETTINGS_FILE', variable: 'settingsFile')]) {
+                 currentBuild.result = 'SUCCESS'
+                 sh '''
+                 env
+                 ls -lrt
+                 cp $settingsFile \$(pwd)/settings.xml
+                 docker run \\
+                 --mount type=bind,src="\$(pwd)"/settings.xml,dst=/src/settings.xml \\
+                 --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11 \\
+                 containers.cisco.com/ayogalin/maven-builder:one \\
+                 sh -c "/setenv.sh; java -version;/usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
+                 '''
+                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
+                 step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/dsb-calling-app/server/target/classes/com/cisco,**/dsb-common/target/classes/com/cisco,**/dsb-connectivity-monitor/target/classes/com/cisco,**/dsb-proxy/dsb-proxy-service/target/classes/com/cisco,**/dsb-trunk/dsb-trunk-service/target/classes/com/cisco', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
+             }
+         }
+         stage('postBuild') {
+             // Report SpotBugs static analysis warnings (also sets build result on failure)
+             def spotbugs = scanForIssues tool: spotBugs(pattern: '**/spotbugsXml.xml')
+             publishIssues issues: [spotbugs]
+             failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
+         }
+         stage('archive') {
+             archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
+             archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
+             archiveArtifacts artifacts: 'dsb-calling-app/integration/docker/*', allowEmptyArchive: true
+             archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
+         }
+         stage('build and publish wbx3 images') {
+             try {
+                 if (env.GIT_BRANCH == 'master') {
+                     sh 'ls -lrth'
+                     def TAG="2."+env.BUILD_NUMBER
+                     /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
+                 to determine where to build and push (in our case, containers.cisco.com/edge_group)
+                 */
+                     // TODO will be nice to have a BUILD_ID+TIMESTAMP+GIT_COMMIT_ID here instead of just BUILD_NUMBER
+                     // Since the existing pipeline currently uses
+                     // dockerhub.cisco.com but the new build pipeline uses containers.cisco.com, we
+                     // pass a file called microservice-itjenkins.yml in this case (which lets us handle
+                     // both requirements for now).
 
-                    buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
-                }
-                if (env.CHANGE_ID != null) {
-                    def PULL_REQUEST = env.CHANGE_ID+'-pr'
-                    buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
-                }
+                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
+                 }
+                 if (env.CHANGE_ID != null) {
+                     def PULL_REQUEST = env.CHANGE_ID+'-pr'
+                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
+                 }
 
-            } catch (Exception ex) {
-                echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
-                throw ex
-            }
-        }
+             } catch (Exception ex) {
+                 echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
+                 throw ex
+             }
+         }
         if (env.GIT_BRANCH == 'master') {
             stage('ecr sync') {
-                def tag = "2."+ env.BUILD_NUMBER
+                def tag = "2."+env.BUILD_NUMBER
+                //Pull dhruva image and get SHA of that image which will be artifactID
                 sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
                 def artifactID = sh(
                         script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva:${tag} | cut -f 2 -d \':\'",
+                        returnStdout: true
+                ).trim()
+                sh "docker pull containers.cisco.com/edge_group/dhruva-test-client:${tag}"
+                def testartifactID = sh(
+                        script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva-test-client:${tag} | cut -f 2 -d \':\'",
                         returnStdout: true
                 ).trim()
                 try {
@@ -116,9 +122,21 @@ node() {
                     }
                     def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/server/manifest.yaml", tag: tag, metadata: metaBody]
                     buildCI(this, buildArgs)
+                    def testmetaBody = {
+                        artifact_id = testartifactID
+                        description = 'dhruva-test-client'
+                        image_name = 'dhruva-test-client'
+                        operation_type = "Int"
+                        image_tag = tag
+                        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+                        registry_url = 'containers.cisco.com'
+                        service_group = 'WebEx'
+                    }
+                    def testbuildArgs = [component: "dhruva-test-client", manifest: "dsb-calling-app/integration/manifest.yaml", tag: tag, metadata: testmetaBody]
+                    buildCI(this, testbuildArgs)
                     sh "curl https://ecr-sync.int.mccprod02.prod.infra.webex.com/api/v1/sync"
                 } catch (Exception e) {
-                    echo "ERROR: An error occurred while syncing image to ECR"
+                    echo "ERROR: An error occurred while syncing images to ECR"
                     throw e
                 }
             }
@@ -141,7 +159,7 @@ node() {
         } else {
             message = "DSB: Build finished."
         }
-        junit '**/target/surefire-reports/**/TEST-*.xml'
+        junit '**/target/surefire-reports/**/TEST-TestSuite.xml,**/target/failsafe-reports/**/TEST-TestSuite.xml'
         if (env.CHANGE_ID == null) {
             notifyPipelineRoom("$message $details", roomId: notifySparkRoomId)
         } else {

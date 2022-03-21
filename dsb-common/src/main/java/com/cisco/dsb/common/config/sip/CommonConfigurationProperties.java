@@ -83,6 +83,10 @@ public class CommonConfigurationProperties {
   @Setter private String trustedSipSources = "";
   @Getter @Setter private boolean requiredTrustedSipSources = false;
 
+  // metric emitting interval configs
+  @Getter @Setter private int cpsMetricInterval = 1;
+  @Getter @Setter private int udpConnectionMetricInterval = 30;
+
   // DSBNetworkLayer is using this as static variable
   @Getter private static int socketConnectionTimeout = 8000;
   // TODO: this is hack, inject spring object everywhere instead of static field
@@ -106,6 +110,7 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
+  @Getter @Setter private int sipServerLocatorThreads = 90;
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;

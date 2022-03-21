@@ -4,6 +4,10 @@
 
 package com.cisco.dsb.common.service;
 
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
+
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
@@ -20,6 +24,18 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,23 +44,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 
 @Service
 @CustomLog
@@ -59,6 +58,7 @@ public class MetricService {
   private final Executor executorService;
 
   @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
+  @Getter @Setter private Map<String, ConnectionInfo> connectionInfoMap;
 
   @Getter private final Cache<String, Long> timers;
   @Getter private final HashMap<String, StopWatch> stopWatchTimers = new HashMap<>();
@@ -91,16 +91,7 @@ public class MetricService {
             .build();
 
     this.cpsCounterMap = new HashMap<>();
-  }
-
-  @PostConstruct
-  public void postBeanInitialization() {
-    this.initializeCPSMetric();
-  }
-
-  private void initializeCPSMetric() {
-
-    this.emitCPSMetricPerInterval(1, TimeUnit.SECONDS);
+    this.connectionInfoMap = new HashMap<>();
   }
 
   public void registerPeriodicMetric(
@@ -109,6 +100,11 @@ public class MetricService {
         getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
   }
 
+  public void insertConnectionInfo(String id, ConnectionInfo connectionInfo) {
+    if (this.connectionInfoMap != null) {
+      this.connectionInfoMap.computeIfAbsent(id, value -> connectionInfo);
+    }
+  }
   /**
    * API to emit metric for successful call per secord for each calltypes
    *
@@ -117,6 +113,40 @@ public class MetricService {
    */
   public void emitCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
     this.registerPeriodicMetric("cps", this.cpsMetricSupplier(), interval, timeUnit);
+  }
+
+  /**
+   * Currently used to emit establised connection info for UDP transports
+   *
+   * @param interval
+   * @param timeUnit
+   */
+  public void emitConnectionInfoMetricPerInterval(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric(
+        "connection", this.connectionInfoMetricSupplier(), interval, timeUnit);
+  }
+
+  private Supplier<Set<Metric>> connectionInfoMetricSupplier() {
+    {
+      Supplier<Set<Metric>> connectionInfoSupplier =
+          () -> {
+            Set<Metric> connectionInfoMetricSet = new HashSet<>();
+            for (Map.Entry<String, ConnectionInfo> entry : connectionInfoMap.entrySet()) {
+              if (entry.getValue() != null) {
+                ConnectionInfo connectionInfo = (ConnectionInfo) entry.getValue();
+                Metric connectionMetric =
+                    this.createConnectionMetric(
+                        connectionInfo.getDirection(),
+                        connectionInfo.getMessageChannel(),
+                        connectionInfo.getConnectionState());
+                connectionInfoMetricSet.add(connectionMetric);
+              }
+            }
+            connectionInfoMap.clear();
+            return connectionInfoMetricSet;
+          };
+      return connectionInfoSupplier;
+    }
   }
 
   /**
@@ -189,34 +219,83 @@ public class MetricService {
         return;
       }
 
-      String id = SipUtils.getConnectionId(direction, channel.getPeerProtocol(), channel);
-      String localAddress = channel.getHost();
-      int localPort = channel.getPort();
-      String viaAddress = channel.getViaHost();
-      int viaPort = channel.getViaPort();
-      String remoteAddress = channel.getPeerAddress();
-      int remotePort = channel.getPeerPort();
-
-      String transport = channel.getTransport();
-
-      Metric connectionMetric = Metrics.newMetric().measurement("connection");
-
-      connectionMetric.tag("direction", direction);
-      connectionMetric.tag("transport", transport);
-      connectionMetric.field("viaAddress", viaAddress);
-      connectionMetric.field("viaPort", viaPort);
-      connectionMetric.field("localAddress", localAddress);
-      connectionMetric.field("localPort", localPort);
-      connectionMetric.field("remoteAddress", remoteAddress);
-      connectionMetric.field("remotePort", remotePort);
-      connectionMetric.field("id", id);
-      connectionMetric.tag("connectionState", connectionState);
+      Metric connectionMetric = createConnectionMetric(direction, channel, connectionState);
 
       sendMetric(connectionMetric);
 
     } catch (Exception e) {
       // Only debug here since TLS connections with no handshake session are common and cause noisy
       logger.debug("Unable to emit connection metric", e);
+    }
+  }
+
+  @NotNull
+  private Metric createConnectionMetric(
+      String direction, MessageChannel channel, String connectionState) {
+    String id = SipUtils.getConnectionId(direction, channel.getTransport().toUpperCase(), channel);
+    String localAddress = channel.getHost();
+    int localPort = channel.getPort();
+    // String viaAddress = channel.getViaHost();
+    // int viaPort = channel.getViaPort();
+    String remoteAddress = channel.getPeerAddress();
+    int remotePort = channel.getPeerPort();
+
+    String transport = channel.getTransport().toUpperCase();
+
+    Metric connectionMetric = Metrics.newMetric().measurement("connection");
+
+    connectionMetric.tag("direction", direction);
+    connectionMetric.tag("transport", transport);
+    connectionMetric.field("localAddress", localAddress);
+    connectionMetric.field("localPort", localPort);
+    if (StringUtils.equalsIgnoreCase(OUT.toString(), direction)) {
+      connectionMetric.field("localPortStr", "Ephemeral port");
+    } else {
+      connectionMetric.field("localPortStr", String.valueOf(localPort));
+    }
+    connectionMetric.field("remoteAddress", remoteAddress);
+    connectionMetric.field("remotePort", remotePort);
+    connectionMetric.field("id", id);
+    connectionMetric.tag("connectionState", connectionState);
+    return connectionMetric;
+  }
+
+  public void emitConnectionErrorMetric(
+      MessageChannel channel, boolean isClient, String exceptionMessage) {
+    try {
+      if (channel == null) {
+        return;
+      }
+
+      // String id = SipUtils.getConnectionId(direction, channel.getTransport(), channel);
+      String localAddress = channel.getHost();
+      int localPort = channel.getPort();
+      String localPortStr = String.valueOf(localPort);
+
+      String remoteAddress = channel.getPeerAddress();
+      int remotePort = channel.getPeerPort();
+
+      String transport = channel.getTransport().toUpperCase();
+
+      Metric connectionMetric = Metrics.newMetric().measurement("connection.failure");
+
+      connectionMetric.tag("transport", transport);
+      connectionMetric.field("localAddress", localAddress);
+      connectionMetric.field("localPort", localPort);
+
+      if (isClient) {
+        connectionMetric.field("localPortStr", "Ephemeral port");
+      } else {
+        connectionMetric.field("localPortStr", localPortStr);
+      }
+      connectionMetric.field("remoteAddress", remoteAddress);
+      connectionMetric.field("remotePort", remotePort);
+      connectionMetric.field("errorMessage", exceptionMessage);
+
+      sendMetric(connectionMetric);
+
+    } catch (Exception e) {
+      logger.debug("Unable to emit connection failure metric", e);
     }
   }
 

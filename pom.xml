@@ -39,7 +39,8 @@
         <module>dsb-proxy</module>
         <module>sample-app</module>
         <module>dsb-connectivity-monitor</module>
-        <module>dsb-trunk-service</module>
+        <module>dsb-test-framework</module>
+        <module>dsb-trunk</module>
     </modules>
 
     <properties>
@@ -111,6 +112,16 @@
         <dependency>
             <groupId>com.ciscospark</groupId>
             <artifactId>cisco-spark-logging</artifactId>
+        </dependency>
+      <dependency>
+        <groupId>com.googlecode.json-simple</groupId>
+        <artifactId>json-simple</artifactId>
+        <version>1.1.1</version>
+        <scope>compile</scope>
+      </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
         </dependency>
     </dependencies>
     <build>
@@ -202,11 +213,6 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
-                        <configuration>
-                            <excludes>
-                                <exclude>**/integration/*</exclude>
-                            </excludes>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>default-report</id>
