@@ -1,7 +1,7 @@
 # Export SPRING_CLOUD_CONSUL_CONFIG_ENABLED=true to enable consul based configuration.
 spring:
-  profiles:
-    active: local
+  application:
+    name: dhruvaProxyApplication
   cloud:
     consul:
       config:
@@ -9,17 +9,16 @@ spring:
 #    kubernetes:
 #      config:
 #        sources:
-#          - name: dhruva-static-config-map
-#          - name: dhruva-dynamic-config-map
-
-      #        namespace: pushed as part of helm chart
+#          - name: dhruva-blue-static-config-map
+#          - name: dhruva-blue-dynamic-config-map
+#          - name: dhruva-blue-env-config-map
+#        namespace: sip
       reload:
         enabled: true
         mode: polling
         period: 10000 # event based missed some config changes, testing polling
 
 
-
-
   main:
+    allow-bean-definition-overriding: true
     allow-circular-references: true
