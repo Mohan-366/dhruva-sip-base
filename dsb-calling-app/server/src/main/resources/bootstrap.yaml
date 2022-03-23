@@ -6,8 +6,10 @@ spring:
     consul:
       config:
         enabled: false
-#    kubernetes:
-#      config:
+    kubernetes:
+      config:
+        include-profile-specific-sources: false
+
 #        sources:
 #          - name: dhruva-blue-static-config-map
 #          - name: dhruva-blue-dynamic-config-map
@@ -17,8 +19,19 @@ spring:
         enabled: true
         mode: polling
         period: 10000 # event based missed some config changes, testing polling
-
-
+      discovery:
+        enabled: false
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
+management:
+  health:
+    defaults:
+      enabled: false
+  info:
+    defaults:
+      enabled: false
+
+
+
+
