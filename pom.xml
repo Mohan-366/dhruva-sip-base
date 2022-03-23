@@ -50,6 +50,8 @@
         <spotbugs.onlyAnalyze>com.cisco.-</spotbugs.onlyAnalyze>
         <jacoco.version>0.8.4</jacoco.version>
         <skipUTs>false</skipUTs>
+        <skipITs>false</skipITs>
+        <skipFTs>false</skipFTs>
     </properties>
 
     <distributionManagement>

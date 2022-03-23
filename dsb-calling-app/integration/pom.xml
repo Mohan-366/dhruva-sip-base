@@ -132,6 +132,7 @@
                             <goal>start</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipITs}</skip>
                             <container>
                                 <timeout>180000</timeout>
                             </container>
@@ -144,6 +145,7 @@
                             <goal>stop</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipITs}</skip>
                             <container>
                                 <timeout>180000</timeout>
                             </container>
