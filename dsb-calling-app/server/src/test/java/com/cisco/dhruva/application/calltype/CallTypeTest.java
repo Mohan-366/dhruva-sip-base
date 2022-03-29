@@ -7,7 +7,9 @@ import static org.mockito.Mockito.*;
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -18,6 +20,7 @@ import java.text.ParseException;
 import javax.sip.message.Response;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -29,10 +32,18 @@ public class CallTypeTest {
   @Mock CallingAppConfigurationProperty configurationProperty;
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock ProxySIPResponse proxySIPResponse;
+  MetricService metricService;
+  ApplicationContext context;
+  SpringApplicationContext springApplicationContext = new SpringApplicationContext();
 
   @BeforeTest
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
+
+    metricService = mock(MetricService.class);
+
+    // springApplicationContext.setApplicationContext(context);
+
     when(configurationProperty.getCallingEgress()).thenReturn("NS");
     when(configurationProperty.getPstnIngress()).thenReturn("CcpFusionUS");
     when(configurationProperty.getB2bEgress()).thenReturn("antares");
@@ -40,7 +51,13 @@ public class CallTypeTest {
 
   @BeforeMethod
   public void setup() {
-    reset(proxySIPRequest, proxySIPResponse, trunkManager);
+
+    reset(proxySIPRequest, proxySIPResponse, trunkManager, metricService);
+    context = mock(ApplicationContext.class);
+    when(context.getBean(MetricService.class)).thenReturn(metricService);
+
+    springApplicationContext.setApplicationContext(context);
+    when(context.getBean(MetricService.class)).thenReturn(metricService);
     when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
         .thenReturn(Mono.just(proxySIPResponse));
   }
@@ -72,6 +89,8 @@ public class CallTypeTest {
     verify(trunkManager, times(1))
         .handleEgress(
             callType.getEgressTrunk(), proxySIPRequest, callType.getEgressKey(proxySIPRequest));
+
+    verify(metricService, times(1)).sendTrunkMetric(callType.getIngressKey(), 0, null);
   }
 
   @Test(description = "dtg null DialOutB2B")
@@ -97,11 +116,16 @@ public class CallTypeTest {
     callType.processRequest(proxySIPRequest);
     verify(proxySIPRequest, times(1)).reject(dhruvaRuntimeException.getErrCode().getResponseCode());
 
-    reset(proxySIPRequest);
+    verify(metricService, times(1))
+        .sendTrunkMetric(
+            callType.getIngressKey(), dhruvaRuntimeException.getErrCode().getResponseCode(), null);
+    reset(proxySIPRequest, metricService);
 
     when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
         .thenReturn(Mono.error(new NullPointerException()));
     callType.processRequest(proxySIPRequest);
     verify(proxySIPRequest, times(1)).reject(Response.SERVER_INTERNAL_ERROR);
+    verify(metricService, times(1))
+        .sendTrunkMetric(callType.getIngressKey(), Response.SERVER_INTERNAL_ERROR, null);
   }
 }

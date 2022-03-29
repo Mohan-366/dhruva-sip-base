@@ -3,7 +3,9 @@ package com.cisco.dsb.trunk;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.trunks.*;
@@ -23,6 +25,8 @@ public class TrunkManagerTest {
   TrunkPlugins trunkPlugins;
   @Mock ProxySIPResponse proxySIPResponse;
   @Mock ProxySIPRequest proxySIPRequest;
+  @Mock MetricService metricService;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
 
   @BeforeTest
   public void init() {
@@ -59,7 +63,12 @@ public class TrunkManagerTest {
     when(trunkConfigurationProperties.getCallingTrunkMap()).thenReturn(callingTrunkMap);
     when(trunkConfigurationProperties.getDefaultTrunkMap()).thenReturn(defaultTrunkMap);
     trunkPlugins = new TrunkPlugins(trunkConfigurationProperties);
-    trunkManager = new TrunkManager(trunkConfigurationProperties, trunkPlugins);
+    trunkManager =
+        new TrunkManager(
+            trunkConfigurationProperties,
+            trunkPlugins,
+            metricService,
+            commonConfigurationProperties);
     return new Object[][] {
       {TrunkType.PSTN, "provider1", pstnTrunkMap},
       {TrunkType.B2B, "antares2", b2BTrunkMap},

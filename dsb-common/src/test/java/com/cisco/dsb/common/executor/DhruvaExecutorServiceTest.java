@@ -1,17 +1,16 @@
 package com.cisco.dsb.common.executor;
 
+import static org.mockito.Mockito.when;
+
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.codahale.metrics.MetricRegistry;
+import java.util.concurrent.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.*;
-
-import static org.mockito.Mockito.when;
 
 public class DhruvaExecutorServiceTest {
 
