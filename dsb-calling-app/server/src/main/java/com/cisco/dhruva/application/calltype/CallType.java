@@ -67,9 +67,7 @@ public interface CallType {
 
                 getMetricService()
                     .sendTrunkMetric(
-                        ingress,
-                        proxySIPResponse.getStatusCode(),
-                        proxySIPResponse.getCallId());
+                        ingress, proxySIPResponse.getStatusCode(), proxySIPResponse.getCallId());
               }
               proxySIPResponse.proxy();
             },

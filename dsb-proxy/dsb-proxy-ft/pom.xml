@@ -74,6 +74,8 @@
           </execution>
         </executions>
         <configuration>
+          <!--<argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>-->
+          <skipITs>${skipFTs}</skipITs>
           <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
           <testSourceDirectory>${project.build.sourceDirectory}</testSourceDirectory>
           <environmentVariables>
@@ -87,12 +89,14 @@
       <plugin>
         <groupId>org.codehaus.cargo</groupId>
         <artifactId>cargo-maven2-plugin</artifactId>
-        <version>1.6.2</version>
+        <version>${cargo.maven2.plugin.version}</version>
         <configuration>
           <container>
             <containerId>tomcat9x</containerId>
             <zipUrlInstaller>
               <url>https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat/9.0.55/tomcat-9.0.55.zip</url>
+              <downloadDir>${project.build.directory}/downloads</downloadDir>
+              <extractDir>${project.build.directory}/extracts</extractDir>
             </zipUrlInstaller>
             <systemProperties>
               <!-- The following properties are required to disable the creation of redis cache (which is not needed for IT execution)
@@ -136,7 +140,7 @@
             <configuration>
               <skip>${skipFTs}</skip>
               <container>
-                <timeout>180000</timeout>
+                <timeout>300000</timeout>
               </container>
             </configuration>
           </execution>
@@ -149,7 +153,7 @@
             <configuration>
               <skip>${skipFTs}</skip>
               <container>
-                <timeout>180000</timeout>
+                <timeout>300000</timeout>
               </container>
             </configuration>
           </execution>

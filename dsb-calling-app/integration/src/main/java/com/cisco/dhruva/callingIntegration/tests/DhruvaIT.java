@@ -3,6 +3,7 @@ package com.cisco.dhruva.callingIntegration.tests;
 import com.cisco.dhruva.callingIntegration.DhruvaCallingTestProperties;
 import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
 import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
+import com.cisco.dhruva.callingIntegration.util.TestSuiteListener;
 import com.cisco.wx2.test.BaseTestConfig;
 import java.io.IOException;
 import java.util.Properties;
@@ -23,7 +24,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.Listeners;
 
-@Listeners({IntegrationTestListener.class})
+@Listeners({IntegrationTestListener.class, TestSuiteListener.class})
 @ContextConfiguration(classes = {BaseTestConfig.class, DhruvaTestConfig.class})
 public class DhruvaIT extends AbstractTestNGSpringContextTests {
 
@@ -64,7 +65,7 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
   protected SipStack as1Stack;
   protected SipStack as2Stack;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DialInIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DhruvaIT.class);
 
   @Autowired private DhruvaCallingTestProperties testPro;
 
@@ -166,16 +167,16 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
       se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
       dns.setEntity(se);
       CloseableHttpResponse response = httpClient.execute(dns);
-      LOGGER.info("Sip override Response : {}", response);
-      if (response.getStatusLine().getStatusCode() == 200) {
+      if (response != null && response.getStatusLine().getStatusCode() == 200) {
         LOGGER.info("Sip override Successful. Response = {}", response);
       } else {
         LOGGER.info("Sip override failed. Response = {}", response);
       }
-    } catch (Exception ex) {
-      // handle exception here
-    } finally {
       httpClient.close();
+    } catch (Exception ex) {
+      LOGGER.error("Sip override failed!!! Exception occurred during dns injection : " + ex);
+      httpClient.close();
+      throw ex;
     }
   }
 
@@ -185,8 +186,7 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
       java.net.URI deleteDnsUri = java.net.URI.create(sipOverrideUrl);
       HttpDelete dns = new HttpDelete(deleteDnsUri);
       CloseableHttpResponse response = httpClient.execute(dns);
-      LOGGER.info("Sip override delete Response : {}", response);
-      if (response.getStatusLine().getStatusCode() == 200) {
+      if (response != null && response.getStatusLine().getStatusCode() == 200) {
         LOGGER.info("Sip override delete Successful. Response = {}", response);
       } else {
         LOGGER.info("Sip override delete failed. Response = {}", response);

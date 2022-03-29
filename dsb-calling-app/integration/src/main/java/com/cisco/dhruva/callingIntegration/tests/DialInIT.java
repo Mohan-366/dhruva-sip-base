@@ -54,18 +54,9 @@ public class DialInIT extends DhruvaIT {
     as2Stack.dispose();
   }
 
-  @BeforeMethod
-  public void injectDnsOverrides() throws IOException {
-    injectDNS();
-  }
-
-  @AfterMethod
-  public void deleteDnsOverrides() throws IOException {
-    deleteDns();
-  }
-
   @Test(description = "Tests the call-flow from 'PSTN -> Dhruva -> Antares'")
-  public void testDialInPstn() throws InvalidArgumentException, ParseException {
+  public void testDialInPstn() throws InvalidArgumentException, ParseException, IOException {
+    injectDNS();
     pstn =
         pstnUsPoolBStack.createSipPhone(dhruvaAddress, Token.UDP, dhruvaNetSpPort, pstnContactAddr);
     antares = antaresStack.createSipPhone(antaresContactAddr);
@@ -207,6 +198,7 @@ public class DialInIT extends DhruvaIT {
     // NOTE : This SipCall object must not be used again after calling dispose() method. BYE is
     // sent to the far end if the call dialog is in the confirmed state.
     // cleanup
+    deleteDns();
     antares.dispose();
     pstn.dispose();
   }
@@ -216,7 +208,8 @@ public class DialInIT extends DhruvaIT {
           "Tests the call-flow from 'Antares -> Dhruva -> NS/AS'"
               + "Also includes AS failover scenario (i.e) NS would reply to Dhruva with 302 containing AS's info(one or more) along with their q-values"
               + "If the chosen AS responds with an error response, then the next AS will be tried which responds successfully")
-  public void testDailInB2B() throws InvalidArgumentException, ParseException {
+  public void testDailInB2B() throws InvalidArgumentException, ParseException, IOException {
+    injectDNS();
     antares =
         antaresStack.createSipPhone(
             dhruvaAddress, Token.UDP, dhruvaNetAntaresPort, antaresContactAddr);
@@ -451,6 +444,7 @@ public class DialInIT extends DhruvaIT {
     assertEquals(Request.ACK, as2IncReq.getRequest().getMethod());
     LOGGER.info("ACK successfully received by AS 2 !!!");
 
+    deleteDns();
     as2.dispose();
     as1.dispose();
     ns.dispose();

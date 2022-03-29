@@ -7,7 +7,7 @@ Calling Dial-in and Dial-out call-flow based ITs are located here in respective 
 - Running `mvn clean verify` will run both UTs & ITs.
 - To skip UTs (run only ITs) - `mvn clean verify -DskipUTs`
 - To skip ITs (run only UTs) - `mvn clean test` (or) `mvn clean verify -DskipITs`
-- To skip both UTs and ITs - `mvn clean verify -Dmaven.test.skip`
+- To skip both UTs and ITs - `mvn clean verify -DskipUTs -DskipITs`
 
 2) Using IntelliJ IDE setup:
 - Run dhruva-calling-app in Tomcat

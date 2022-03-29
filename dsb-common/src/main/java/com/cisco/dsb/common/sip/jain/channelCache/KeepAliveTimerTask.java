@@ -10,12 +10,11 @@ import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import gov.nist.javax.sip.stack.MessageChannel;
-import lombok.CustomLog;
-
 import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 
 /**
  * This class implements RFC 5626 based keepalives against all cached connections.

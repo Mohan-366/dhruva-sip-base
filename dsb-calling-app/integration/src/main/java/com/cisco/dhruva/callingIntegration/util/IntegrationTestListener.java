@@ -185,16 +185,12 @@ public class IntegrationTestListener extends TestListenerAdapter {
     }
 
     // Skipped tests don't need a tracking id
-    if (!state.equals(TestState.Skipped)) {
-      LOGGER.info(buffer.toString());
+    Throwable reasonSkipped = testResult.getThrowable();
+    if (reasonSkipped != null) {
+      buffer.append("Exception: ");
+      LOGGER.info(buffer.toString(), reasonSkipped);
     } else {
-      Throwable reasonSkipped = testResult.getThrowable();
-      if (reasonSkipped != null) {
-        buffer.append("Exception: ");
-        LOGGER.info(buffer.toString(), reasonSkipped);
-      } else {
-        LOGGER.info(buffer.toString());
-      }
+      LOGGER.info(buffer.toString());
     }
   }
 
