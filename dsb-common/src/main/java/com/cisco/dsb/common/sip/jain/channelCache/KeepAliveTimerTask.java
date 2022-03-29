@@ -66,7 +66,7 @@ public class KeepAliveTimerTask implements Runnable, StartStoppable {
       keepAlivePeriod *= 1000; // converting into milliseconds
       logKeepAlives = sipProperties.isLogKeepAlivesEnabled();
       this.executorService = executorService;
-      executorService.startScheduledExecutorService(ExecutorType.KEEP_ALIVE_SERVICE, 4);
+      executorService.startScheduledExecutorService(ExecutorType.KEEP_ALIVE_SERVICE);
       this.scheduledExecutor =
           executorService.getScheduledExecutorThreadPool(ExecutorType.KEEP_ALIVE_SERVICE);
       executorService.startStripedExecutorService(ExecutorType.KEEP_ALIVE_SERVICE);

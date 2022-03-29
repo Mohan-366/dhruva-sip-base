@@ -87,14 +87,14 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   public DhruvaExecutorService dhruvaExecutorService() {
     if (wx2Properties().isMonitoredExecutorInfluxMetricsEnabled()) {
       return new DhruvaExecutorService(
-          "DhruvaSipServer",
+          "dsb",
           env,
           executorMetricRegistry(),
           wx2Properties().getApplicationInstanceIndex(),
           wx2Properties().isMonitoredExecutorInfluxMetricsEnabled());
     } else {
       return new DhruvaExecutorService(
-          "DhruvaSipServer",
+          "dsb",
           env,
           metricRegistry(),
           wx2Properties().getApplicationInstanceIndex(),

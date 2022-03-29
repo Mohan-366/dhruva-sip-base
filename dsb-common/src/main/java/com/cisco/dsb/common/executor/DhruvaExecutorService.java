@@ -41,37 +41,38 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     Schedulers.onScheduleHook("mdc", CustomThreadPoolExecutor::wrapWithMdcContext);
   }
 
-  public void startExecutorService(final ExecutorType type, final int maxThreads) {
+  public void startExecutorService(final ExecutorType type) {
     String name = type.getExecutorName(this.servername);
     if (isExecutorServiceRunning(name)) {
       logger.info("Executor service {} already running on {}", this, this.servername);
       return;
     }
     // maxThreads => minThread + 10.We dont want fixed size pool
-    startExecutorService(name, maxThreads, maxThreads + 10);
+    startExecutorService(name);
   }
 
   /**
    * provide the thread name that you want to assign
    *
    * @param name Name of thread
-   * @param minThreads Accepts the min threads to be configured as input
-   * @param maxThreads Accepts the max threads to be configured as input
    */
-  public void startExecutorService(String name, int minThreads, int maxThreads) {
+  public void startExecutorService(String name) {
     ExecutorService e =
         this.executorMap.compute(
             name,
             (key, value) -> {
               // Pick from CSB
-              return this.newExecutorService(key, null, minThreads, maxThreads, 100, 60, false);
+              return this.newExecutorService(
+                  key,
+                  (r, ex) -> {
+                    if (!ex.isShutdown()) {
+                      logger.warn(
+                          "Execution of event rejected because queue limit has been exceeded");
+                    }
+                  });
             });
 
-    logger.info(
-        "Starting executor service name={}, corePoolSize={}, maxPoolSize={}",
-        name,
-        minThreads,
-        maxThreads);
+    logger.info("Starting executor service name={} ", name);
   }
 
   /**
@@ -98,35 +99,31 @@ public class DhruvaExecutorService extends MonitoredExecutorProvider {
     logger.info("Starting cached stripped executor service name={}", name);
   }
 
-  public void startScheduledExecutorService(final ExecutorType type, final int maxThreads) {
+  public void startScheduledExecutorService(final ExecutorType type) {
     String name = type.getExecutorName(this.servername);
     if (isScheduledExecutorServiceRunning(name)) {
       logger.info("Executor service {} already running on {}", this, this.servername);
       return;
     }
-    startScheduledExecutorService(name, maxThreads);
+    startScheduledExecutorService(name);
   }
 
   /**
    * provide the thread name that you want to assign
    *
    * @param name Name of thread
-   * @param maxThreads Accepts the max threads to be configured as input
    */
-  public void startScheduledExecutorService(String name, int maxThreads) {
+  public void startScheduledExecutorService(String name) {
 
     ScheduledExecutorService e =
         this.scheduledExecutorMap.compute(
             name,
             (key, value) -> {
-              return this.newScheduledExecutorService(key, null, maxThreads);
+              return this.newScheduledExecutorService(key);
             });
 
     logger.info(
-        "Starting Scheduled executor service name={}, corePoolSize={}, maxPoolSize={}",
-        name,
-        maxThreads,
-        maxThreads);
+        "Starting Scheduled executor service name={}, corePoolSize={}, maxPoolSize={}", name);
   }
 
   public boolean isExecutorServiceRunning(String name) {

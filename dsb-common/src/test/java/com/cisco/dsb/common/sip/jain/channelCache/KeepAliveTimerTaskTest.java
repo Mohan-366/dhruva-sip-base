@@ -35,7 +35,7 @@ public class KeepAliveTimerTaskTest {
     metricRegistry = new MetricRegistry();
 
     when(sipProperties.isLogKeepAlivesEnabled()).thenReturn(true);
-    String prefix = "executor.testDhruva1KEEP_ALIVE_SERVICE";
+    String prefix = "executor.testDhruva1_keep_alive_service";
     when(env.getProperty(prefix + ".queue.ttl.millis", Long.class, -1L)).thenReturn(-1L);
     when(env.getProperty(prefix + ".queue.ttl.action", String.class, "log")).thenReturn("log");
 
@@ -47,7 +47,7 @@ public class KeepAliveTimerTaskTest {
     when(env.getProperty(prefix + ".delayedExecutionThresholdMillis", Long.class, 100L))
         .thenReturn(100L);
 
-    prefix = "executor.testDhruva2KEEP_ALIVE_SERVICE";
+    prefix = "executor.testDhruva2_keep_alive_service";
     when(env.getProperty(prefix + ".queue.ttl.millis", Long.class, -1L)).thenReturn(-1L);
     when(env.getProperty(prefix + ".queue.ttl.action", String.class, "log")).thenReturn("log");
 

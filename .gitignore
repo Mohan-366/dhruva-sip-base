@@ -8,4 +8,4 @@ dependency-reduced-pom.xml
 .classpath
 .factorypath
 */test-output/
-.txt
+*.txt

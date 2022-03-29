@@ -77,7 +77,7 @@ public class MetricService {
       @Qualifier("asyncMetricsExecutor") Executor executorService) {
     this.metricClient = metricClient;
     this.dhruvaExecutorService = dhruvaExecutorService;
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE, 4);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE);
     scheduledExecutor =
         this.dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
     this.executorService = executorService;
