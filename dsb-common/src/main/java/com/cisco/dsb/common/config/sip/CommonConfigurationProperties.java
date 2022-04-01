@@ -112,6 +112,11 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
   @Getter @Setter private int sipServerLocatorThreads = 90;
 
+  // initial delay for triggering custom check for /ping once server is running
+  @Getter @Setter private long callingAppPingInitialDelay = 5L;
+  // time on which custom health checks will be evaluated periodically
+  @Getter @Setter private long callingAppPingPeriod = 5L;
+
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
   }
