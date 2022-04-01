@@ -36,7 +36,6 @@ public class ConnectionMetricRunnable implements Runnable, StartStoppable {
     this.channelCache = channelCache;
     this.metricService = metricService;
     this.executorService = executorService;
-    executorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE, 1);
     this.scheduledExecutorService =
         executorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
   }

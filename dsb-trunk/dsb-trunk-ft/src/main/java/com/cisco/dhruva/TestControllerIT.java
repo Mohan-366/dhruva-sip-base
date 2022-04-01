@@ -5,6 +5,7 @@ import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 import com.cisco.dhruva.application.TestCaseRunner;
 import com.cisco.dhruva.input.TestInput;
 import com.cisco.dhruva.input.TestInput.TestCaseConfig;
+import com.cisco.dhruva.util.TestListener;
 import com.cisco.dhruva.validator.Validator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileReader;
@@ -15,8 +16,10 @@ import org.json.simple.parser.ParseException;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+@Listeners({TestListener.class})
 public class TestControllerIT {
   private TestInput testCases;
 

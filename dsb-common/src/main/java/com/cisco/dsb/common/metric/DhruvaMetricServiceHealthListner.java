@@ -34,7 +34,7 @@ public class DhruvaMetricServiceHealthListner implements ServiceHealthListener {
   public void init() {
     logger.debug("into init of serviceHealthListner");
 
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.HEALTH_MONITOR_SERVICE, 1);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.HEALTH_MONITOR_SERVICE);
     dhruvaExecutorService
         .getScheduledExecutorThreadPool(ExecutorType.HEALTH_MONITOR_SERVICE)
         .scheduleAtFixedRate(

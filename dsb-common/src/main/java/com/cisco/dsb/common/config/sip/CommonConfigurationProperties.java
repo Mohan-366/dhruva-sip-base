@@ -110,7 +110,6 @@ public class CommonConfigurationProperties {
   @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
   @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
-  @Getter @Setter private int sipServerLocatorThreads = 90;
 
   // initial delay for triggering custom check for /ping once server is running
   @Getter @Setter private long callingAppPingInitialDelay = 5L;

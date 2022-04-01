@@ -41,8 +41,7 @@ public class SipServerLocatorService {
       CommonConfigurationProperties props, DhruvaExecutorService executorService) {
     this.props = props;
     this.executorService = executorService;
-    executorService.startExecutorService(
-        ExecutorType.DNS_LOCATOR_SERVICE, props.getSipServerLocatorThreads());
+    executorService.startExecutorService(ExecutorType.DNS_LOCATOR_SERVICE);
   }
 
   // using for testing

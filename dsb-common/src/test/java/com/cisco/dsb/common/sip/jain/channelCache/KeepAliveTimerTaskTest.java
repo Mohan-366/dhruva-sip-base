@@ -1,9 +1,12 @@
 package com.cisco.dsb.common.sip.jain.channelCache;
 
+import static org.mockito.Mockito.*;
+
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
+import java.util.Collections;
 import lombok.CustomLog;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -11,10 +14,6 @@ import org.springframework.core.env.Environment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.Collections;
-
-import static org.mockito.Mockito.*;
 
 @CustomLog
 @Test
@@ -36,7 +35,7 @@ public class KeepAliveTimerTaskTest {
     metricRegistry = new MetricRegistry();
 
     when(sipProperties.isLogKeepAlivesEnabled()).thenReturn(true);
-    String prefix = "executor.testDhruva1KEEP_ALIVE_SERVICE";
+    String prefix = "executor.testDhruva1_keep_alive_service";
     when(env.getProperty(prefix + ".queue.ttl.millis", Long.class, -1L)).thenReturn(-1L);
     when(env.getProperty(prefix + ".queue.ttl.action", String.class, "log")).thenReturn("log");
 
@@ -48,7 +47,7 @@ public class KeepAliveTimerTaskTest {
     when(env.getProperty(prefix + ".delayedExecutionThresholdMillis", Long.class, 100L))
         .thenReturn(100L);
 
-    prefix = "executor.testDhruva2KEEP_ALIVE_SERVICE";
+    prefix = "executor.testDhruva2_keep_alive_service";
     when(env.getProperty(prefix + ".queue.ttl.millis", Long.class, -1L)).thenReturn(-1L);
     when(env.getProperty(prefix + ".queue.ttl.action", String.class, "log")).thenReturn("log");
 

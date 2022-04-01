@@ -35,7 +35,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
   @Autowired
   public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService) {
     this.dhruvaExecutorService = dhruvaExecutorService;
-    dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING, 20);
+    dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING);
   }
 
   public CompletableFuture<SIPResponse> proxySendOutBoundRequest(

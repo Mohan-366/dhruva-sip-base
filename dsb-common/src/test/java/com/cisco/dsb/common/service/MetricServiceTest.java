@@ -259,7 +259,7 @@ public class MetricServiceTest {
     connectionMetricRunnableForTest.setInitialDelay(10L);
     connectionMetricRunnableForTest.setDelay(10L);
     connectionMetricRunnableForTest.start();
-    Thread.sleep(30L);
+    Thread.sleep(100L);
     connectionMetricRunnableForTest.stop();
 
     // this will be more than 1 in the interval
@@ -402,6 +402,29 @@ public class MetricServiceTest {
     // if tag is false, it will not be present in the final metrics, here this tag does have null
     // value
     Assert.assertFalse(capturedMetricPoint.getTags().containsKey("failureReason"));
+  }
+
+  public void sendTrunkMetricTest() {
+
+    String trunk = "antares";
+    int response = 200;
+
+    metricService.sendTrunkMetric(trunk, 200, callId);
+
+    ArgumentCaptor<Metric> metricArgCaptor = ArgumentCaptor.forClass(Metric.class);
+    Mockito.verify(metricClientMock).sendMetric(metricArgCaptor.capture());
+
+    Metric capturedMetric = metricArgCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+    Assert.assertEquals(capturedMetric.measurement(), "dhruva.trunkMetric");
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("trunk"));
+    Assert.assertTrue(capturedMetricPoint.getTag("trunk").equals(trunk));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("response"));
+    Assert.assertTrue(capturedMetricPoint.getField("response").equals(response));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
+    Assert.assertTrue(capturedMetricPoint.getField("callId").equals(callId));
   }
 
   public void latencyMetricExceptionTest() {

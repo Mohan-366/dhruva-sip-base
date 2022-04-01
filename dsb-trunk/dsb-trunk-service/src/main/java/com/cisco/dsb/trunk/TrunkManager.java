@@ -1,12 +1,15 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk;
 import com.cisco.dsb.trunk.trunks.TrunkPluginInterface;
 import com.cisco.dsb.trunk.trunks.TrunkPlugins;
 import com.cisco.dsb.trunk.trunks.TrunkType;
+import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.plugin.core.PluginRegistry;
@@ -25,7 +28,10 @@ public class TrunkManager {
 
   @Autowired
   public TrunkManager(
-      TrunkConfigurationProperties configurationProperties, TrunkPlugins trunkPlugins) {
+      TrunkConfigurationProperties configurationProperties,
+      TrunkPlugins trunkPlugins,
+      MetricService metricService,
+      CommonConfigurationProperties commonConfigurationProperties) {
     this.configurationProperties = configurationProperties;
     this.trunkPlugins = trunkPlugins;
     this.registry =
@@ -34,6 +40,9 @@ public class TrunkManager {
             trunkPlugins.getPSTN(),
             trunkPlugins.getCalling(),
             trunkPlugins.getDefault());
+
+    metricService.emitTrunkCPSMetricPerInterval(
+        commonConfigurationProperties.getCpsMetricInterval(), TimeUnit.SECONDS);
   }
 
   public ProxySIPRequest handleIngress(

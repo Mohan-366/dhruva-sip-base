@@ -556,7 +556,7 @@ public class ProxyControllerTest {
     Assert.assertEquals(proxyTransaction, proxySIPRequest.getProxyStatelessTransaction());
   }
 
-   @Test(description = "stack send request throws SipException due to Destination Unreachable")
+  @Test(description = "stack send request throws SipException due to Destination Unreachable")
   public void testOutgoingRequestSendStackException()
       throws SipException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -604,9 +604,9 @@ public class ProxyControllerTest {
     Assert.assertEquals(response.getStatusCode(), Response.BAD_GATEWAY);
   }
 
-    @Test(
-        description =
-            "stack send request throws DhruvaException since provider for that network is not specified")
+  @Test(
+      description =
+          "stack send request throws DhruvaException since provider for that network is not specified")
   public void testOutgoingRequestProviderException()
       throws SipException, ExecutionException, InterruptedException, TimeoutException {
 

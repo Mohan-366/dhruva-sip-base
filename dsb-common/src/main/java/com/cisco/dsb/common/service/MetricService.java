@@ -4,6 +4,10 @@
 
 package com.cisco.dsb.common.service;
 
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
+
 import com.cisco.dsb.common.dto.ConnectionInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
@@ -21,17 +25,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import gov.nist.javax.sip.stack.MessageChannel;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,11 +34,18 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.Supplier;
-
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
+import javax.annotation.Nullable;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 @Service
 @CustomLog
@@ -59,7 +59,10 @@ public class MetricService {
   MetricClient metricClient;
   private final Executor executorService;
 
+  // List<AtomicInteger> cpsTrunk = new ArrayList<>(2);
   @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
+  @Getter @Setter private Map<String, AtomicIntegerArray> cpsTrunkCounterMap;
+
   @Getter @Setter private Map<String, ConnectionInfo> connectionInfoMap;
 
   @Getter private final Cache<String, Long> timers;
@@ -74,7 +77,7 @@ public class MetricService {
       @Qualifier("asyncMetricsExecutor") Executor executorService) {
     this.metricClient = metricClient;
     this.dhruvaExecutorService = dhruvaExecutorService;
-    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE, 4);
+    dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE);
     scheduledExecutor =
         this.dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
     this.executorService = executorService;
@@ -93,6 +96,7 @@ public class MetricService {
             .build();
 
     this.cpsCounterMap = new HashMap<>();
+    this.cpsTrunkCounterMap = new HashMap<>();
     this.connectionInfoMap = new HashMap<>();
   }
 
@@ -115,6 +119,11 @@ public class MetricService {
    */
   public void emitCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
     this.registerPeriodicMetric("cps", this.cpsMetricSupplier(), interval, timeUnit);
+  }
+
+  public void emitTrunkCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric(
+        "trunkcps", this.cpsTrunkMetricSupplier("trunkcps"), interval, timeUnit);
   }
 
   /**
@@ -173,6 +182,35 @@ public class MetricService {
           return cpsMetricSet;
         };
     return cpsSupplier;
+  }
+
+  /**
+   * This supplier is used to evaluate no. of calls processed (inbound and outbound )each second for
+   * all the trunk available and return the result in form of a metric, to be pushed in influxDB
+   *
+   * @return
+   */
+  public Supplier<Set<Metric>> cpsTrunkMetricSupplier(String measurement) {
+    Supplier<Set<Metric>> cpsTrunkSupplier =
+        () -> {
+          Set<Metric> cpsMetricSet = new HashSet<>();
+          for (Map.Entry<String, AtomicIntegerArray> entry : cpsTrunkCounterMap.entrySet()) {
+            Metric cpsMetricForTrunk = Metrics.newMetric().measurement(measurement);
+            cpsMetricForTrunk.tag("trunk", entry.getKey());
+
+            if (entry.getValue().get(0) != 0) {
+              cpsMetricForTrunk.field("inboundCount", entry.getValue().get(0));
+              entry.getValue().set(0, 0);
+            }
+            if (entry.getValue().get(1) != 0) {
+              cpsMetricForTrunk.field("outboundCount", entry.getValue().get(1));
+              entry.getValue().set(1, 0);
+            }
+            cpsMetricSet.add(cpsMetricForTrunk);
+          }
+          return cpsMetricSet;
+        };
+    return cpsTrunkSupplier;
   }
 
   @NotNull
@@ -310,6 +348,17 @@ public class MetricService {
             .field("query", query)
             .tag("queryType", queryType)
             .tag("failureReason", errorMsg);
+
+    sendMetric(metric);
+  }
+
+  public void sendTrunkMetric(String trunk, int response, String callId) {
+    Metric metric =
+        Metrics.newMetric()
+            .measurement("trunkMetric")
+            .tag("trunk", trunk)
+            .field("response", response)
+            .field("callId", callId);
 
     sendMetric(metric);
   }
