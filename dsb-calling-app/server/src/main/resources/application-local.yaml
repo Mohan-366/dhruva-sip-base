@@ -6,6 +6,8 @@ app:
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
 common:
+  callingAppPingInitialDelay: 5
+  callingAppPingPeriod: 30
   listenPoints:
     - name: *netsp
       port: 5060
