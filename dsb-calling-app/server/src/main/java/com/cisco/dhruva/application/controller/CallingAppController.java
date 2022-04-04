@@ -6,7 +6,6 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,8 +22,6 @@ public class CallingAppController {
 
   private CommonConfigurationProperties commonConfigurationProperties;
 
-  @Value("${callingAppPingPeriod:10}")
-  private Long callingAppPingPeriod;
 
   @Autowired
   public CallingAppController(
@@ -36,14 +33,13 @@ public class CallingAppController {
     this.commonConfigurationProperties = commonConfigurationProperties;
 
     // adding custom monitor for calling-app
+    // DsbListenPointHealthPinger holds the implementation details
     serviceHealthManager.scheduleMonitor(
-            DsbHealthMonitor.newMonitor(
-                    "calling-app", ServiceType.REQUIRED, dsbListenPointHealthPinger),
-            commonConfigurationProperties.getCallingAppPingInitialDelay(),
-            TimeUnit.SECONDS,
-            commonConfigurationProperties.getCallingAppPingPeriod(),
-            TimeUnit.SECONDS);
+        DsbHealthMonitor.newMonitor(
+            "calling-app", ServiceType.REQUIRED, dsbListenPointHealthPinger),
+        commonConfigurationProperties.getCallingAppPingInitialDelay(),
+        TimeUnit.SECONDS,
+        commonConfigurationProperties.getCallingAppPingPeriod(),
+        TimeUnit.SECONDS);
   }
-
-
 }

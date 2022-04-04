@@ -8,18 +8,6 @@ import com.cisco.wx2.dto.health.ServiceHealth;
 import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.security.SecureRandom;
-import java.util.List;
-import javax.annotation.PostConstruct;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +15,19 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.security.SecureRandom;
+import java.util.List;
 
 @CustomLog
 @Component
@@ -56,7 +57,11 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
     }
   }
 
-  private int count = 0;
+
+  /**
+   * This API periodically checks periodically if the listenpoints are available, and based on that sets the response code of '/ping' API
+   * @return
+   */
 
   @SneakyThrows
   @Override
@@ -82,11 +87,11 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
           .append(" ");
       if (!isListening) {
         isServiceUnhealthy = true;
+        break;
       }
     }
 
-    ServiceState serviceState =
-        isServiceUnhealthy == false ? ServiceState.ONLINE : ServiceState.OFFLINE;
+    ServiceState serviceState;
 
     if (isServiceUnhealthy) {
       serviceState = ServiceState.OFFLINE;
@@ -106,6 +111,14 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
         .build();
   }
 
+  /**
+   * This method checks the transport and based on that finds if the listenpoint ports are available or not
+   * @param networkName
+   * @param host
+   * @param port
+   * @param transport
+   * @return
+   */
   public boolean isListening(String networkName, String host, int port, String transport) {
     DatagramSocket datagramSocket = null;
     Socket socket = null;
