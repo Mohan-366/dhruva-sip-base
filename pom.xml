@@ -50,6 +50,7 @@
         <spotbugs.onlyAnalyze>com.cisco.-</spotbugs.onlyAnalyze>
         <jacoco.version>0.8.6</jacoco.version>
         <cargo.maven2.plugin.version>1.8.0</cargo.maven2.plugin.version>
+        <tomcat.version>9.0.58</tomcat.version>
         <skipUTs>false</skipUTs>
         <skipITs>false</skipITs>
         <skipFTs>false</skipFTs>
