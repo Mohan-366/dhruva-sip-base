@@ -93,11 +93,11 @@
         <configuration>
           <container>
             <containerId>tomcat9x</containerId>
-            <zipUrlInstaller>
-              <url>https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat/9.0.55/tomcat-9.0.55.zip</url>
-              <downloadDir>${project.build.directory}/downloads</downloadDir>
-              <extractDir>${project.build.directory}/extracts</extractDir>
-            </zipUrlInstaller>
+            <artifactInstaller>
+              <groupId>org.apache.tomcat</groupId>
+              <artifactId>tomcat</artifactId>
+              <version>${tomcat.version}</version>
+            </artifactInstaller>
             <systemProperties>
               <!-- The following properties are required to disable the creation of redis cache (which is not needed for IT execution)
               i.e if we dont have a redis instance running, the app startup will fail -->
