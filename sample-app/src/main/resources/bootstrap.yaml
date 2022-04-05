@@ -4,3 +4,8 @@ spring:
       enabled: false
   main:
     allow-bean-definition-overriding: true
+management:
+  metrics:
+    export:
+      influx:
+        enabled: false
