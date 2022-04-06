@@ -7,3 +7,8 @@ spring:
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
+management:
+  metrics:
+    export:
+      influx:
+        enabled: false

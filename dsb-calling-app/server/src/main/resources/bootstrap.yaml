@@ -31,6 +31,10 @@ management:
   info:
     defaults:
       enabled: false
+  metrics:
+    export:
+      influx:
+        enabled: false
 
 
 
