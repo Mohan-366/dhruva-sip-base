@@ -22,7 +22,6 @@ public class CallingAppController {
 
   private CommonConfigurationProperties commonConfigurationProperties;
 
-
   @Autowired
   public CallingAppController(
       ServiceHealthManager serviceHealthManager,
@@ -36,10 +35,10 @@ public class CallingAppController {
     // DsbListenPointHealthPinger holds the implementation details
     serviceHealthManager.scheduleMonitor(
         DsbHealthMonitor.newMonitor(
-            "calling-app", ServiceType.REQUIRED, dsbListenPointHealthPinger),
-        commonConfigurationProperties.getCallingAppPingInitialDelay(),
+            "dsb-calling-app", ServiceType.REQUIRED, dsbListenPointHealthPinger),
+        commonConfigurationProperties.getCallingAppPingInitialDelayInSec(),
         TimeUnit.SECONDS,
-        commonConfigurationProperties.getCallingAppPingPeriod(),
+        commonConfigurationProperties.getCallingAppPingPeriodInSec(),
         TimeUnit.SECONDS);
   }
 }

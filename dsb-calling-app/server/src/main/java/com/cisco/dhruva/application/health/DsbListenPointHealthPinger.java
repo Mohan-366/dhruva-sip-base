@@ -8,6 +8,7 @@ import com.cisco.wx2.dto.health.ServiceHealth;
 import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -57,12 +58,12 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
     }
   }
 
-
   /**
-   * This API periodically checks periodically if the listenpoints are available, and based on that sets the response code of '/ping' API
+   * This API periodically checks periodically if the listenpoints are available, and based on that
+   * sets the response code of '/ping' API
+   *
    * @return
    */
-
   @SneakyThrows
   @Override
   public ServiceHealth ping() {
@@ -112,13 +113,16 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
   }
 
   /**
-   * This method checks the transport and based on that finds if the listenpoint ports are available or not
+   * This method checks the transport and based on that finds if the listenpoint ports are available
+   * or not
+   *
    * @param networkName
    * @param host
    * @param port
    * @param transport
    * @return
    */
+  @SuppressFBWarnings(value = "UNENCRYPTED_SOCKET", justification = "baseline suppression")
   public boolean isListening(String networkName, String host, int port, String transport) {
     DatagramSocket datagramSocket = null;
     Socket socket = null;
