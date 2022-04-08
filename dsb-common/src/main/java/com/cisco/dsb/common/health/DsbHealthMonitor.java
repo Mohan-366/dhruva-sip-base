@@ -1,4 +1,4 @@
-package com.cisco.dhruva.application.health;
+package com.cisco.dsb.common.health;
 
 import com.cisco.wx2.client.Client;
 import com.cisco.wx2.client.ClientFactory;
