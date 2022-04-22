@@ -27,7 +27,12 @@ public class DsbHealthMonitor extends ServiceHealthMonitors {
 
   public static ServiceMonitor newMonitor(
       String serviceName, ServiceType serviceType, ServiceHealthPinger serviceHealthPinger) {
-    return MonitorableClientServiceMonitor.newMonitor(
-        serviceName, serviceType, serviceHealthPinger);
+    if (serviceHealthPinger instanceof Client) {
+      return MonitorableClientServiceMonitor.newMonitor(
+          serviceName, serviceType, serviceHealthPinger);
+    } else {
+      return MonitorableClientServiceMonitor.newMonitor(
+          serviceName, serviceType, serviceHealthPinger);
+    }
   }
 }
