@@ -5,10 +5,11 @@ import com.cisco.dsb.common.health.DsbHealthMonitor;
 import com.cisco.dsb.common.health.DsbListenPointHealthPinger;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
-import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.TimeUnit;
 
 /** The Calling App microservice. */
 @RestController
@@ -36,9 +37,9 @@ public class CallingAppController {
     // DsbListenPointHealthPinger holds the implementation details
     serviceHealthManager.scheduleMonitor(
         DsbHealthMonitor.newMonitor(SERVICE_NAME, ServiceType.REQUIRED, dsbListenPointHealthPinger),
-        commonConfigurationProperties.getCallingAppPingInitialDelayInSec(),
+        commonConfigurationProperties.getCustomMonitorPingInitialDelayInSec(),
         TimeUnit.SECONDS,
-        commonConfigurationProperties.getCallingAppPingPeriodInSec(),
+        commonConfigurationProperties.getCustomMonitorPingPeriodInSec(),
         TimeUnit.SECONDS);
   }
 }

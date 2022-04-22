@@ -10,24 +10,27 @@ import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.io.IOException;
-import java.net.*;
-import java.security.SecureRandom;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.PostConstruct;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import java.io.IOException;
+import java.net.*;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @CustomLog
 @Component
@@ -43,10 +46,10 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
 
   @Nullable @Autowired KeyManager keyManager;
 
-  private SSLSocketFactory sslSocketFactory;
+  @Setter private SSLSocketFactory sslSocketFactory;
+  @Getter @Setter private DatagramSocket datagramSocket;
 
-  /* @Autowired
-  OptionsPingTransaction optionsPingTransaction;*/
+
 
   @PostConstruct
   public void initialize() throws Exception {
@@ -102,28 +105,6 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
           }
         });
 
-    /*
-        for (SIPListenPoint eachListenPoint : listenPoints) {
-
-          boolean isListening =
-              isListening(
-                  eachListenPoint.getName(),
-                  eachListenPoint.getHostIPAddress(),
-                  eachListenPoint.getPort(),
-                  eachListenPoint.getTransport().name());
-
-          messageBuilder
-              .append(eachListenPoint.getName())
-              .append(" is healthy: ")
-              .append(isListening)
-              .append(" ");
-          if (!isListening) {
-            isServiceUnhealthy.set(true);
-            break;
-          }
-        }
-    */
-
     ServiceState serviceState;
 
     if (isServiceUnhealthy.get()) {
@@ -161,28 +142,35 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
    */
   @SuppressFBWarnings(value = "UNENCRYPTED_SOCKET", justification = "baseline suppression")
   public boolean isListening(String networkName, String host, int port, String transport) {
-    DatagramSocket datagramSocket = null;
+
     Socket socket = null;
 
     try {
       if (StringUtils.equalsIgnoreCase(Transport.UDP.name(), transport)) {
-        datagramSocket = new DatagramSocket();
-        checkUdpListenPoint(datagramSocket, host, port);
-        // scanUdpAddress(host,port,100);
+
+        checkUdpListenPoint(host, port);
+
       } else if (StringUtils.equalsIgnoreCase(Transport.TCP.name(), transport)) {
         socket = new Socket(host, port);
-      } else {
-
+      } else if (StringUtils.equalsIgnoreCase(Transport.TLS.name(), transport)) {
+        if (sslSocketFactory == null) {
+          logger.warn(
+              "DsbHealthPinger: SslSocketFactory was not initialized, could not perform health check");
+          return false;
+        }
         socket = this.sslSocketFactory.createSocket(host, port);
       }
       return true;
-    } catch (Exception e) {
+    } catch (ConnectException | SocketTimeoutException | PortUnreachableException e) {
       logger.warn(
           "{} health check: unable to validate listen point for network : {} with error : {}",
           SERVICE_NAME,
           networkName,
           e.getMessage());
       return false;
+    } catch (Exception e) {
+      logger.info("some other exception has occured");
+      return true;
     } finally {
       if (socket != null)
         try {
@@ -201,37 +189,16 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
     }
   }
 
-  private void checkUdpListenPoint(DatagramSocket datagramSocket, String host, int port)
-      throws IOException {
+  public void checkUdpListenPoint(String host, int port) throws IOException {
     int timeoutMilis = 100;
 
-    byte[] buf = new byte[128];
+    datagramSocket = datagramSocket != null ? datagramSocket : new DatagramSocket();
+    byte[] buf = "ping".getBytes();
 
     DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName(host), port);
     datagramSocket.setSoTimeout(timeoutMilis);
     datagramSocket.connect(InetAddress.getByName(host), port);
     datagramSocket.send(packet);
-    // datagramSocket.isConnected();
-    datagramSocket.receive(packet);
-  }
-
-  public static boolean scanUdpAddress(String host, int portNo, int timeoutMillis) {
-    try {
-      InetAddress ia = InetAddress.getByName(host);
-      byte[] bytes = new byte[128];
-      DatagramPacket dp = new DatagramPacket(bytes, bytes.length);
-      DatagramSocket ds = new DatagramSocket();
-      ds.setSoTimeout(timeoutMillis);
-      ds.connect(ia, portNo);
-      ds.send(dp);
-      ds.isConnected();
-      ds.receive(dp);
-      ds.close();
-    } catch (SocketTimeoutException e) {
-      return true;
-    } catch (Exception ignore) {
-    }
-    return false;
   }
 
   public void init(@NotNull TrustManager trustManager, @NotNull KeyManager keyManager)
