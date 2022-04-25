@@ -1,34 +1,25 @@
 package com.cisco.dsb.common.dns;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
+import org.xbill.DNS.*;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
-import org.xbill.DNS.DClass;
-import org.xbill.DNS.Lookup;
-import org.xbill.DNS.Message;
-import org.xbill.DNS.Name;
-import org.xbill.DNS.Rcode;
-import org.xbill.DNS.Record;
-import org.xbill.DNS.Resolver;
-import org.xbill.DNS.SRVRecord;
-import org.xbill.DNS.Section;
-import org.xbill.DNS.TextParseException;
-import org.xbill.DNS.Type;
+
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DnsLookupImplTest {
   DnsLookup resolver;

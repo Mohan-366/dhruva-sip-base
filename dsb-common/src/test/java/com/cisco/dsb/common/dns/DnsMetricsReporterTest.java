@@ -1,8 +1,6 @@
 package com.cisco.dsb.common.dns;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.service.MetricService;

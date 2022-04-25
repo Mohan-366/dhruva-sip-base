@@ -1,18 +1,19 @@
 package com.cisco.dsb.common.util.log;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
-
 import com.cisco.dsb.common.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPRequest;
-import java.text.ParseException;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import java.text.ParseException;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @Test
 public class LogUtilsTest {
