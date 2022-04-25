@@ -46,10 +46,10 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
 
   @Nullable @Autowired KeyManager keyManager;
 
+  @Autowired SocketFactory socketFactory;
+
   @Setter private SSLSocketFactory sslSocketFactory;
   @Getter @Setter private DatagramSocket datagramSocket;
-
-
 
   @PostConstruct
   public void initialize() throws Exception {
@@ -64,11 +64,6 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
       this.init(dsbTrustManager, keyManager);
     }
 
-    /*    for (SIPListenPoint eachListenPoint : listenPoints) {
-      if (StringUtils.equalsIgnoreCase(Transport.TLS.name(), eachListenPoint.getTransport().name())) {
-        this.init(dsbTrustManager, keyManager);
-      }
-    }*/
 
   }
 
@@ -151,7 +146,7 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
         checkUdpListenPoint(host, port);
 
       } else if (StringUtils.equalsIgnoreCase(Transport.TCP.name(), transport)) {
-        socket = new Socket(host, port);
+        socket = (Socket) socketFactory.getSocket(transport, host, port);
       } else if (StringUtils.equalsIgnoreCase(Transport.TLS.name(), transport)) {
         if (sslSocketFactory == null) {
           logger.warn(
@@ -169,7 +164,7 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
           e.getMessage());
       return false;
     } catch (Exception e) {
-      logger.info("some other exception has occured");
+      logger.info("Some other exception during health check has occurred");
       return true;
     } finally {
       if (socket != null)
@@ -192,7 +187,8 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
   public void checkUdpListenPoint(String host, int port) throws IOException {
     int timeoutMilis = 100;
 
-    datagramSocket = datagramSocket != null ? datagramSocket : new DatagramSocket();
+    datagramSocket = (DatagramSocket) socketFactory.getSocket(Transport.UDP.name(), host, port);
+
     byte[] buf = "ping".getBytes();
 
     DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName(host), port);
