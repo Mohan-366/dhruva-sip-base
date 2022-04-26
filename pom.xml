@@ -129,6 +129,11 @@
             <artifactId>blockhound</artifactId>
             <version>1.0.6.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <version>1.0.1</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

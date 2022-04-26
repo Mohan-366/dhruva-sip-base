@@ -16,7 +16,6 @@ import org.testng.annotations.Test;
 @Test
 public class InfluxClientTest {
 
-  ArgumentCaptor<Metric> metricArgumentCaptor;
   Metric testMetric1;
   Metric testMetric2;
 
