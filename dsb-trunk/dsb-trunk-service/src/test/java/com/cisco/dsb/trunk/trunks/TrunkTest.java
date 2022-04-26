@@ -14,13 +14,16 @@ import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.dto.Hop;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.TrunkTestUtil;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.SipUri;
@@ -30,9 +33,12 @@ import java.text.ParseException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sip.message.Response;
 import org.mockito.*;
+import org.springframework.context.ApplicationContext;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -54,10 +60,15 @@ public class TrunkTest {
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
   protected SGPolicy sgPolicy;
   private TrunkTestUtil trunkTestUtil;
+  MetricService metricService;
+  ApplicationContext context;
+  SpringApplicationContext springApplicationContext = new SpringApplicationContext();
 
   @BeforeTest
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
+    metricService = mock(MetricService.class);
+
     sgPolicy =
         SGPolicy.builder()
             .setName("policy1")
@@ -68,7 +79,20 @@ public class TrunkTest {
 
   @BeforeMethod
   public void setup() {
-    reset(locateSIPServersResponse, locatorService, rUri, clonedUri, clonedPSR, proxySIPRequest);
+    reset(
+        locateSIPServersResponse,
+        locatorService,
+        rUri,
+        clonedUri,
+        clonedPSR,
+        proxySIPRequest,
+        metricService);
+    context = mock(ApplicationContext.class);
+    when(context.getBean(MetricService.class)).thenReturn(metricService);
+
+    springApplicationContext.setApplicationContext(context);
+    when(context.getBean(MetricService.class)).thenReturn(metricService);
+
     when(proxySIPRequest.clone()).thenReturn(clonedPSR);
     when(proxySIPRequest.getRequest()).thenReturn(request);
     when(request.getRequestURI()).thenReturn(rUri);
@@ -127,17 +151,26 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
+    antaresTrunk.setLoadBalancerMetric(new ConcurrentHashMap<>());
+    ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
+    List<Hop> getHops = trunkTestUtil.getHops(2, sg1, false);
+    getHops.forEach(
+        hop -> {
+          expectedValues.put(hop.getHost() + ":" + hop.getPort() + ":" + hop.getTransport(), 1l);
+        });
 
     // define proxySIPRequest, locatorService Behavior
     doAnswer(
             invocationOnMock -> {
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
-              when(locateSIPServersResponse.getHops())
-                  .thenReturn(trunkTestUtil.getHops(2, sg1, false));
+
+              when(locateSIPServersResponse.getHops()).thenReturn(getHops);
+
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
         .when(locatorService)
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
+
     AtomicInteger state = new AtomicInteger(0); // 0 means fail response, 1 means success response
     doAnswer(
             invocationOnMock -> {
@@ -153,6 +186,8 @@ public class TrunkTest {
         .verifyComplete();
 
     // verification
+
+    Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
     verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(2)).clone();
@@ -163,6 +198,7 @@ public class TrunkTest {
   @Test(description = "single static sg")
   public void testSingleStatic() throws ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
+    TrunkConfigurationProperties trunkConfigurationProperties = new TrunkConfigurationProperties();
     ServerGroup sg1 =
         ServerGroup.builder()
             .setHostName("static1")
@@ -175,6 +211,16 @@ public class TrunkTest {
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
     List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(3, true);
     sg1.setElements(serverGroupElements);
+
+    antaresTrunk.setLoadBalancerMetric(
+        trunkConfigurationProperties.createSGECounterForLBMetric(Collections.singletonList(sg1)));
+
+    ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
+    serverGroupElements.forEach(
+        serverGroupElement -> {
+          expectedValues.put(serverGroupElement.toUniqueElementString(), 1l);
+        });
+
     ProxySIPResponse bestResponse = mock(ProxySIPResponse.class);
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -202,12 +248,15 @@ public class TrunkTest {
         .expectNext(bestResponse)
         .verifyComplete();
 
+    Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
     // verification
     verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
     verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(4)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
     verify(clonedUri, times(3)).setHost(eq(sg1.getHostName()));
+    // antaresTrunk.getLoadBalancerMetric().
+
   }
 
   @Test(description = "pick based on availability")
@@ -628,7 +677,6 @@ public class TrunkTest {
                       try {
                         Thread.sleep(10000);
                       } catch (InterruptedException e) {
-                        System.out.println("why did u wake me?!!!");
                       }
                       return successProxySIPResponse;
                     });
@@ -700,6 +748,7 @@ public class TrunkTest {
             })
         .when(locatorService)
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
+
     AtomicInteger state = new AtomicInteger(0); // 0 means fail response, 1 means success response
     doAnswer(
             invocationOnMock -> {

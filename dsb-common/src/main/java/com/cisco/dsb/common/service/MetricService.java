@@ -29,10 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.Supplier;
@@ -54,14 +51,31 @@ public class MetricService {
   private static final String DHRUVA = "dhruva";
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
+  private static final String TRUNK_LOADBALANCER_MEASUREMENT = "trunkLbs";
+  private static final String TRUNK_TAG = "trunk";
+  private static final String TRUNK_ALGO_TAG = "trunkAlgo";
+  private static final String SERVERGROUP_ELEMENT_TAG = "serverGroupElement";
+  private static final String LBCOUNT_FIELD = "lbcount";
+  private static final String TRUNK_STATUS_FIELD = "status";
+  private static final String TRUNK_SG_MAP_FIELD = "mapping";
+  private static final String TRUNK_FIELD = "trunkName";
+  private static final String SERVERGROUP_TAG = "trunkServerGroup";
+  private static final String SERVERGROUP_STATUS_FIELD = "status";
+
   private final ScheduledExecutorService scheduledExecutor;
   private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
 
-  // List<AtomicInteger> cpsTrunk = new ArrayList<>(2);
   @Getter @Setter private Map<String, AtomicInteger> cpsCounterMap;
   @Getter @Setter private Map<String, AtomicIntegerArray> cpsTrunkCounterMap;
+
+  @Getter @Setter private Map<String, String[]> trunkStatusMap;
+  @Getter @Setter private Map<String, String> serverGroupStatusMap;
+
+  @Getter @Setter private Map<String, ConcurrentHashMap<String, Long>> trunkLBMap;
+
+  @Getter @Setter private Map<String, String> trunkLBAlgorithm;
 
   @Getter @Setter private Map<String, ConnectionInfo> connectionInfoMap;
 
@@ -97,6 +111,11 @@ public class MetricService {
 
     this.cpsCounterMap = new HashMap<>();
     this.cpsTrunkCounterMap = new HashMap<>();
+    this.trunkStatusMap = new HashMap<>();
+    this.serverGroupStatusMap = new HashMap<>();
+    this.trunkLBMap = new ConcurrentHashMap<>();
+    this.trunkLBAlgorithm = new HashMap<>();
+
     this.connectionInfoMap = new HashMap<>();
   }
 
@@ -124,6 +143,14 @@ public class MetricService {
   public void emitTrunkCPSMetricPerInterval(int interval, TimeUnit timeUnit) {
     this.registerPeriodicMetric(
         "trunkcps", this.cpsTrunkMetricSupplier("trunkcps"), interval, timeUnit);
+  }
+
+  public void emitTrunkLBDistribution(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric(
+        TRUNK_LOADBALANCER_MEASUREMENT,
+        this.sendLBDistribution(TRUNK_LOADBALANCER_MEASUREMENT),
+        interval,
+        timeUnit);
   }
 
   /**
@@ -212,6 +239,64 @@ public class MetricService {
         };
     return cpsTrunkSupplier;
   }
+
+  public Supplier<Set<Metric>> sendLBDistribution(String measurement) {
+    Supplier<Set<Metric>> lbTrunkSupplier =
+        () -> {
+          Set<Metric> trunkLBSetMetricDistribution = new HashSet<>();
+          trunkLBMap.forEach(
+              (trunkName, lbCount) -> {
+                Map<String, Long> lbValues = trunkLBMap.get(trunkName);
+                if (lbValues.isEmpty()) return;
+                for (Map.Entry<String, Long> entry : lbValues.entrySet()) {
+                  Metric lbMetricTrunk = Metrics.newMetric().measurement(measurement);
+                  lbMetricTrunk.tag(TRUNK_TAG, trunkName);
+                  lbMetricTrunk.tag(TRUNK_ALGO_TAG, trunkLBAlgorithm.get(trunkName));
+                  lbMetricTrunk.tag(SERVERGROUP_ELEMENT_TAG, entry.getKey());
+                  lbMetricTrunk.field(LBCOUNT_FIELD, entry.getValue());
+                  trunkLBSetMetricDistribution.add(lbMetricTrunk);
+                }
+              });
+          return trunkLBSetMetricDistribution;
+        };
+    return lbTrunkSupplier;
+  }
+
+  public void emitTrunkStatusSupplier(String measurement) {
+
+    Set<Metric> cpsMetricSet = new HashSet<>();
+    for (Map.Entry<String, String[]> entry : trunkStatusMap.entrySet()) {
+      Metric cpsMetricForTrunk = Metrics.newMetric().measurement(measurement);
+      cpsMetricForTrunk.tag(TRUNK_TAG, entry.getKey());
+
+      if (entry.getValue() != null) {
+
+        cpsMetricForTrunk.field(TRUNK_STATUS_FIELD, entry.getValue()[0]);
+        cpsMetricForTrunk.field(TRUNK_SG_MAP_FIELD, entry.getValue()[1]);
+        // added as field as well, need for table Mapping in grafana
+        cpsMetricForTrunk.field(TRUNK_FIELD, entry.getKey());
+      }
+
+      cpsMetricSet.add(cpsMetricForTrunk);
+    }
+    sendMetric(cpsMetricSet);
+  };
+
+  public void emitServerGroupStatusSupplier(String measurement) {
+
+    Set<Metric> cpsMetricSet = new HashSet<>();
+    for (Map.Entry<String, String> entry : serverGroupStatusMap.entrySet()) {
+      Metric cpsMetricForTrunk = Metrics.newMetric().measurement(measurement);
+      cpsMetricForTrunk.tag(SERVERGROUP_TAG, entry.getKey());
+
+      if (entry.getValue() != null) {
+        cpsMetricForTrunk.field(SERVERGROUP_STATUS_FIELD, entry.getValue());
+      }
+
+      cpsMetricSet.add(cpsMetricForTrunk);
+    }
+    sendMetric(cpsMetricSet);
+  };
 
   @NotNull
   private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {

@@ -1,9 +1,7 @@
 package com.cisco.dsb.common.loadbalancer;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import lombok.Getter;
@@ -49,28 +47,31 @@ public enum LBType {
     return (elementsToSelect, key) -> {
       List<LBElement> highestQvalueElements;
       highestQvalueElements = getHighestQElements(elementsToSelect);
-      int[] weights = new int[highestQvalueElements.size()];
-      weights[0] = highestQvalueElements.get(0).getWeight();
+      int[] weights = new int[highestQvalueElements.size() + 1];
+      weights[0] = 0;
       for (int i = 1; i < weights.length; i++) {
-        weights[i] = highestQvalueElements.get(i).getWeight() + weights[i - 1];
+        weights[i] = highestQvalueElements.get(i - 1).getWeight() + weights[i - 1];
       }
       // Binary search to find index of rand
       int first, mid, last;
       int rand = ThreadLocalRandom.current().nextInt(weights[weights.length - 1]);
       first = 0;
       last = weights.length - 1;
-      mid = (first + last) / 2;
-      while (first < last) {
+
+      while (first <= last) {
+        mid = first + ((last - first) / 2);
+
         if (weights[mid] < rand) {
           first = mid + 1;
         } else if (weights[mid] > rand) {
           last = mid - 1;
         } else {
-          break;
+          // key found
+          return highestQvalueElements.get(mid);
         }
-        mid = (first + last) / 2;
       }
-      return highestQvalueElements.get(mid);
+      // key not found
+      return highestQvalueElements.get(first - 1);
     };
   }
 
