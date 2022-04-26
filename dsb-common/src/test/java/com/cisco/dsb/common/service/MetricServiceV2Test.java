@@ -60,7 +60,7 @@ public class MetricServiceV2Test {
     metricService.setCpsCounterMap(cpsCounterMapTest);
 
     metricService.emitCPSMetricPerInterval(10, TimeUnit.MILLISECONDS);
-    Thread.sleep(100L);
+    Thread.sleep(500L);
 
     ArgumentCaptor<Set<Metric>> metricSetCaptor = ArgumentCaptor.forClass(Set.class);
     verify(metricClientMock, atLeast(9)).sendMetrics(metricSetCaptor.capture());
@@ -201,6 +201,58 @@ public class MetricServiceV2Test {
                 ((InfluxPoint) eachMetric.get()).getFields().containsKey("inboundCount"));
             Assert.assertEquals(
                 ((InfluxPoint) eachMetric.get()).getFields().get("inboundCount"), 10);
+          }
+        });
+  }
+
+  @Test(
+      description = "Test to check supplier emitting metric set with trunk cps counter information")
+  public void testTrunkLBMetricSupplier() {
+    Map<String, String> trunkLBAlgoTest = new ConcurrentHashMap<>();
+
+    ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> trunkLBCounterMapTest =
+        new ConcurrentHashMap<>();
+
+    ConcurrentHashMap<String, Long> trunkAElements = new ConcurrentHashMap<>();
+    trunkAElements.put("elementA", 5l);
+    trunkAElements.put("elementB", 5l);
+    trunkAElements.put("elementC", 1l);
+
+    ConcurrentHashMap<String, Long> trunkBElements = new ConcurrentHashMap<>();
+    trunkLBCounterMapTest.put("trunkA", trunkAElements);
+    trunkLBCounterMapTest.put("trunkB", trunkBElements);
+    trunkLBAlgoTest.put("trunkA", "WEIGHT");
+    trunkLBAlgoTest.put("trunkB", "HIGHEST_Q");
+
+    metricService.setTrunkLBMap(trunkLBCounterMapTest);
+    metricService.setTrunkLBAlgorithm(trunkLBAlgoTest);
+    Set<Metric> lbSupplierOp = metricService.sendLBDistribution("trunklbs").get();
+    Assert.assertEquals(lbSupplierOp.size(), 3);
+
+    lbSupplierOp.forEach(
+        eachMetric -> {
+          {
+            Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("trunk"));
+            Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsValue("trunkA"));
+            Assert.assertTrue(
+                ((InfluxPoint) eachMetric.get()).getTags().containsKey("serverGroupElement"));
+          }
+
+          {
+            Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("trunkAlgo"));
+            Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsValue("WEIGHT"));
+          }
+          {
+            Assert.assertTrue(((InfluxPoint) eachMetric.get()).getFields().containsKey("lbcount"));
+          }
+          {
+            if (((InfluxPoint) eachMetric.get())
+                .getTags()
+                .get("serverGroupElement")
+                .equals("elementC")) {
+              Assert.assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 1l);
+            } else
+              Assert.assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 5l);
           }
         });
   }

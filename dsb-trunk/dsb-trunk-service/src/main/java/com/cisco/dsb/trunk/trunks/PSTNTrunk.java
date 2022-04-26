@@ -14,9 +14,10 @@ import reactor.core.publisher.Mono;
 
 @NoArgsConstructor
 public class PSTNTrunk extends AbstractTrunk {
+
   @Builder(setterPrefix = "set")
   public PSTNTrunk(String name, Ingress ingress, Egress egress) {
-    super(name, ingress, egress, null, null);
+    super(name, ingress, egress, null, null, null);
   }
 
   @Override

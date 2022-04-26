@@ -26,6 +26,7 @@ import gov.nist.javax.sip.header.ContactList;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -45,10 +46,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
   protected Egress egress;
   private DnsServerGroupUtil dnsServerGroupUtil;
   private OptionsPingController optionsPingController;
-  private static MetricService metricService =
-      SpringApplicationContext.getAppContext() == null
-          ? null
-          : SpringApplicationContext.getAppContext().getBean(MetricService.class);
+  private ConcurrentHashMap<String, Long> loadBalancerMetric;
   private static int MAX_ELEMENT_RETRIES = 100;
 
   public AbstractTrunk(AbstractTrunk abstractTrunk) {
@@ -57,6 +55,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
     this.egress = abstractTrunk.egress;
     this.dnsServerGroupUtil = abstractTrunk.dnsServerGroupUtil;
     this.optionsPingController = abstractTrunk.optionsPingController;
+    this.loadBalancerMetric = abstractTrunk.loadBalancerMetric;
+  }
+
+  static MetricService getMetricService() {
+    return SpringApplicationContext.getAppContext() == null
+        ? null
+        : SpringApplicationContext.getAppContext().getBean(MetricService.class);
   }
 
   @Override
@@ -119,15 +124,16 @@ public abstract class AbstractTrunk implements LoadBalancable {
                     proxySIPResponse.getStatusCode());
                 // Measure latency
                 proxySIPRequest.handleProxyEvent(
-                    metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement);
+                    getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
                 sink.error(
                     new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT, "Trying next element"));
+
               } else if (proxySIPResponse.getResponseClass() == 3 && enableRedirection()) {
                 ContactList redirectionList = proxySIPResponse.getResponse().getContactHeaders();
                 cookie.getRedirectionSet().add(redirectionList);
                 logger.info("Following redirection");
                 proxySIPRequest.handleProxyEvent(
-                    metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement);
+                    getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
                 sink.error(
                     new DhruvaRuntimeException(
                         ErrorCode.TRUNK_RETRY_NEXT, "Following redirection"));
@@ -244,7 +250,6 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
         // TODO: modify logic when taking up DNS serverGroup optionsPing
         if (serverGroup.getSgType() == SGType.STATIC) {
-
           sgeLB = LoadBalancer.of(serverGroup);
           serverGroupElement = (ServerGroupElement) sgeLB.getCurrentElement();
 
@@ -252,11 +257,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
               && optionsPingController != null
               && !optionsPingController.getStatus(serverGroupElement)) {
             logger.error(
-                "serverGroupElement {} is DOWN, trying next serverGroupelement",
+                "serverGroupElement {} is DOWN, trying next ServerGroupElement",
                 serverGroupElement);
-
             serverGroupElement = (ServerGroupElement) sgeLB.getNextElement();
           }
+
           if (serverGroupElement == null)
             return Mono.error(
                 new DhruvaRuntimeException(
@@ -269,7 +274,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
       }
       logger.debug("Querying DNS for SG:{}", serverGroup);
       return dnsServerGroupUtil
-          .createDNSServerGroup(serverGroup, userId) // this can throw Mono.error(DNS)
+          .createDNSServerGroup(serverGroup, userId)
+          // this can throw Mono.error(DNS)
           .onErrorMap(
               err -> {
                 // retry only when next SG is there
@@ -310,7 +316,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   private EndPoint getEndPointFromSge(
       ServerGroup serverGroup, ServerGroupElement serverGroupElement) {
+
     EndPoint ep = new EndPoint(serverGroup, serverGroupElement);
+
+    // increment counter of SGE of this trunk
+    this.addLBMetric(serverGroup);
+    this.updateLBMetric(serverGroupElement, serverGroup.getLbType().name());
     logger.info("Trying EndPoint {}", ep);
     return ep;
   }
@@ -334,6 +345,54 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .setPort(port)
         .setTransport(transport)
         .build();
+  }
+
+  private void addLBMetric(ServerGroup sg) {
+    if (sg == null) return;
+    if (this.getLoadBalancerMetric() == null) return;
+
+    if (this.getLoadBalancerMetric().isEmpty()) {
+      sg.getElements()
+          .forEach(
+              serverGroupElement -> {
+                if (serverGroupElement.getIpAddress() == null
+                    || serverGroupElement.getTransport() == null) return;
+                StringBuilder key =
+                    new StringBuilder(serverGroupElement.getIpAddress())
+                        .append(":")
+                        .append(serverGroupElement.getPort())
+                        .append(":")
+                        .append(serverGroupElement.getTransport());
+                this.getLoadBalancerMetric().put(key.toString(), 0l);
+              });
+    }
+  }
+
+  private void updateLBMetric(ServerGroupElement serverGroupElement, String lbType) {
+
+    if (serverGroupElement == null) return;
+    if (this.getLoadBalancerMetric() == null) return;
+    if (getMetricService() == null) return;
+
+    String elementKey;
+    if (serverGroupElement.getUniqueString() == null) {
+      StringBuilder key =
+          new StringBuilder(serverGroupElement.getIpAddress())
+              .append(":")
+              .append(serverGroupElement.getPort())
+              .append(":")
+              .append(serverGroupElement.getTransport());
+      elementKey = key.toString();
+    } else {
+      elementKey = serverGroupElement.getUniqueString();
+    }
+    long count =
+        this.getLoadBalancerMetric().containsKey(elementKey)
+            ? this.getLoadBalancerMetric().get(elementKey)
+            : 0;
+    this.getLoadBalancerMetric().put(elementKey, count + 1);
+    getMetricService().getTrunkLBMap().put(this.name, this.getLoadBalancerMetric());
+    getMetricService().getTrunkLBAlgorithm().put(this.name, lbType);
   }
 
   /*
