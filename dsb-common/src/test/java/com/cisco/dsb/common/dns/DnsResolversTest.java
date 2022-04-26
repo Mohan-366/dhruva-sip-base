@@ -3,7 +3,7 @@ package com.cisco.dsb.common.dns;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.dns.dto.DNSARecord;
