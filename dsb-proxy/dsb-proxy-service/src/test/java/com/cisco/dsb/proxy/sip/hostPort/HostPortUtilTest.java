@@ -183,7 +183,7 @@ public class HostPortUtilTest {
       {new HostPortTestDataProvider(privateNetworkInfo, localIp, null, disableHostPort)},
       {new HostPortTestDataProvider(publicNetworkInfo, localIp, null, disableHostPort)},
       {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)},
-        {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)}
+      {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)}
     };
   }
 
