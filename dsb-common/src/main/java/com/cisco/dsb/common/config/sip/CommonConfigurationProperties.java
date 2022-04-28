@@ -86,6 +86,8 @@ public class CommonConfigurationProperties {
 
   // metric emitting interval configs
   @Getter @Setter private int cpsMetricInterval = 1;
+  @Getter @Setter private int trunkLBMetricInterval = 120;
+
   @Getter @Setter private int udpConnectionMetricInterval = 30;
 
   // DSBNetworkLayer is using this as static variable
