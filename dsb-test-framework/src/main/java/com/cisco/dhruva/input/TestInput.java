@@ -125,6 +125,10 @@ public class TestInput {
     @JsonProperty("headerAdditions")
     @Getter
     Map<String, String> headerAdditions;
+
+    @JsonProperty("headerReplacements")
+    @Getter
+    Map<String, String> headerReplacements;
   }
 
   public static class ResponseParameters {
@@ -134,11 +138,29 @@ public class TestInput {
     @Getter
     Map<String, String> headerAdditions;
 
+    @JsonProperty("headerReplacements")
+    @Getter
+    Header headerReplacements[];
+
     @Getter String responseCode;
 
     @JsonProperty("reasonPhrase")
     @Getter
     String reasonPhrase;
+  }
+
+  public static class Header {
+    @JsonProperty("headerName")
+    @Getter
+    String headerName;
+
+    @JsonProperty("address")
+    @Getter
+    String address;
+
+    @JsonProperty("headerParams")
+    @Getter
+    Map<String, String> headerParams;
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

@@ -84,7 +84,7 @@ public enum Transport {
   public static Optional<Transport> getTypeFromString(@Nonnull String transport) {
     try {
       return Optional.of(Transport.valueOf(transport.toUpperCase()));
-    } catch (IllegalArgumentException e) {
+    } catch (Exception e) {
       return Optional.empty();
     }
   }

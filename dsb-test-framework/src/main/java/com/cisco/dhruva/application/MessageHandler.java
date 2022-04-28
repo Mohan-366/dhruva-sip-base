@@ -9,6 +9,7 @@ import static com.cisco.dhruva.util.Constants.RE_INVITE;
 import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 import static org.testng.Assert.assertTrue;
 
+import com.cisco.dhruva.input.TestInput;
 import com.cisco.dhruva.input.TestInput.Direction;
 import com.cisco.dhruva.input.TestInput.Message;
 import com.cisco.dhruva.input.TestInput.ProxyCommunication;
@@ -21,6 +22,7 @@ import gov.nist.javax.sip.address.AddressFactoryImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
+import gov.nist.javax.sip.header.RecordRoute;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,13 +161,27 @@ public class MessageHandler {
     String reasonPhrase = message.getParameters().getResponseParameters().getReasonPhrase();
     String forRequest = message.getForRequest();
     String responseCode = message.getParameters().getResponseParameters().getResponseCode();
+
     if (reasonPhrase.equalsIgnoreCase("Ringing")) {
-      if (!call.sendIncomingCallResponse(Response.RINGING, null, -1)) {
+
+      if (!call.sendIncomingCallResponse(
+          Response.RINGING,
+          null,
+          -1,
+          getAdditionHeaders(message),
+          getReplacementHeaders(message),
+          null)) {
         TEST_LOGGER.error("Error sending 180 Ringing");
         Assert.fail();
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("INVITE")) {
-      if (!call.sendIncomingCallResponse(Response.OK, null, -1)) {
+      if (!call.sendIncomingCallResponse(
+          Response.OK,
+          null,
+          -1,
+          getAdditionHeaders(message),
+          getReplacementHeaders(message),
+          null)) {
         TEST_LOGGER.error("Error sending 200 to client");
         Assert.fail();
       }
@@ -365,5 +381,75 @@ public class MessageHandler {
         Assert.fail();
       }
     }
+  }
+
+  private static ArrayList<Header> getAdditionHeaders(Message message) {
+    return null;
+  }
+
+  private static ArrayList<Header> getReplacementHeaders(Message message) {
+    ArrayList<TestInput.Header> replacementHeaders =
+        new ArrayList<>(
+            Arrays.asList(message.getParameters().getResponseParameters().getHeaderReplacements()));
+    ArrayList<Header> headers = new ArrayList<>();
+    replacementHeaders.stream()
+        .forEach(
+            entry -> {
+              Header header =
+                  new Header() {
+                    @Override
+                    public String getName() {
+                      return null;
+                    }
+
+                    @Override
+                    public Object clone() {
+                      return null;
+                    }
+                  };
+              if (entry.getHeaderName().equals("record-route")) {
+                header = new RecordRoute();
+              }
+              SipUri uri = null;
+              String rrString = entry.getAddress();
+              try {
+                uri = (SipUri) new AddressFactoryImpl().createURI(rrString);
+              } catch (ParseException e) {
+                TEST_LOGGER.error(
+                    "Error: Unable to parse contact header {} from Redirect message, ", rrString);
+              }
+              Address address = new AddressImpl();
+              try {
+                address.setDisplayName("ua");
+              } catch (ParseException e) {
+                TEST_LOGGER.error(
+                    "Error: Unable to set display name for contact header {} from Redirect message, ",
+                    rrString);
+              }
+              Map<String, String> headerParams = entry.getHeaderParams();
+              SipUri finalUri = uri;
+              Header finalHeader = header;
+              headerParams.entrySet().stream()
+                  .forEach(
+                      param -> {
+                        try {
+                          finalUri.setParameter(param.getKey(), param.getValue());
+                        } catch (ParseException e) {
+                          TEST_LOGGER.error(
+                              "Error: Unable to set param {} for header {} for message {} ",
+                              param.getKey(),
+                              finalHeader.getName(),
+                              message);
+                        }
+                      });
+              uri.setLrParam();
+              address.setURI(finalUri);
+              if (header instanceof RecordRoute) {
+                ((RecordRoute) header).setAddress(address);
+              }
+              headers.add(header);
+            });
+
+    return headers;
   }
 }

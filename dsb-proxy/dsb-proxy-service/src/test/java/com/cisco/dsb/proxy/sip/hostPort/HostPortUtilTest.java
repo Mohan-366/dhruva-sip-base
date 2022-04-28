@@ -33,7 +33,8 @@ public class HostPortUtilTest {
       publicNetworkInfo,
       publicNetworkWithHostIPInfo,
       publicNetworkWithHostFqdnInfo,
-      unrecognizedNetworkInfo;
+      unrecognizedNetworkInfo,
+      unrecognizedTransportLessNetworkInfo;
   String localIp = "127.0.0.1";
   String hostIp = "1.1.1.1";
   String unknownIp = "1.2.3.4";
@@ -64,6 +65,8 @@ public class HostPortUtilTest {
               "External_IP_enabled@dhruva.sjc.webex.com:5061;transport=udp;lr");
       unrecognizedNetworkInfo =
           JainSipHelper.createSipURI("Unrecognized@1.2.3.4:5678;transport=udp;lr");
+      unrecognizedTransportLessNetworkInfo =
+          JainSipHelper.createSipURI("Unrecognized@1.2.3.4:5678;lr");
     } catch (Exception ignored) {
 
     }
@@ -179,7 +182,8 @@ public class HostPortUtilTest {
       {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, hostIp, enableHostPort)},
       {new HostPortTestDataProvider(privateNetworkInfo, localIp, null, disableHostPort)},
       {new HostPortTestDataProvider(publicNetworkInfo, localIp, null, disableHostPort)},
-      {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)}
+      {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)},
+        {new HostPortTestDataProvider(unrecognizedNetworkInfo, unknownIp, null, disableHostPort)}
     };
   }
 
