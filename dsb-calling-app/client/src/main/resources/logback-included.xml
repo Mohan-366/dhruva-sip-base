@@ -1,0 +1,26 @@
+<configuration debug="false">
+
+    <property name="CONSOLE_LOG_PATTERN"
+              value="${CONSOLE_LOG_PATTERN:-%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr([%X{WEBEX_TRACKINGID}]){faint} ${EXTRA_CONSOLE_LOG_PATTERN:- } %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Squelch noisy loggers -->
+    <logger name="com.cisco.wx2.config.SecretDefaults" level="WARN"/>
+    <logger name="com.cisco.wx2.client.commonidentity.BearerAuthorizationProvider" level="WARN"/>
+    <logger name="com.cisco.wx2.test.TestUserStats" level="WARN"/>
+
+    <!-- Ensure that logback level changes are also propagated to java.util.logging framework -->
+    <!-- See http://logback.qos.ch/manual/configuration.html#LevelChangePropagator -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
+
+</configuration>

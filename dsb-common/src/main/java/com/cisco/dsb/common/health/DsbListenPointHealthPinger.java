@@ -63,8 +63,6 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
                     Transport.TLS.name(), listenPoint.getTransport().name()))) {
       this.init(dsbTrustManager, keyManager);
     }
-
-
   }
 
   /**
