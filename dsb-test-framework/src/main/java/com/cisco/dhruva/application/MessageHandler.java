@@ -165,23 +165,13 @@ public class MessageHandler {
     if (reasonPhrase.equalsIgnoreCase("Ringing")) {
 
       if (!call.sendIncomingCallResponse(
-          Response.RINGING,
-          null,
-          -1,
-          getAdditionHeaders(message),
-          getReplacementHeaders(message),
-          null)) {
+          Response.RINGING, null, -1, getHeadersToAdd(), getHeadersToReplace(message), null)) {
         TEST_LOGGER.error("Error sending 180 Ringing");
         Assert.fail();
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("INVITE")) {
       if (!call.sendIncomingCallResponse(
-          Response.OK,
-          null,
-          -1,
-          getAdditionHeaders(message),
-          getReplacementHeaders(message),
-          null)) {
+          Response.OK, null, -1, getHeadersToAdd(), getHeadersToReplace(message), null)) {
         TEST_LOGGER.error("Error sending 200 to client");
         Assert.fail();
       }
@@ -383,14 +373,18 @@ public class MessageHandler {
     }
   }
 
-  private static ArrayList<Header> getAdditionHeaders(Message message) {
-    return null;
+  private static ArrayList<Header> getHeadersToAdd() {
+    return null; // TODO: Kalpa add logic to make header additions and replacements generic.
   }
 
-  private static ArrayList<Header> getReplacementHeaders(Message message) {
+  private static ArrayList<Header> getHeadersToReplace(Message message) {
+    TestInput.Header[] headersToReplace =
+        message.getParameters().getResponseParameters().getHeaderReplacements();
+    if (headersToReplace == null) {
+      return null;
+    }
     ArrayList<TestInput.Header> replacementHeaders =
-        new ArrayList<>(
-            Arrays.asList(message.getParameters().getResponseParameters().getHeaderReplacements()));
+        new ArrayList<>(Arrays.asList(headersToReplace));
     ArrayList<Header> headers = new ArrayList<>();
     replacementHeaders.stream()
         .forEach(
@@ -410,13 +404,14 @@ public class MessageHandler {
               if (entry.getHeaderName().equals("record-route")) {
                 header = new RecordRoute();
               }
-              SipUri uri = null;
+              SipUri uri;
               String rrString = entry.getAddress();
               try {
                 uri = (SipUri) new AddressFactoryImpl().createURI(rrString);
               } catch (ParseException e) {
                 TEST_LOGGER.error(
                     "Error: Unable to parse contact header {} from Redirect message, ", rrString);
+                return;
               }
               Address address = new AddressImpl();
               try {
@@ -425,6 +420,7 @@ public class MessageHandler {
                 TEST_LOGGER.error(
                     "Error: Unable to set display name for contact header {} from Redirect message, ",
                     rrString);
+                return;
               }
               Map<String, String> headerParams = entry.getHeaderParams();
               SipUri finalUri = uri;
@@ -442,7 +438,7 @@ public class MessageHandler {
                               message);
                         }
                       });
-              uri.setLrParam();
+              if (finalUri != null) finalUri.setLrParam();
               address.setURI(finalUri);
               if (header instanceof RecordRoute) {
                 ((RecordRoute) header).setAddress(address);

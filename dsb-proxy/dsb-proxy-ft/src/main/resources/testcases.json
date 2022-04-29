@@ -530,14 +530,7 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 200,
-                  "reasonPhrase": "OK",
-                  "headerReplacements" :[{
-                    "headerName": "record-route",
-                    "address": "sip:p1.example.com",
-                    "headerParams" : {
-                      "transport": "udp"
-                    }
-                  }]
+                  "reasonPhrase": "OK"
                 }
               }
 
