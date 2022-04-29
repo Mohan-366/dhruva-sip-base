@@ -20,8 +20,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-@Test(description = "For testing the service availibility functionality")
-public class DhruvaServiceHealthListenerTest {
+@Test(description = "For testing the service availability functionality")
+public class DhruvaMetricServiceHealthListenerTest {
 
   @InjectMocks private DhruvaMetricServiceHealthListner dhruvaMetricServiceHealthListner;
 

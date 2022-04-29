@@ -15,7 +15,7 @@ public enum ExecutorType {
 
   /**
    * @param serverName
-   * @return String having executor type and the server e.g SIP_TRANSACTION_PROCESSOR-dhruva
+   * @return String having server and the executor type e.g dsb_proxy_client_timeout
    */
   String getExecutorName(String serverName) {
     return serverName + "_" + this.toString().toLowerCase();

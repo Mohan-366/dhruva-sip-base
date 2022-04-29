@@ -107,7 +107,7 @@ public class CallTypeTest {
   }
 
   @Test(description = "handle egress throws exception")
-  public void testHandlEgressException() {
+  public void testHandleEgressException() {
     CallType callType = new DialInPSTN(trunkManager, configurationProperty);
     DhruvaRuntimeException dhruvaRuntimeException =
         new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Error while proxying the request");

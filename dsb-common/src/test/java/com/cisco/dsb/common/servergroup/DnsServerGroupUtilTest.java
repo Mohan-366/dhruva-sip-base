@@ -23,13 +23,9 @@ import reactor.test.StepVerifier;
 
 public class DnsServerGroupUtilTest {
 
-  private float maxDnsPriority = 65535f;
-  private int maxDnsQValue = 65536;
   private DhruvaNetwork network;
   private SIPListenPoint sipListenPoint;
   private SipServerLocatorService sipServerLocatorService;
-  private LocateSIPServersResponse locateSIPServersResponse;
-  private DnsServerGroupUtil dnsServerGroupUtil;
 
   @BeforeClass
   void initSetUp() {

@@ -542,7 +542,6 @@ public class OptionsPingMonitorTest {
             .setWeight(10)
             .setTransport(Transport.TCP)
             .build();
-    System.out.println(sge.toUniqueElementString());
 
     optionsPingMonitor.createAndSendRequest("network_tcp", sge);
     verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(any(), any(), any());

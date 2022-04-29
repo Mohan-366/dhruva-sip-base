@@ -109,7 +109,7 @@ public class TrunkTest {
   }
 
   @Test(description = "any internal server error will return Mono.error()")
-  public void testUnhandledExcpetion() {
+  public void testUnhandledException() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     Egress egrees = new Egress();
     ServerGroup serverGroup =

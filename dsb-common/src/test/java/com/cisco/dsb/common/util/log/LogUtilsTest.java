@@ -1,19 +1,18 @@
 package com.cisco.dsb.common.util.log;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cisco.dsb.common.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPRequest;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
+import java.text.ParseException;
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import java.text.ParseException;
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 @Test
 public class LogUtilsTest {
@@ -119,7 +118,7 @@ public class LogUtilsTest {
     ALL_ELSE
   }
 
-  public void testObfuscateString() throws Exception {
+  public void testObfuscateString() {
     runObfuscateString("sip:", "alice@f23-345.four.com;party=calling", OBFUSCATE_AS.SIPURI);
     runObfuscateString("tel:", "+12062563309", OBFUSCATE_AS.SIPURI);
     runObfuscateString("SIPS:", "1-206-256-3309", OBFUSCATE_AS.SIPURI);

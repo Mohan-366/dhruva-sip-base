@@ -10,6 +10,17 @@ import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.server.health.ServiceHealthManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.IOException;
+import java.net.*;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.PostConstruct;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,18 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import java.io.IOException;
-import java.net.*;
-import java.security.SecureRandom;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @CustomLog
 @Component
