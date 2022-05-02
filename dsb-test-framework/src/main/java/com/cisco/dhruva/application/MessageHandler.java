@@ -414,30 +414,24 @@ public class MessageHandler {
                 return;
               }
               Address address = new AddressImpl();
-              try {
-                address.setDisplayName("ua");
-              } catch (ParseException e) {
-                TEST_LOGGER.error(
-                    "Error: Unable to set display name for contact header {} from Redirect message, ",
-                    rrString);
-                return;
-              }
               Map<String, String> headerParams = entry.getHeaderParams();
               SipUri finalUri = uri;
               Header finalHeader = header;
-              headerParams.entrySet().stream()
-                  .forEach(
-                      param -> {
-                        try {
-                          finalUri.setParameter(param.getKey(), param.getValue());
-                        } catch (ParseException e) {
-                          TEST_LOGGER.error(
-                              "Error: Unable to set param {} for header {} for message {} ",
-                              param.getKey(),
-                              finalHeader.getName(),
-                              message);
-                        }
-                      });
+              if (headerParams != null) {
+                headerParams.entrySet().stream()
+                    .forEach(
+                        param -> {
+                          try {
+                            finalUri.setParameter(param.getKey(), param.getValue());
+                          } catch (ParseException e) {
+                            TEST_LOGGER.error(
+                                "Error: Unable to set param {} for header {} for message {} ",
+                                param.getKey(),
+                                finalHeader.getName(),
+                                message);
+                          }
+                        });
+              }
               if (finalUri != null) finalUri.setLrParam();
               address.setURI(finalUri);
               if (header instanceof RecordRoute) {

@@ -431,7 +431,7 @@
       ]
     },
     {
-      "description": "INVITE Flow with UAS omitting dhruva's record route",
+      "description": "INVITE Flow with UAS omitting dhruva's record route.This is a negative test case. We should forward the response even without Dhruva's RR",
       "skipTest": false,
       "id": "4",
       "dsb": {
@@ -514,10 +514,7 @@
                   "reasonPhrase": "Ringing",
                   "headerReplacements" :[{
                     "headerName": "record-route",
-                    "address": "sip:p1.example.com",
-                    "headerParams" : {
-                      "transport": "udp"
-                    }
+                    "address": "sip:p1.example.com"
                   }]
                 }
               }
