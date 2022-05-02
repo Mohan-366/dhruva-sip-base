@@ -410,7 +410,7 @@ public class MessageHandler {
                 uri = (SipUri) new AddressFactoryImpl().createURI(rrString);
               } catch (ParseException e) {
                 TEST_LOGGER.error(
-                    "Error: Unable to parse contact header {} from Redirect message, ", rrString);
+                    "Error: Unable to parse address for {} from message {}, ", rrString, message);
                 return;
               }
               Address address = new AddressImpl();
