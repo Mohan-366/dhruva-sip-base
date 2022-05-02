@@ -5,8 +5,10 @@ import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
 import com.cisco.dhruva.callingIntegration.util.TestSuiteListener;
 import com.cisco.dhruva.client.CallingAppClientFactory;
 import com.cisco.wx2.dto.health.ServiceHealth;
+import com.cisco.wx2.dto.health.ServiceState;
 import com.cisco.wx2.dto.health.ServiceType;
 import com.cisco.wx2.test.BaseTestConfig;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ import static org.testng.Assert.assertNotNull;
 @ContextConfiguration(classes = {BaseTestConfig.class, DhruvaTestConfig.class})
 public class HealthPingIT extends AbstractTestNGSpringContextTests {
 
+  public static final String CALLING_APP_MONITOR_NAME = "dsb-calling-app";
   private static final Logger LOGGER = LoggerFactory.getLogger(HealthPingIT.class);
 
   @Autowired private CallingAppClientFactory callingAppClientFactory;
@@ -32,11 +35,11 @@ public class HealthPingIT extends AbstractTestNGSpringContextTests {
 
     ServiceHealth serviceHealth = callingAppClientFactory.newCallingAppClient().ping();
     assertNotNull(serviceHealth);
-    assertEquals(serviceHealth.getServiceState().toString(), "ONLINE", serviceHealth.toString());
+    assertEquals(serviceHealth.getServiceState(), ServiceState.ONLINE);
     assertEquals(serviceHealth.getServiceName(), "dhruvaProxyApplication");
     assertEquals(serviceHealth.getServiceType(), ServiceType.REQUIRED);
 
-    LOGGER.info("Dhruva ping IT: Service health message for service: {} from ping: {}",serviceHealth.getServiceName(), serviceHealth.getMessage());
+    LOGGER.info("Dhruva ping IT: Actual ServiceHealth is: {}",serviceHealth);
 
 
     boolean isUpstreamServicesHealthy =
@@ -48,6 +51,18 @@ public class HealthPingIT extends AbstractTestNGSpringContextTests {
 
     assertEquals(isUpstreamServicesHealthy, true);
 
+    // validate custom dsb calling app health monitor
+    ServiceHealth dsbCallingAppHealth =
+            serviceHealth.getUpstreamServices().stream()
+                    .filter(
+                            upstreamService -> upstreamService.getServiceType() == ServiceType.REQUIRED &&
+                                    StringUtils.equalsIgnoreCase(upstreamService.getServiceName(), CALLING_APP_MONITOR_NAME))
+                    .findFirst().orElse(null);
+
+    assertNotNull(dsbCallingAppHealth);
+    assertEquals(dsbCallingAppHealth.getServiceState(), ServiceState.ONLINE);
+
+    // ping response code validation
     HttpResponse httpResponse = callingAppClientFactory.newCallingAppClient().pingResponse();
     assertEquals(200, httpResponse.getStatusLine().getStatusCode());
     LOGGER.info(
