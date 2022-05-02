@@ -5,17 +5,17 @@ import com.cisco.wx2.client.health.MonitorableClientFactory;
 import com.cisco.wx2.client.health.ServiceHealthPinger;
 import java.net.URI;
 
-public class DsbClientFactory extends ClientFactory implements MonitorableClientFactory {
+public class CallingAppClientFactory extends ClientFactory implements MonitorableClientFactory {
   @Override
   public ServiceHealthPinger getServiceHealthPinger() {
-    return newDsbClient();
+    return newCallingAppClient();
   }
 
-  public DsbClient newDsbClient() {
-    return new DsbClient(this, baseUrl);
+  public CallingAppClient newCallingAppClient() {
+    return new CallingAppClient(this, baseUrl);
   }
 
-  private DsbClientFactory(Builder builder) {
+  private CallingAppClientFactory(Builder builder) {
     super(builder);
   }
 
@@ -29,8 +29,8 @@ public class DsbClientFactory extends ClientFactory implements MonitorableClient
       super(props, baseUrl);
     }
 
-    public DsbClientFactory build() {
-      return new DsbClientFactory(this);
+    public CallingAppClientFactory build() {
+      return new CallingAppClientFactory(this);
     }
   }
 }

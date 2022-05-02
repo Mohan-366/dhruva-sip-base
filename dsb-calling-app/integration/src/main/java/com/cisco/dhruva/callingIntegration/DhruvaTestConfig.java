@@ -1,6 +1,6 @@
 package com.cisco.dhruva.callingIntegration;
 
-import com.cisco.dhruva.client.DsbClientFactory;
+import com.cisco.dhruva.client.CallingAppClientFactory;
 import com.cisco.wx2.test.TestProperties;
 import com.google.common.base.Preconditions;
 import org.springframework.context.annotation.Bean;
@@ -17,11 +17,11 @@ public class DhruvaTestConfig {
   }
 
   @Bean
-  public DsbClientFactory dsbClientFactory(
+  public CallingAppClientFactory callingAppClientFactory(
       TestProperties testProperties, DhruvaCallingTestProperties dhruvaCallingTestProperties) {
     Preconditions.checkNotNull(testProperties);
 
     URI dhruvaPublicUri = URI.create(dhruvaCallingTestProperties.getDhruvaPublicUrl());
-    return DsbClientFactory.builder(testProperties, dhruvaPublicUri).build();
+    return CallingAppClientFactory.builder(testProperties, dhruvaPublicUri).build();
   }
 }

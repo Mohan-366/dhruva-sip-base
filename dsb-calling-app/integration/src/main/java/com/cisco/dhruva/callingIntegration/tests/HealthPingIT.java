@@ -1,46 +1,54 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
-import com.cisco.dhruva.client.DsbClientFactory;
+import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
+import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
+import com.cisco.dhruva.callingIntegration.util.TestSuiteListener;
+import com.cisco.dhruva.client.CallingAppClientFactory;
 import com.cisco.wx2.dto.health.ServiceHealth;
 import com.cisco.wx2.dto.health.ServiceType;
+import com.cisco.wx2.test.BaseTestConfig;
 import org.apache.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-public class HealthPingIT extends DhruvaIT {
+@Listeners({IntegrationTestListener.class, TestSuiteListener.class})
+@ContextConfiguration(classes = {BaseTestConfig.class, DhruvaTestConfig.class})
+public class HealthPingIT extends AbstractTestNGSpringContextTests {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HealthPingIT.class);
 
-  @Autowired private DsbClientFactory dsbClientFactory;
+  @Autowired private CallingAppClientFactory callingAppClientFactory;
 
   @Test
   public void testPing() {
 
-    ServiceHealth serviceHealth = dsbClientFactory.newDsbClient().ping();
+    ServiceHealth serviceHealth = callingAppClientFactory.newCallingAppClient().ping();
     assertNotNull(serviceHealth);
     assertEquals(serviceHealth.getServiceState().toString(), "ONLINE", serviceHealth.toString());
-    assertEquals(serviceHealth.getMessage(), "Healthy", serviceHealth.toString());
+    assertEquals(serviceHealth.getServiceName(), "dhruvaProxyApplication");
+    assertEquals(serviceHealth.getServiceType(), ServiceType.REQUIRED);
 
-    List<String> unhealthyUpstreamServices =
+    LOGGER.info("Dhruva ping IT: Service health message for service: {} from ping: {}",serviceHealth.getServiceName(), serviceHealth.getMessage());
+
+
+    boolean isUpstreamServicesHealthy =
         serviceHealth.getUpstreamServices().stream()
-            .filter(
+            .noneMatch(
                 upstreamService ->
                     upstreamService.isFault()
-                        && (upstreamService.getServiceType() == ServiceType.REQUIRED))
-            .map(ServiceHealth::getServiceName)
-            .collect(Collectors.toList());
+                        && (upstreamService.getServiceType() == ServiceType.REQUIRED));
 
-    assertEquals(unhealthyUpstreamServices.size(), 0);
+    assertEquals(isUpstreamServicesHealthy, true);
 
-    HttpResponse httpResponse = dsbClientFactory.newDsbClient().pingResponse();
+    HttpResponse httpResponse = callingAppClientFactory.newCallingAppClient().pingResponse();
     assertEquals(200, httpResponse.getStatusLine().getStatusCode());
     LOGGER.info(
         "Dhruva ping IT returned response code: {}", httpResponse.getStatusLine().getStatusCode());
