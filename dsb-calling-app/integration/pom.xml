@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>com.cisco</groupId>
+            <artifactId>dsb-calling-app-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cisco</groupId>
             <artifactId>dsb-calling-app-server</artifactId>
             <version>1.0-SNAPSHOT</version>
             <type>war</type>

@@ -7,9 +7,17 @@
         <groupId>com.cisco</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.cisco.wx2</groupId>
+            <artifactId>core-client</artifactId>
+        </dependency>
+    </dependencies>
+
     <modelVersion>4.0.0</modelVersion>
     <version>1.0-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <artifactId>dsb-calling-app-client</artifactId>
     <build>
         <testResources>
