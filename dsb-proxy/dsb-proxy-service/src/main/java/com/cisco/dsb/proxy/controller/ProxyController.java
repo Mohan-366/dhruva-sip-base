@@ -21,34 +21,27 @@ import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
-import com.cisco.dsb.proxy.sip.ProxyCookie;
-import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
-import com.cisco.dsb.proxy.sip.ProxyFactory;
-import com.cisco.dsb.proxy.sip.ProxyInterface;
-import com.cisco.dsb.proxy.sip.ProxyParams;
-import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
-import com.cisco.dsb.proxy.sip.ProxySendMessage;
-import com.cisco.dsb.proxy.sip.ProxyServerTransaction;
-import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
-import com.cisco.dsb.proxy.sip.ProxyTransaction;
-import com.cisco.dsb.proxy.sip.ProxyUtils;
+import com.cisco.dsb.proxy.sip.*;
 import gov.nist.core.HostPort;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
-import gov.nist.javax.sip.header.*;
+import gov.nist.javax.sip.header.Allow;
+import gov.nist.javax.sip.header.Route;
+import gov.nist.javax.sip.header.RouteList;
+import gov.nist.javax.sip.header.Supported;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPTransaction;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.text.ParseException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import javax.sip.*;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import reactor.core.publisher.Mono;
+
+import javax.sip.ServerTransaction;
+import javax.sip.SipException;
+import javax.sip.SipProvider;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.AllowHeader;
@@ -56,11 +49,13 @@ import javax.sip.header.Header;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import reactor.core.publisher.Mono;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -140,7 +135,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         if (proxyTransaction != null) {
           SIPResponse response = proxySIPResponse.getResponse();
           ((ProxyTransaction) proxyTransaction).respond(response);
-          logger.info("Sent response:\n" + response);
+          logger.info("Sent response: {}", response.getStatusCode());
         } else {
           logger.error("ProxyTransaction was null!");
         }
