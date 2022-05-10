@@ -23,6 +23,7 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
@@ -45,6 +46,8 @@ import javax.sip.header.MaxForwardsHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
+
+import gov.nist.javax.sip.stack.SIPTransaction;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -152,7 +155,7 @@ public class SipProxyManager {
           // for non2xx-ACK -> since we are using the INVITE's serverTransaction, it already has the
           // proxyTransaction also
           // So, do not create it again and the controller.
-          logger.info("Proxy transaction exists for ACK: {}", proxyTransaction);
+          logger.info("Proxy transaction exists for ACK: {}", proxyTransaction );
           ProxyController controller = (ProxyController) proxyTransaction.getController();
 
           // behaviours based on method-type
@@ -164,7 +167,6 @@ public class SipProxyManager {
           logger.info("No Proxy Transaction exists for {}", requestType);
         }
       }
-
       ProxyController controller = createNewProxyController(proxyAppConfig).apply(proxySIPRequest);
       return controller.onNewRequest(proxySIPRequest);
     };

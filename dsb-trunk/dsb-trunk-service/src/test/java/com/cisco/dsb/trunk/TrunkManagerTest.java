@@ -228,7 +228,7 @@ public class TrunkManagerTest {
     trunkManager.probeTrunkSGStatus();
 
     String arr1[] = {"true", "elementA3,elementA2,elementA1"};
-    String arr2[] = {"unknown", "elementB3,elementB2,elementB1"};
+    String arr2[] = {"disabled", "elementB3,elementB2,elementB1"};
     String arr3[] = {"false", "elementC2,elementC1"};
 
     Map<String, String[]> trunkStatusMap = new HashMap<>();

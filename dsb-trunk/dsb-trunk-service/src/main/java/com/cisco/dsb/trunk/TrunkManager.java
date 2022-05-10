@@ -75,7 +75,7 @@ public class TrunkManager {
         .getTrunkServerGroupHashMap()
         .forEach(
             (trunk, serverGroups) -> {
-              AtomicReference<String> trunkStatus = new AtomicReference<>("unknown");
+              AtomicReference<String> trunkStatus = new AtomicReference<>("disabled");
               Set<String> serverGroupName = new HashSet<>();
               serverGroups.stream()
                   .forEach(
@@ -91,7 +91,7 @@ public class TrunkManager {
                         } else {
                           metricService
                               .getServerGroupStatusMap()
-                              .put(serverGroup.getName(), "unknown");
+                              .put(serverGroup.getName(), "disabled");
                         }
 
                         serverGroupName.add(serverGroup.getName());

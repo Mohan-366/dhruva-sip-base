@@ -33,6 +33,7 @@ import com.cisco.dsb.proxy.util.SIPRequestBuilder;
 import com.cisco.wx2.dto.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.header.Allow;
 import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.header.Route;
@@ -56,6 +57,8 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
+
+import gov.nist.javax.sip.stack.SIPTransaction;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -1191,16 +1194,26 @@ public class ProxyControllerTest {
 
     ServerTransaction st = mock(ServerTransaction.class);
 
+    SipStackImpl sipStack = mock(SipStackImpl.class);
+    ProxyTransaction proxyTransaction = mock(ProxyTransaction.class);
+
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.CANCEL, st);
     ProxyController proxyController = getProxyController(proxySIPRequest);
+    when(proxySIPRequest.getProvider().getSipStack()).thenReturn(sipStack);
+    SIPTransaction sipTransaction = mock(SIPTransaction.class);
+
+    when(( sipStack).findCancelTransaction(any(),eq(true))).thenReturn(sipTransaction);
+    when(sipTransaction.getApplicationData()).thenReturn(proxyTransaction);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
 
     doNothing().when(st).sendResponse(any(Response.class));
 
-    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), proxySIPRequest);
+    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
 
+
+    verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());
     Response response = captor.getValue();
     System.out.println("Response: " + response);
