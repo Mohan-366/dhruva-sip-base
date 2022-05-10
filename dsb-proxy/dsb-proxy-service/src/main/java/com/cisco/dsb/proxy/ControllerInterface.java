@@ -152,7 +152,7 @@ public interface ControllerInterface {
    * @param cancel the CANCEL request
    * @throws DhruvaException
    */
-  void onCancel(ProxyTransaction proxy, ProxyServerTransaction trans, SIPRequest cancel)
+  void onCancel(ProxyTransaction proxy)
       throws DhruvaException;
 
   /**

@@ -279,7 +279,7 @@
     {
       "description": "Cancel INVITE Flow",
       "id": "3",
-      "skipTest": true,
+      "skipTest": false,
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
@@ -370,8 +370,8 @@
               "name": "INVITE",
               "direction": "receives",
               "validation": {
-                "requestUri": "sip:callee7@SG7",
-                "record-route": "<sip:rr$n=net_me_udp@127.0.0.1:5067;transport=udp;lr>"
+                "requestUri": "sip:uas@127.0.0.1:7000",
+                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5061;transport=udp;lr>"
               }
             },
             {
@@ -392,8 +392,7 @@
               "name": "CANCEL",
               "direction": "receives",
               "validation": {
-                "requestUri": "sip:callee7@SG7",
-                "record-route": "<sip:rr$n=net_me_udp@127.0.0.1:5067;transport=udp;lr>"
+                "requestUri": "sip:uas@127.0.0.1:7000"
               }
             },
             {
@@ -419,12 +418,6 @@
                   "reasonPhrase": "Request Terminated"
                 }
               }
-            },
-            {
-              "description": "normal request",
-              "type": "request",
-              "name": "ACK",
-              "direction": "receives"
             }
           ]
         }

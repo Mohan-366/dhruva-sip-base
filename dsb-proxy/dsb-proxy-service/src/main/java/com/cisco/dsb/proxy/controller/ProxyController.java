@@ -34,11 +34,13 @@ import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
 import com.cisco.dsb.proxy.sip.ProxyUtils;
 import gov.nist.core.HostPort;
+import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -663,18 +665,36 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
 
         case Request.CANCEL:
           try {
-            // Reply to received CANCEL request with 200 OK
+            // Reply to received CANCEL request with 200 OK --> to Client
             logger.info("Sending 200 (OK) response for received CANCEL");
             Response sipResponse =
                 JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
             ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
+
+            // Sending CANCEL to server
+            ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
+            if (serverTransaction != null) {
+
+              // Find relevant initial transaction for CANCEL and map it with client Transaction
+              SIPTransaction sipTransaction =
+                  ((SipStackImpl) proxySIPRequest.getProvider().getSipStack())
+                      .findCancelTransaction(sipRequest, true);
+              if (sipTransaction == null) {
+                logger.error("Initial Transaction not found for CANCEL {} , dropping it", proxySIPRequest );
+                return null;
+              }
+              ProxyTransaction proxyTransaction =
+                  (ProxyTransaction) sipTransaction.getApplicationData();
+              // sending over to client
+              proxyTransaction.cancel();
+            }
           } catch (Exception e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
                 "Error sending 200 (OK) response for CANCEL request",
                 e);
           }
-          return proxySIPRequest;
+          return null;
 
         case Request.OPTIONS:
           try {
@@ -902,8 +922,10 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   @Override
-  public void onCancel(ProxyTransaction proxy, ProxyServerTransaction trans, SIPRequest cancel)
-      throws DhruvaException {}
+  public void onCancel(ProxyTransaction proxy) throws DhruvaException {
+
+    proxy.cancel();
+  }
 
   @Override
   public void onResponse(ProxySIPResponse response) {
