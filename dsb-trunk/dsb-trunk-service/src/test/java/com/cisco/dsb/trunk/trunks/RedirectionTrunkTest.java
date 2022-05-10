@@ -2,6 +2,7 @@ package com.cisco.dsb.trunk.trunks;
 
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
@@ -67,6 +68,8 @@ public class RedirectionTrunkTest {
     reset(locateSIPServersResponse, locatorService, rUri, clonedUri, clonedPSR, proxySIPRequest);
     when(proxySIPRequest.clone()).thenReturn(clonedPSR);
     when(proxySIPRequest.getRequest()).thenReturn(request);
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
+    when(clonedPSR.getAppRecord()).thenReturn(new DhruvaAppRecord());
     when(request.getRequestURI()).thenReturn(rUri);
     when(clonedPSR.getRequest()).thenReturn(clonedRequest);
     when(clonedRequest.getRequestURI()).thenReturn(clonedUri);

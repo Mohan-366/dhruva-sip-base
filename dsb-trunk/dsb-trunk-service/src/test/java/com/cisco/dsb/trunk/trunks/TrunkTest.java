@@ -11,6 +11,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -95,9 +96,11 @@ public class TrunkTest {
 
     when(proxySIPRequest.clone()).thenReturn(clonedPSR);
     when(proxySIPRequest.getRequest()).thenReturn(request);
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     when(request.getRequestURI()).thenReturn(rUri);
     when(clonedPSR.getRequest()).thenReturn(clonedRequest);
     when(clonedRequest.getRequestURI()).thenReturn(clonedUri);
+    when(clonedPSR.getAppRecord()).thenReturn(new DhruvaAppRecord());
     doNothing()
         .when(proxySIPRequest)
         .handleProxyEvent(any(MetricService.class), any(SipMetricsContext.State.class));

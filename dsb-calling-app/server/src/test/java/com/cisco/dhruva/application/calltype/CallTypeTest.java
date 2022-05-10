@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.util.SpringApplicationContext;
@@ -42,8 +43,6 @@ public class CallTypeTest {
 
     metricService = mock(MetricService.class);
 
-    // springApplicationContext.setApplicationContext(context);
-
     when(configurationProperty.getCallingEgress()).thenReturn("NS");
     when(configurationProperty.getPstnIngress()).thenReturn("CcpFusionUS");
     when(configurationProperty.getB2bEgress()).thenReturn("antares");
@@ -60,6 +59,7 @@ public class CallTypeTest {
     when(context.getBean(MetricService.class)).thenReturn(metricService);
     when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
         .thenReturn(Mono.just(proxySIPResponse));
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
   }
 
   @DataProvider
@@ -123,6 +123,7 @@ public class CallTypeTest {
 
     when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
         .thenReturn(Mono.error(new NullPointerException()));
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     callType.processRequest(proxySIPRequest);
     verify(proxySIPRequest, times(1)).reject(Response.SERVER_INTERNAL_ERROR);
     verify(metricService, times(1))

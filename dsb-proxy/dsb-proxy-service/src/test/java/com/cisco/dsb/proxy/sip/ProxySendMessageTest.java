@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.header.RemotePartyID;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -221,7 +222,7 @@ public class ProxySendMessageTest {
     ProxySIPRequest proxyRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(
             request, sipProvider, mock(ServerTransaction.class), mock(ExecutionContext.class));
-
+    proxyRequest.setAppRecord(new DhruvaAppRecord());
     StepVerifier.create(ProxySendMessage.sendProxyRequestAsync(sipProvider, null, proxyRequest))
         .assertNext(
             proxySIPRequest -> {
@@ -253,7 +254,7 @@ public class ProxySendMessageTest {
             mock(SipProvider.class),
             mock(ServerTransaction.class),
             mock(ExecutionContext.class));
-
+    proxyRequest.setAppRecord(new DhruvaAppRecord());
     StepVerifier.create(
             ProxySendMessage.sendProxyRequestAsync(sipProvider, clientTransaction, proxyRequest))
         .assertNext(

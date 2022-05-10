@@ -10,6 +10,7 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -490,6 +491,7 @@ public class ProxyControllerTest {
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(
             SIPRequestBuilder.RequestMethod.INVITE, serverTransaction, incomingNetwork1);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
@@ -567,6 +569,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
@@ -617,6 +620,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
@@ -658,6 +662,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     // Removing top route header because route header will be added as part of endpoint
     RouteHeader ownRouteHeader =
@@ -744,6 +749,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
@@ -763,6 +769,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
@@ -782,6 +789,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     sipRequest.getRouteHeaders().clear();
@@ -805,6 +813,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
     RouteList routeHeaders = sipRequest.getRouteHeaders();
@@ -833,6 +842,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.BYE, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
@@ -1143,6 +1153,7 @@ public class ProxyControllerTest {
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.REGISTER, st);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
     System.out.println("SIP Request :  " + proxySIPRequest.getRequest());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 

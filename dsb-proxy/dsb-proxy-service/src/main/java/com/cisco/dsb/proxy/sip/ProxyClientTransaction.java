@@ -98,7 +98,7 @@ public class ProxyClientTransaction {
 
     Optional<DhruvaNetwork> optionalDhruvaNetwork =
         DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
-    // TODO DSB Akshay, handle all Runtime exceptions in pipeline
+
     network =
         optionalDhruvaNetwork.orElseThrow(
             () ->

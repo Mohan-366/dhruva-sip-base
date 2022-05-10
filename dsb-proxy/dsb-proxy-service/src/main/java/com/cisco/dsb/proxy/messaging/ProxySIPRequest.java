@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy.messaging;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -46,6 +47,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   @Getter @Setter private boolean m_escaped = false;
   @Getter @Setter private EndPoint downstreamElement;
   @Getter HashMap<Object, Object> cache = new HashMap<>();
+  @Getter @Setter private DhruvaAppRecord appRecord;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,
@@ -71,6 +73,10 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
         proxySIPRequest.m_routeTo == null ? null : (URI) proxySIPRequest.m_routeTo.clone();
     this.m_escaped = proxySIPRequest.m_escaped;
     this.cache = proxySIPRequest.cache;
+    // We are not cloning appRecord , so it will point to same memory having initial states added.
+    // Generally while sending out the message is cloned.
+    // TBD
+    this.appRecord = proxySIPRequest.appRecord;
   }
 
   public CompletableFuture<ProxySIPResponse> proxy(EndPoint endPoint) {
@@ -81,6 +87,9 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     if (this.proxyInterface == null) {
       throw new RuntimeException("proxy interface not set, unable to forward the request");
     }
+    logger.error(
+        "dhruva message record {}",
+        this.getAppRecord() == null ? "None" : this.getAppRecord().toString());
     this.proxyInterface.respond(responseCode, this);
   }
 

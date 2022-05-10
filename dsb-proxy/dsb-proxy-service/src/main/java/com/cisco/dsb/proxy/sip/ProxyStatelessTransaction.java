@@ -9,9 +9,11 @@ import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.sip.util.ViaListenInterface;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ControllerInterface;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.controller.util.ParseProxyParamUtil;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -495,6 +497,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
                 getDefaultParams(), uri));
 
         logger.info("Adding record route" + rr);
+        Utilities.Checks checks = new Utilities.Checks();
+        checks.add("record route", rr);
+        proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_RECORD_ROUTE_ADDED, checks);
         request.addFirst(rr);
       }
     }

@@ -15,6 +15,7 @@ import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.controller.util.ParseProxyParamUtil;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
@@ -172,6 +173,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       @NonNull ProxySIPRequest proxySIPRequest, EndPoint endPoint) {
     logger.info(
         "proxying to endpoint {} over transport {}", endPoint.getHost(), endPoint.getProtocol());
+    proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_PROCESS_ENDPOINT, null);
     // already has EndPoint
     processOutboundDestination(proxySIPRequest, endPoint); // add Route header
     return proxyRequest(proxySIPRequest);

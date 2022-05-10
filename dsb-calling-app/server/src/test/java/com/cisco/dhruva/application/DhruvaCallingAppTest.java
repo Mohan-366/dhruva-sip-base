@@ -7,6 +7,7 @@ import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -40,6 +41,7 @@ public class DhruvaCallingAppTest {
   @AfterMethod
   public void setup() {
     reset(filter, proxySIPRequest, proxySIPResponse);
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
   }
 
   @Test

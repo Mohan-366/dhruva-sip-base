@@ -7,6 +7,7 @@ import static org.testng.Assert.assertNull;
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -325,7 +326,8 @@ public class SipProxyManagerTest {
         mockProxyController = (stx, spd, pc) -> proxyController;
     when(proxyControllerFactory.proxyController()).thenReturn(mockProxyController);
     when(proxyController.onNewRequest(proxySIPRequest)).thenReturn(proxySIPRequestMock);
-
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
+    when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     Assert.assertEquals(
         sipProxyManager.getProxyController(mock(ProxyAppConfig.class)).apply(proxySIPRequest),
         proxySIPRequestMock);

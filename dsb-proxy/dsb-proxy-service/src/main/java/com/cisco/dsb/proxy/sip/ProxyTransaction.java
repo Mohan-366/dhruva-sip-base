@@ -6,6 +6,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.ControllerInterface;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.controller.ProxyResponseGenerator;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
@@ -342,6 +343,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
         ProxyClientTransaction proxyClientTrans =
             createProxyClientTransaction(clientTrans, cookie, proxySIPRequest);
+        proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_CLIENT_CREATED, null);
         logger.info(
             "ProxyClientTransaction created for {} is {}", request.getMethod(), proxyClientTrans);
 

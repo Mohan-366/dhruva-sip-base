@@ -4,9 +4,11 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.SpringApplicationContext;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
+import com.cisco.wx2.util.Utilities;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import javax.sip.message.Response;
@@ -47,11 +49,17 @@ public interface CallType {
       return;
     }
     trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress);
+    proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_INGRESS, null);
     trunkManager
         .handleEgress(getEgressTrunk(), proxySIPRequest, egress)
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests
+              Logger.logger.info(
+                  "dhruva message record {}",
+                  proxySIPRequest.getAppRecord() == null
+                      ? "None"
+                      : proxySIPRequest.getAppRecord().toString());
               proxySIPRequest.handleProxyEvent(
                   getMetricService(),
                   SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
@@ -63,12 +71,8 @@ public interface CallType {
                   proxySIPResponse.getCallId(),
                   proxySIPResponse.getStatusCode());
 
-              if (getMetricService() != null) {
-
-                getMetricService()
-                    .sendTrunkMetric(
-                        ingress, proxySIPResponse.getStatusCode(), proxySIPResponse.getCallId());
-              }
+              handleTrunkMetric(
+                  ingress, proxySIPResponse.getStatusCode(), proxySIPResponse.getCallId());
               proxySIPResponse.proxy();
             },
             err -> {
@@ -76,6 +80,9 @@ public interface CallType {
                   "exception while sending the request with callId:{}",
                   proxySIPRequest.getCallId(),
                   err);
+              Utilities.Checks checks = new Utilities.Checks();
+              checks.add("call type handle egress", err.getMessage());
+              proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, checks);
               int errorResponse;
               if (err instanceof DhruvaRuntimeException) {
                 proxySIPRequest.reject(
@@ -85,10 +92,7 @@ public interface CallType {
                 proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
                 errorResponse = Response.SERVER_INTERNAL_ERROR;
               }
-              if (getMetricService() != null) {
-                getMetricService()
-                    .sendTrunkMetric(ingress, errorResponse, proxySIPRequest.getCallId());
-              }
+              handleTrunkMetric(ingress, errorResponse, proxySIPRequest.getCallId());
             });
   }
 
@@ -126,6 +130,12 @@ public interface CallType {
       // Index 1 for outbound cps
       trunkCountOutBound.incrementAndGet(1);
       getMetricService().getCpsTrunkCounterMap().put(outBoundTrunk, trunkCountOutBound);
+    }
+  }
+
+  default void handleTrunkMetric(String trunk, int response, String callId) {
+    if (getMetricService() != null) {
+      getMetricService().sendTrunkMetric(trunk, response, callId);
     }
   }
 }

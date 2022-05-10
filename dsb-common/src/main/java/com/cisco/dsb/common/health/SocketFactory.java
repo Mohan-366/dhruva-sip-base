@@ -15,7 +15,7 @@ public class SocketFactory {
 
   public Object getSocket(String transport, String host, int port) throws IOException {
     if (transport == null) {
-      return null ;
+      return null;
     } else if (StringUtils.equalsIgnoreCase(Transport.UDP.name(), transport)) {
       return new DatagramSocket();
     } else {

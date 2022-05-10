@@ -6,8 +6,10 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dsb.proxy.ProxyService;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.wx2.util.Utilities;
 import com.google.common.collect.ImmutableList;
 import java.util.function.Consumer;
 import javax.sip.message.Response;
@@ -61,8 +63,14 @@ public class DhruvaCallingApp {
     return proxySIPRequest -> {
       try {
         CallType callType = this.filter.filter(proxySIPRequest);
+        Utilities.Checks checks = new Utilities.Checks();
+        checks.add("app request process consumer", callType.toString());
+        proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_RECEIVED, checks);
         callType.processRequest(proxySIPRequest);
       } catch (InvalidCallTypeException ie) {
+        Utilities.Checks checks = new Utilities.Checks();
+        checks.add("call type process request", ie.getMessage());
+        proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, checks);
         logger.error(
             "Unable to find the calltype for request callid:{}, rejecting with 404",
             proxySIPRequest.getCallId(),

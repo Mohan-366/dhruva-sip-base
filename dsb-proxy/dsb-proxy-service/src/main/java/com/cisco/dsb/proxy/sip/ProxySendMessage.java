@@ -8,7 +8,9 @@ import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransactionImpl;
@@ -47,29 +49,7 @@ public class ProxySendMessage {
 
                 Transport transportType = LMAUtil.getTransportType(sipProvider);
                 SIPResponse sipResponse = (SIPResponse) response;
-
-                LMAUtil.emitSipMessageEvent(
-                    sipProvider,
-                    (SIPResponse) response,
-                    Event.MESSAGE_TYPE.RESPONSE,
-                    Event.DIRECTION.OUT,
-                    true,
-                    false,
-                    0L);
-
-                if (metricServiceBean != null) {
-                  metricServiceBean.sendSipMessageMetric(
-                      String.valueOf(sipResponse.getStatusCode()),
-                      sipResponse.getCallId().getCallId(),
-                      sipResponse.getCSeq().getMethod(),
-                      Event.MESSAGE_TYPE.RESPONSE,
-                      transportType,
-                      Event.DIRECTION.OUT,
-                      false,
-                      true, // internally generated
-                      0L,
-                      String.valueOf(sipResponse.getStatusCode()));
-                }
+                handleResponseLMA(sipProvider, sipResponse, true, false);
                 logger.info("Successfully sent response for  {}", responseID);
               } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -104,29 +84,7 @@ public class ProxySendMessage {
 
       Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
-
-      LMAUtil.emitSipMessageEvent(
-          sipProvider,
-          (SIPResponse) response,
-          Event.MESSAGE_TYPE.RESPONSE,
-          Event.DIRECTION.OUT,
-          true,
-          false,
-          0L);
-
-      if (metricServiceBean != null) {
-        metricServiceBean.sendSipMessageMetric(
-            String.valueOf(sipResponse.getStatusCode()),
-            sipResponse.getCallId().getCallId(),
-            sipResponse.getCSeq().getMethod(),
-            Event.MESSAGE_TYPE.RESPONSE,
-            transportType,
-            Event.DIRECTION.OUT,
-            false,
-            true, // internally generated
-            0L,
-            String.valueOf(sipResponse.getReasonPhrase()));
-      }
+      handleResponseLMA(sipProvider, sipResponse, true, false);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -147,32 +105,8 @@ public class ProxySendMessage {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
 
-      Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
-
-      LMAUtil.emitSipMessageEvent(
-          sipProvider,
-          (SIPResponse) response,
-          Event.MESSAGE_TYPE.RESPONSE,
-          Event.DIRECTION.OUT,
-          true,
-          false,
-          0L);
-
-      if (metricServiceBean != null) {
-        metricServiceBean.sendSipMessageMetric(
-            String.valueOf(sipResponse.getStatusCode()),
-            sipResponse.getCallId().getCallId(),
-            sipResponse.getCSeq().getMethod(),
-            Event.MESSAGE_TYPE.RESPONSE,
-            transportType,
-            Event.DIRECTION.OUT,
-            false,
-            true, // internally generated
-            0L,
-            String.valueOf(sipResponse.getReasonPhrase()));
-      }
-
+      handleResponseLMA(sipProvider, sipResponse, true, false);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -199,31 +133,7 @@ public class ProxySendMessage {
               ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
               : null;
 
-      LMAUtil.emitSipMessageEvent(
-          sipProvider,
-          response,
-          Event.MESSAGE_TYPE.RESPONSE,
-          Event.DIRECTION.OUT,
-          isInternallyGeneratedResponse,
-          false,
-          0L);
-
-      Transport transportType = LMAUtil.getTransportType(sipProvider);
-      SIPResponse sipResponse = (SIPResponse) response;
-
-      if (metricServiceBean != null) {
-        metricServiceBean.sendSipMessageMetric(
-            String.valueOf(sipResponse.getStatusCode()),
-            sipResponse.getCallId().getCallId(),
-            sipResponse.getCSeq().getMethod(),
-            Event.MESSAGE_TYPE.RESPONSE,
-            transportType,
-            Event.DIRECTION.OUT,
-            false,
-            isInternallyGeneratedResponse,
-            0L,
-            String.valueOf(sipResponse.getReasonPhrase()));
-      }
+      handleResponseLMA(sipProvider, response, isInternallyGeneratedResponse, false);
 
     } catch (Exception e) {
       logger.error("Exception occurred while trying to send  response {}", e.getMessage());
@@ -231,6 +141,9 @@ public class ProxySendMessage {
     }
   }
 
+  // This case happens only when proxy generates a new request.
+  // e.g cancel.Be careful if we want to add appRecord, it may not be created.Right now it is not
+  // added.
   public static void sendRequest(
       Request request, ClientTransaction clientTransaction, SipProvider sipProvider)
       throws DhruvaException {
@@ -239,30 +152,7 @@ public class ProxySendMessage {
       else sipProvider.sendRequest(request);
 
       SIPRequest sipRequest = (SIPRequest) request;
-      Transport transportType = LMAUtil.getTransportType(sipProvider);
-
-      LMAUtil.emitSipMessageEvent(
-          sipProvider,
-          (SIPRequest) request,
-          Event.MESSAGE_TYPE.REQUEST,
-          Event.DIRECTION.OUT,
-          true,
-          SipUtils.isMidDialogRequest((SIPRequest) request),
-          0L);
-
-      if (metricServiceBean != null) {
-        metricServiceBean.sendSipMessageMetric(
-            sipRequest.getMethod(),
-            sipRequest.getCallId().getCallId(),
-            sipRequest.getCSeq().getMethod(),
-            Event.MESSAGE_TYPE.REQUEST,
-            transportType,
-            Event.DIRECTION.OUT,
-            SipUtils.isMidDialogRequest(sipRequest),
-            true, // not generated
-            0L,
-            String.valueOf(sipRequest.getRequestURI()));
-      }
+      handleRequestLMA(sipRequest, sipProvider);
 
     } catch (Exception e) {
       throw new DhruvaException(e);
@@ -288,34 +178,74 @@ public class ProxySendMessage {
               } else {
                 provider.sendRequest(proxySIPRequest.getRequest());
               }
+              handleRequestLMA(proxySIPRequest.getRequest(), provider);
 
-              Transport transportType = LMAUtil.getTransportType(provider);
+              Utilities.Checks checks = new Utilities.Checks();
+              checks.add("proxy send", hop.toString());
+              proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_MESSAGE_SENT, checks);
 
-              LMAUtil.emitSipMessageEvent(
-                  provider,
-                  proxySIPRequest.getRequest(),
-                  Event.MESSAGE_TYPE.REQUEST,
-                  Event.DIRECTION.OUT,
-                  false, // not generated
-                  SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
-                  0L);
-
-              if (metricServiceBean != null) {
-                metricServiceBean.sendSipMessageMetric(
-                    proxySIPRequest.getRequest().getMethod(),
-                    proxySIPRequest.getRequest().getCallId().getCallId(),
-                    proxySIPRequest.getRequest().getCSeq().getMethod(),
-                    Event.MESSAGE_TYPE.REQUEST,
-                    transportType,
-                    Event.DIRECTION.OUT,
-                    SipUtils.isMidDialogRequest(proxySIPRequest.getRequest()),
-                    false, // not generated
-                    0L,
-                    String.valueOf(proxySIPRequest.getRequest().getRequestURI()));
-              }
               return proxySIPRequest;
             })
         .subscribeOn(Schedulers.boundedElastic());
     // TODO DSB, need to change this to fromExecutorService for metrics.
+  }
+
+  public static void handleRequestLMA(SIPRequest request, SipProvider provider) {
+    Transport transportType = LMAUtil.getTransportType(provider);
+
+    LMAUtil.emitSipMessageEvent(
+        provider,
+        (SIPRequest) request,
+        Event.MESSAGE_TYPE.REQUEST,
+        Event.DIRECTION.OUT,
+        true,
+        SipUtils.isMidDialogRequest((SIPRequest) request),
+        0L);
+
+    if (metricServiceBean != null) {
+      metricServiceBean.sendSipMessageMetric(
+          request.getMethod(),
+          request.getCallId().getCallId(),
+          request.getCSeq().getMethod(),
+          Event.MESSAGE_TYPE.REQUEST,
+          transportType,
+          Event.DIRECTION.OUT,
+          SipUtils.isMidDialogRequest(request),
+          true, // not generated
+          0L,
+          String.valueOf(request.getRequestURI()));
+    }
+  }
+
+  public static void handleResponseLMA(
+      SipProvider sipProvider,
+      SIPResponse response,
+      boolean isInternallyGeneratedResponse,
+      boolean isMidDialog) {
+    LMAUtil.emitSipMessageEvent(
+        sipProvider,
+        response,
+        Event.MESSAGE_TYPE.RESPONSE,
+        Event.DIRECTION.OUT,
+        isInternallyGeneratedResponse,
+        isMidDialog,
+        0L);
+
+    Transport transportType = LMAUtil.getTransportType(sipProvider);
+    SIPResponse sipResponse = response;
+
+    if (metricServiceBean != null) {
+      metricServiceBean.sendSipMessageMetric(
+          String.valueOf(sipResponse.getStatusCode()),
+          sipResponse.getCallId().getCallId(),
+          sipResponse.getCSeq().getMethod(),
+          Event.MESSAGE_TYPE.RESPONSE,
+          transportType,
+          Event.DIRECTION.OUT,
+          isMidDialog,
+          isInternallyGeneratedResponse,
+          0L,
+          String.valueOf(sipResponse.getReasonPhrase()));
+    }
   }
 }

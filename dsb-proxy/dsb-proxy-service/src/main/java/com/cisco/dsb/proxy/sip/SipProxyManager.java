@@ -16,6 +16,7 @@ import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -23,6 +24,7 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
@@ -76,10 +78,10 @@ public class SipProxyManager {
    * Jain SIP Request
    */
   public Function<RequestEvent, ProxySIPRequest> createServerTransactionAndProxySIPRequest() {
-    return fluxRequestEvent -> {
-      Request request = fluxRequestEvent.getRequest();
-      ServerTransaction serverTransaction = fluxRequestEvent.getServerTransaction();
-      SipProvider sipProvider = (SipProvider) fluxRequestEvent.getSource();
+    return requestEvent -> {
+      Request request = requestEvent.getRequest();
+      ServerTransaction serverTransaction = requestEvent.getServerTransaction();
+      SipProvider sipProvider = (SipProvider) requestEvent.getSource();
 
       // ACKs are not handled by transactions, so no server transaction is created
       if (config.isStateful()
@@ -155,7 +157,7 @@ public class SipProxyManager {
           // for non2xx-ACK -> since we are using the INVITE's serverTransaction, it already has the
           // proxyTransaction also
           // So, do not create it again and the controller.
-          logger.info("Proxy transaction exists for ACK: {}", proxyTransaction );
+          logger.info("Proxy transaction exists for ACK: {}", proxyTransaction);
           ProxyController controller = (ProxyController) proxyTransaction.getController();
 
           // behaviours based on method-type
@@ -167,7 +169,9 @@ public class SipProxyManager {
           logger.info("No Proxy Transaction exists for {}", requestType);
         }
       }
+
       ProxyController controller = createNewProxyController(proxyAppConfig).apply(proxySIPRequest);
+      proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_CONTROLLER_CREATED, null);
       return controller.onNewRequest(proxySIPRequest);
     };
   }
@@ -421,11 +425,19 @@ public class SipProxyManager {
             .whenComplete(
                 (proxySIPResponse, throwable) -> {
                   if (proxySIPResponse != null) {
+                    logger.info(
+                        "dhruva message record {}",
+                        proxySIPRequest.getAppRecord() == null
+                            ? "None"
+                            : proxySIPRequest.getAppRecord().toString());
                     proxySIPResponse.proxy();
                     return;
                   }
 
                   if (throwable != null) {
+                    Utilities.Checks checks = new Utilities.Checks();
+                    checks.add("proxy request for mid dialog failed", throwable.getMessage());
+                    proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_SEND_FAILED, checks);
                     logger.error(
                         "Error while sending out mid dialog request based on rURI/Route Header",
                         throwable);

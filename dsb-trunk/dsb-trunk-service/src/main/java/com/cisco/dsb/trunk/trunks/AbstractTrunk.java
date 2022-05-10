@@ -15,10 +15,12 @@ import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
+import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.util.RedirectionSet;
 import com.cisco.dsb.trunk.util.SipParamConstants;
+import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
@@ -279,6 +281,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
           .onErrorMap(
               err -> {
                 // retry only when next SG is there
+                Utilities.Checks checks = new Utilities.Checks();
+                checks.add("dns resolution", err.getMessage());
+                cookie
+                    .getClonedRequest()
+                    .getAppRecord()
+                    .add(ProxyState.OUT_PROXY_DNS_RESOLUTION, checks);
                 logger.warn(
                     "Exception while querying DNS for SG {}, trying next SG",
                     sgLB.getCurrentElement());
@@ -292,6 +300,10 @@ public abstract class AbstractTrunk implements LoadBalancable {
               })
           .map(
               dsg -> {
+                cookie
+                    .getClonedRequest()
+                    .getAppRecord()
+                    .add(ProxyState.OUT_PROXY_DNS_RESOLUTION, null);
                 LoadBalancer sgeLBTemp = LoadBalancer.of(dsg);
                 cookie.setSgeLoadBalancer(sgeLBTemp);
                 return getEndPointFromSge(dsg, (ServerGroupElement) sgeLBTemp.getCurrentElement());

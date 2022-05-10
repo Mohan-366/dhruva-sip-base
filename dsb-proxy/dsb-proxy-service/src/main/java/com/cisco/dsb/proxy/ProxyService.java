@@ -11,6 +11,7 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -29,6 +30,7 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import com.cisco.dsb.proxy.sip.ProxySendMessage;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
+import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;
 import java.util.*;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
@@ -47,6 +50,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 @Service
 @CustomLog
@@ -215,6 +219,8 @@ public class ProxyService {
     return requestEventMono ->
         requestPipeline(requestEventMono)
             .onErrorContinue(requestErrorHandler())
+            .contextWrite(proxyServiceContext())
+            .contextWrite(Context.of("passport", DhruvaAppRecord.create()))
             .subscribe(
                 this.proxyAppConfig.getRequestConsumer(),
                 err -> logger.error("Unable to process incoming request {}", err));
@@ -225,7 +231,16 @@ public class ProxyService {
         .name("proxyRequest")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
         .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
-        .flatMap(sipProxyManager.getProxyController(this.proxyAppConfig))
+        .flatMap(
+            r ->
+                Mono.deferContextual(
+                    ctx -> {
+                      DhruvaAppRecord appRecord =
+                          ctx.getOrDefault(DhruvaAppRecord.PASSPORT_KEY, new DhruvaAppRecord());
+                      appRecord.add(ProxyState.IN_PROXY_SERVER_CREATED, null);
+                      r.setAppRecord(appRecord);
+                      return sipProxyManager.getProxyController(this.proxyAppConfig).apply(r);
+                    }))
         .transform(this::validateAndApplyAppFilter);
   }
 
@@ -236,6 +251,7 @@ public class ProxyService {
           ProxySIPRequest proxySIPRequest =
               sipProxyManager.validateRequest().apply(proxySipRequest);
           if (proxySIPRequest != null) {
+            proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_VALIDATIONS, null);
             proxySIPRequest =
                 sipProxyManager
                     .proxyAppController(this.proxyAppConfig.isMidDialog())
@@ -301,6 +317,14 @@ public class ProxyService {
         }
       } catch (Exception exception) {
         logger.error("Unable to gracefully handle the exception in request pipeline!", exception);
+      } finally {
+        if (o instanceof ProxySIPRequest) {
+          logger.info(
+              "dhruva message record {}",
+              ((ProxySIPRequest) o).getAppRecord() == null
+                  ? "None"
+                  : ((ProxySIPRequest) o).getAppRecord().toString());
+        }
       }
     };
   }
@@ -357,5 +381,19 @@ public class ProxyService {
     } else {
       return dsbTrustManager;
     }
+  }
+
+  public static Function<Context, Context> proxyServiceContext() {
+    return ctx -> {
+      if (!ctx.hasKey("passport")) {
+        DhruvaAppRecord appRecord = DhruvaAppRecord.create();
+        ctx.put("passport", appRecord);
+      }
+      Utilities.Checks checks = new Utilities.Checks();
+      checks.add("proxy request pipeline start");
+      DhruvaAppRecord appRecord = ctx.get("passport");
+      appRecord.add(ProxyState.IN_SIP_REQUEST_RECEIVED, checks);
+      return ctx;
+    };
   }
 }
