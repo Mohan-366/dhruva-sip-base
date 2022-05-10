@@ -9,6 +9,7 @@ import static com.cisco.dhruva.util.Constants.RE_INVITE;
 import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 import static org.testng.Assert.assertTrue;
 
+import com.cisco.dhruva.input.TestInput;
 import com.cisco.dhruva.input.TestInput.Direction;
 import com.cisco.dhruva.input.TestInput.Message;
 import com.cisco.dhruva.input.TestInput.ProxyCommunication;
@@ -21,6 +22,7 @@ import gov.nist.javax.sip.address.AddressFactoryImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
+import gov.nist.javax.sip.header.RecordRoute;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,13 +161,17 @@ public class MessageHandler {
     String reasonPhrase = message.getParameters().getResponseParameters().getReasonPhrase();
     String forRequest = message.getForRequest();
     String responseCode = message.getParameters().getResponseParameters().getResponseCode();
+
     if (reasonPhrase.equalsIgnoreCase("Ringing")) {
-      if (!call.sendIncomingCallResponse(Response.RINGING, null, -1)) {
+
+      if (!call.sendIncomingCallResponse(
+          Response.RINGING, null, -1, getHeadersToAdd(), getHeadersToReplace(message), null)) {
         TEST_LOGGER.error("Error sending 180 Ringing");
         Assert.fail();
       }
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("INVITE")) {
-      if (!call.sendIncomingCallResponse(Response.OK, null, -1)) {
+      if (!call.sendIncomingCallResponse(
+          Response.OK, null, -1, getHeadersToAdd(), getHeadersToReplace(message), null)) {
         TEST_LOGGER.error("Error sending 200 to client");
         Assert.fail();
       }
@@ -365,5 +371,75 @@ public class MessageHandler {
         Assert.fail();
       }
     }
+  }
+
+  private static ArrayList<Header> getHeadersToAdd() {
+    return null; // TODO: Kalpa add logic to make header additions and replacements generic.
+  }
+
+  private static ArrayList<Header> getHeadersToReplace(Message message) {
+    TestInput.Header[] headersToReplace =
+        message.getParameters().getResponseParameters().getHeaderReplacements();
+    if (headersToReplace == null) {
+      return null;
+    }
+    ArrayList<TestInput.Header> replacementHeaders =
+        new ArrayList<>(Arrays.asList(headersToReplace));
+    ArrayList<Header> headers = new ArrayList<>();
+    replacementHeaders.stream()
+        .forEach(
+            entry -> {
+              Header header =
+                  new Header() {
+                    @Override
+                    public String getName() {
+                      return null;
+                    }
+
+                    @Override
+                    public Object clone() {
+                      return null;
+                    }
+                  };
+              if (entry.getHeaderName().equals("record-route")) {
+                header = new RecordRoute();
+              }
+              SipUri uri;
+              String rrString = entry.getAddress();
+              try {
+                uri = (SipUri) new AddressFactoryImpl().createURI(rrString);
+              } catch (ParseException e) {
+                TEST_LOGGER.error(
+                    "Error: Unable to parse address for {} from message {}, ", rrString, message);
+                return;
+              }
+              Address address = new AddressImpl();
+              Map<String, String> headerParams = entry.getHeaderParams();
+              SipUri finalUri = uri;
+              Header finalHeader = header;
+              if (headerParams != null) {
+                headerParams.entrySet().stream()
+                    .forEach(
+                        param -> {
+                          try {
+                            finalUri.setParameter(param.getKey(), param.getValue());
+                          } catch (ParseException e) {
+                            TEST_LOGGER.error(
+                                "Error: Unable to set param {} for header {} for message {} ",
+                                param.getKey(),
+                                finalHeader.getName(),
+                                message);
+                          }
+                        });
+              }
+              if (finalUri != null) finalUri.setLrParam();
+              address.setURI(finalUri);
+              if (header instanceof RecordRoute) {
+                ((RecordRoute) header).setAddress(address);
+              }
+              headers.add(header);
+            });
+
+    return headers;
   }
 }
