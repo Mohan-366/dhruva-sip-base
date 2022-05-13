@@ -98,7 +98,7 @@ node() {
                  throw ex
              }
          }
-        if (env.GIT_BRANCH == 'master') {
+        if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'OPTIONS_PING') {
             stage('ecr sync') {
                 def tag = "2."+env.BUILD_NUMBER
                 //Pull dhruva image and get SHA of that image which will be artifactID
