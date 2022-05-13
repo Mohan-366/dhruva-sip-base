@@ -40,6 +40,7 @@ import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -58,8 +59,6 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-
-import gov.nist.javax.sip.stack.SIPTransaction;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -1214,7 +1213,7 @@ public class ProxyControllerTest {
     when(proxySIPRequest.getProvider().getSipStack()).thenReturn(sipStack);
     SIPTransaction sipTransaction = mock(SIPTransaction.class);
 
-    when(( sipStack).findCancelTransaction(any(),eq(true))).thenReturn(sipTransaction);
+    when((sipStack).findCancelTransaction(any(), eq(true))).thenReturn(sipTransaction);
     when(sipTransaction.getApplicationData()).thenReturn(proxyTransaction);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
@@ -1222,7 +1221,6 @@ public class ProxyControllerTest {
     doNothing().when(st).sendResponse(any(Response.class));
 
     Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
-
 
     verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());

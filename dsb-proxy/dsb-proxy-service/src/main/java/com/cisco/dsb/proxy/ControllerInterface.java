@@ -11,7 +11,6 @@ import com.cisco.dsb.proxy.sip.ProxyCookie;
 import com.cisco.dsb.proxy.sip.ProxyFactoryInterface;
 import com.cisco.dsb.proxy.sip.ProxyServerTransaction;
 import com.cisco.dsb.proxy.sip.ProxyTransaction;
-import gov.nist.javax.sip.message.SIPRequest;
 import javax.annotation.Nullable;
 import reactor.core.publisher.Mono;
 
@@ -152,8 +151,7 @@ public interface ControllerInterface {
    * @param cancel the CANCEL request
    * @throws DhruvaException
    */
-  void onCancel(ProxyTransaction proxy)
-      throws DhruvaException;
+  void onCancel(ProxyTransaction proxy) throws DhruvaException;
 
   /**
    * this method is triggered whenever {@link ProxyTransaction#finalResponse(ProxySIPResponse)}

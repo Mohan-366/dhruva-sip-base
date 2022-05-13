@@ -67,7 +67,11 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Starting OPTIONS pings. Map {}", map);
     for (Entry<String, ServerGroup> entry : map.entrySet()) {
       ServerGroup serverGroup = entry.getValue();
-      logger.info("KALPA: sg {} pingOn: {}  element: {}", serverGroup, serverGroup.isPingOn(), serverGroup.getElements());
+      logger.info(
+          "KALPA: sg {} pingOn: {}  element: {}",
+          serverGroup,
+          serverGroup.isPingOn(),
+          serverGroup.getElements());
       // Servergroup should have pingOn = true and elements to ping
       if (!isServerGroupPingable(serverGroup)) {
         continue;
@@ -360,7 +364,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    */
   protected void cleanUpMaps() {
     Map<String, ServerGroup> sgMap = commonConfigurationProperties.getServerGroups();
-    logger.info("KALPA: Current SG map from commonConfigProp: {}", commonConfigurationProperties.getServerGroups());
+    logger.info(
+        "KALPA: Current SG map from commonConfigProp: {}",
+        commonConfigurationProperties.getServerGroups());
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
 

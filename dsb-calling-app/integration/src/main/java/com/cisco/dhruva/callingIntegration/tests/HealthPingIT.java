@@ -1,5 +1,8 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+
 import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
 import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
 import com.cisco.dhruva.callingIntegration.util.TestSuiteListener;
@@ -17,9 +20,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 
 @Listeners({IntegrationTestListener.class, TestSuiteListener.class})
 @ContextConfiguration(classes = {BaseTestConfig.class, DhruvaTestConfig.class})
@@ -39,8 +39,7 @@ public class HealthPingIT extends AbstractTestNGSpringContextTests {
     assertEquals(serviceHealth.getServiceName(), "dhruvaProxyApplication");
     assertEquals(serviceHealth.getServiceType(), ServiceType.REQUIRED);
 
-    LOGGER.info("Dhruva ping IT: Actual ServiceHealth is: {}",serviceHealth);
-
+    LOGGER.info("Dhruva ping IT: Actual ServiceHealth is: {}", serviceHealth);
 
     boolean isUpstreamServicesHealthy =
         serviceHealth.getUpstreamServices().stream()
@@ -53,11 +52,14 @@ public class HealthPingIT extends AbstractTestNGSpringContextTests {
 
     // validate custom dsb calling app health monitor
     ServiceHealth dsbCallingAppHealth =
-            serviceHealth.getUpstreamServices().stream()
-                    .filter(
-                            upstreamService -> upstreamService.getServiceType() == ServiceType.REQUIRED &&
-                                    StringUtils.equalsIgnoreCase(upstreamService.getServiceName(), CALLING_APP_MONITOR_NAME))
-                    .findFirst().orElse(null);
+        serviceHealth.getUpstreamServices().stream()
+            .filter(
+                upstreamService ->
+                    upstreamService.getServiceType() == ServiceType.REQUIRED
+                        && StringUtils.equalsIgnoreCase(
+                            upstreamService.getServiceName(), CALLING_APP_MONITOR_NAME))
+            .findFirst()
+            .orElse(null);
 
     assertNotNull(dsbCallingAppHealth);
     assertEquals(dsbCallingAppHealth.getServiceState(), ServiceState.ONLINE);
