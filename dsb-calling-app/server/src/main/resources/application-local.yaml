@@ -29,12 +29,10 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 6060
-          transport: UDP
           priority: 10
           weight: 100
         - ipAddress: "127.0.0.1"
           port: 6061
-          transport: UDP
           priority: 5
           weight: 100
       sgPolicy: policy1
@@ -49,7 +47,6 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 6062
-          transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
@@ -64,7 +61,6 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 6062
-          transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
@@ -81,7 +77,6 @@ common:
       weight: 100
       sgType: A_RECORD
       port: 7060
-      transport: UDP
       optionsPingPolicy: opPolicy1
     NS1:
       name: &NS1 NS1
@@ -94,7 +89,6 @@ common:
       weight: 100
       sgType: A_RECORD
       port: 8060
-      transport: UDP
     NS2:
       name: &NS2 NS2
       hostName: "ns2.cc.com"
@@ -106,7 +100,6 @@ common:
       weight: 100
       sgType: A_RECORD
       port: 8060
-      transport: UDP
   sgPolicy:
     policy1:
       name: policy1

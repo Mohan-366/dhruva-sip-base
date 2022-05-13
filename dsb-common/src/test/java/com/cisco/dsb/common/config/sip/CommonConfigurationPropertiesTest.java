@@ -1,20 +1,35 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
+import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
-import java.util.*;
+import com.cisco.dsb.common.transport.Transport;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class CommonConfigurationPropertiesTest {
 
+  private CommonConfigurationProperties props;
+
+  @BeforeTest
+  public void setup() {
+    props = new CommonConfigurationProperties();
+  }
+
   @Test(description = "tests the getters and setters for one set of properties")
   public void testGetterSettersForFewProps() {
-    CommonConfigurationProperties props = new CommonConfigurationProperties();
     List<String> cipherSuites = new ArrayList<>();
     cipherSuites.add("Cipher1");
     List<String> tlsProtocols = new ArrayList<>();
@@ -89,7 +104,6 @@ public class CommonConfigurationPropertiesTest {
 
   @Test(description = "tests getter setters of dns properties")
   public void testDnsGetterSetters() {
-    CommonConfigurationProperties props = new CommonConfigurationProperties();
 
     props.setDnsCacheSize(0);
     Assert.assertEquals(props.getDnsCacheSize(), 1000); // retains default value
@@ -155,7 +169,6 @@ public class CommonConfigurationPropertiesTest {
     sgList.put("SG1", sg);
 
     // set above properties in CommonProperties
-    CommonConfigurationProperties props = new CommonConfigurationProperties();
     props.setListenPoints(listenPoints);
     Assert.assertEquals(props.getListenPoints(), listenPoints);
 
@@ -194,5 +207,86 @@ public class CommonConfigurationPropertiesTest {
       } catch (RuntimeException ignored) {
       }
     }
+  }
+
+  @Test
+  public void testSetSG_NoListenPoint_ThrowError() {
+    try {
+      props.setServerGroups(getStaticServerGroupMap());
+    } catch (DhruvaRuntimeException dhruvaRuntimeException) {
+      Assert.assertEquals(
+          "SGName: ARecordHost; listenPoint: \"ARecordNetwork\" not found",
+          dhruvaRuntimeException.getMessage());
+    }
+  }
+
+  @Test
+  public void testSetSG_StaticSG() {
+
+    Map<String, ServerGroup> serverGroups = getStaticServerGroupMap();
+
+    List<SIPListenPoint> listenPoints = new ArrayList<>();
+    SIPListenPoint listenPointForStatic =
+        SIPListenPoint.SIPListenPointBuilder()
+            .setName("StaticNetwork")
+            .setTransport(Transport.MULTICAST)
+            .build();
+
+    SIPListenPoint listenPointForARecord =
+        SIPListenPoint.SIPListenPointBuilder()
+            .setName("ARecordNetwork")
+            .setTransport(Transport.SCTP)
+            .build();
+
+    listenPoints.add(listenPointForStatic);
+    listenPoints.add(listenPointForARecord);
+    props.setListenPoints(listenPoints);
+    props.setServerGroups(serverGroups);
+    ServerGroup statciServerGroup = serverGroups.get("StaticHost");
+    ServerGroup aRecordServerGroup = serverGroups.get("ARecordHost");
+
+    Assert.assertEquals(Transport.MULTICAST, statciServerGroup.getTransport());
+    Assert.assertTrue(
+        statciServerGroup.getElements().stream()
+            .allMatch(sg -> Transport.MULTICAST.equals(sg.getTransport())));
+
+    Assert.assertEquals(Transport.SCTP, aRecordServerGroup.getTransport());
+    Assert.assertNull(aRecordServerGroup.getElements());
+  }
+
+  private Map<String, ServerGroup> getStaticServerGroupMap() {
+    Map<String, ServerGroup> serverGroupMap = new HashMap<>();
+    List<ServerGroupElement> sgElems = new ArrayList();
+    ServerGroupElement sgElem1 =
+        ServerGroupElement.builder().setIpAddress("127.0.0.2").setPort(8181).build();
+    ServerGroupElement sgElem2 =
+        ServerGroupElement.builder().setIpAddress("127.0.0.3").setPort(8182).build();
+
+    sgElems.addAll(Arrays.asList(sgElem1, sgElem2));
+
+    ServerGroup sgStatic =
+        ServerGroup.builder()
+            .setHostName("StaticHost")
+            .setNetworkName("StaticNetwork")
+            .setSgType(SGType.STATIC)
+            .setElements(sgElems)
+            .build();
+
+    ServerGroup sgArecord =
+        ServerGroup.builder()
+            .setHostName("ARecordHost")
+            .setNetworkName("ARecordNetwork")
+            .setSgType(SGType.A_RECORD)
+            .build();
+
+    serverGroupMap.put("StaticHost", sgStatic);
+    serverGroupMap.put("ARecordHost", sgArecord);
+
+    Assert.assertTrue(
+        sgElems.stream().allMatch(serverGroupElement -> serverGroupElement.getTransport() == null));
+    Assert.assertEquals(Transport.UDP, sgStatic.getTransport());
+    Assert.assertEquals(Transport.UDP, sgArecord.getTransport());
+
+    return serverGroupMap;
   }
 }
