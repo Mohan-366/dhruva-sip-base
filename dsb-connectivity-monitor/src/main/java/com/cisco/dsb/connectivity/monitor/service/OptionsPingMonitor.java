@@ -30,6 +30,7 @@ import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -362,11 +363,17 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * config refresh. So in case if elements were removed they will be removed from here too. i.e.
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
-  protected void cleanUpMaps() {
+  protected void cleanUpMaps() throws InterruptedException {
+    Thread.sleep(1000);
     Map<String, ServerGroup> sgMap = commonConfigurationProperties.getServerGroups();
     logger.info(
         "KALPA: Current SG map from commonConfigProp: {}",
         commonConfigurationProperties.getServerGroups());
+
+    for (int i = 0; i < 10; i++) {
+      logger.info("KALPA: Calling getServerGroups {} time(s).", i+1);
+      commonConfigurationProperties.getServerGroups();
+    }
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
 
@@ -397,6 +404,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected class RefreshHandle implements Runnable {
+    @SneakyThrows
     @Override
     public void run() {
       disposeExistingFlux();
