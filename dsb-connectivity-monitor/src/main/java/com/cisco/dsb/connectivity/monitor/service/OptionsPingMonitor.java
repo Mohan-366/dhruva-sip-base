@@ -370,10 +370,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         "KALPA: Current SG map from commonConfigProp: {}",
         commonConfigurationProperties.getServerGroups());
 
-    for (int i = 0; i < 10; i++) {
-      logger.info("KALPA: Calling getServerGroups {} time(s).", i + 1);
-      commonConfigurationProperties.getServerGroups();
-    }
+//    for (int i = 0; i < 10; i++) {
+//      logger.info("KALPA: Calling getServerGroups {} time(s).", i + 1);
+//      commonConfigurationProperties.getServerGroups();
+//    }
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
 
