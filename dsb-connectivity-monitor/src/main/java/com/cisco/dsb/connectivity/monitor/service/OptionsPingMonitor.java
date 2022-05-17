@@ -57,6 +57,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
+  protected Map<String, ServerGroup> localSGMapCopy;
 
   @PostConstruct
   public void initOptionsPing() {
@@ -363,17 +364,12 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * config refresh. So in case if elements were removed they will be removed from here too. i.e.
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
-  protected void cleanUpMaps() throws InterruptedException {
-    Thread.sleep(1000);
-    Map<String, ServerGroup> sgMap = commonConfigurationProperties.getServerGroups();
-    logger.info(
-        "KALPA: Current SG map from commonConfigProp: {}",
-        commonConfigurationProperties.getServerGroups());
+  protected void cleanUpMaps() {
+    Map<String, ServerGroup>  sgMap = localSGMapCopy;
 
-//    for (int i = 0; i < 10; i++) {
-//      logger.info("KALPA: Calling getServerGroups {} time(s).", i + 1);
-//      commonConfigurationProperties.getServerGroups();
-//    }
+    logger.info(
+        "KALPA: Current SG map from commonConfigProp: {}", sgMap);
+
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
 
@@ -403,14 +399,28 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
+  @SneakyThrows
+  protected void getLatestSGMap() {
+    Map<String, ServerGroup> sgMap;
+    while (true) {
+      sgMap = commonConfigurationProperties.getServerGroups();
+      Thread.sleep(500);
+      logger.info("KALPA: \nlocalSGMapCopy: {} \nsgMap: {} ", localSGMapCopy, sgMap);
+      if (!sgMap.equals(localSGMapCopy)) {
+        logger.info("KALPA: new map detected.");
+        localSGMapCopy = sgMap;
+        break;
+      }
+    }
+  }
   protected class RefreshHandle implements Runnable {
-    @SneakyThrows
     @Override
     public void run() {
       disposeExistingFlux();
       opFlux.clear();
+      getLatestSGMap();
       cleanUpMaps();
-      startMonitoring(commonConfigurationProperties.getServerGroups());
+      startMonitoring(localSGMapCopy);
     }
   }
 }

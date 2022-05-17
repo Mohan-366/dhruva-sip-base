@@ -548,7 +548,7 @@ public class OptionsPingMonitorTest {
   }
 
   @Test
-  public void testRefreshElementChange() throws InterruptedException {
+  public void testRefreshElementChange() {
     doReturn(map).when(commonConfigurationProperties).getServerGroups();
     List<ServerGroupElement> sgeList = Arrays.asList(sge1, sge2, sge3, sge4);
     sgeList.forEach(
