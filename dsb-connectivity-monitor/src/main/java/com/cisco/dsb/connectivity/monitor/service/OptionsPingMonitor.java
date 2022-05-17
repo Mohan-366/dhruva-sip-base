@@ -365,7 +365,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
-    Map<String, ServerGroup>  sgMap = localSGMapCopy;
+    Map<String, ServerGroup>  sgMap = (localSGMapCopy != null)? localSGMapCopy : commonConfigurationProperties.getServerGroups();
 
     logger.info(
         "KALPA: Current SG map from commonConfigProp: {}", sgMap);
@@ -406,10 +406,12 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       sgMap = commonConfigurationProperties.getServerGroups();
       Thread.sleep(500);
       logger.info("KALPA: \nlocalSGMapCopy: {} \nsgMap: {} ", localSGMapCopy, sgMap);
-      if (!sgMap.equals(localSGMapCopy)) {
+      if (!sgMap.isEmpty() && !sgMap.equals(localSGMapCopy)) {
         logger.info("KALPA: new map detected.");
         localSGMapCopy = sgMap;
         break;
+      } else {
+        logger.info("KALPA: local map is same as commonConfigProperties sg map. Going to sleep.");
       }
     }
   }
