@@ -61,8 +61,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
 
   @PostConstruct
   public void initOptionsPing() {
+    localSGMapCopy = commonConfigurationProperties.getServerGroups();
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
-    startMonitoring(commonConfigurationProperties.getServerGroups());
+    startMonitoring(localSGMapCopy);
   }
 
   protected void startMonitoring(Map<String, ServerGroup> map) {
@@ -405,8 +406,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     while (true) {
       sgMap = commonConfigurationProperties.getServerGroups();
       Thread.sleep(500);
-      logger.info("KALPA: \nlocalSGMapCopy: {} \nsgMap: {} ", localSGMapCopy, sgMap);
-      if (!sgMap.isEmpty() && !sgMap.equals(localSGMapCopy)) {
+      logger.info("KALPA: localSGMapCopy: {} \nsgMap: {} ", localSGMapCopy, sgMap);
+      if (!sgMap.equals(localSGMapCopy)) {
         logger.info("KALPA: new map detected.");
         localSGMapCopy = sgMap;
         break;
