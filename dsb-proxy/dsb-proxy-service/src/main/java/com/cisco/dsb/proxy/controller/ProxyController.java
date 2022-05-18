@@ -34,12 +34,13 @@ import gov.nist.javax.sip.header.Supported;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPTransaction;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import reactor.core.publisher.Mono;
-
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import javax.sip.ServerTransaction;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
@@ -50,13 +51,11 @@ import javax.sip.header.Header;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.text.ParseException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import reactor.core.publisher.Mono;
 
 @CustomLog
 public class ProxyController implements ControllerInterface, ProxyInterface {
@@ -677,7 +676,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   ((SipStackImpl) proxySIPRequest.getProvider().getSipStack())
                       .findCancelTransaction(sipRequest, true);
               if (sipTransaction == null) {
-                logger.error("Initial Transaction not found for CANCEL {} , dropping it", proxySIPRequest );
+                logger.error(
+                    "Initial Transaction not found for CANCEL {} , dropping it", proxySIPRequest);
                 return null;
               }
               ProxyTransaction proxyTransaction =
@@ -746,9 +746,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           JainSipHelper.getHeaderFactory()
               .createHeader(
                   "Accept",
-                  SipConstants.Content_Type_Application
-                      + "/"
-                      + SipConstants.ContentSubType.Sdp.toString());
+                  SipConstants.Content_Type_Application + "/" + SipConstants.ContentSubType.Sdp);
       response.addHeader(acceptHeader);
     } catch (Exception e) {
       logger.warn("Exception adding 'Accept' header");
@@ -919,7 +917,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   @Override
-  public void onCancel(ProxyTransaction proxy) throws DhruvaException {
+  public void onCancel(ProxyTransaction proxy) {
 
     proxy.cancel();
   }

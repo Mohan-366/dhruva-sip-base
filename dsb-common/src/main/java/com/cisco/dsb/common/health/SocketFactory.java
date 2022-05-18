@@ -2,12 +2,11 @@ package com.cisco.dsb.common.health;
 
 import com.cisco.dsb.common.transport.Transport;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 @Component
 @SuppressFBWarnings(value = "UNENCRYPTED_SOCKET", justification = "baseline suppression")

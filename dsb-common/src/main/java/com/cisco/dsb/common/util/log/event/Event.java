@@ -14,6 +14,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import gov.nist.javax.sip.header.CSeq;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import java.util.Map;
 import java.util.Optional;
 import javax.sip.message.Message;
@@ -78,29 +80,33 @@ public class Event {
       DIRECTION direction,
       MESSAGE_TYPE sipMessageType,
       boolean isInternallyGenerated,
-      String sipMethod,
-      String requestUri,
       boolean isMidDialog,
       long dhruvaProcessingDelayInMillis) {
+
     Map<String, String> messageInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
                 "sipMessageType",
                 sipMessageType.name(),
-                "sipMethod",
-                sipMethod,
                 "cseqMethod",
                 String.valueOf(message.getHeader(CSeq.NAME)),
-                "requestUri",
-                requestUri,
                 Event.REMOTEIP,
                 messageBindingInfo.getRemoteAddressStr()));
 
-    CSeq cseqHeaderValue = (CSeq) message.getHeader(CSeq.NAME);
+    if (Event.MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
+      SIPRequest sipRequest = (SIPRequest) message;
+      messageInfoMap.put("sipMethod", String.valueOf(sipRequest.getMethod()));
+    } else {
+      SIPResponse sipResponse = (SIPResponse) message;
+      messageInfoMap.put("responseCode", String.valueOf(sipResponse.getStatusCode()));
+      messageInfoMap.put("reasonPhrase", String.valueOf(sipResponse.getReasonPhrase()));
+    }
 
+    CSeq cseqHeaderValue = (CSeq) message.getHeader(CSeq.NAME);
     if (cseqHeaderValue != null) {
       messageInfoMap.put("cseqMethod", cseqHeaderValue.encodeBody());
     }
+
     messageInfoMap.put(Event.REMOTEPORT, String.valueOf(messageBindingInfo.getRemotePort()));
     messageInfoMap.put(Event.DIRECTION_KEY, direction.name());
 

@@ -40,6 +40,7 @@ import gov.nist.javax.sip.header.RecordRouteList;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -58,8 +59,6 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-
-import gov.nist.javax.sip.stack.SIPTransaction;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -464,7 +463,7 @@ public class ProxyControllerTest {
       description = "test proxy client creation for outgoing invite request",
       dataProvider = "getSipStack")
   public void testOutgoingInviteRequestProxyTransactionAllTransports(Object[] testParams)
-      throws SipException, ExecutionException, InterruptedException {
+      throws SipException, InterruptedException {
 
     DhruvaNetwork incomingNetwork1 = (DhruvaNetwork) testParams[0];
     DhruvaNetwork outgoingNetwork1 = (DhruvaNetwork) testParams[1];
@@ -744,7 +743,7 @@ public class ProxyControllerTest {
   @Test(
       description = "calling proxyrequest without setting outgoing network",
       expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithoutNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithoutNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -764,7 +763,7 @@ public class ProxyControllerTest {
   @Test(
       description = "proxyrequest called with invalid network",
       expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithInvalidNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithInvalidNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -835,8 +834,7 @@ public class ProxyControllerTest {
   }
 
   @Test(description = "test proxy client creation for outgoing bye request")
-  public void testOutgoingByeRequestProxyTransaction()
-      throws SipException, ExecutionException, InterruptedException {
+  public void testOutgoingByeRequestProxyTransaction() throws SipException, InterruptedException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -987,8 +985,7 @@ public class ProxyControllerTest {
       description =
           "incoming request handling for mid dialog.ReqURI and top route don't match proxy."
               + "LrFix variable should not be set")
-  public void testIncomingRequestNoLrFix()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestNoLrFix() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1040,8 +1037,7 @@ public class ProxyControllerTest {
       description =
           "test incoming request handling MAddr processing."
               + "Maddr matches proxy, hence should not be removed")
-  public void testIncomingRequestMAddrRemoval()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestMAddrRemoval() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1073,8 +1069,7 @@ public class ProxyControllerTest {
       description =
           "test incoming request handling MAddr processing."
               + "Maddr does not match proxy, hence should not be removed")
-  public void testIncomingRequestMAddrDoesNotMatch()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestMAddrDoesNotMatch() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1105,8 +1100,7 @@ public class ProxyControllerTest {
   @Test(
       description =
           "test incoming new invite request, proxy transaction and server transaction creation")
-  public void testIncomingInviteRequestProxyTransaction()
-      throws ExecutionException, InterruptedException {
+  public void testIncomingInviteRequestProxyTransaction() {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1214,15 +1208,14 @@ public class ProxyControllerTest {
     when(proxySIPRequest.getProvider().getSipStack()).thenReturn(sipStack);
     SIPTransaction sipTransaction = mock(SIPTransaction.class);
 
-    when(( sipStack).findCancelTransaction(any(),eq(true))).thenReturn(sipTransaction);
+    when((sipStack).findCancelTransaction(any(), eq(true))).thenReturn(sipTransaction);
     when(sipTransaction.getApplicationData()).thenReturn(proxyTransaction);
 
     ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
 
     doNothing().when(st).sendResponse(any(Response.class));
 
-    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
-
+    Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
 
     verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());
@@ -1352,8 +1345,7 @@ public class ProxyControllerTest {
       description = "test create proxy transaction exception and return 500 internal failure",
       expectedExceptions = DhruvaRuntimeException.class)
   public void testCreateProxyTransactionFailure()
-      throws SipException, InvalidArgumentException, ExecutionException, InterruptedException,
-          InternalProxyErrorException {
+      throws SipException, InvalidArgumentException, InternalProxyErrorException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
     reset(serverTransaction);
 
