@@ -25,7 +25,6 @@ import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.wx2.util.Utilities;
-import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
@@ -48,8 +47,6 @@ import javax.sip.header.MaxForwardsHeader;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-
-import gov.nist.javax.sip.stack.SIPTransaction;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
