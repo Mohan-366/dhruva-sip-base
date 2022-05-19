@@ -6,6 +6,7 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.servergroup.ServerGroupUpdateListener;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
@@ -34,6 +35,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -46,7 +48,7 @@ import reactor.util.retry.Retry;
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor implements ApplicationListener<EnvironmentChangeEvent> {
+public class OptionsPingMonitor implements ServerGroupUpdateListener, ApplicationListener<EnvironmentChangeEvent> {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
@@ -57,13 +59,12 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
-  protected Map<String, ServerGroup> localSGMapCopy;
 
   @PostConstruct
   public void initOptionsPing() {
-    localSGMapCopy = commonConfigurationProperties.getServerGroups();
+    commonConfigurationProperties.registerServerGroupUpdateListener(this);
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
-    startMonitoring(localSGMapCopy);
+    startMonitoring(commonConfigurationProperties.getServerGroups());
   }
 
   protected void startMonitoring(Map<String, ServerGroup> map) {
@@ -345,14 +346,22 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     if (event.getKeys().stream()
         .anyMatch(
             key -> {
-              // Refresh OPTIONS pings only when common config has some changes.
-              return key.contains("common");
+              // Refresh OPTIONS pings only when serverGroup config has some changes.
+              return key.contains("serverGroups");
             })) {
-      logger.info("Change detected in Common Config, Restarting OPTIONS pings.");
+      logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
+      // this is to trigger the setServerGroups for latest values
+      commonConfigurationProperties.getServerGroups();
+    }
+  }
+
+
+  @Override
+  public void onServerGroupUpdateEvent() {
+      logger.info("Change detected in ServerGroup Config, Restarting OPTIONS pings.");
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
-    }
   }
 
   protected void disposeExistingFlux() {
@@ -366,7 +375,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
-    Map<String, ServerGroup>  sgMap = (localSGMapCopy != null)? localSGMapCopy : commonConfigurationProperties.getServerGroups();
+    Map<String, ServerGroup>  sgMap = commonConfigurationProperties.getServerGroups();
 
     logger.info(
         "KALPA: Current SG map from commonConfigProp: {}", sgMap);
@@ -400,30 +409,13 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
-  @SneakyThrows
-  protected void getLatestSGMap() {
-    Map<String, ServerGroup> sgMap;
-    while (true) {
-      sgMap = commonConfigurationProperties.getServerGroups();
-      Thread.sleep(500);
-      logger.info("KALPA: localSGMapCopy: {} \nsgMap: {} ", localSGMapCopy, sgMap);
-      if (!sgMap.equals(localSGMapCopy)) {
-        logger.info("KALPA: new map detected.");
-        localSGMapCopy = sgMap;
-        break;
-      } else {
-        logger.info("KALPA: local map is same as commonConfigProperties sg map. Going to sleep.");
-      }
-    }
-  }
   protected class RefreshHandle implements Runnable {
     @Override
     public void run() {
       disposeExistingFlux();
       opFlux.clear();
-      getLatestSGMap();
       cleanUpMaps();
-      startMonitoring(localSGMapCopy);
+      startMonitoring(commonConfigurationProperties.getServerGroups());
     }
   }
 }
