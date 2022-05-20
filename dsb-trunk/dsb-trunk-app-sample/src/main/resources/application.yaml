@@ -21,12 +21,10 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 6060
-          transport: UDP
           priority: 10
           weight: 100
         - ipAddress: "127.0.0.1"
           port: 6061
-          transport: UDP
           priority: 5
           weight: 100
       sgPolicy: policy1
@@ -40,12 +38,10 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 6062
-          transport: UDP
           priority: 10
           weight: 100
         - ipAddress: "127.0.0.1"
           port: 6063
-          transport: UDP
           priority: 5
           weight: 100
       sgPolicy: policy1

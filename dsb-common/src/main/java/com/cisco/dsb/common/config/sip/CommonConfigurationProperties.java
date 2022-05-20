@@ -4,6 +4,7 @@ import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
+import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
@@ -182,11 +183,33 @@ public class CommonConfigurationProperties {
         .forEach(
             sg -> {
               String network = sg.getNetworkName();
-              if (listenPoints.stream().noneMatch(lp -> lp.getName().equals(network))) {
-                throw new DhruvaRuntimeException(
-                    "SGName: " + sg.getHostName() + "; listenPoint: \"" + network + "\" not found");
-              }
+
+              listenPoints.stream()
+                  .filter(lp -> lp.getName().equals(network))
+                  .findFirst()
+                  .ifPresentOrElse(
+                      listenPoint -> updateTransport(sg, listenPoint.getTransport()),
+                      () -> {
+                        throw new DhruvaRuntimeException(
+                            "SGName: "
+                                + sg.getHostName()
+                                + "; listenPoint: \""
+                                + network
+                                + "\" not found");
+                      });
             });
+  }
+
+  private void updateTransport(ServerGroup sg, Transport transport) {
+    sg.setTransport(transport);
+
+    if (SGType.STATIC.equals(sg.getSgType())) {
+      Optional.ofNullable(sg.getElements())
+          .ifPresent(
+              serverGroupElements ->
+                  serverGroupElements.forEach(
+                      serverGroupElement -> serverGroupElement.setTransport(transport)));
+    }
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {

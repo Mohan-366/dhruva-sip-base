@@ -30,12 +30,10 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 4101
-          transport: UDP
           priority: 5
           weight: 100
         - ipAddress: "127.0.0.1"
           port: 4102
-          transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
@@ -50,7 +48,6 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 4200
-          transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
@@ -65,7 +62,6 @@ common:
       elements:
         - ipAddress: "127.0.0.1"
           port: 4000
-          transport: UDP
           priority: 10
           weight: 100
       sgPolicy: policy1
@@ -79,7 +75,6 @@ common:
       lbType: weight
       sgType: A_RECORD
       port: 6000
-      transport: UDP
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
       priority: 10
@@ -91,7 +86,6 @@ common:
       lbType: weight
       sgType: A_RECORD
       port: 7000
-      transport: UDP
       sgPolicy: policy1
       optionsPingPolicy: opPolicy1
       priority: 10

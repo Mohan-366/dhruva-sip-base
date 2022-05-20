@@ -9,7 +9,6 @@ common:
       sgPolicy: policy1
       optionsPingPolicy: policyOP1
       sgType: A_RECORD
-      transport: TCP
       weight: 100
     - name: SG1
       hostName: SG1
@@ -19,12 +18,10 @@ common:
       elements:
         - ipAddress: "10.78.98.54"
           port: 5061
-          transport: TCP
           qValue: 0.9
           weight: 10
         - ipAddress: "10.78.98.54"
           port: 5062
-          transport: TCP
           qValue: 0.9
           weight: 10
       sgPolicy: policy1
@@ -37,12 +34,10 @@ common:
       elements:
         - ipAddress: "10.78.98.54"
           port: 5063
-          transport: TCP
           qValue: 0.9
           weight: 10
         - ipAddress: "10.78.98.54"
           port: 5064
-          transport: TCP
           qValue: 0.9
           weight: 10
       sgPolicy: policy1
