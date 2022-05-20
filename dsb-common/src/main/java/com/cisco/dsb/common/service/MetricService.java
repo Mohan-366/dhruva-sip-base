@@ -4,10 +4,6 @@
 
 package com.cisco.dsb.common.service;
 
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
-
 import com.cisco.dsb.common.dto.ConnectionInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
@@ -25,15 +21,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import gov.nist.javax.sip.stack.MessageChannel;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +30,21 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.scheduler.Schedulers;
+
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.Supplier;
+
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 
 @Service
 @CustomLog
@@ -117,6 +119,9 @@ public class MetricService {
     this.trunkLBAlgorithm = new HashMap<>();
 
     this.connectionInfoMap = new HashMap<>();
+
+    // enable support for reactors scheduler metrics
+    Schedulers.enableMetrics();
   }
 
   public void registerPeriodicMetric(
