@@ -33,8 +33,11 @@ management:
       enabled: false
   metrics:
     export:
+      default-registry:
+        enabled: true
+        enabled-extra-logs-for-debugging: false #enable if extra logging for micrometer based metrics is required
       influx:
-        enabled: false
+        enabled: false # enable for local testing of micrometer based metrics
 
 
 
