@@ -582,8 +582,8 @@ public class OptionsPingMonitorTest {
     Assert.assertEquals(optionsPingMonitor.elementStatus.size(), 3);
     Assert.assertEquals(optionsPingMonitor.serverGroupStatus.size(), 1);
     Assert.assertTrue(!optionsPingMonitor.elementStatus.containsKey(sge4.toUniqueElementString()));
-    Assert.assertTrue(
-        !optionsPingMonitor
+    Assert.assertFalse(
+        optionsPingMonitor
             .downServerGroupElementsCounter
             .get("sg1")
             .contains(sge4.toUniqueElementString()));
@@ -604,9 +604,16 @@ public class OptionsPingMonitorTest {
             .subscribe();
     optionsPingMonitor.opFlux.add(d1);
     optionsPingMonitor.opFlux.add(d2);
-    optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(!d.isDisposed()));
+    optionsPingMonitor.opFlux.forEach(d -> Assert.assertFalse(d.isDisposed()));
     optionsPingMonitor.disposeExistingFlux();
     Assert.assertEquals(optionsPingMonitor.opFlux.size(), 2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(d.isDisposed()));
+  }
+
+  @Test
+  public void testOnServerGroupUpdateEvent() throws InterruptedException {
+    optionsPingMonitor.onServerGroupUpdateEvent();
+    Thread.sleep(1000);
+    verify(commonConfigurationProperties, times(2)).getServerGroups();
   }
 }
