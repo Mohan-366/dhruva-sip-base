@@ -5,7 +5,6 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
-import com.cisco.dsb.common.servergroup.ServerGroupUpdateListener;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
@@ -92,8 +91,6 @@ public class CommonConfigurationProperties {
 
   // DSBNetworkLayer is using this as static variable
   @Getter private static int socketConnectionTimeout = 8000;
-
-  private List<ServerGroupUpdateListener> serverGroupUpdateListeners = new ArrayList<>();
 
   // TODO: this is hack, inject spring object everywhere instead of static field
   public void setSocketConnectionTimeout(int timeout) {
@@ -191,7 +188,6 @@ public class CommonConfigurationProperties {
                     "SGName: " + sg.getHostName() + "; listenPoint: \"" + network + "\" not found");
               }
             });
-    this.serverGroupUpdateListeners.stream().forEach(listener -> listener.onServerGroupUpdateEvent());
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {
@@ -199,9 +195,5 @@ public class CommonConfigurationProperties {
     oldMap.putAll(newMap);
     oldMap.keySet().stream().filter(key -> !newMap.containsKey(key)).forEach(removeKeys::add);
     removeKeys.forEach(oldMap::remove);
-  }
-
-  public void registerServerGroupUpdateListener(ServerGroupUpdateListener listener) {
-    this.serverGroupUpdateListeners.add(listener);
   }
 }

@@ -13,6 +13,7 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
+import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.header.CallID;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -611,9 +612,39 @@ public class OptionsPingMonitorTest {
   }
 
   @Test
-  public void testOnServerGroupUpdateEvent() throws InterruptedException {
-    optionsPingMonitor.onServerGroupUpdateEvent();
-    Thread.sleep(1000);
-    verify(commonConfigurationProperties, times(2)).getServerGroups();
+  public void testMapComapare() {
+    Map<String, ServerGroup> map1 = new HashMap<>();
+    Map<String, ServerGroup> map2 = new HashMap<>();
+    ServerGroupElement sge1 = ServerGroupElement.builder().setIpAddress("1.1.1.1").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+    ServerGroupElement sge2 = ServerGroupElement.builder().setIpAddress("1.1.1.1").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+    ServerGroupElement sge3 = ServerGroupElement.builder().setIpAddress("2.2.2.2").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+    ServerGroupElement sge4 = ServerGroupElement.builder().setIpAddress("2.2.2.2").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+
+    ServerGroupElement sge5 = ServerGroupElement.builder().setIpAddress("1.1.1.2").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+    ServerGroupElement sge6 = ServerGroupElement.builder().setIpAddress("1.1.1.1").setPort(1001).setTransport(Transport.TCP).setPriority(10).setWeight(100).build();
+    ServerGroupElement sge7 = ServerGroupElement.builder().setIpAddress("2.2.2.2").setPort(1000).setTransport(Transport.UDP).setPriority(11).setWeight(100).build();
+    ServerGroupElement sge8 = ServerGroupElement.builder().setIpAddress("2.2.2.2").setPort(1000).setTransport(Transport.TCP).setPriority(10).setWeight(120).build();
+    ServerGroup sg1 = ServerGroup.builder().setName("s1").setHostName("s1").setNetworkName("n1").setPriority(10).setWeight(100).build();
+    sg1.setElements(Arrays.asList(sge1,sge3));
+    ServerGroup sg2 = ServerGroup.builder().setName("s1").setHostName("s1").setNetworkName("n1").setPriority(10).setWeight(100).build();
+    sg2.setElements(Arrays.asList(sge2, sge4));
+    map1.put("sg1", sg1);
+    map2.put("sg1", sg2);
+    Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setHostName("s2");
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setHostName("s1");
+    sg1.setNetworkName("n2");
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setNetworkName("n1");
+    sg1.setElements(Arrays.asList(sge5,sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge6,sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge7,sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge8,sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+
   }
 }

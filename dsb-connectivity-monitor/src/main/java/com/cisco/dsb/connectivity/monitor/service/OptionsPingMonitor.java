@@ -6,11 +6,9 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
-import com.cisco.dsb.common.servergroup.ServerGroupUpdateListener;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
-import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -35,7 +33,6 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -44,11 +41,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getNumRetry;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getRequest;
+
 
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor implements ServerGroupUpdateListener, ApplicationListener<EnvironmentChangeEvent> {
+public class OptionsPingMonitor implements ApplicationListener<EnvironmentChangeEvent> {
 
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
@@ -59,10 +60,13 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
+  private Map<String, ServerGroup> localSGMap;
+  private final int  MAX_FETCH_TIME = 1500;
+  private int fetchTime = 500;
+  private final int FETCH_INCREMENT_TIME = 250;
 
   @PostConstruct
   public void initOptionsPing() {
-    commonConfigurationProperties.registerServerGroupUpdateListener(this);
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     startMonitoring(commonConfigurationProperties.getServerGroups());
   }
@@ -200,7 +204,7 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
                     throwable.getMessage()))
         .retryWhen(
             Retry.fixedDelay(
-                OptionsUtil.getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
+                getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
         .onErrorResume(
             throwable -> {
               logger.info(
@@ -321,7 +325,7 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
             "unable to find provider for outbound request with network:" + dhruvaNetwork.getName());
       }
 
-      SIPRequest sipRequest = OptionsUtil.getRequest(element, dhruvaNetwork, sipProvider);
+      SIPRequest sipRequest = getRequest(element, dhruvaNetwork, sipProvider);
       return optionsPingTransaction.proxySendOutBoundRequest(
           sipRequest, dhruvaNetwork, sipProvider);
     } catch (SipException
@@ -350,18 +354,10 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
               return key.contains("serverGroups");
             })) {
       logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
-      // this is to trigger the setServerGroups for latest values
-      commonConfigurationProperties.getServerGroups();
-    }
-  }
-
-
-  @Override
-  public void onServerGroupUpdateEvent() {
-      logger.info("Change detected in ServerGroup Config, Restarting OPTIONS pings.");
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
+    }
   }
 
   protected void disposeExistingFlux() {
@@ -375,14 +371,11 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
-    Map<String, ServerGroup>  sgMap = commonConfigurationProperties.getServerGroups();
-
+    Map<String, ServerGroup>  sgMap = (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
     logger.info(
         "KALPA: Current SG map from commonConfigProp: {}", sgMap);
-
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
-
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
       String sgName = entry.getValue().getName();
       ServerGroup sg = entry.getValue();
@@ -409,9 +402,30 @@ public class OptionsPingMonitor implements ServerGroupUpdateListener, Applicatio
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
+
+  @SneakyThrows
+  protected void getUpdatedMaps() {
+    boolean isUpdated = false;
+    Thread.sleep(fetchTime);
+    while(fetchTime < MAX_FETCH_TIME) {
+      if(isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
+        logger.info("KALPA: SG Map Updated. Working with new map!");
+        localSGMap = commonConfigurationProperties.getServerGroups();
+        isUpdated = true;
+        break;
+      }
+      fetchTime =+ FETCH_INCREMENT_TIME;
+    }
+    if(!isUpdated) {
+      logger.error("ServerGroup refresh failed.");
+      throw new DhruvaRuntimeException("ServerGroup Refresh Failed.");
+    }
+  }
+
   protected class RefreshHandle implements Runnable {
     @Override
     public void run() {
+      getUpdatedMaps();
       disposeExistingFlux();
       opFlux.clear();
       cleanUpMaps();
