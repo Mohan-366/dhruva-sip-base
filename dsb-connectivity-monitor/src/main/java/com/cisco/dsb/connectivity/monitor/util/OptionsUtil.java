@@ -114,7 +114,7 @@ public class OptionsUtil {
         ServerGroup serverGroupNew = sg.getValue();
         ServerGroup serverGroupOld = oldMap.get(sg.getKey());
         if(serverGroupNew.equals(serverGroupOld)) {
-          if (serverGroupNew.compareTo(serverGroupOld) != 0 || serverGroupNew.getNetworkName() != serverGroupOld.getNetworkName()) {
+          if(serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
             result = true;
           } else {
             for(ServerGroupElement sgeNew: serverGroupNew.getElements()) {
@@ -124,15 +124,13 @@ public class OptionsUtil {
                 }
                 return false;
               }));
-              if (result) {
+              if(result)
                 return true;
-              }
-            }
-            if(result) {
-              return true;
             }
           }
         }
+        if(result)
+          return true;
       }
       return result;
     }

@@ -6,6 +6,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
@@ -628,15 +629,22 @@ public class OptionsPingMonitorTest {
     sg1.setElements(Arrays.asList(sge1,sge3));
     ServerGroup sg2 = ServerGroup.builder().setName("s1").setHostName("s1").setNetworkName("n1").setPriority(10).setWeight(100).build();
     sg2.setElements(Arrays.asList(sge2, sge4));
+
     map1.put("sg1", sg1);
     map2.put("sg1", sg2);
     Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setPingOn(true);
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setPingOn(false);
     sg1.setHostName("s2");
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setHostName("s1");
     sg1.setNetworkName("n2");
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setNetworkName("n1");
+    sg1.setOptionsPingPolicyFromConfig(OptionsPingPolicy.builder().setDownTimeInterval(2000).setName("OP_NEW").setUpTimeInterval(60000).setPingTimeOut(100).build());
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setOptionsPingPolicyConfig(null);
     sg1.setElements(Arrays.asList(sge5,sge3));
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge6,sge3));
@@ -645,6 +653,12 @@ public class OptionsPingMonitorTest {
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge8,sge3));
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+
+    ServerGroup sg3 = ServerGroup.builder().setName("s3").setHostName("s3").setNetworkName("n1").setPriority(10).setWeight(100).setLbType(
+        LBType.ONCE).build();
+    map2.put("s3", sg3);
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
 
   }
 }

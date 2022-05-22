@@ -75,11 +75,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Starting OPTIONS pings. Map {}", map);
     for (Entry<String, ServerGroup> entry : map.entrySet()) {
       ServerGroup serverGroup = entry.getValue();
-      logger.info(
-          "KALPA: sg {} pingOn: {}  element: {}",
-          serverGroup,
-          serverGroup.isPingOn(),
-          serverGroup.getElements());
       // Servergroup should have pingOn = true and elements to ping
       if (!isServerGroupPingable(serverGroup)) {
         continue;
@@ -353,7 +348,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
               // Refresh OPTIONS pings only when serverGroup config has some changes.
               return key.contains("serverGroups");
             })) {
-      logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
@@ -372,14 +366,11 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    */
   protected void cleanUpMaps() {
     Map<String, ServerGroup>  sgMap = (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
-    logger.info(
-        "KALPA: Current SG map from commonConfigProp: {}", sgMap);
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
       String sgName = entry.getValue().getName();
       ServerGroup sg = entry.getValue();
-      logger.info("KALPA: sg {} pingOn: {}  element: {}", sg, sg.isPingOn(), sg.getElements());
       if (!isServerGroupPingable(sg)) {
         continue;
       }
@@ -407,9 +398,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected void getUpdatedMaps() {
     boolean isUpdated = false;
     Thread.sleep(fetchTime);
+    logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
     while(fetchTime < MAX_FETCH_TIME) {
       if(isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
-        logger.info("KALPA: SG Map Updated. Working with new map!");
+        logger.info("SG Map Updated. Working with new map!");
         localSGMap = commonConfigurationProperties.getServerGroups();
         isUpdated = true;
         break;
