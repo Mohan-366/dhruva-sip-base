@@ -29,7 +29,7 @@ import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
-import lombok.SneakyThrows;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -61,9 +61,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
   private Map<String, ServerGroup> localSGMap;
-  private final int  MAX_FETCH_TIME = 1500;
-  private int fetchTime = 500;
-  private final int FETCH_INCREMENT_TIME = 250;
+  @Setter private int maxFetchTime = 1500;
+  @Setter private int fetchTime = 500;
+  @Setter private int fetchIncrementTime = 250;
 
   @PostConstruct
   public void initOptionsPing() {
@@ -394,19 +394,22 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
 
-  @SneakyThrows
   protected void getUpdatedMaps() {
     boolean isUpdated = false;
-    Thread.sleep(fetchTime);
     logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
-    while(fetchTime < MAX_FETCH_TIME) {
+    while(fetchTime < maxFetchTime) {
+      try {
+        Thread.sleep(fetchTime);
+      } catch (InterruptedException e) {
+        logger.error("Exception happened for sleep.");
+      }
       if(isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
         logger.info("SG Map Updated. Working with new map!");
         localSGMap = commonConfigurationProperties.getServerGroups();
         isUpdated = true;
         break;
       }
-      fetchTime =+ FETCH_INCREMENT_TIME;
+      fetchTime += fetchIncrementTime;
     }
     if(!isUpdated) {
       logger.error("ServerGroup refresh failed.");

@@ -659,6 +659,14 @@ public class OptionsPingMonitorTest {
     map2.put("s3", sg3);
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
+  }
 
+  @Test (expectedExceptions = {DhruvaRuntimeException.class})
+  public void testGetUpdatedMaps() {
+    optionsPingMonitor.setMaxFetchTime(50);
+    optionsPingMonitor.setFetchTime(10);
+    optionsPingMonitor.setFetchIncrementTime(20);
+    when(commonConfigurationProperties.getServerGroups()).thenReturn(null);
+    optionsPingMonitor.getUpdatedMaps();
   }
 }

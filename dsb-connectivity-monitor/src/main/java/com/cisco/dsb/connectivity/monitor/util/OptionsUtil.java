@@ -106,7 +106,9 @@ public class OptionsUtil {
   }
 
   public static boolean isSGMapUpdated(Map<String, ServerGroup> newMap, Map<String, ServerGroup> oldMap) {
-    if (oldMap == null || oldMap.size() != newMap.size()) {
+    if (oldMap == null && newMap == null)  {
+      return false;
+    } else if (oldMap == null || newMap == null || oldMap.size() != newMap.size()) {
       return true;
     } else {
       Boolean result = false;
