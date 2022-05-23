@@ -1,7 +1,6 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.*;
 
 import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
 import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
@@ -48,7 +47,7 @@ public class HealthPingIT extends AbstractTestNGSpringContextTests {
                     upstreamService.isFault()
                         && (upstreamService.getServiceType() == ServiceType.REQUIRED));
 
-    assertEquals(isUpstreamServicesHealthy, true);
+    assertTrue(isUpstreamServicesHealthy);
 
     // validate custom dsb calling app health monitor
     ServiceHealth dsbCallingAppHealth =

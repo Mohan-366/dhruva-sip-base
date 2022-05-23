@@ -746,9 +746,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           JainSipHelper.getHeaderFactory()
               .createHeader(
                   "Accept",
-                  SipConstants.Content_Type_Application
-                      + "/"
-                      + SipConstants.ContentSubType.Sdp.toString());
+                  SipConstants.Content_Type_Application + "/" + SipConstants.ContentSubType.Sdp);
       response.addHeader(acceptHeader);
     } catch (Exception e) {
       logger.warn("Exception adding 'Accept' header");
@@ -919,7 +917,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   @Override
-  public void onCancel(ProxyTransaction proxy) throws DhruvaException {
+  public void onCancel(ProxyTransaction proxy) {
 
     proxy.cancel();
   }

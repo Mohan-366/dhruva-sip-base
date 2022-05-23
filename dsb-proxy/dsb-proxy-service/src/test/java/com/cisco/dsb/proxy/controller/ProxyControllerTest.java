@@ -79,12 +79,16 @@ public class ProxyControllerTest {
   DhruvaNetwork tcpNetworkOutgoing;
   DhruvaNetwork tlsNetworkOutgoing;
 
-  @Mock ProxyConfigurationProperties proxyConfigurationProperties;
-  @Mock CommonConfigurationProperties commonConfigurationProperties;
+  @Mock
+  ProxyConfigurationProperties proxyConfigurationProperties;
+  @Mock
+  CommonConfigurationProperties commonConfigurationProperties;
 
-  @Mock SipServerLocatorService sipServerLocatorService;
+  @Mock
+  SipServerLocatorService sipServerLocatorService;
 
-  @Mock ProxyAppConfig proxyAppConfig;
+  @Mock
+  ProxyAppConfig proxyAppConfig;
   DhruvaExecutorService dhruvaExecutorService;
 
   SipStack sipStack;
@@ -452,10 +456,10 @@ public class ProxyControllerTest {
         sipListenPointTlsOutgoing.getTransport(),
         tlsNetworkOutgoing);
 
-    return new Object[][] {
-      {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
-      {tcpNetworkIncoming, tcpNetworkOutgoing, tcpSipProviderOutgoing},
-      {tlsNetworkIncoming, tlsNetworkOutgoing, tlsSipProviderOutgoing}
+    return new Object[][]{
+        {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
+        {tcpNetworkIncoming, tcpNetworkOutgoing, tcpSipProviderOutgoing},
+        {tlsNetworkIncoming, tlsNetworkOutgoing, tlsSipProviderOutgoing}
     };
   }
 
@@ -463,7 +467,7 @@ public class ProxyControllerTest {
       description = "test proxy client creation for outgoing invite request",
       dataProvider = "getSipStack")
   public void testOutgoingInviteRequestProxyTransactionAllTransports(Object[] testParams)
-      throws SipException, ExecutionException, InterruptedException {
+      throws SipException, InterruptedException {
 
     DhruvaNetwork incomingNetwork1 = (DhruvaNetwork) testParams[0];
     DhruvaNetwork outgoingNetwork1 = (DhruvaNetwork) testParams[1];
@@ -505,7 +509,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -577,7 +581,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
@@ -632,7 +636,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -655,7 +659,7 @@ public class ProxyControllerTest {
               + "This covers test for normal lrfix case")
   public void testOutgoingACKRequestProxyTransaction()
       throws SipException, ParseException, ExecutionException, InterruptedException,
-          TimeoutException {
+      TimeoutException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -743,7 +747,7 @@ public class ProxyControllerTest {
   @Test(
       description = "calling proxyrequest without setting outgoing network",
       expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithoutNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithoutNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -754,7 +758,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxyController.proxyRequest(proxySIPRequest);
@@ -763,7 +767,7 @@ public class ProxyControllerTest {
   @Test(
       description = "proxyrequest called with invalid network",
       expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithInvalidNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithInvalidNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -774,7 +778,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxySIPRequest.setOutgoingNetwork("invalid");
@@ -834,8 +838,7 @@ public class ProxyControllerTest {
   }
 
   @Test(description = "test proxy client creation for outgoing bye request")
-  public void testOutgoingByeRequestProxyTransaction()
-      throws SipException, ExecutionException, InterruptedException {
+  public void testOutgoingByeRequestProxyTransaction() throws SipException, InterruptedException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -856,7 +859,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -986,8 +989,7 @@ public class ProxyControllerTest {
       description =
           "incoming request handling for mid dialog.ReqURI and top route don't match proxy."
               + "LrFix variable should not be set")
-  public void testIncomingRequestNoLrFix()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestNoLrFix() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1013,7 +1015,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
     // Check that lrfix variable is set even if requri does not belong to proxy and has top route
@@ -1024,7 +1026,8 @@ public class ProxyControllerTest {
     ListIterator routes = proxySIPRequest.getRequest().getHeaders(RouteHeader.NAME);
     if (routes != null && routes.hasNext()) {
       // Get to the last value
-      do lastRouteHeader = (RouteHeader) routes.next();
+      do
+        lastRouteHeader = (RouteHeader) routes.next();
       while (routes.hasNext());
     }
     assert lastRouteHeader != null;
@@ -1039,8 +1042,7 @@ public class ProxyControllerTest {
       description =
           "test incoming request handling MAddr processing."
               + "Maddr matches proxy, hence should not be removed")
-  public void testIncomingRequestMAddrRemoval()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestMAddrRemoval() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1059,7 +1061,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest =
         proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
@@ -1072,8 +1074,7 @@ public class ProxyControllerTest {
       description =
           "test incoming request handling MAddr processing."
               + "Maddr does not match proxy, hence should not be removed")
-  public void testIncomingRequestMAddrDoesNotMatch()
-      throws ParseException, ExecutionException, InterruptedException {
+  public void testIncomingRequestMAddrDoesNotMatch() throws ParseException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1092,7 +1093,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest =
         proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
@@ -1104,8 +1105,7 @@ public class ProxyControllerTest {
   @Test(
       description =
           "test incoming new invite request, proxy transaction and server transaction creation")
-  public void testIncomingInviteRequestProxyTransaction()
-      throws ExecutionException, InterruptedException {
+  public void testIncomingInviteRequestProxyTransaction() {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1119,7 +1119,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -1135,7 +1135,7 @@ public class ProxyControllerTest {
 
   @DataProvider
   public Object[] toggleValues() {
-    return new Boolean[][] {{true}, {false}};
+    return new Boolean[][]{{true}, {false}};
   }
 
   @Test(
@@ -1220,7 +1220,7 @@ public class ProxyControllerTest {
 
     doNothing().when(st).sendResponse(any(Response.class));
 
-    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
+    Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
 
     verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());
@@ -1350,8 +1350,7 @@ public class ProxyControllerTest {
       description = "test create proxy transaction exception and return 500 internal failure",
       expectedExceptions = DhruvaRuntimeException.class)
   public void testCreateProxyTransactionFailure()
-      throws SipException, InvalidArgumentException, ExecutionException, InterruptedException,
-          InternalProxyErrorException {
+      throws SipException, InvalidArgumentException, InternalProxyErrorException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
     reset(serverTransaction);
 
@@ -1377,17 +1376,17 @@ public class ProxyControllerTest {
                 proxyAppConfig);
 
     QuadFunction<
-            ControllerInterface,
-            ProxyParamsInterface,
-            ServerTransaction,
-            SIPRequest,
-            ProxyStatelessTransaction>
+        ControllerInterface,
+        ProxyParamsInterface,
+        ServerTransaction,
+        SIPRequest,
+        ProxyStatelessTransaction>
         function1 = mock(QuadFunction.class);
     when(function1.apply(
-            any(ControllerInterface.class),
-            any(ProxyParamsInterface.class),
-            any(ServerTransaction.class),
-            any(SIPRequest.class)))
+        any(ControllerInterface.class),
+        any(ProxyParamsInterface.class),
+        any(ServerTransaction.class),
+        any(SIPRequest.class)))
         .thenThrow(new InternalProxyErrorException("test error"));
     when(proxyFactoryMock.proxyTransaction()).thenReturn(function1);
 
@@ -1397,7 +1396,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-            nullable(User.class), any(SipDestination.class)))
+        nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxyController.onNewRequest(proxySIPRequest).block();

@@ -147,8 +147,6 @@ public interface ControllerInterface {
    * this is called when a CANCEL is received for the original Transaction
    *
    * @param proxy The proxyTransaction object
-   * @param trans ServerTransaction being cancelled
-   * @param cancel the CANCEL request
    * @throws DhruvaException
    */
   void onCancel(ProxyTransaction proxy) throws DhruvaException;
@@ -158,7 +156,6 @@ public interface ControllerInterface {
    * receives response
    *
    * @param response
-   * @return
    */
   void onResponse(ProxySIPResponse response);
 

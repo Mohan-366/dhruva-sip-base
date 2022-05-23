@@ -5,8 +5,6 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
 import gov.nist.javax.sip.message.SIPMessage;
-import gov.nist.javax.sip.message.SIPRequest;
-import gov.nist.javax.sip.message.SIPResponse;
 import java.util.Locale;
 import java.util.Optional;
 import javax.sip.SipProvider;
@@ -34,31 +32,14 @@ public class LMAUtil {
 
     BindingInfo messageBindingInfo = LMAUtil.populateBindingInfo(message, transportType);
 
-    if (Event.MESSAGE_TYPE.REQUEST.equals(messageType)) {
-      SIPRequest sipRequest = (SIPRequest) message;
-      Event.emitMessageEvent(
-          messageBindingInfo,
-          message,
-          directionType,
-          Event.MESSAGE_TYPE.REQUEST,
-          isInternallyGenerated,
-          String.valueOf(sipRequest.getMethod()),
-          String.valueOf(sipRequest.getRequestURI()),
-          isMidDialogRequest,
-          dhruvaProcessDelayInMilis);
-    } else {
-      SIPResponse sipResponse = (SIPResponse) message;
-      Event.emitMessageEvent(
-          messageBindingInfo,
-          message,
-          directionType,
-          messageType,
-          isInternallyGenerated,
-          String.valueOf(sipResponse.getStatusCode()),
-          String.valueOf(sipResponse.getReasonPhrase()),
-          isMidDialogRequest, // false --  ProxyUtils.isMidDialogRequest(sipResponse),
-          0L);
-    }
+    Event.emitMessageEvent(
+        messageBindingInfo,
+        message,
+        directionType,
+        messageType,
+        isInternallyGenerated,
+        isMidDialogRequest,
+        dhruvaProcessDelayInMilis);
   }
 
   public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {
