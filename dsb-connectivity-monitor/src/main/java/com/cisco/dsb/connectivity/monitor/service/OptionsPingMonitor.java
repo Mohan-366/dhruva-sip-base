@@ -1,5 +1,9 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getNumRetry;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getRequest;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated;
+
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -41,10 +45,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated;
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getNumRetry;
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getRequest;
-
 
 @CustomLog
 @Component
@@ -365,7 +365,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
-    Map<String, ServerGroup>  sgMap = (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
+    Map<String, ServerGroup> sgMap =
+        (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
@@ -393,17 +394,16 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
-
   protected void getUpdatedMaps() {
     boolean isUpdated = false;
     logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
-    while(fetchTime < maxFetchTime) {
+    while (fetchTime < maxFetchTime) {
       try {
         Thread.sleep(fetchTime);
       } catch (InterruptedException e) {
         logger.error("Exception happened for sleep.");
       }
-      if(isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
+      if (isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
         logger.info("SG Map Updated. Working with new map!");
         localSGMap = commonConfigurationProperties.getServerGroups();
         isUpdated = true;
@@ -411,7 +411,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       }
       fetchTime += fetchIncrementTime;
     }
-    if(!isUpdated) {
+    if (!isUpdated) {
       logger.error("ServerGroup refresh failed.");
       throw new DhruvaRuntimeException("ServerGroup Refresh Failed.");
     }

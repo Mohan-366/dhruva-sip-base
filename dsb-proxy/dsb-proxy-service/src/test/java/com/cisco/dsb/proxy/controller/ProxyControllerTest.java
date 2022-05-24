@@ -79,16 +79,12 @@ public class ProxyControllerTest {
   DhruvaNetwork tcpNetworkOutgoing;
   DhruvaNetwork tlsNetworkOutgoing;
 
-  @Mock
-  ProxyConfigurationProperties proxyConfigurationProperties;
-  @Mock
-  CommonConfigurationProperties commonConfigurationProperties;
+  @Mock ProxyConfigurationProperties proxyConfigurationProperties;
+  @Mock CommonConfigurationProperties commonConfigurationProperties;
 
-  @Mock
-  SipServerLocatorService sipServerLocatorService;
+  @Mock SipServerLocatorService sipServerLocatorService;
 
-  @Mock
-  ProxyAppConfig proxyAppConfig;
+  @Mock ProxyAppConfig proxyAppConfig;
   DhruvaExecutorService dhruvaExecutorService;
 
   SipStack sipStack;

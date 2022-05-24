@@ -105,34 +105,36 @@ public class OptionsUtil {
     }
   }
 
-  public static boolean isSGMapUpdated(Map<String, ServerGroup> newMap, Map<String, ServerGroup> oldMap) {
-    if (oldMap == null && newMap == null)  {
+  public static boolean isSGMapUpdated(
+      Map<String, ServerGroup> newMap, Map<String, ServerGroup> oldMap) {
+    if (oldMap == null && newMap == null) {
       return false;
     } else if (oldMap == null || newMap == null || oldMap.size() != newMap.size()) {
       return true;
     } else {
       Boolean result = false;
-      for(Map.Entry<String, ServerGroup> sg: newMap.entrySet()) {
+      for (Map.Entry<String, ServerGroup> sg : newMap.entrySet()) {
         ServerGroup serverGroupNew = sg.getValue();
         ServerGroup serverGroupOld = oldMap.get(sg.getKey());
-        if(serverGroupNew.equals(serverGroupOld)) {
-          if(serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
+        if (serverGroupNew.equals(serverGroupOld)) {
+          if (serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
             result = true;
           } else {
-            for(ServerGroupElement sgeNew: serverGroupNew.getElements()) {
-              result = (serverGroupOld.getElements().stream().allMatch(sgeOld -> {
-                if(sgeOld.compareTo(sgeNew) != 0) {
-                  return true;
-                }
-                return false;
-              }));
-              if(result)
-                return true;
+            for (ServerGroupElement sgeNew : serverGroupNew.getElements()) {
+              result =
+                  (serverGroupOld.getElements().stream()
+                      .allMatch(
+                          sgeOld -> {
+                            if (sgeOld.compareTo(sgeNew) != 0) {
+                              return true;
+                            }
+                            return false;
+                          }));
+              if (result) return true;
             }
           }
         }
-        if(result)
-          return true;
+        if (result) return true;
       }
       return result;
     }
