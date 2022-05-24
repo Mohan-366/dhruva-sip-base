@@ -33,7 +33,6 @@ import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -745,7 +744,6 @@ public class OptionsPingMonitorTest {
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
   }
 
-  @Ignore
   @Test(expectedExceptions = {DhruvaRuntimeException.class})
   public void testGetUpdatedMaps() {
     optionsPingMonitor.setMaxFetchTime(50);
