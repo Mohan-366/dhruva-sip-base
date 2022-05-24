@@ -198,8 +198,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
                     element,
                     throwable.getMessage()))
         .retryWhen(
-            Retry.fixedDelay(
-                getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
+            Retry.fixedDelay(getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
         .onErrorResume(
             throwable -> {
               logger.info(
