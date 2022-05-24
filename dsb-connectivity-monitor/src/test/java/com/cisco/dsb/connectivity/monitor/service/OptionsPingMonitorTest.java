@@ -6,6 +6,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
@@ -13,6 +14,7 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
+import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.header.CallID;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -31,6 +33,7 @@ import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -582,8 +585,8 @@ public class OptionsPingMonitorTest {
     Assert.assertEquals(optionsPingMonitor.elementStatus.size(), 3);
     Assert.assertEquals(optionsPingMonitor.serverGroupStatus.size(), 1);
     Assert.assertTrue(!optionsPingMonitor.elementStatus.containsKey(sge4.toUniqueElementString()));
-    Assert.assertTrue(
-        !optionsPingMonitor
+    Assert.assertFalse(
+        optionsPingMonitor
             .downServerGroupElementsCounter
             .get("sg1")
             .contains(sge4.toUniqueElementString()));
@@ -604,9 +607,151 @@ public class OptionsPingMonitorTest {
             .subscribe();
     optionsPingMonitor.opFlux.add(d1);
     optionsPingMonitor.opFlux.add(d2);
-    optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(!d.isDisposed()));
+    optionsPingMonitor.opFlux.forEach(d -> Assert.assertFalse(d.isDisposed()));
     optionsPingMonitor.disposeExistingFlux();
     Assert.assertEquals(optionsPingMonitor.opFlux.size(), 2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(d.isDisposed()));
+  }
+
+  @Test
+  public void testMapComapare() {
+    Map<String, ServerGroup> map1 = new HashMap<>();
+    Map<String, ServerGroup> map2 = new HashMap<>();
+    ServerGroupElement sge1 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge2 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge3 =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge4 =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+
+    ServerGroupElement sge5 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.2")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge6 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(1001)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge7 =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
+            .setPort(1000)
+            .setTransport(Transport.UDP)
+            .setPriority(11)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge8 =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(120)
+            .build();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setName("s1")
+            .setHostName("s1")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    sg1.setElements(Arrays.asList(sge1, sge3));
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setName("s1")
+            .setHostName("s1")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    sg2.setElements(Arrays.asList(sge2, sge4));
+
+    map1.put("sg1", sg1);
+    map2.put("sg1", sg2);
+    Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setPingOn(true);
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setPingOn(false);
+    sg1.setHostName("s2");
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setHostName("s1");
+    sg1.setNetworkName("n2");
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setNetworkName("n1");
+    sg1.setOptionsPingPolicyFromConfig(
+        OptionsPingPolicy.builder()
+            .setDownTimeInterval(2000)
+            .setName("OP_NEW")
+            .setUpTimeInterval(60000)
+            .setPingTimeOut(100)
+            .build());
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setOptionsPingPolicyConfig(null);
+    sg1.setElements(Arrays.asList(sge5, sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge6, sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge7, sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    sg1.setElements(Arrays.asList(sge8, sge3));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+
+    ServerGroup sg3 =
+        ServerGroup.builder()
+            .setName("s3")
+            .setHostName("s3")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .setLbType(LBType.ONCE)
+            .build();
+    map2.put("s3", sg3);
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
+  }
+
+  @Ignore
+  @Test(expectedExceptions = {DhruvaRuntimeException.class})
+  public void testGetUpdatedMaps() {
+    optionsPingMonitor.setMaxFetchTime(50);
+    optionsPingMonitor.setFetchTime(10);
+    optionsPingMonitor.setFetchIncrementTime(20);
+    when(commonConfigurationProperties.getServerGroups()).thenReturn(null);
+    optionsPingMonitor.getUpdatedMaps();
   }
 }

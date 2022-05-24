@@ -65,9 +65,12 @@ node('SPARK_BUILDER_JAVA11') {
          }
          stage('build and publish wbx3 images') {
              try {
-                 if (env.GIT_BRANCH == 'master') {
+                 if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'OPTIONS_PING') {
                      sh 'ls -lrth'
                      def TAG="2."+env.BUILD_NUMBER
+                     if(env.GIT_BRANCH == 'OPTIONS_PING'){
+                         TAG = TAG +"-op"
+                     }
                      /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
                  to determine where to build and push (in our case, containers.cisco.com/edge_group)
                  */
@@ -89,10 +92,13 @@ node('SPARK_BUILDER_JAVA11') {
                  throw ex
              }
          }
-        if (env.GIT_BRANCH == 'master') {
+        if (env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'OPTIONS_PING') {
             stage('ecr sync') {
                 def tag = "2."+env.BUILD_NUMBER
                 //Pull dhruva image and get SHA of that image which will be artifactID
+                if (env.GIT_BRANCH == 'OPTIONS_PING'){
+                    tag = tag +"-op"
+                }
                 sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
                 def artifactID = sh(
                         script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva:${tag} | cut -f 2 -d \':\'",

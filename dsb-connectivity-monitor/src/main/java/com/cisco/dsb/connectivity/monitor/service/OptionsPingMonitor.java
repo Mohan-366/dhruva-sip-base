@@ -1,5 +1,9 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getNumRetry;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getRequest;
+import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated;
+
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -9,7 +13,6 @@ import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
-import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -30,6 +33,7 @@ import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -56,6 +60,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
       new ConcurrentHashMap<>();
+  private Map<String, ServerGroup> localSGMap;
+  @Setter private int maxFetchTime = 1500;
+  @Setter private int fetchTime = 500;
+  @Setter private int fetchIncrementTime = 250;
 
   @PostConstruct
   public void initOptionsPing() {
@@ -64,7 +72,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected void startMonitoring(Map<String, ServerGroup> map) {
-    logger.info("Starting OPTIONS pings");
+    logger.info("Starting OPTIONS pings. Map {}", map);
     for (Entry<String, ServerGroup> entry : map.entrySet()) {
       ServerGroup serverGroup = entry.getValue();
       // Servergroup should have pingOn = true and elements to ping
@@ -190,8 +198,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
                     element,
                     throwable.getMessage()))
         .retryWhen(
-            Retry.fixedDelay(
-                OptionsUtil.getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
+            Retry.fixedDelay(getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
         .onErrorResume(
             throwable -> {
               logger.info(
@@ -312,7 +319,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
             "unable to find provider for outbound request with network:" + dhruvaNetwork.getName());
       }
 
-      SIPRequest sipRequest = OptionsUtil.getRequest(element, dhruvaNetwork, sipProvider);
+      SIPRequest sipRequest = getRequest(element, dhruvaNetwork, sipProvider);
       return optionsPingTransaction.proxySendOutBoundRequest(
           sipRequest, dhruvaNetwork, sipProvider);
     } catch (SipException
@@ -332,15 +339,14 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
 
   @Override
   public void onApplicationEvent(@NotNull EnvironmentChangeEvent event) {
-    logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor for {}", event.getKeys());
+    logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getKeys());
 
     if (event.getKeys().stream()
         .anyMatch(
             key -> {
-              // Refresh OPTIONS pings only when common config has some changes.
-              return key.contains("common");
+              // Refresh OPTIONS pings only when serverGroup config has some changes.
+              return key.contains("serverGroups");
             })) {
-      logger.info("Change detected in Common Config, Restarting OPTIONS pings.");
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
@@ -358,10 +364,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * elementStatus, serverGroupStatus, downServerGroupElementsCounter
    */
   protected void cleanUpMaps() {
-    Map<String, ServerGroup> sgMap = commonConfigurationProperties.getServerGroups();
+    Map<String, ServerGroup> sgMap =
+        (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
     List<String> sgNameList = new ArrayList<>();
     List<String> sgeNameList = new ArrayList<>();
-
     for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
       String sgName = entry.getValue().getName();
       ServerGroup sg = entry.getValue();
@@ -387,9 +393,33 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
+  protected void getUpdatedMaps() {
+    boolean isUpdated = false;
+    logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
+    while (fetchTime < maxFetchTime) {
+      try {
+        Thread.sleep(fetchTime);
+      } catch (InterruptedException e) {
+        logger.error("Exception happened for sleep.");
+      }
+      if (isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
+        logger.info("SG Map Updated. Working with new map!");
+        localSGMap = commonConfigurationProperties.getServerGroups();
+        isUpdated = true;
+        break;
+      }
+      fetchTime += fetchIncrementTime;
+    }
+    if (!isUpdated) {
+      logger.error("ServerGroup refresh failed.");
+      throw new DhruvaRuntimeException("ServerGroup Refresh Failed.");
+    }
+  }
+
   protected class RefreshHandle implements Runnable {
     @Override
     public void run() {
+      getUpdatedMaps();
       disposeExistingFlux();
       opFlux.clear();
       cleanUpMaps();
