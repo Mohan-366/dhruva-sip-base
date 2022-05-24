@@ -1,6 +1,6 @@
 #!groovy
 @Library(['kubedPipeline', 'sparkPipeline', 'ciHelper@master']) _
-node() {
+node('SPARK_BUILDER_JAVA11') {
 
     try{
         // ***** CREDENTIALS USED IN IT-JENKINS *****
@@ -43,17 +43,11 @@ node() {
          stage('buildAndDeploy') {
              withCredentials([file(credentialsId: 'SETTINGS_FILE', variable: 'settingsFile')]) {
                  currentBuild.result = 'SUCCESS'
-                 sh '''
+                 sh """
                  env
-                 ls -lrt
-                 cp $settingsFile \$(pwd)/settings.xml
-                 docker run \\
-                 --mount type=bind,src="\$(pwd)"/settings.xml,dst=/src/settings.xml \\
-                 --rm -v `pwd`:/opt/code -w /opt/code -e JAVA_VERSION=11 \\
-                 containers.cisco.com/ayogalin/maven-builder:one \\
-                 sh -c "/setenv.sh; java -version;/usr/share/maven/bin/mvn --settings /src/settings.xml clean deploy"
-                 '''
-                 //TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
+                 /usr/share/maven/bin/mvn --settings $settingsFile clean deploy
+                 """
+                 // TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
                  step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/dsb-calling-app/server/target/classes/com/cisco,**/dsb-common/target/classes/com/cisco,**/dsb-connectivity-monitor/target/classes/com/cisco,**/dsb-proxy/dsb-proxy-service/target/classes/com/cisco,**/dsb-trunk/dsb-trunk-service/target/classes/com/cisco', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
              }
          }
@@ -141,6 +135,8 @@ node() {
                     def testbuildArgs = [component: "dhruva-test-client", manifest: "dsb-calling-app/integration/manifest.yaml", tag: tag, metadata: testmetaBody]
                     buildCI(this, testbuildArgs)
                     sh "curl https://ecr-sync.int.mccprod02.prod.infra.webex.com/api/v1/sync"
+                    sh "docker rmi containers.cisco.com/edge_group/dhruva-test-client:${tag}"
+                    sh "docker rmi containers.cisco.com/edge_group/dhruva:${tag}"
                 } catch (Exception e) {
                     echo "ERROR: An error occurred while syncing images to ECR"
                     throw e
