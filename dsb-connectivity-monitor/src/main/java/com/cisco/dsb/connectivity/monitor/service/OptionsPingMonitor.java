@@ -339,7 +339,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
 
   @Override
   public void onApplicationEvent(@NotNull EnvironmentChangeEvent event) {
-    logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getKeys());
 
     if (event.getKeys().stream()
         .anyMatch(
@@ -347,6 +346,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
               // Refresh OPTIONS pings only when serverGroup config has some changes.
               return key.contains("serverGroups");
             })) {
+      logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getKeys());
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
@@ -394,6 +394,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected void getUpdatedMaps() {
+    int originalFetchTime = fetchTime;
     boolean isUpdated = false;
     logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
     while (fetchTime < maxFetchTime) {
@@ -410,6 +411,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       }
       fetchTime += fetchIncrementTime;
     }
+    fetchTime = originalFetchTime;
     if (!isUpdated) {
       logger.error("ServerGroup refresh failed.");
       throw new DhruvaRuntimeException("ServerGroup Refresh Failed.");

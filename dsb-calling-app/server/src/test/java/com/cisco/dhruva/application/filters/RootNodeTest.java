@@ -10,18 +10,13 @@ import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.HashMap;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 public class RootNodeTest {
