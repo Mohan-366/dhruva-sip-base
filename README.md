@@ -107,16 +107,14 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
                 elements:
                   - ipAddress: "127.0.0.1"
                     port: 6060
-                    transport: UDP
                     priority: 10
                     weight: 100
                  - ipAddress: "127.0.0.1"
                    port: 6061
-                   transport: UDP
                    priority: 5
                    weight: 100
                 sgPolicy: policy1
-		pingOn: true
+                pingOn: true
                 optionsPingPolicy: opPolicy1
                 priority: 10
                 weight: 100
@@ -145,7 +143,7 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
      
 ***NOTE:For all the configuration available please check CommonConfigurationProperty class***
 
-###Default config for each application is present in application.yaml, application-local.yaml under the modules resources folder
+### Default config for each application is present in application.yaml, application-local.yaml under the modules resources folder
 
 #### Using TLS in DSB
 

@@ -90,7 +90,9 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     logger.error(
         "dhruva message record {}",
         this.getAppRecord() == null ? "None" : this.getAppRecord().toString());
-    this.proxyInterface.respond(responseCode, this);
+    if (!this.getRequest().getMethod().equals(Request.ACK)) {
+      this.proxyInterface.respond(responseCode, this);
+    }
   }
 
   @Override

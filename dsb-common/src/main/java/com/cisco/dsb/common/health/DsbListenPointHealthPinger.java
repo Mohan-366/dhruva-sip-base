@@ -102,14 +102,14 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
     if (isServiceUnhealthy.get()) {
       serviceState = ServiceState.OFFLINE;
       serviceHealthManager.setServiceHealthResponseCode(500);
-      logger.info(
+      logger.warn(
           "Setting the service status for service: {} as offline with /ping response code 500",
           SERVICE_NAME);
 
     } else {
       serviceState = ServiceState.ONLINE;
       serviceHealthManager.setServiceHealthResponseCode(200);
-      logger.info(
+      logger.debug(
           "Setting the service status for service: {} as online with /ping response code 200",
           SERVICE_NAME);
     }

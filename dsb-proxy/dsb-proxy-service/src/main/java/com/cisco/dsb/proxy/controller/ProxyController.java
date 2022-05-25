@@ -182,7 +182,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   public CompletableFuture<ProxySIPResponse> proxyRequest(ProxySIPRequest proxySIPRequest) {
     CompletableFuture<ProxySIPResponse> responseCF = new CompletableFuture<>();
     ((ProxyCookieImpl) proxySIPRequest.getCookie()).setResponseCF(responseCF);
-    proxyTransactionProcessRequest.apply(proxySIPRequest); // adds some proxyParams and RR
+    try {
+      proxyTransactionProcessRequest.apply(proxySIPRequest);
+    } // adds some proxyParams and RR
+    catch (DhruvaRuntimeException e) {
+      responseCF.completeExceptionally(e);
+      return responseCF;
+    }
     proxyTransaction
         .proxySendOutBoundRequest(proxySIPRequest)
         .subscribe(

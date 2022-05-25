@@ -9,7 +9,7 @@ public enum ProxyState implements DhruvaState {
   IN_PROXY_CONTROLLER_CREATED("controller created for incoming proxy request"),
   IN_PROXY_APP_RECEIVED("proxy request message received by app"),
   IN_PROXY_APP_PROCESSING_FAILED("proxy request processing failed in app"),
-  IN_PROXY_TRUNK_INGRESS("proxy request trunk ingress processing"),
+  IN_PROXY_TRUNK_PROCESS_REQUEST("proxy request trunk ingress processing"),
   IN_PROXY_NORMALIZATION_APPLIED("proxy request normalizations applied"),
   IN_PROXY_PROCESS_ENDPOINT("proxy request outbound endpoint resolved"),
   OUT_PROXY_CLIENT_CREATED("proxy request outbound client transaction created"),
