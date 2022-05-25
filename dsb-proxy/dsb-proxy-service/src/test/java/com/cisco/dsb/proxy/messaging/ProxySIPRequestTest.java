@@ -7,8 +7,11 @@ import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
+import com.cisco.dsb.proxy.util.RequestHelper;
+import com.cisco.dsb.proxy.util.SIPRequestBuilder;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.ServletException;
@@ -90,14 +93,17 @@ public class ProxySIPRequestTest {
   }
 
   @Test(description = "test reject api of proxySipRequest")
-  public void testReject1() {
+  public void testReject1() throws ParseException {
     ProxyInterface proxyInterface = mock(ProxyInterface.class);
 
+    SIPRequest req = (SIPRequest) RequestHelper.getInviteRequest();
+
     ProxySIPRequest proxySIPRequest =
-        new ProxySIPRequest(executionContext, provider, request, serverTransaction);
+        new ProxySIPRequest(executionContext, provider, req, serverTransaction);
     proxySIPRequest.setProxyInterface(proxyInterface);
 
     doNothing().when(proxyInterface).respond(200, proxySIPRequest);
+
     proxySIPRequest.reject(200);
     verify(proxyInterface).respond(200, proxySIPRequest);
   }
@@ -111,6 +117,26 @@ public class ProxySIPRequestTest {
     proxySIPRequest.reject(404);
   }
 
+  @Test(
+      description = "invoke reject for ACK request, proxy should not send any error response back")
+  public void testReject3() throws Exception {
+    ProxyInterface proxyInterface = mock(ProxyInterface.class);
+    SIPRequest req =
+        SIPRequestBuilder.createRequest(
+            new SIPRequestBuilder().getRequestAsString(SIPRequestBuilder.RequestMethod.ACK));
+
+    ProxySIPRequest proxySIPRequest =
+        new ProxySIPRequest(executionContext, provider, req, serverTransaction);
+    proxySIPRequest.setProxyInterface(proxyInterface);
+
+    doNothing().when(proxyInterface).respond(200, proxySIPRequest);
+
+    proxySIPRequest.reject(500);
+
+    // verify respond is not invoked
+    verify(proxyInterface, times(0)).respond(500, proxySIPRequest);
+  }
+
   @Test(description = "test second constructor for ProxySipRequest")
   public void testConstructor() {
     ProxyInterface proxyInterface = mock(ProxyInterface.class);
@@ -119,7 +145,7 @@ public class ProxySIPRequestTest {
     proxySIPRequest1.setProxyInterface(proxyInterface);
     proxySIPRequest1 = spy(proxySIPRequest1);
 
-    when(proxySIPRequest1.getRequest()).thenReturn(request);
+    when(proxySIPRequest1.getRequest()).thenReturn((SIPRequest) request);
     ProxySIPRequest proxySIPRequest2 = new ProxySIPRequest(proxySIPRequest1);
     Assert.assertNotNull(proxySIPRequest2.getProxyInterface());
   }

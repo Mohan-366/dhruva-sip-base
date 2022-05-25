@@ -496,7 +496,6 @@ public class ProxyControllerTest {
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
-    doNothing().when(clientTransaction).sendRequest();
 
     when(outgoingSipProvider1.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
@@ -692,7 +691,6 @@ public class ProxyControllerTest {
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
-    doNothing().when(clientTransaction).sendRequest();
 
     when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
@@ -740,10 +738,8 @@ public class ProxyControllerTest {
     Assert.assertEquals(proxySIPRequest.getLrFixUri(), ownRouteHeader.getAddress().getURI());
   }
 
-  @Test(
-      description = "calling proxyrequest without setting outgoing network",
-      expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithoutNetwork() {
+  @Test(description = "calling proxyrequest without setting outgoing network")
+  public void testProxyRequestWithoutNetwork() throws ExecutionException, InterruptedException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -757,13 +753,16 @@ public class ProxyControllerTest {
         nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
-    proxyController.proxyRequest(proxySIPRequest);
+    CompletableFuture<ProxySIPResponse> cf = proxyController.proxyRequest(proxySIPRequest);
+    Assert.assertTrue(cf.isCompletedExceptionally());
+    cf.whenComplete(
+        (msg, ex) -> {
+          Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class);
+        });
   }
 
-  @Test(
-      description = "proxyrequest called with invalid network",
-      expectedExceptions = DhruvaRuntimeException.class)
-  public void testProxyRequestWithInvalidNetwork() {
+  @Test(description = "proxyrequest called with invalid network")
+  public void testProxyRequestWithInvalidNetwork() throws ExecutionException, InterruptedException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -778,7 +777,12 @@ public class ProxyControllerTest {
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxySIPRequest.setOutgoingNetwork("invalid");
-    proxyController.proxyRequest(proxySIPRequest);
+    CompletableFuture<ProxySIPResponse> cf = proxyController.proxyRequest(proxySIPRequest);
+    Assert.assertTrue(cf.isCompletedExceptionally());
+    cf.whenComplete(
+        (msg, ex) -> {
+          Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class);
+        });
   }
 
   @Test(description = "proxyrequest without route header, route using rURI")
@@ -846,7 +850,6 @@ public class ProxyControllerTest {
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
-    doNothing().when(clientTransaction).sendRequest();
 
     when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
@@ -1216,7 +1219,7 @@ public class ProxyControllerTest {
 
     doNothing().when(st).sendResponse(any(Response.class));
 
-    Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
+    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
 
     verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());
@@ -1396,5 +1399,42 @@ public class ProxyControllerTest {
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxyController.onNewRequest(proxySIPRequest).block();
+  }
+
+  @Test(
+      description =
+          "test proxy client creation for outgoing ACK request - mid-dialog."
+              + "This test covers failure scenario where proxy is not able to forward request since outgoing network is not set"
+              + "Route headers are not set in this case.We should not send back any error response to client for ACK")
+  public void testOutgoingACKRequestFailureProxyTransaction()
+      throws SipException, ParseException, ExecutionException, InterruptedException,
+          TimeoutException {
+
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.ACK, serverTransaction);
+    proxySIPRequest.setAppRecord(new DhruvaAppRecord());
+    SIPRequest sipRequest = proxySIPRequest.getRequest();
+    sipRequest.getRouteHeaders().clear();
+
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+
+    doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
+
+    ClientTransaction clientTransaction = mock(ClientTransaction.class);
+
+    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
+        .thenReturn(clientTransaction);
+
+    Router router = mock(Router.class);
+    when(outgoingSipProvider.getSipStack()).thenReturn(sipStack);
+    when(sipStack.getRouter()).thenReturn(router);
+    when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
+
+    proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
+
+    CompletableFuture<ProxySIPResponse> responseCF = proxyController.proxyRequest(proxySIPRequest);
+    Assert.assertTrue(responseCF.isCompletedExceptionally());
   }
 }

@@ -91,7 +91,7 @@ public class DhruvaAppRecord {
 
     sb.append('[');
     for (Record item : history) {
-      sb.append('+')
+      sb.append("elapsed_time_ns:")
           .append(item.getTime() - startTime)
           .append('=')
           .append(item.getState())
@@ -99,7 +99,7 @@ public class DhruvaAppRecord {
           .append(item.getChecks() != null ? item.getChecks().toStringAndClear() : "None")
           .append(", ");
     }
-    sb.append('+').append(now - startTime).append('=').append("NOW");
+    sb.append("total_time_elapsed_ns:").append(now - startTime).append('=').append("NOW");
     sb.append(']');
 
     sb.append('}');

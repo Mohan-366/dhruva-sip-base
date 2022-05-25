@@ -48,8 +48,11 @@ public interface CallType {
       proxySIPRequest.reject(Response.NOT_FOUND);
       return;
     }
+    Utilities.Checks checks = new Utilities.Checks();
+    checks.add("ingress key lookup", ingress);
+    checks.add("egress key lookup", egress);
+    proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_PROCESS_REQUEST, checks);
     trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress);
-    proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_INGRESS, null);
     trunkManager
         .handleEgress(getEgressTrunk(), proxySIPRequest, egress)
         .doFinally(
@@ -80,9 +83,11 @@ public interface CallType {
                   "exception while sending the request with callId:{}",
                   proxySIPRequest.getCallId(),
                   err);
-              Utilities.Checks checks = new Utilities.Checks();
+              Utilities.Checks failureChecks = new Utilities.Checks();
               checks.add("call type handle egress", err.getMessage());
-              proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, checks);
+              proxySIPRequest
+                  .getAppRecord()
+                  .add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, failureChecks);
               int errorResponse;
               if (err instanceof DhruvaRuntimeException) {
                 proxySIPRequest.reject(
