@@ -92,6 +92,7 @@ public class CommonConfigurationProperties {
 
   // DSBNetworkLayer is using this as static variable
   @Getter private static int socketConnectionTimeout = 8000;
+
   // TODO: this is hack, inject spring object everywhere instead of static field
   public void setSocketConnectionTimeout(int timeout) {
     socketConnectionTimeout = timeout;

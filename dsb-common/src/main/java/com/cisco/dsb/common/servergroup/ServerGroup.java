@@ -115,6 +115,28 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     return 0;
   }
 
+  /*
+  This method checks if a serverGroup is completely identical to a given serverGroup.
+  This is needed in operations such as config refresh.
+   */
+  public boolean isCompleteObjectEqual(ServerGroup obj) {
+    if (this.equals(obj)) {
+      if (this.compareTo(obj) != 0
+          || !(this.getNetworkName().equals(obj.getNetworkName()))
+          || this.isPingOn() != obj.isPingOn()
+          || ((this.getSgPolicy() != null || obj.getSgPolicy() != null)
+              && !this.getSgPolicy().equals(obj.getSgPolicy()))
+          || ((this.getOptionsPingPolicy() != null || obj.getOptionsPingPolicy() != null)
+              && !this.getOptionsPingPolicy().equals(obj.getOptionsPingPolicy()))
+          || !this.getLbType().equals(obj.getLbType())
+          || !this.getSgType().equals(obj.getSgType())
+          || !this.getTransport().equals(obj.getTransport())) {
+        return true;
+      } else return false;
+    }
+    return false;
+  }
+
   @Override
   public String toString() {
     return String.format(

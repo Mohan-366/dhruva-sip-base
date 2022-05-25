@@ -10,7 +10,6 @@ import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.HashMap;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -21,12 +20,13 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public class RootNodeTest {
-  @InjectMocks RootNode rootNode;
+  RootNode rootNode;
   @Mock CallingAppConfigurationProperty configurationProperty;
 
   @BeforeTest
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    rootNode = new RootNode();
+    MockitoAnnotations.openMocks(this);
     when(configurationProperty.getNetworkPSTN()).thenReturn("net_sp");
     when(configurationProperty.getNetworkB2B()).thenReturn("net_b2b");
     when(configurationProperty.getNetworkCallingCore()).thenReturn("net_cc");
