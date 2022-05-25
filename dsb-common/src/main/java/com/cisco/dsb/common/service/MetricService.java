@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -120,8 +119,7 @@ public class MetricService {
 
     this.connectionInfoMap = new HashMap<>();
 
-    // enable support for reactors scheduler metrics
-    Schedulers.enableMetrics();
+
   }
 
   public void registerPeriodicMetric(

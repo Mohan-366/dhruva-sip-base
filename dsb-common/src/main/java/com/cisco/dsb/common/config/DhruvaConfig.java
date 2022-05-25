@@ -20,9 +20,6 @@ import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
 import com.cisco.wx2.util.stripedexecutor.StripedExecutorService;
 import com.ciscospark.server.Wx2ConfigAdapter;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
-import javax.net.ssl.KeyManager;
 import lombok.CustomLog;
 import org.aspectj.lang.Aspects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +28,12 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import reactor.core.scheduler.Schedulers;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.net.ssl.KeyManager;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @ConditionalOnWebApplication
@@ -61,6 +64,14 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   }
 
   private IdentityMachineAccount machineAccount = null;
+
+  @PostConstruct
+  public void initialize(){
+    if(commonConfigurationProperties.isReactorSchedulerMetricsEnabled()){
+      Schedulers.enableMetrics();
+    }
+  }
+
 
   @PreDestroy
   public void destroy() {
