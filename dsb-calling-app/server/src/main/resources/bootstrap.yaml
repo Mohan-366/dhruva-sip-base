@@ -40,7 +40,7 @@ management:
           tags:
             - action
             - cause
-            - reactor_scheduler_id
+            - reactor.scheduler.id
       influx:
         enabled: false # enable for local testing of micrometer based metrics
 

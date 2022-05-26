@@ -118,8 +118,6 @@ public class MetricService {
     this.trunkLBAlgorithm = new HashMap<>();
 
     this.connectionInfoMap = new HashMap<>();
-
-
   }
 
   public void registerPeriodicMetric(

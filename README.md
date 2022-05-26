@@ -213,9 +213,9 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
               tags:
                 - action
                 - cause
-                - reactor_scheduler_id
+                - reactor.scheduler.id 
           influx:
-            enabled: true # enable for local testing of micrometer based metrics
+            enabled: true # only enable for local testing of micrometer based metrics otherwise make it false
             db: "metrics2" # testing locally metrics will be pushed to the db set here in local influx instance
             
     ```
