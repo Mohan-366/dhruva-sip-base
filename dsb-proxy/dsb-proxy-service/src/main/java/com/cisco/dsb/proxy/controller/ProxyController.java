@@ -827,7 +827,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
     if (err instanceof SipException && err.getCause() instanceof IOException)
       errorCode = ErrorCode.DESTINATION_UNREACHABLE;
-    logger.error("Error occurred while forwarding request with message: {}", err.getMessage());
+    logger.error("Error occurred while forwarding request with message:", err);
     SIPResponse sipResponse;
     try {
       sipResponse =
