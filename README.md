@@ -197,3 +197,25 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
               recordRoute: true
               tlsAuthType: NONE
       - In order to get CertTrustManager set property ```enableCertService``` to true in the configuration YAML file.
+
+
+### LMA :
+- Metrics:
+    - micrometer based metrics configurations
+    ``` yaml
+    management:
+      metrics:
+        export:
+          default-registry:
+            enabled: true # to enable default meter reigstry that pushes aggregated metrics to in cluster kafka 
+            enabled-extra-logs-for-debugging: false #enable if extra logging for micrometer based metrics is required
+            field-to-tag-conversion: # default registry converts all micrometer tags to influx field by default, to exclude certain tags use this config
+              tags:
+                - action
+                - cause
+                - reactor.scheduler.id 
+          influx:
+            enabled: true # only enable for local testing of micrometer based metrics otherwise make it false
+            db: "metrics2" # testing locally metrics will be pushed to the db set here in local influx instance
+            
+    ```

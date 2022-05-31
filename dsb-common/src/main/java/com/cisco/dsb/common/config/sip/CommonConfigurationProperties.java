@@ -11,8 +11,6 @@ import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.wx2.dto.ErrorInfo;
 import com.cisco.wx2.dto.ErrorList;
-import java.security.KeyStore;
-import java.util.*;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +18,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
+
+import java.security.KeyStore;
+import java.util.*;
 
 @Component
 @EnableConfigurationProperties
@@ -119,6 +120,9 @@ public class CommonConfigurationProperties {
   @Getter @Setter private long customMonitorPingInitialDelayInSec = 30L;
   // time on which custom health checks will be evaluated periodically
   @Getter @Setter private long customMonitorPingPeriodInSec = 30L;
+
+  // to toggle reactors scheduler metrics support
+  @Getter @Setter private boolean reactorSchedulerMetricsEnabled = true ;
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
