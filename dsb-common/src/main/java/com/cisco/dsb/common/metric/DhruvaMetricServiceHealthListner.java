@@ -79,7 +79,7 @@ public class DhruvaMetricServiceHealthListner implements ServiceHealthListener {
         metricService.emitServiceHealth(newHealth, includeUpstream);
       }
     } catch (RuntimeException e) {
-      logger.error("Error reporting dhruva service health");
+      logger.error("Error reporting dhruva service health", e);
     }
   }
 

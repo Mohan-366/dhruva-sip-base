@@ -76,7 +76,7 @@ public class SipServerLocatorService {
 
           } catch (Exception e) {
             responseCF.completeExceptionally(e);
-            logger.error("locateDestinationAsync:Error while completing async resolve");
+            logger.error("locateDestinationAsync:Error while completing async resolve", e);
           }
         },
         this.executorService.getExecutorThreadPool(ExecutorType.DNS_LOCATOR_SERVICE));

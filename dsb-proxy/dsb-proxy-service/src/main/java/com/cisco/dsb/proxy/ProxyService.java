@@ -304,7 +304,7 @@ public class ProxyService {
             ProxySendMessage.sendResponse(
                 Response.SERVER_INTERNAL_ERROR, sipProvider, serverTransaction, sipRequest);
           } catch (DhruvaException ex) {
-            logger.error("Unable to send err response {}", Response.SERVER_INTERNAL_ERROR);
+            logger.error("Unable to send err response {}", Response.SERVER_INTERNAL_ERROR, ex);
           }
         }
         // Emit latency metric for non mid-dialog requests

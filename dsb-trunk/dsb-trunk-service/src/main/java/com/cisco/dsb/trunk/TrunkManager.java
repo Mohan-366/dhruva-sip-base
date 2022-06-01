@@ -135,7 +135,7 @@ public class TrunkManager {
             "Key \"" + key + "\" does not match trunk of type " + type);
       return trunk.processEgress(proxySIPRequest);
     } catch (Exception ex) {
-      logger.error("Unable to find trunk for Key:{} TrunkType:{}", key, type);
+      logger.error("Unable to find trunk for Key:{} TrunkType:{}", key, type, ex);
       return Mono.error(ex);
     }
   }
