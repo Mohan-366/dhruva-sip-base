@@ -11,7 +11,9 @@ import com.cisco.dsb.trunk.trunks.AbstractTrunk;
 import com.cisco.dsb.trunk.trunks.TrunkPluginInterface;
 import com.cisco.dsb.trunk.trunks.TrunkPlugins;
 import com.cisco.dsb.trunk.trunks.TrunkType;
+import com.cisco.dsb.trunk.util.SipParamConstants;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -123,13 +125,38 @@ public class TrunkManager {
   public Mono<ProxySIPResponse> handleEgress(
       TrunkType type, ProxySIPRequest proxySIPRequest, String key) {
     try {
-      AbstractTrunk trunk =
-          this.registry
-              .getPluginFor(
-                  type,
-                  () -> new DhruvaRuntimeException("Trunk Type \"" + type + "\" not registered"))
-              .getTrunkMap()
-              .get(key);
+
+      AbstractTrunk trunk = null;
+      Map<String, AbstractTrunk> maps =
+          (Map<String, AbstractTrunk>)
+              this.registry
+                  .getPluginFor(
+                      type,
+                      () ->
+                          new DhruvaRuntimeException("Trunk Type \"" + type + "\" not registered"))
+                  .getTrunkMap();
+
+      switch (type) {
+        case PSTN:
+          for (Map.Entry<String, AbstractTrunk> map : maps.entrySet()) {
+            Map<String, String> selector = map.getValue().getEgress().getSelector();
+            if(selector == null || selector.isEmpty())
+              break;
+            logger.error("No selector provided for PSTN trunk, dtg cannot be fetched");
+            String dtgValue = selector.get(SipParamConstants.DTG);
+            if (dtgValue == null)
+              break;
+            logger.error("DTG key is not present in the selector");
+            if (dtgValue.equalsIgnoreCase(key)) {
+              trunk = map.getValue();
+              break;
+            }
+          }
+          break;
+        default:
+          trunk = maps.get(key);
+      }
+
       if (trunk == null)
         throw new DhruvaRuntimeException(
             "Key \"" + key + "\" does not match trunk of type " + type);
