@@ -36,10 +36,8 @@ common:
           port: 4102
           priority: 10
           weight: 100
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 20
-      weight: 100
     UsPoolB:
       name: &UsPoolB UsPoolB
       hostName: "UsPoolB"
@@ -50,10 +48,8 @@ common:
           port: 4200
           priority: 10
           weight: 100
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 10
-      weight: 100
     InPoolA:
       name: &InPoolA InPoolA
       hostName: "InPoolA"
@@ -64,10 +60,8 @@ common:
           port: 4000
           priority: 10
           weight: 100
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 10
-      weight: 100
     Antares:
       name: &Antares Antares
       hostName: "test.beech.com"
@@ -75,10 +69,8 @@ common:
       lbType: weight
       sgType: A_RECORD
       port: 6000
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 10
-      weight: 100
     NS1:
       name: &NS1 NS1
       hostName: "test1.ns.cisco.com"
@@ -86,11 +78,9 @@ common:
       lbType: weight
       sgType: A_RECORD
       port: 7000
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: opPolicy1
-      priority: 10
-      weight: 100
-  sgPolicy:
+  routePolicy:
     policy1:
       name: policy1
       failoverResponseCodes:
@@ -114,18 +104,29 @@ trunk:
       ingress:
         name: ingress1
       egress:
+        routePolicy: policy1
         lbType: weight
+        selector:
+          dtg: CcpFusionUS
         serverGroups:
-          - *UsPoolA
-          - *UsPoolB
+          - sg: *UsPoolA
+            priority: 20
+            weight: 100
+          - sg: *UsPoolB
+            priority: 10
+            weight: 100
     CcpFusionIN:
       name: CcpFusionIN
       ingress:
         name: ingress1
       egress:
+        selector:
+          dtg: CcpFusionIN
         lbType: weight
         serverGroups:
-          - *InPoolA
+          - sg: *InPoolA
+            priority: 10
+            weight: 100
   B2B:
     Antares:
       name: Antares
@@ -134,7 +135,9 @@ trunk:
       egress:
         lbType: ONCE
         serverGroups:
-          - *Antares
+          - sg: *Antares
+            priority: 10
+            weight: 100
   CallingCore:
     NS:
       name: NS
@@ -143,4 +146,6 @@ trunk:
       egress:
         lbType: ONCE
         serverGroups:
-          - *NS1
+          - sg: *NS1
+            priority: 10
+            weight: 100

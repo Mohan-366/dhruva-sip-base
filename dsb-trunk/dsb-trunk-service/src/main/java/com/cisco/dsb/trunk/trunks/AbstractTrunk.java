@@ -177,11 +177,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
   }
 
   private boolean shouldFailover(ProxySIPResponse proxySIPResponse, TrunkCookie cookie) {
-    // anything other than sgPolicy failoverCodes is considered as best response
+    // anything other than serverGroup RoutePolicy failoverCodes is considered as best response
     int currentRespCode = proxySIPResponse.getStatusCode();
     boolean failOver =
         ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
-            .getSgPolicy().getFailoverResponseCodes().stream()
+            .getRoutePolicy().getFailoverResponseCodes().stream()
                 .anyMatch((failOverRespCode) -> failOverRespCode.equals(currentRespCode));
 
     // update the best response for non-3xx
@@ -193,6 +193,27 @@ public abstract class AbstractTrunk implements LoadBalancable {
     }
 
     return failOver;
+  }
+
+  private ServerGroup checkFailOverSG(TrunkCookie cookie) {
+    boolean failOver;
+    if (cookie.getBestResponse() == null)
+      return (ServerGroup) cookie.getSgLoadBalancer().getNextElement();
+
+    failOver =
+        this.getEgress()
+            .getRoutePolicy()
+            .getFailoverResponseCodes()
+            .contains(cookie.getBestResponse().getStatusCode());
+    if (failOver) {
+      logger.info("Trunk Retry matches with best response, trying next SG");
+      return (ServerGroup) cookie.getSgLoadBalancer().getNextElement();
+    }
+    logger.info(
+        "Trunk Retry does not match  best response {}, not trying any more serverGroups",
+        cookie.getBestResponse());
+
+    return null;
   }
 
   private Mono<EndPoint> getEndPoint(TrunkCookie cookie, String userId) {
@@ -234,9 +255,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
     ServerGroupElement serverGroupElement = null;
     // dynamic sg from SRV/A_Record, create first time or when no SGE from current SG and there is
     // next SG
+
     if ((sgeLB) == null
         || ((serverGroupElement = ((ServerGroupElement) sgeLB.getNextElement())) == null
-            && (serverGroup = (ServerGroup) sgLB.getNextElement()) != null)) {
+            && (serverGroup = checkFailOverSG(cookie)) != null)) {
+
       if (serverGroup.getSgType() == SGType.STATIC) {
 
         while (serverGroup != null

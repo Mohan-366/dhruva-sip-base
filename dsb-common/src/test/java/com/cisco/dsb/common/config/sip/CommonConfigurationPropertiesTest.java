@@ -1,8 +1,8 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
-import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
@@ -127,31 +127,31 @@ public class CommonConfigurationPropertiesTest {
   @DataProvider
   private Object[][] sgConfigParts() {
     return new Object[][] {
-      {"TCPNetwork", "sgPolicy", "pingPolicy"},
-      {"noNetwork", "noSGPolicy", "noPingPolicy"}
+      {"TCPNetwork", "sgRoutePolicy", "pingPolicy"},
+      {"noNetwork", "noSGRoutePolicy", "noPingPolicy"}
     };
   }
 
   @Test(
       dataProvider = "sgConfigParts",
       description =
-          "1. When an existing listenPoint, SGPolicy and OptionsPing policy is used to configure SG -> they are set."
-              + "2. When a listenPoint name, SGPolicy name, OptionsPing policy name whose config does not exist is tried to be used for SG config -> exceptions are thrown")
+          "1. When an existing listenPoint, SG-RoutePolicy and OptionsPing policy is used to configure SG -> they are set."
+              + "2. When a listenPoint name, SG-RoutePolicy name, OptionsPing policy name whose config does not exist is tried to be used for SG config -> exceptions are thrown")
   public void testSGPropsUsingSetterGetter(
-      String networkName, String sgPolicyName, String pingPolicyName) {
+      String networkName, String routePolicyName, String pingPolicyName) {
     // create a ListenPoint (use the default one)
     List<SIPListenPoint> listenPoints = new ArrayList<>();
     SIPListenPoint lp = new SIPListenPoint();
     listenPoints.add(lp);
 
     // create an SG Policy
-    SGPolicy sgPolicy = new SGPolicy();
-    sgPolicy.setName("sgPolicy");
+    RoutePolicy routePolicy = new RoutePolicy();
+    routePolicy.setName("sgRoutePolicy");
     List<Integer> failoverCodes = new ArrayList<>();
     failoverCodes.add(501);
-    sgPolicy.setFailoverResponseCodes(failoverCodes);
-    Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
-    sgPolicyMap.put("sgPolicy", sgPolicy);
+    routePolicy.setFailoverResponseCodes(failoverCodes);
+    Map<String, RoutePolicy> routePolicyMap = new HashMap<>();
+    routePolicyMap.put("sgRoutePolicy", routePolicy);
 
     // create an Options ping policy
     OptionsPingPolicy optionsPingPolicy = new OptionsPingPolicy();
@@ -163,7 +163,7 @@ public class CommonConfigurationPropertiesTest {
     ServerGroup sg = new ServerGroup();
     sg.setName("SG1");
     sg.setNetworkName(networkName);
-    sg.setSgPolicyConfig(sgPolicyName);
+    sg.setRoutePolicyConfig(routePolicyName);
     sg.setOptionsPingPolicyConfig(pingPolicyName);
     Map<String, ServerGroup> sgList = new HashMap<>();
     sgList.put("SG1", sg);
@@ -182,15 +182,16 @@ public class CommonConfigurationPropertiesTest {
       }
     }
 
-    if (sgPolicyName.equals("sgPolicy")) {
-      props.setSgPolicy(
-          sgPolicyMap); // based on SG policy name in SG, the SG policy has to be fetched and filled
+    if (routePolicyName.equals("sgRoutePolicy")) {
+      props.setRoutePolicy(
+          routePolicyMap); // based on SG policy name in SG, the SG policy has to be fetched and
+      // filled
       // in the SG
-      Assert.assertEquals(sg.getSgPolicy(), sgPolicy);
-      Assert.assertEquals(props.getSgPolicyMap(), sgPolicyMap);
+      Assert.assertEquals(sg.getRoutePolicy(), routePolicy);
+      Assert.assertEquals(props.getRoutePolicyMap(), routePolicyMap);
     } else {
       try {
-        props.setSgPolicy(sgPolicyMap);
+        props.setRoutePolicy(routePolicyMap);
       } catch (RuntimeException ignored) {
       }
     }

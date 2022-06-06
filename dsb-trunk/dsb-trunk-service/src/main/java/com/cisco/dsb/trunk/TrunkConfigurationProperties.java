@@ -1,5 +1,6 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
@@ -73,15 +74,24 @@ public class TrunkConfigurationProperties {
 
   private void createSGFromConfig(AbstractTrunk trunk) {
     logger.info("Configuring Trunk {}", trunk);
-    List<String> serverGroupsConfig = trunk.getEgress().getServerGroupsConfig();
+    RoutePolicy routePolicy =
+        this.commonConfigurationProperties
+            .getRoutePolicyMap()
+            .get(trunk.getEgress().getRoutePolicyConfig());
+    trunk.getEgress().setRoutePolicyFromConfig(routePolicy);
+    List<ServerGroups> serverGroupsConfig = trunk.getEgress().getServerGroupsConfig();
     Map<String, ServerGroup> serverGroupMap = trunk.getEgress().getServerGroupMap();
     serverGroupsConfig.forEach(
         sgName -> {
-          ServerGroup sg = commonConfigurationProperties.getServerGroups().get(sgName);
+          ServerGroup sg = commonConfigurationProperties.getServerGroups().get(sgName.getSg());
           if (sg == null)
             throw new DhruvaRuntimeException(
-                String.format("Unable to Configure Egress, servergroup %s not present", sgName));
-          serverGroupMap.put(sgName, sg);
+                String.format(
+                    "Unable to Configure Egress, servergroup %s not present", sgName.getSg()));
+          serverGroupMap.put(sgName.getSg(), sg);
+          sg.setWeight(sgName.getWeight());
+          sg.setPriority(sgName.getPriority());
+
           Set<String> trunkName = serverToTrunkMap.computeIfAbsent(sg, k -> new HashSet<>());
           trunkName.add(trunk.getName());
         });

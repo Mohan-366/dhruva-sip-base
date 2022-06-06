@@ -2,9 +2,9 @@ package com.cisco.dsb.trunk.trunks;
 
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
-import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -49,14 +49,14 @@ public class RedirectionTrunkTest {
   @InjectMocks protected DnsServerGroupUtil dnsServerGroupUtil;
   @Mock protected SipServerLocatorService locatorService;
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
-  protected SGPolicy sgPolicy;
+  protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
 
   @BeforeTest
   public void init() {
     MockitoAnnotations.initMocks(this);
-    sgPolicy =
-        SGPolicy.builder()
+    sgRoutePolicy =
+        RoutePolicy.builder()
             .setName("policy1")
             .setFailoverResponseCodes(Arrays.asList(500, 502, 503))
             .build();
@@ -101,7 +101,7 @@ public class RedirectionTrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -112,7 +112,7 @@ public class RedirectionTrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk);
@@ -198,7 +198,7 @@ public class RedirectionTrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(1)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -209,7 +209,7 @@ public class RedirectionTrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk);

@@ -76,7 +76,7 @@ public class OptionsPingControllerTest {
             .setHostName("net1")
             .setName("net1")
             .setElements(sgeList)
-            .setSgPolicyConfig("global")
+            .setRoutePolicyConfig("global")
             .setPingOn(true)
             .build();
 

@@ -5,11 +5,9 @@ common:
       hostName: Anteras
       networkName: TCPNetwork
       port: 5060
-      priority: 10
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: policyOP1
       sgType: A_RECORD
-      weight: 100
     - name: SG1
       hostName: SG1
       networkName: TCPNetwork
@@ -24,7 +22,7 @@ common:
           port: 5062
           qValue: 0.9
           weight: 10
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: policyOP1
     - name: SG2
       hostName: SG2
@@ -40,7 +38,7 @@ common:
           port: 5064
           qValue: 0.9
           weight: 10
-      sgPolicy: policy1
+      routePolicy: policy1
       optionsPingPolicy: policyOP1
   listen-points:
     - name: "TCPNetwork"
@@ -51,7 +49,7 @@ common:
       attachExternalIP: true
       tlsAuthType: client
       enableCertService: true
-  sgPolicy:
+  routePolicy:
     policy1:
       name: policy1
       failoverResponseCodes:

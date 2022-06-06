@@ -27,9 +27,7 @@ common:
           port: 6061
           priority: 5
           weight: 100
-      sgPolicy: policy1
-      priority: 5
-      weight: 100
+      routePolicy: policy1
     DefaultSg2:
       name: &DefaultSg2 DefaultSg2
       hostName: "DefaultSg2"
@@ -44,12 +42,10 @@ common:
           port: 6063
           priority: 5
           weight: 100
-      sgPolicy: policy1
-      priority: 10
-      weight: 100
-  sgPolicy:
-    policy1:
-      name: policy1
+      routePolicy: policy1
+  routePolicy:
+    p1:
+      name: p1
       failoverResponseCodes:
         - 501
         - 502
@@ -59,7 +55,12 @@ trunk:
     Default:
       name: Default
       egress:
+        routePolicy: p1
         lbType: weight
         serverGroups:
-          - *DefaultSg1
-          - *DefaultSg2
+          - sg: *DefaultSg1
+            weight: 100
+            priority: 5
+          - sg: *DefaultSg2
+            weight: 100
+            priority: 10

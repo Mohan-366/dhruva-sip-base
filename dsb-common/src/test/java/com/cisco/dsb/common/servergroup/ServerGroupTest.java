@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.servergroup;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -7,8 +8,8 @@ import org.testng.annotations.Test;
 public class ServerGroupTest {
 
   @Test
-  public void testEqualsSGPolicy() {
-    EqualsVerifier.simple().forClass(SGPolicy.class).withOnlyTheseFields("name").verify();
+  public void testEqualsRoutePolicy() {
+    EqualsVerifier.simple().forClass(RoutePolicy.class).withOnlyTheseFields("name").verify();
   }
 
   @Test
