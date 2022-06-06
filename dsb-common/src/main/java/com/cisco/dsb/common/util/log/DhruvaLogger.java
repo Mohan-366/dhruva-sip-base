@@ -6,7 +6,6 @@ import com.cisco.dsb.common.util.log.event.Event.EventType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
 
 public class DhruvaLogger implements Logger {
@@ -112,48 +111,6 @@ public class DhruvaLogger implements Logger {
       String message,
       Map<String, String> additionalKeyValueInfo) {
     emitEvent(eventType, eventSubType, null, message, additionalKeyValueInfo, null);
-  }
-
-  /**
-   * Appends the first 3 lines of the stack trace to the buffer.
-   *
-   * @param stackTrace
-   * @param sb
-   */
-  private static void appendShortenedStackTrace(StackTraceElement[] stackTrace, StringBuffer sb) {
-    if (stackTrace == null) {
-      return;
-    }
-
-    for (int i = 0; i <= 2 && i < stackTrace.length; ++i) {
-      sb.append("\n\tat ").append(stackTrace[i]);
-    }
-    if (stackTrace.length > 2) {
-      sb.append("\n\t...");
-    }
-  }
-
-  /**
-   * Uses Apache {@link org.apache.commons.lang3.exception.ExceptionUtils} to provide the Exception
-   * class name and message of the throwable, along with the same for all of the exceptions in the
-   * "caused by" exception chain and the first line of the stack traces.
-   *
-   * @param throwable
-   * @return
-   */
-  public static String getExceptionChain(Throwable throwable) {
-    if (throwable == null) {
-      return "";
-    }
-
-    StringBuffer sb = new StringBuffer(256);
-    sb.append(ExceptionUtils.getMessage(throwable));
-    appendShortenedStackTrace(throwable.getStackTrace(), sb);
-    for (Throwable current = throwable.getCause(); current != null; current = current.getCause()) {
-      sb.append("\nCaused by: ").append(ExceptionUtils.getMessage(current));
-      appendShortenedStackTrace(current.getStackTrace(), sb);
-    }
-    return sb.toString();
   }
 
   @Override

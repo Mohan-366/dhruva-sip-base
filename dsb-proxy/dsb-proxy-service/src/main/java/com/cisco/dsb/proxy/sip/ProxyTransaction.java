@@ -186,7 +186,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         logger.info("No ProxyServerTransaction created for {}", request.getMethod());
       }
     } catch (Throwable e) {
-      logger.error("Error creating proxy server transaction", e.getMessage());
+      logger.error("Error creating proxy server transaction", e);
       throw new InternalProxyErrorException(e.getMessage());
     }
 

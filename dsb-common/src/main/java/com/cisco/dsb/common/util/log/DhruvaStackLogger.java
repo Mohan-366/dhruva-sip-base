@@ -282,7 +282,7 @@ public class DhruvaStackLogger implements StackLogger {
               && ex.getMessage() != null
               && ex.getMessage().startsWith("Could not connect"))
           || ex instanceof SSLHandshakeException) {
-        logger.warn(newMsg + " " + DhruvaLogger.getExceptionChain(ex));
+        logger.warn(newMsg + " " + LogUtils.getExceptionChain(ex));
       } else {
         logger.warn(newMsg, ex);
       }

@@ -60,7 +60,7 @@ public class DsbSipTCPMessageProcessor extends TCPMessageProcessor implements Me
       keepAliveTimerTask.start();
       connectionMetricTask.start();
     } catch (Exception ex) {
-      logger.error("Error starting TCP message processor");
+      logger.error("Error starting TCP message processor", ex);
       Event.emitConnectionErrorEvent("TCP", null, ex);
       throw ex;
     }

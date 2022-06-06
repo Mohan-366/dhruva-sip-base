@@ -157,7 +157,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           JainSipHelper.getMessageFactory()
               .createResponse(responseCode, proxySIPRequest.getOriginalRequest());
     } catch (ParseException e) {
-      logger.error("Unable to create SipResponse for responseCode {}", responseCode);
+      logger.error("Unable to create SipResponse for responseCode {}", responseCode, e);
       return;
     }
 

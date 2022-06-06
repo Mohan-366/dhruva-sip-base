@@ -90,7 +90,7 @@ public class SipProxyManager {
           serverTransaction = sipProvider.getNewServerTransaction(request);
         } catch (TransactionAlreadyExistsException ex) {
           logger.error(
-              "Server Transaction Already exists, dropping the message as it's retransmission");
+              "Server Transaction Already exists, dropping the message as it's retransmission", ex);
           return null;
         } catch (TransactionUnavailableException ex) {
           serverTransaction = (SIPServerTransaction) ((SIPRequest) request).getTransaction();
@@ -392,7 +392,7 @@ public class SipProxyManager {
       try {
         sipProvider.get().sendResponse(response);
       } catch (SipException exception) {
-        logger.error("Unable to send out stray response using sipProvider");
+        logger.error("Unable to send out stray response using sipProvider", exception);
       }
     };
   }

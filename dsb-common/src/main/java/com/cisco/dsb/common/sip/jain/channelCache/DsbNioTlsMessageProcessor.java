@@ -52,7 +52,7 @@ public class DsbNioTlsMessageProcessor extends NioTlsMessageProcessor
       keepAliveTimerTask.start();
       connectionMetricTask.start();
     } catch (Exception ex) {
-      logger.error("Error starting NIO TLS message processor");
+      logger.error("Error starting NIO TLS message processor", ex);
       Event.emitConnectionErrorEvent("TLS", null, ex);
       throw ex;
     }
