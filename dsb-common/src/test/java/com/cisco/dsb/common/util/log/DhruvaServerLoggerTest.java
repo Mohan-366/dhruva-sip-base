@@ -68,6 +68,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     CSeqHeader cSeq = mock(CSeqHeader.class);
     when(cSeq.getSeqNumber()).thenReturn(101l);
     when(message.getCSeq()).thenReturn(cSeq);
+    when(message.getCSeq().getMethod()).thenReturn("INVITE");
 
     when(message.getLocalAddress()).thenReturn(InetAddress.getByName("1.1.1.1"));
     when(message.getRemoteAddress()).thenReturn(InetAddress.getByName("2.2.2.2"));
@@ -131,6 +132,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     CSeqHeader cSeq = mock(CSeqHeader.class);
     when(cSeq.getSeqNumber()).thenReturn(101l);
     when(message.getCSeq()).thenReturn(cSeq);
+    when(message.getCSeq().getMethod()).thenReturn("INVITE");
 
     Header rrHeader = mock(RequestReceivedHeader.class);
     when(message.getHeader(RequestReceivedHeader.NAME)).thenReturn(rrHeader);
@@ -141,5 +143,21 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     when(message.getRemotePort()).thenReturn(5062);
 
     runLoggingTest(message, false);
+  }
+
+  @Test
+  public void testOptionPingDebug() {
+    SIPMessage message = mock(SIPMessage.class);
+    String content = "OPTIONS sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n";
+    when(message.encode()).thenReturn(content);
+    CallIdHeader callIdHeader = mock(CallIdHeader.class);
+    when(callIdHeader.getCallId()).thenReturn("1");
+    when(message.getCallId()).thenReturn(callIdHeader);
+    CSeqHeader cSeq = mock(CSeqHeader.class);
+    when(cSeq.getSeqNumber()).thenReturn(101l);
+    when(message.getCSeq()).thenReturn(cSeq);
+    when(message.getCSeq().getMethod()).thenReturn("OPTIONS");
+
+    runLoggingTest(message, true);
   }
 }

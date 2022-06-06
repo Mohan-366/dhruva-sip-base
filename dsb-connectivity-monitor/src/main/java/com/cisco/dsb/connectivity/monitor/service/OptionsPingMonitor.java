@@ -186,7 +186,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       String serverGroupName,
       int sgeSize) {
 
-    logger.info("Sending ping to UP element: {}", element);
+    logger.debug("Sending ping to UP element: {}", element);
     String key = element.toUniqueElementString();
     Boolean status = elementStatus.get(key);
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
@@ -201,12 +201,12 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
             Retry.fixedDelay(getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
         .onErrorResume(
             throwable -> {
-              logger.info(
+              logger.error(
                   "All Ping attempts failed for UP element: {}. Marking status as DOWN. Error: {} ",
                   element,
                   throwable.getMessage());
               Event.emitSGElementDownEvent(
-                  null, "All Ping attempts failed for element", element, network);
+                  null, "All Ping attempts failed for element, marking as DOWN", element, network);
               elementStatus.put(key, false);
               checkAndMakeServerGroupDown(
                   serverGroupName, element.toUniqueElementString(), sgeSize);
@@ -265,13 +265,13 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       int pingTimeout,
       List<Integer> failoverCodes,
       String serverGroupName) {
-    logger.info("Sending ping to DOWN element: {}", element);
+    logger.debug("Sending ping to DOWN element: {}", element);
     String key = element.toUniqueElementString();
     return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
         .timeout(Duration.ofMillis(pingTimeout))
         .onErrorResume(
             throwable -> {
-              logger.error(
+              logger.debug(
                   "Error happened for element: {}. Error: {} Keeping status as DOWN.",
                   element,
                   throwable.getMessage());
@@ -280,9 +280,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         .doOnNext(
             n -> {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
-                logger.info("503 received for element: {}. Keeping status as DOWN.", element);
+                logger.info("{} received for element: {}. Keeping status as DOWN.", n.getStatusCode() ,element);
               } else {
-                logger.info("Marking status as UP for element: {}", element);
+                logger.info("Marking status from DOWN to UP for element: {}", element);
                 Event.emitSGElementUpEvent(element, network);
                 elementStatus.put(key, true);
                 makeServerGroupUp(serverGroupName, element.toUniqueElementString());
