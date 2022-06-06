@@ -36,10 +36,14 @@ public abstract class LoggerTestBase {
     ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 
     if (expectContent || !(serverLogger instanceof DsbHeaderLogger)) {
-      verify(stackLogger).logInfo(argumentCaptor.capture());
+        if(sipMessage.getCSeq().getMethod().equalsIgnoreCase("OPTIONS"))
+            verify(stackLogger).logDebug(argumentCaptor.capture());
+        else {
+            verify(stackLogger).logInfo(argumentCaptor.capture());
 
-      Assert.assertEquals(argumentCaptor.getAllValues().size(), 1);
-      Assert.assertEquals(argumentCaptor.getAllValues().get(0).contains("<![CDATA"), expectContent);
+            Assert.assertEquals(argumentCaptor.getAllValues().size(), 1);
+            Assert.assertEquals(argumentCaptor.getAllValues().get(0).contains("<![CDATA"), expectContent);
+        }
     } else {
       verify(stackLogger).logInfo(argumentCaptor.capture());
       Assert.assertEquals(argumentCaptor.getAllValues().size(), 1);
