@@ -17,8 +17,10 @@ import org.springframework.context.ApplicationContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+@Ignore
 public class RootNodeTest {
   RootNode rootNode;
   @Mock CallingAppConfigurationProperty configurationProperty;

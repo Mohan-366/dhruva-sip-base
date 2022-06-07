@@ -71,6 +71,20 @@ public class TrunkManagerTest {
     pstnTrunkMap.put("provider1", pstnTrunk1);
     pstnTrunkMap.put("provider2", pstnTrunk2);
 
+    Map<String, String> selector = new HashMap<>();
+    selector.put("dtg", "provider1");
+
+    Map<String, String> selector1 = new HashMap<>();
+    selector1.put("dtg", "provider2");
+    Egress egress = mock(Egress.class);
+    when(pstnTrunkMap.get("provider1").getEgress()).thenReturn(egress);
+
+    when(pstnTrunkMap.get("provider1").getEgress().getSelector()).thenReturn(selector);
+    Egress egress1 = mock(Egress.class);
+
+    when(pstnTrunkMap.get("provider2").getEgress()).thenReturn(egress1);
+    when(pstnTrunkMap.get("provider2").getEgress().getSelector()).thenReturn(selector1);
+
     Map<String, B2BTrunk> b2BTrunkMap = new HashMap<>();
     AntaresTrunk antares1 = mock(AntaresTrunk.class);
     AntaresTrunk antares2 = mock(AntaresTrunk.class);

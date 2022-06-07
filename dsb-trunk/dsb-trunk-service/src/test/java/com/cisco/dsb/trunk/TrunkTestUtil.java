@@ -1,5 +1,6 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -64,7 +65,13 @@ public class TrunkTestUtil {
   public void initTrunk(List<ServerGroup> serverGroups, AbstractTrunk abstractTrunk) {
     Egress egrees = new Egress();
     Map<String, ServerGroup> serverGroupMap = egrees.getServerGroupMap();
+    RoutePolicy rp =
+        RoutePolicy.builder()
+            .setName("trunk1")
+            .setFailoverResponseCodes(Arrays.asList(500, 502, 503))
+            .build();
     egrees.setLbType(LBType.WEIGHT);
+    egrees.setRoutePolicyFromConfig(rp);
     serverGroups.stream()
         .forEach(
             sg -> {

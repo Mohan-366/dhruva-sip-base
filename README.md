@@ -113,15 +113,12 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
                    port: 6061
                    priority: 5
                    weight: 100
-                sgPolicy: policy1
+                routePolicy: policy1
                 pingOn: true
-                optionsPingPolicy: opPolicy1
-                priority: 10
-                weight: 100
-   - To configure  SG Policy
+   - To configure  ROUTE Policy, used by ServerGroup & Trunk
      ```yaml
        common:
-          sgPolicy:
+          routePolicy:
              policy1:
                 name: policy1
                 failoverResponseCodes:

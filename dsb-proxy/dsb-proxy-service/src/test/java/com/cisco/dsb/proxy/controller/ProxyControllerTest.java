@@ -452,10 +452,10 @@ public class ProxyControllerTest {
         sipListenPointTlsOutgoing.getTransport(),
         tlsNetworkOutgoing);
 
-    return new Object[][]{
-        {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
-        {tcpNetworkIncoming, tcpNetworkOutgoing, tcpSipProviderOutgoing},
-        {tlsNetworkIncoming, tlsNetworkOutgoing, tlsSipProviderOutgoing}
+    return new Object[][] {
+      {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
+      {tcpNetworkIncoming, tcpNetworkOutgoing, tcpSipProviderOutgoing},
+      {tlsNetworkIncoming, tlsNetworkOutgoing, tlsSipProviderOutgoing}
     };
   }
 
@@ -504,7 +504,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -576,7 +576,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
@@ -631,7 +631,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -654,7 +654,7 @@ public class ProxyControllerTest {
               + "This covers test for normal lrfix case")
   public void testOutgoingACKRequestProxyTransaction()
       throws SipException, ParseException, ExecutionException, InterruptedException,
-      TimeoutException {
+          TimeoutException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -750,7 +750,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     CompletableFuture<ProxySIPResponse> cf = proxyController.proxyRequest(proxySIPRequest);
@@ -773,7 +773,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxyController.onNewRequest(proxySIPRequest);
     proxySIPRequest.setOutgoingNetwork("invalid");
@@ -858,7 +858,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -1014,7 +1014,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
     // Check that lrfix variable is set even if requri does not belong to proxy and has top route
@@ -1025,8 +1025,7 @@ public class ProxyControllerTest {
     ListIterator routes = proxySIPRequest.getRequest().getHeaders(RouteHeader.NAME);
     if (routes != null && routes.hasNext()) {
       // Get to the last value
-      do
-        lastRouteHeader = (RouteHeader) routes.next();
+      do lastRouteHeader = (RouteHeader) routes.next();
       while (routes.hasNext());
     }
     assert lastRouteHeader != null;
@@ -1060,7 +1059,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest =
         proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
@@ -1092,7 +1091,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
     proxySIPRequest =
         proxyController.processIncomingProxyRequestMAddr.apply(proxySIPRequest).block();
@@ -1118,7 +1117,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxySIPRequest = proxyController.onNewRequest(proxySIPRequest).block();
@@ -1134,7 +1133,7 @@ public class ProxyControllerTest {
 
   @DataProvider
   public Object[] toggleValues() {
-    return new Boolean[][]{{true}, {false}};
+    return new Boolean[][] {{true}, {false}};
   }
 
   @Test(
@@ -1375,17 +1374,17 @@ public class ProxyControllerTest {
                 proxyAppConfig);
 
     QuadFunction<
-        ControllerInterface,
-        ProxyParamsInterface,
-        ServerTransaction,
-        SIPRequest,
-        ProxyStatelessTransaction>
+            ControllerInterface,
+            ProxyParamsInterface,
+            ServerTransaction,
+            SIPRequest,
+            ProxyStatelessTransaction>
         function1 = mock(QuadFunction.class);
     when(function1.apply(
-        any(ControllerInterface.class),
-        any(ProxyParamsInterface.class),
-        any(ServerTransaction.class),
-        any(SIPRequest.class)))
+            any(ControllerInterface.class),
+            any(ProxyParamsInterface.class),
+            any(ServerTransaction.class),
+            any(SIPRequest.class)))
         .thenThrow(new InternalProxyErrorException("test error"));
     when(proxyFactoryMock.proxyTransaction()).thenReturn(function1);
 
@@ -1395,7 +1394,7 @@ public class ProxyControllerTest {
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 
     when(sipServerLocatorService.locateDestinationAsync(
-        nullable(User.class), any(SipDestination.class)))
+            nullable(User.class), any(SipDestination.class)))
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     proxyController.onNewRequest(proxySIPRequest).block();

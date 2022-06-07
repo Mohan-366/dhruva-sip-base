@@ -263,7 +263,7 @@ public class OptionsPingMonitorTest {
             .setHostName("sg1")
             .setNetworkName(network.getName())
             .setElements(sgeList)
-            .setSgPolicyConfig("global")
+            .setRoutePolicyConfig("global")
             .setPingOn(true)
             .build();
 

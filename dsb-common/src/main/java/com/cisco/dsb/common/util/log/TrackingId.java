@@ -41,7 +41,6 @@ public final class TrackingId {
   // The testPrefix will be used on all huron test calls even in production.
   private static String testPrefix = SipTrackingConstants.IT_PREFIX;
 
-  private static String sipIpAddress = SipConstants.Ipv4_Loopback;
   private static String httpIpAddress = SipConstants.Ipv4_Loopback;
   private static String nomadAllocId;
   private static String build;
@@ -308,16 +307,11 @@ public final class TrackingId {
 
   public static void setServerWideValues() {
     setMDC(SipTrackingConstants.HTTP_IP_ADDRESS_FIELD, httpIpAddress);
-    setMDC(SipTrackingConstants.SIP_IP_ADDRESS_FIELD, sipIpAddress);
     setMDC(SipTrackingConstants.NOMAD_ALLOC_ID, nomadAllocId);
     setMDC(SipTrackingConstants.BUILD, build);
     setMDC(SipTrackingConstants.BUILD_GIT, buildGit);
     setMDC(SipTrackingConstants.IS_CANARY, Boolean.toString(isCanary));
     setMDC(SipTrackingConstants.INSTANCE_ID, instanceId);
-  }
-
-  public static void setSipIpAddress(String sipAddress) {
-    sipIpAddress = sipAddress;
   }
 
   public static void setHttpIpAddress(String httpListenIp) {

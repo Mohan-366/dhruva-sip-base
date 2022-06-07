@@ -51,7 +51,7 @@ public class DsbSipTLSMessageProcessor extends TLSMessageProcessor implements Me
       keepAliveTimerTask.start();
       connectionMetricTask.start();
     } catch (Exception ex) {
-      logger.error("Error starting TLS message processor");
+      logger.error("Error starting TLS message processor", ex);
       Event.emitConnectionErrorEvent("TLS", null, ex);
       throw ex;
     }

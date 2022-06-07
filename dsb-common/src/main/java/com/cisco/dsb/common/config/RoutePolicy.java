@@ -1,4 +1,4 @@
-package com.cisco.dsb.common.servergroup;
+package com.cisco.dsb.common.config;
 
 import java.util.List;
 import javax.validation.constraints.NotBlank;
@@ -12,7 +12,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(setterPrefix = "set")
-public class SGPolicy {
+public class RoutePolicy {
+
   @NotBlank private String name;
   @NotBlank private List<Integer> failoverResponseCodes;
   private int retryResponseCode;
@@ -20,8 +21,8 @@ public class SGPolicy {
   @Override
   public boolean equals(Object a) {
     if (this == a) return true;
-    if (a instanceof SGPolicy) {
-      SGPolicy b = ((SGPolicy) a);
+    if (a instanceof RoutePolicy) {
+      RoutePolicy b = ((RoutePolicy) a);
       return new EqualsBuilder().append(name, b.name).isEquals();
     }
     return false;

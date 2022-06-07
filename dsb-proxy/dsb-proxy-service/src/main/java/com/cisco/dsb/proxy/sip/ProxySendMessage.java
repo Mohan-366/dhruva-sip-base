@@ -136,7 +136,7 @@ public class ProxySendMessage {
       handleResponseLMA(sipProvider, response, isInternallyGeneratedResponse, false);
 
     } catch (Exception e) {
-      logger.error("Exception occurred while trying to send  response {}", e.getMessage());
+      logger.error("Exception occurred while trying to send  response", e);
       throw new DhruvaException(e);
     }
   }

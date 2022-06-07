@@ -3,6 +3,7 @@ package com.cisco.dsb.common.util.log;
 import com.cisco.dsb.common.sip.util.SipConstants;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import gov.nist.core.LogLevels;
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.message.SIPMessage;
@@ -18,7 +19,6 @@ import lombok.CustomLog;
  * calls through to an underlying StackLogger which sip-apps also provides through the SipLogger
  * class.
  */
-@CustomLog
 public class DhruvaServerLogger implements ServerLogger {
 
   protected StackLogger stackLogger;
@@ -32,6 +32,7 @@ public class DhruvaServerLogger implements ServerLogger {
     // No log file in this implementation.
   }
 
+
   /**
    * Log a SIPMessage.
    *
@@ -43,6 +44,7 @@ public class DhruvaServerLogger implements ServerLogger {
    */
   @Override
   public void logMessage(SIPMessage message, String from, String to, boolean sender, long time) {
+
     logMessage(message, from, to, null, sender, time);
   }
 
@@ -84,7 +86,8 @@ public class DhruvaServerLogger implements ServerLogger {
     // If sip message has request received header and debug is not enabled, then log only the
     // headers
     // else, log the entire message
-    if (hasRequestReceivedHeader(message) && !logger.isDebugEnabled()) {
+
+    if (hasRequestReceivedHeader(message) && !stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG)) {
       log(
           message,
           new SipMessageLogBuilder().buildHeadersOnly(message, from, to, status, sender, time));
@@ -123,7 +126,18 @@ public class DhruvaServerLogger implements ServerLogger {
       if (reasonHeaderText != null) {
         loggingContext.setReasonHeaderText(reasonHeaderText);
       }
+
+      if(message.getCSeq() == null || message.getCSeq().getMethod() == null) {
+        stackLogger.logError("Invalid SIP message "+ message );
+        return;
+      }
+
+      //Mandating Options msg to be sent only when debug is enabled.
+      if(stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG) || message.getCSeq().getMethod().equalsIgnoreCase("OPTIONS"))
+        stackLogger.logDebug(log);
+      else
       stackLogger.logInfo(log);
+
     }
   }
 

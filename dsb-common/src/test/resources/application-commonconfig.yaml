@@ -51,9 +51,7 @@ common:
           port: 5070
           priority: 1
           weight: 10
-      sgPolicy: policy1
-      priority: 1
-      weight: 10
+      routePolicy: policy1
   listen-points:
     - name: "testNetwork"
       port: 5061
@@ -64,7 +62,7 @@ common:
       tlsAuthType: client
       enableCertService: true
     - name: "defaultNetwork"
-  sgPolicy:
+  routePolicy:
     policy1:
       name: policy1
       failoverResponseCodes:

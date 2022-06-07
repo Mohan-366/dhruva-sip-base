@@ -45,15 +45,22 @@ public class TrunkConfigurationPropertiesTest {
     ingress1.setName("ingress1");
     Egress egress1 = new Egress();
     egress1.setLbType(LBType.WEIGHT);
-    egress1.setServerGroups(Arrays.asList("SG1", "SG2"));
+    ServerGroups sgs1 = ServerGroups.builder().setSg("SG1").setWeight(100).setPriority(5).build();
+    ServerGroups sgs2 = ServerGroups.builder().setSg("SG2").setWeight(100).setPriority(5).build();
+
+    egress1.setServerGroups(Arrays.asList(sgs1, sgs2));
     egress1.setOverallResponseTimeout(300);
     PSTNTrunk pstnTrunk1 =
         PSTNTrunk.builder().setName("UsPoolA").setIngress(ingress1).setEgress(egress1).build();
     Ingress ingress2 = new Ingress();
     ingress2.setName("ingress2");
     Egress egress2 = new Egress();
+    Map<String, String> selector2 = new HashMap<>();
+
     egress2.setLbType(LBType.WEIGHT);
-    egress2.setServerGroups(Arrays.asList("SG1", "SG2"));
+    selector2.put("dtg", "CCPFUSIONIN");
+    egress2.setSelector(selector2);
+    egress2.setServerGroups(Arrays.asList(sgs1, sgs2));
     egress2.setOverallResponseTimeout(300);
     PSTNTrunk pstnTrunk2 =
         PSTNTrunk.builder().setName("UsPoolB").setIngress(ingress2).setEgress(egress2).build();
@@ -90,8 +97,9 @@ public class TrunkConfigurationPropertiesTest {
     Assert.assertEquals(
         b2bTrunkMap.get("Antares"), configurationProperties.getB2BTrunkMap().get("Antares"));
     Assert.assertEquals(ccTrunkMap, configurationProperties.getCallingTrunkMap());
+    ServerGroups sgs3 = ServerGroups.builder().setSg("SG3").setWeight(80).setPriority(5).build();
 
-    egress1.setServerGroups(Collections.singletonList("SG3"));
+    egress1.setServerGroups(Collections.singletonList(sgs3));
     // throws exception as SG is not present in commonConfiguration
     configurationProperties.setPSTN(pstnTrunkMap);
   }

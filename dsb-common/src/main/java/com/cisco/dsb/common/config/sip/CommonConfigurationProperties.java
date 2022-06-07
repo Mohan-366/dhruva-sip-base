@@ -1,9 +1,9 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
-import com.cisco.dsb.common.servergroup.SGPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -11,6 +11,8 @@ import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.wx2.dto.ErrorInfo;
 import com.cisco.wx2.dto.ErrorList;
+import java.security.KeyStore;
+import java.util.*;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,9 +20,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
-
-import java.security.KeyStore;
-import java.util.*;
 
 @Component
 @EnableConfigurationProperties
@@ -113,7 +112,9 @@ public class CommonConfigurationProperties {
   @Getter private long timeOutDns = 10_000L;
   @Getter @Setter private long dnsLookupTimeoutMillis = 10_000L;
   @Getter private Map<String, ServerGroup> serverGroups = new HashMap<>();
-  @Getter private Map<String, SGPolicy> sgPolicyMap = new HashMap<>();
+
+  @Getter private Map<String, RoutePolicy> routePolicyMap = new HashMap<>();
+
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
   // initial delay for triggering custom check for /ping once server is running
@@ -122,7 +123,7 @@ public class CommonConfigurationProperties {
   @Getter @Setter private long customMonitorPingPeriodInSec = 30L;
 
   // to toggle reactors scheduler metrics support
-  @Getter @Setter private boolean reactorSchedulerMetricsEnabled = true ;
+  @Getter @Setter private boolean reactorSchedulerMetricsEnabled = true;
 
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
@@ -147,19 +148,19 @@ public class CommonConfigurationProperties {
     return trustedSipSources;
   }
 
-  public void setSgPolicy(Map<String, SGPolicy> sgPolicyMap) {
+  public void setRoutePolicy(Map<String, RoutePolicy> routePolicyMap) {
     logger.info("Configuring ServerGroups");
     this.serverGroups
         .values()
         .forEach(
             serverGroup -> {
-              SGPolicy sgPolicy = sgPolicyMap.get(serverGroup.getSgPolicyConfig());
-              if (sgPolicy != null) {
-                logger.info("SG: {} SGPolicy {}", serverGroup, sgPolicy.getName());
-                serverGroup.setSgPolicyFromConfig(sgPolicy);
+              RoutePolicy routePolicy = routePolicyMap.get(serverGroup.getRoutePolicyConfig());
+              if (routePolicy != null) {
+                logger.info("SG: {} RoutePolicy {}", serverGroup, routePolicy.getName());
+                serverGroup.setRoutePolicyFromConfig(routePolicy);
               }
             });
-    updateMap(this.sgPolicyMap, sgPolicyMap);
+    updateMap(this.routePolicyMap, routePolicyMap);
   }
 
   public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {

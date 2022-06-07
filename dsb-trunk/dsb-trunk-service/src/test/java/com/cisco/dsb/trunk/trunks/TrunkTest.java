@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -59,7 +60,7 @@ public class TrunkTest {
   @InjectMocks protected DnsServerGroupUtil dnsServerGroupUtil;
   @Mock protected SipServerLocatorService locatorService;
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
-  protected SGPolicy sgPolicy;
+  protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
   MetricService metricService;
   ApplicationContext context;
@@ -70,10 +71,10 @@ public class TrunkTest {
     MockitoAnnotations.openMocks(this);
     metricService = mock(MetricService.class);
 
-    sgPolicy =
-        SGPolicy.builder()
+    sgRoutePolicy =
+        RoutePolicy.builder()
             .setName("policy1")
-            .setFailoverResponseCodes(Arrays.asList(500, 502, 503))
+            .setFailoverResponseCodes(Arrays.asList(500, 501, 502, 503))
             .build();
     trunkTestUtil = new TrunkTestUtil(dnsServerGroupUtil);
   }
@@ -150,7 +151,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
@@ -208,7 +209,7 @@ public class TrunkTest {
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
@@ -273,7 +274,7 @@ public class TrunkTest {
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -339,7 +340,7 @@ public class TrunkTest {
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(2, true);
@@ -352,7 +353,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -418,7 +419,7 @@ public class TrunkTest {
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(2, true);
@@ -430,7 +431,7 @@ public class TrunkTest {
             .setSgType(SGType.STATIC)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .setElements(trunkTestUtil.getServerGroupElements(2, false))
             .build();
@@ -476,6 +477,57 @@ public class TrunkTest {
     verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
+  @Test(
+      description =
+          "multiple static sg, but trunk's failover not matching with error response (best error response)")
+  public void testMultipleStaticFail() throws ParseException {
+
+    AntaresTrunk antaresTrunk = new AntaresTrunk();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setHostName("static1")
+            .setSgType(SGType.STATIC)
+            .setWeight(100)
+            .setPriority(10)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .build();
+    List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(1, true);
+    sg1.setElements(serverGroupElements);
+
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setHostName("static2")
+            .setSgType(SGType.STATIC)
+            .setWeight(100)
+            .setPriority(5)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .setElements(trunkTestUtil.getServerGroupElements(1, false))
+            .build();
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk);
+
+    AtomicInteger state = new AtomicInteger(0);
+    doAnswer(
+            invocationOnMock -> {
+              if (state.get() == 0) {
+                state.getAndIncrement();
+                when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.NOT_IMPLEMENTED);
+                return CompletableFuture.completedFuture(failedProxySIPResponse);
+              } else if (state.get() == 1) {
+                state.getAndIncrement();
+                return CompletableFuture.completedFuture(successProxySIPResponse);
+              }
+              return null;
+            })
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(failedProxySIPResponse)
+        .verifyComplete();
+  }
+
   @Test(description = "multiple dynamic sg")
   public void testMultipleDynamic() throws ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
@@ -486,7 +538,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -496,7 +548,7 @@ public class TrunkTest {
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
@@ -567,7 +619,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -577,7 +629,7 @@ public class TrunkTest {
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -644,7 +696,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
 
@@ -654,7 +706,7 @@ public class TrunkTest {
             .setSgType(SGType.SRV)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
@@ -736,7 +788,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), pstnTrunk);
@@ -791,7 +843,7 @@ public class TrunkTest {
             .setPort(5060)
             .setWeight(100)
             .setPriority(10)
-            .setSgPolicy(sgPolicy)
+            .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), callingTrunk);

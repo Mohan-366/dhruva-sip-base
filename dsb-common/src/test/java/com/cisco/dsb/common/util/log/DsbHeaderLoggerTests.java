@@ -77,6 +77,7 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
     when(message.getRemoteAddress()).thenReturn(InetAddress.getByName("2.2.2.2"));
     when(message.getLocalPort()).thenReturn(5061);
     when(message.getRemotePort()).thenReturn(5062);
+    when(message.getCSeq().getMethod()).thenReturn("INVITE");
 
     runLoggingTest(message, false);
   }

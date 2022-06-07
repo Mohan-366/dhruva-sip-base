@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.servergroup;
 
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
@@ -23,12 +24,12 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
   @Builder.Default private boolean pingOn = false;
   private List<ServerGroupElement> elements;
-  private SGPolicy sgPolicy;
-  private String sgPolicyConfig;
+  private RoutePolicy routePolicy;
+  private String routePolicyConfig;
   private OptionsPingPolicy optionsPingPolicy;
   private String optionsPingPolicyConfig;
-  private int priority;
-  private int weight;
+  @Builder.Default private int priority = 10;
+  @Builder.Default private int weight = 100;
   @Builder.Default private SGType sgType = SGType.STATIC;
   @Builder.Default private Transport transport = Transport.UDP;
   private int port;
@@ -48,12 +49,12 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     return new HashCodeBuilder().append(name).toHashCode();
   }
 
-  public void setSgPolicy(String sgPolicy) {
-    this.sgPolicyConfig = sgPolicy;
+  public void setRoutePolicy(String routePolicy) {
+    this.routePolicyConfig = routePolicy;
   }
 
-  public void setSgPolicyFromConfig(SGPolicy sgPolicy) {
-    this.sgPolicy = sgPolicy;
+  public void setRoutePolicyFromConfig(RoutePolicy routePolicy) {
+    this.routePolicy = routePolicy;
   }
 
   public void setOptionsPingPolicy(String optionsPingPolicy) {
@@ -82,19 +83,19 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     return optionsPingPolicy;
   }
 
-  public SGPolicy getSgPolicy() {
-    if (this.sgPolicy == null) {
-      this.sgPolicy =
-          SGPolicy.builder()
-              .setName("defaultSGPolicy")
-              .setFailoverResponseCodes(Arrays.asList(501, 502, 503))
+  public RoutePolicy getRoutePolicy() {
+    if (this.routePolicy == null) {
+      this.routePolicy =
+          RoutePolicy.builder()
+              .setName("defaultSGRoutePolicy")
+              .setFailoverResponseCodes(Arrays.asList( 502, 503))
               .build();
       logger.info(
-          "SGPolicy was not configured for servergroup: {}. Using default policy: {}",
+          "Route Policy was not configured for servergroup: {}. Using default policy: {}",
           this.toString(),
-          sgPolicy.toString());
+          routePolicy.toString());
     }
-    return sgPolicy;
+    return routePolicy;
   }
   /**
    * Compares this object to the object passed as an argument. If this object has a higher q-value,
@@ -124,8 +125,8 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
       if (this.compareTo(obj) != 0
           || !(this.getNetworkName().equals(obj.getNetworkName()))
           || this.isPingOn() != obj.isPingOn()
-          || ((this.getSgPolicy() != null || obj.getSgPolicy() != null)
-              && !this.getSgPolicy().equals(obj.getSgPolicy()))
+          || ((this.getRoutePolicy() != null || obj.getRoutePolicy() != null)
+              && !this.getRoutePolicy().equals(obj.getRoutePolicy()))
           || ((this.getOptionsPingPolicy() != null || obj.getOptionsPingPolicy() != null)
               && !this.getOptionsPingPolicy().equals(obj.getOptionsPingPolicy()))
           || !this.getLbType().equals(obj.getLbType())

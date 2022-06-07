@@ -88,7 +88,7 @@ public class SipServer implements Server {
         serverStartFuture.complete(sipStack);
         break;
       } catch (Exception e) {
-        logger.error("Unable to start listenPoint", e.getMessage());
+        logger.error("Unable to start listenPoint", e);
         if (retryCount == 0 || !(e.getCause() instanceof IOException)) {
           serverStartFuture.completeExceptionally(e);
           break;
@@ -104,7 +104,7 @@ public class SipServer implements Server {
         try {
           Thread.sleep(retryDelay * 1000L);
         } catch (InterruptedException ex) {
-          logger.error("Interrupted while waiting to retry creation on listenPoint");
+          logger.error("Interrupted while waiting to retry creation on listenPoint", ex);
         }
       }
     }
