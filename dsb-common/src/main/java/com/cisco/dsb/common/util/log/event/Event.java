@@ -4,8 +4,6 @@
 
 package com.cisco.dsb.common.util.log.event;
 
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.util.LMAUtil;
@@ -16,10 +14,12 @@ import gov.nist.javax.sip.header.CSeq;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import lombok.CustomLog;
+
 import java.util.Map;
 import java.util.Optional;
-import javax.sip.message.Message;
-import lombok.CustomLog;
+
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
 @CustomLog
 public class Event {
@@ -76,7 +76,7 @@ public class Event {
 
   public static void emitMessageEvent(
       BindingInfo messageBindingInfo,
-      Message message,
+      SIPMessage message,
       DIRECTION direction,
       MESSAGE_TYPE sipMessageType,
       boolean isInternallyGenerated,
@@ -92,6 +92,10 @@ public class Event {
                 String.valueOf(message.getHeader(CSeq.NAME)),
                 Event.REMOTEIP,
                 messageBindingInfo.getRemoteAddressStr()));
+
+    if (message.getCallId() != null) {
+      messageInfoMap.put("sipCallId", message.getCallId().getCallId());
+    }
 
     if (Event.MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
       SIPRequest sipRequest = (SIPRequest) message;
