@@ -140,13 +140,15 @@ public class TrunkManager {
         case PSTN:
           for (Map.Entry<String, AbstractTrunk> map : maps.entrySet()) {
             Map<String, String> selector = map.getValue().getEgress().getSelector();
-            if(selector == null || selector.isEmpty())
+            if(selector == null || selector.isEmpty()) {
+              logger.error("No selector provided for PSTN trunk, dtg cannot be fetched");
               break;
-            logger.error("No selector provided for PSTN trunk, dtg cannot be fetched");
+            }
             String dtgValue = selector.get(SipParamConstants.DTG);
-            if (dtgValue == null)
+            if (dtgValue == null) {
+              logger.error("DTG key is not present in the selector");
               break;
-            logger.error("DTG key is not present in the selector");
+            }
             if (dtgValue.equalsIgnoreCase(key)) {
               trunk = map.getValue();
               break;
