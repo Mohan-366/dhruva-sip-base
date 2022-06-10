@@ -93,9 +93,6 @@ public class Event {
                 Event.REMOTEIP,
                 messageBindingInfo.getRemoteAddressStr()));
 
-    if (message.getCallId() != null) {
-      messageInfoMap.put("sipCallId", message.getCallId().getCallId());
-    }
 
     if (Event.MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
       SIPRequest sipRequest = (SIPRequest) message;
