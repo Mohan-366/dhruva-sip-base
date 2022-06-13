@@ -82,7 +82,7 @@ public class TrunkManager {
               serverGroups.stream()
                   .forEach(
                       serverGroup -> {
-                        Boolean serverStatus = false;
+                        Boolean serverStatus;
                         if (serverGroup.isPingOn()) {
                           serverStatus = optionsPingController.getStatus(serverGroup);
                           if (!trunkStatus.get().equals("true"))
@@ -99,7 +99,7 @@ public class TrunkManager {
                         serverGroupName.add(serverGroup.getName());
                       });
 
-              String arr[] = {trunkStatus.get(), String.join(",", serverGroupName)};
+              String[] arr = {trunkStatus.get(), String.join(",", serverGroupName)};
               metricService.getTrunkStatusMap().put(trunk, arr);
             });
 
@@ -140,7 +140,7 @@ public class TrunkManager {
         case PSTN:
           for (Map.Entry<String, AbstractTrunk> map : maps.entrySet()) {
             Map<String, String> selector = map.getValue().getEgress().getSelector();
-            if(selector == null || selector.isEmpty()) {
+            if (selector == null || selector.isEmpty()) {
               logger.error("No selector provided for PSTN trunk, dtg cannot be fetched");
               break;
             }

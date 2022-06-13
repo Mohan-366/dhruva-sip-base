@@ -56,7 +56,7 @@ public class ProxySendMessageTest {
   }
 
   @Test
-  void testSendResponseAsync3() throws ParseException, InvalidArgumentException, SipException {
+  void testSendResponseAsync3() throws ParseException, SipException {
     SipProvider sipProvider = mock(SipProvider.class);
 
     doNothing().when(sipProvider).sendResponse(any());
@@ -69,32 +69,31 @@ public class ProxySendMessageTest {
   }
 
   @Test
-  void testSendResponse() throws DhruvaException {
+  void testSendResponse() {
     assertThrows(
         DhruvaException.class,
         () -> ProxySendMessage.sendResponse(1, null, null, new SIPRequest()));
     assertThrows(
-        DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(new SIPResponse(), (ServerTransaction) null, null));
+        DhruvaException.class, () -> ProxySendMessage.sendResponse(new SIPResponse(), null, null));
   }
 
   @Test
-  void testSendResponse2() throws DhruvaException, SipException {
+  void testSendResponse2() throws SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
     assertThrows(
         DhruvaException.class,
         () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true));
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
-  void testSendResponse3() throws DhruvaException, SipException {
+  void testSendResponse3() throws SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.addHeader(new RemotePartyID());
@@ -102,71 +101,55 @@ public class ProxySendMessageTest {
         DhruvaException.class,
         () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true));
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
-  }
-
-  @Test
-  void testSendResponse4() throws DhruvaException, SipException {
-    SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
-    when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
-
-    SIPResponse sipResponse = new SIPResponse();
-    sipResponse.setReasonPhrase("Just cause");
-    sipResponse.addHeader(new RemotePartyID());
-    assertThrows(
-        DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true));
-    verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
   void testSendResponse5() throws DhruvaException, SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
   void testSendResponse6() throws DhruvaException, SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     sipResponse.addHeader(new Accept());
     ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
   void testSendResponse7() throws DhruvaException, SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     sipResponse.addHeader(new AcceptEncodingList());
     ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
   void testSendResponse8() throws DhruvaException, ParseException, SipException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     Accept accept = new Accept();
     accept.setParameter("sip:xx", "sip:xx");
@@ -176,11 +159,11 @@ public class ProxySendMessageTest {
     sipResponse.addHeader(accept);
     ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
     verify(sipServerTransactionImpl).getSipProvider();
-    verify(sipServerTransactionImpl).sendResponse((javax.sip.message.Response) any());
+    verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
-  void testSendRequest() throws DhruvaException {
+  void testSendRequest() {
     assertThrows(
         DhruvaException.class, () -> ProxySendMessage.sendRequest(new SIPRequest(), null, null));
   }
@@ -224,10 +207,7 @@ public class ProxySendMessageTest {
             request, sipProvider, mock(ServerTransaction.class), mock(ExecutionContext.class));
     proxyRequest.setAppRecord(new DhruvaAppRecord());
     StepVerifier.create(ProxySendMessage.sendProxyRequestAsync(sipProvider, null, proxyRequest))
-        .assertNext(
-            proxySIPRequest -> {
-              Assert.assertEquals(proxyRequest, proxySIPRequest);
-            })
+        .assertNext(proxySIPRequest -> Assert.assertEquals(proxyRequest, proxySIPRequest))
         .verifyComplete();
   }
 
@@ -257,10 +237,7 @@ public class ProxySendMessageTest {
     proxyRequest.setAppRecord(new DhruvaAppRecord());
     StepVerifier.create(
             ProxySendMessage.sendProxyRequestAsync(sipProvider, clientTransaction, proxyRequest))
-        .assertNext(
-            proxySIPRequest -> {
-              Assert.assertEquals(proxyRequest, proxySIPRequest);
-            })
+        .assertNext(proxySIPRequest -> Assert.assertEquals(proxyRequest, proxySIPRequest))
         .verifyComplete();
   }
 

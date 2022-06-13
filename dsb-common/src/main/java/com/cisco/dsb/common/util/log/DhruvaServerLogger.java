@@ -12,7 +12,6 @@ import java.util.Properties;
 import javax.sip.SipStack;
 import javax.sip.header.ReasonHeader;
 import javax.sip.message.Message;
-import lombok.CustomLog;
 
 /**
  * Implementation of high level interface used by JAIN SIP to log SIPMessages and exception. This
@@ -31,7 +30,6 @@ public class DhruvaServerLogger implements ServerLogger {
   public synchronized void closeLogFile() {
     // No log file in this implementation.
   }
-
 
   /**
    * Log a SIPMessage.
@@ -127,17 +125,15 @@ public class DhruvaServerLogger implements ServerLogger {
         loggingContext.setReasonHeaderText(reasonHeaderText);
       }
 
-      if(message.getCSeq() == null || message.getCSeq().getMethod() == null) {
-        stackLogger.logError("Invalid SIP message "+ message );
+      if (message.getCSeq() == null || message.getCSeq().getMethod() == null) {
+        stackLogger.logError("Invalid SIP message " + message);
         return;
       }
 
-      //Mandating Options msg to be sent only when debug is enabled.
-      if(stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG) || message.getCSeq().getMethod().equalsIgnoreCase("OPTIONS"))
-        stackLogger.logDebug(log);
-      else
-      stackLogger.logInfo(log);
-
+      // Mandating Options msg to be sent only when debug is enabled.
+      if (stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG)
+          || message.getCSeq().getMethod().equalsIgnoreCase("OPTIONS")) stackLogger.logDebug(log);
+      else stackLogger.logInfo(log);
     }
   }
 

@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.util;
 
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
@@ -22,6 +23,27 @@ public class LMAUtil {
       boolean isMidDialogRequest,
       long dhruvaProcessDelayInMilis) {
 
+    emitSipMessageEvent(
+        sipProvider,
+        message,
+        messageType,
+        directionType,
+        isInternallyGenerated,
+        isMidDialogRequest,
+        dhruvaProcessDelayInMilis,
+        null);
+  }
+
+  public static void emitSipMessageEvent(
+      SipProvider sipProvider,
+      SIPMessage message,
+      Event.MESSAGE_TYPE messageType,
+      Event.DIRECTION directionType,
+      boolean isInternallyGenerated,
+      boolean isMidDialogRequest,
+      long dhruvaProcessDelayInMilis,
+      DhruvaAppRecord appRecord) {
+
     Transport transportType;
 
     if (sipProvider == null) {
@@ -39,7 +61,8 @@ public class LMAUtil {
         messageType,
         isInternallyGenerated,
         isMidDialogRequest,
-        dhruvaProcessDelayInMilis);
+        dhruvaProcessDelayInMilis,
+        appRecord);
   }
 
   public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {

@@ -88,7 +88,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
       this.routePolicy =
           RoutePolicy.builder()
               .setName("defaultSGRoutePolicy")
-              .setFailoverResponseCodes(Arrays.asList( 502, 503))
+              .setFailoverResponseCodes(Arrays.asList(502, 503))
               .build();
       logger.info(
           "Route Policy was not configured for servergroup: {}. Using default policy: {}",
