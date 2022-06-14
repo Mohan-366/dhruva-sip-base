@@ -15,6 +15,7 @@ import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.util.log.ConnectionAspect;
+import com.cisco.dsb.common.util.log.event.EventingService;
 import com.cisco.wx2.dto.IdentityMachineAccount;
 import com.cisco.wx2.server.config.ConfigProperties;
 import com.cisco.wx2.server.config.Wx2Properties;
@@ -82,6 +83,11 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
     } catch (RuntimeException e) {
       log.warn("Unable to clean up machine account", e);
     }
+  }
+
+  @Bean
+  public EventingService eventingService() {
+    return new EventingService(commonConfigurationProperties.isEmitUnmaskedEvents());
   }
 
   @Bean
@@ -184,8 +190,7 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
   */
   @Bean
   public ConnectionAspect connectionAspectBean() {
-    ConnectionAspect connectionAspect = Aspects.aspectOf(ConnectionAspect.class);
-    return connectionAspect;
+    return Aspects.aspectOf(ConnectionAspect.class);
   }
   // this will be needed in future for http requests
   /*

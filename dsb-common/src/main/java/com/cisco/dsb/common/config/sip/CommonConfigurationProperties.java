@@ -125,6 +125,9 @@ public class CommonConfigurationProperties {
   // to toggle reactors scheduler metrics support
   @Getter @Setter private boolean reactorSchedulerMetricsEnabled = true;
 
+  // toggle to enable emitting unmasked events
+  @Getter @Setter private boolean emitUnmaskedEvents = true;
+
   public void setDnsCacheSize(int size) {
     if (size > 0) this.dnsCacheSize = size;
   }

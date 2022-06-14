@@ -4,25 +4,29 @@
 
 package com.cisco.dsb.common.util.log.event;
 
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.util.LMAUtil;
-import com.cisco.dsb.common.util.log.LogUtils;
+import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import gov.nist.javax.sip.header.CSeq;
-import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import java.util.*;
+import javax.sip.message.Message;
 import lombok.CustomLog;
-
-import java.util.Map;
-import java.util.Optional;
-
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 
 @CustomLog
 public class Event {
+
+  private static EventingService eventingService =
+      SpringApplicationContext.getAppContext() == null
+          ? null
+          : SpringApplicationContext.getAppContext().getBean(EventingService.class);
 
   private static final String ISMIDDIALOG = "isMidDialog";
   private static final String DHRUVA_PROCESSING_DELAY_IN_MILLIS = "dhruvaProcessingDelayInMillis";
@@ -53,7 +57,10 @@ public class Event {
   public enum EventSubType {
     UDPCONNECTION(EventType.CONNECTION),
     TCPCONNECTION(EventType.CONNECTION),
-    TLSCONNECTION(EventType.CONNECTION);
+    TLSCONNECTION(EventType.CONNECTION),
+    PIIMASKED(EventType.SIPMESSAGE),
+    PIIUNMASKED(EventType.SIPMESSAGE);
+
     private EventType eventType;
 
     EventSubType(EventType eventType) {
@@ -76,12 +83,13 @@ public class Event {
 
   public static void emitMessageEvent(
       BindingInfo messageBindingInfo,
-      SIPMessage message,
+      Message message,
       DIRECTION direction,
       MESSAGE_TYPE sipMessageType,
       boolean isInternallyGenerated,
       boolean isMidDialog,
-      long dhruvaProcessingDelayInMillis) {
+      long dhruvaProcessingDelayInMillis,
+      DhruvaAppRecord appRecord) {
 
     Map<String, String> messageInfoMap =
         Maps.newHashMap(
@@ -93,8 +101,7 @@ public class Event {
                 Event.REMOTEIP,
                 messageBindingInfo.getRemoteAddressStr()));
 
-
-    if (Event.MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
+    if (MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
       SIPRequest sipRequest = (SIPRequest) message;
       messageInfoMap.put("sipMethod", String.valueOf(sipRequest.getMethod()));
     } else {
@@ -124,12 +131,23 @@ public class Event {
       messageInfoMap.put(
           Event.DHRUVA_PROCESSING_DELAY_IN_MILLIS, String.valueOf(dhruvaProcessingDelayInMillis));
     }
+    if (appRecord != null) {
+      messageInfoMap.put("appRecord", appRecord.toString());
+    }
 
-    logger.emitEvent(
-        EventType.SIPMESSAGE,
-        null,
-        LogUtils.obfuscateObject((SIPMessage) message, false),
-        messageInfoMap);
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.SIPMESSAGE)
+              .eventInfoMap(messageInfoMap)
+              .sipMsgPayload(message)
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
+
     // DSB TODO
     //    SipMessageWrapper sipMsg = new SipMessageWrapper(message, direction);
     //    Consumer<SipMessageWrapper> consumer1 = DiagnosticsUtil::sendCDSEvents;
@@ -147,7 +165,19 @@ public class Event {
                 "network",
                 networkName));
     String msg = "ServerGroup Element UP: " + sge;
-    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
+
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.SERVERGROUP_ELEMENT_EVENT)
+              .eventInfoMap(eventInfoMap)
+              .msgPayload(msg)
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
   }
 
   public static void emitSGEvent(String serverGroupName, boolean isDown) {
@@ -163,7 +193,18 @@ public class Event {
       msg = "ServerGroup UP: " + serverGroupName;
     }
 
-    logger.emitEvent(EventType.SERVERGROUP_EVENT, null, msg, eventInfoMap);
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.SERVERGROUP_EVENT)
+              .eventInfoMap(eventInfoMap)
+              .msgPayload(msg)
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
   }
 
   public static void emitSGElementDownEvent(
@@ -187,30 +228,58 @@ public class Event {
     eventInfoMap.put("transport", sge.getTransport().name());
 
     String msg = "ServerGroup Element DOWN: " + sge.toUniqueElementString() + " : " + sge;
-    logger.emitEvent(EventType.SERVERGROUP_ELEMENT_EVENT, null, msg, eventInfoMap);
+
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.SERVERGROUP_ELEMENT_EVENT)
+              .eventInfoMap(eventInfoMap)
+              .msgPayload(msg)
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
   }
 
   public static void emitConnectionErrorEvent(
       String transport, Map<String, String> additionalKeyValueInfo, Exception ex) {
 
-    logger.emitEvent(
-        Event.EventType.CONNECTION,
-        LMAUtil.getEventSubTypeFromTransport(transport),
-        Event.ErrorType.ConnectionError,
-        ex.getMessage(),
-        additionalKeyValueInfo,
-        ex);
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.CONNECTION)
+              .eventSubType(LMAUtil.getEventSubTypeFromTransport(transport))
+              .eventInfoMap(additionalKeyValueInfo)
+              .errorType(ErrorType.ConnectionError)
+              .throwable(ex)
+              .msgPayload(ex.getMessage())
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
   }
 
   public static void emitHandshakeFailureEvent(
       String transport, Map<String, String> additionalKeyValueInfo, Exception ex) {
 
-    logger.emitEvent(
-        Event.EventType.CONNECTION,
-        LMAUtil.getEventSubTypeFromTransport(transport),
-        Event.ErrorType.SslHandShakeFailed,
-        ex.getMessage(),
-        additionalKeyValueInfo,
-        ex);
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.CONNECTION)
+              .eventSubType(LMAUtil.getEventSubTypeFromTransport(transport))
+              .eventInfoMap(additionalKeyValueInfo)
+              .errorType(ErrorType.SslHandShakeFailed)
+              .throwable(ex)
+              .msgPayload(ex.getMessage())
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
   }
 }

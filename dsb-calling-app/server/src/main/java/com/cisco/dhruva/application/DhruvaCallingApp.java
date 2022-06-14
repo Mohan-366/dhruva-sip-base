@@ -5,6 +5,7 @@ import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
+import com.cisco.dsb.common.util.log.event.*;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
@@ -23,11 +24,13 @@ public class DhruvaCallingApp {
   private ProxyService proxyService;
   private Filter filter;
   private ProxyAppConfig proxyAppConfig;
+  private EventingService eventingService;
 
   @Autowired
-  DhruvaCallingApp(ProxyService proxyService, Filter filter) {
+  DhruvaCallingApp(ProxyService proxyService, Filter filter, EventingService eventingService) {
     this.proxyService = proxyService;
     this.filter = filter;
+    this.eventingService = eventingService;
     init();
   }
 
@@ -50,6 +53,7 @@ public class DhruvaCallingApp {
             CallTypeEnum.DIAL_IN_B2B,
             CallTypeEnum.DIAL_OUT_WXC,
             CallTypeEnum.DIAL_OUT_B2B);
+
     try {
       filter.register(interestedCallTypes);
     } catch (FilterTreeException e) {
@@ -57,6 +61,11 @@ public class DhruvaCallingApp {
       System.exit(-1);
     }
     proxyService.register(proxyAppConfig);
+
+    // register events
+    ImmutableList<Class<? extends DhruvaEvent>> interestedEvents =
+        ImmutableList.of(LoggingEvent.class);
+    eventingService.register(interestedEvents);
   }
 
   private Consumer<ProxySIPRequest> getRequestConsumer() {

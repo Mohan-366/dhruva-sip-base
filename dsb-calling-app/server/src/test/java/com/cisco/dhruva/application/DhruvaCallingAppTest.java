@@ -8,6 +8,9 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
+import com.cisco.dsb.common.util.log.event.DhruvaEvent;
+import com.cisco.dsb.common.util.log.event.EventingService;
+import com.cisco.dsb.common.util.log.event.LoggingEvent;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -30,6 +33,7 @@ public class DhruvaCallingAppTest {
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock ProxySIPResponse proxySIPResponse;
   @Mock CallType callType;
+  @Mock EventingService eventingService;
   Optional<CallType> optionalCallType;
   ProxyAppConfig proxyAppConfig;
 
@@ -55,11 +59,21 @@ public class DhruvaCallingAppTest {
     ArgumentCaptor<ProxyAppConfig> proxyAppConfig = ArgumentCaptor.forClass(ProxyAppConfig.class);
     ArgumentCaptor<List<CallTypeEnum>> interestedCallTypes = ArgumentCaptor.forClass(List.class);
     InOrder order = inOrder(filter, proxyService);
-    order.verify(filter, Mockito.times(1)).register(interestedCallTypes.capture());
-    order.verify(proxyService, Mockito.times(1)).register(proxyAppConfig.capture());
+    order.verify(filter).register(interestedCallTypes.capture());
+    order.verify(proxyService).register(proxyAppConfig.capture());
     this.proxyAppConfig = proxyAppConfig.getValue();
-    List calltypes_actual = interestedCallTypes.getValue();
+    List<CallTypeEnum> calltypes_actual = interestedCallTypes.getValue();
     Assert.assertEquals(calltypes_actual, calltypes_expected);
+
+    ImmutableList<Class<? extends DhruvaEvent>> interestedEventsExpected =
+        ImmutableList.of(LoggingEvent.class);
+
+    ArgumentCaptor<List<Class<? extends DhruvaEvent>>> interestedEvents =
+        ArgumentCaptor.forClass(List.class);
+    verify(eventingService).register(interestedEvents.capture());
+    List<Class<? extends DhruvaEvent>> interestedEventValues = interestedEvents.getValue();
+
+    Assert.assertEquals(interestedEventValues, interestedEventsExpected);
   }
 
   @Test(

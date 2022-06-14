@@ -1,6 +1,7 @@
 package com.cisco.dsb.proxy.sip;
 
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.SipUtils;
@@ -47,7 +48,6 @@ public class ProxySendMessage {
                 if (serverTransaction != null) serverTransaction.sendResponse(response);
                 else sipProvider.sendResponse(response);
 
-                Transport transportType = LMAUtil.getTransportType(sipProvider);
                 SIPResponse sipResponse = (SIPResponse) response;
                 handleResponseLMA(sipProvider, sipResponse, true, false);
                 logger.info("Successfully sent response for  {}", responseID);
@@ -81,8 +81,6 @@ public class ProxySendMessage {
       logger.info("Successfully sent response for  {}", responseID);
 
       // LMA
-
-      Transport transportType = LMAUtil.getTransportType(sipProvider);
       SIPResponse sipResponse = (SIPResponse) response;
       handleResponseLMA(sipProvider, sipResponse, true, false);
     } catch (Exception e) {
@@ -152,7 +150,7 @@ public class ProxySendMessage {
       else sipProvider.sendRequest(request);
 
       SIPRequest sipRequest = (SIPRequest) request;
-      handleRequestLMA(sipRequest, sipProvider);
+      handleRequestLMA(sipRequest, sipProvider, null);
 
     } catch (Exception e) {
       throw new DhruvaException(e);
@@ -162,7 +160,7 @@ public class ProxySendMessage {
   public static Mono<ProxySIPRequest> sendProxyRequestAsync(
       SipProvider provider, ClientTransaction transaction, ProxySIPRequest proxySIPRequest) {
     SipStack stack = provider.getSipStack();
-    return Mono.<ProxySIPRequest>fromCallable(
+    return Mono.fromCallable(
             () -> {
               Hop hop =
                   stack
@@ -178,11 +176,13 @@ public class ProxySendMessage {
               } else {
                 provider.sendRequest(proxySIPRequest.getRequest());
               }
-              handleRequestLMA(proxySIPRequest.getRequest(), provider);
 
               Utilities.Checks checks = new Utilities.Checks();
               checks.add("proxy send", hop.toString());
               proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_MESSAGE_SENT, checks);
+
+              handleRequestLMA(
+                  proxySIPRequest.getRequest(), provider, proxySIPRequest.getAppRecord());
 
               return proxySIPRequest;
             })
@@ -190,17 +190,19 @@ public class ProxySendMessage {
     // TODO DSB, need to change this to fromExecutorService for metrics.
   }
 
-  public static void handleRequestLMA(SIPRequest request, SipProvider provider) {
+  public static void handleRequestLMA(
+      SIPRequest request, SipProvider provider, DhruvaAppRecord appRecord) {
     Transport transportType = LMAUtil.getTransportType(provider);
 
     LMAUtil.emitSipMessageEvent(
         provider,
-        (SIPRequest) request,
+        request,
         Event.MESSAGE_TYPE.REQUEST,
         Event.DIRECTION.OUT,
         true,
-        SipUtils.isMidDialogRequest((SIPRequest) request),
-        0L);
+        SipUtils.isMidDialogRequest(request),
+        0L,
+        appRecord);
 
     if (metricServiceBean != null) {
       metricServiceBean.sendSipMessageMetric(
@@ -232,20 +234,19 @@ public class ProxySendMessage {
         0L);
 
     Transport transportType = LMAUtil.getTransportType(sipProvider);
-    SIPResponse sipResponse = response;
 
     if (metricServiceBean != null) {
       metricServiceBean.sendSipMessageMetric(
-          String.valueOf(sipResponse.getStatusCode()),
-          sipResponse.getCallId().getCallId(),
-          sipResponse.getCSeq().getMethod(),
+          String.valueOf(response.getStatusCode()),
+          response.getCallId().getCallId(),
+          response.getCSeq().getMethod(),
           Event.MESSAGE_TYPE.RESPONSE,
           transportType,
           Event.DIRECTION.OUT,
           isMidDialog,
           isInternallyGeneratedResponse,
           0L,
-          String.valueOf(sipResponse.getReasonPhrase()));
+          String.valueOf(response.getReasonPhrase()));
     }
   }
 }

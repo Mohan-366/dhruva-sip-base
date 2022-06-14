@@ -280,7 +280,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         .doOnNext(
             n -> {
               if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
-                logger.info("{} received for element: {}. Keeping status as DOWN.", n.getStatusCode() ,element);
+                logger.info(
+                    "{} received for element: {}. Keeping status as DOWN.",
+                    n.getStatusCode(),
+                    element);
               } else {
                 logger.info("Marking status from DOWN to UP for element: {}", element);
                 Event.emitSGElementUpEvent(element, network);
