@@ -34,6 +34,7 @@ import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -300,10 +301,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       Event.emitSGEvent(serverGroupName, false);
     }
     Set<String> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
-    if (sgeHashSet != null) {
+    if (CollectionUtils.isNotEmpty(sgeHashSet)) {
       sgeHashSet.remove(elementKey);
-    }
-    if(!sgeHashSet.isEmpty()) {
       logger.info("Total DOWN Elements for {}: {}", serverGroupName, sgeHashSet);
     }
   }
