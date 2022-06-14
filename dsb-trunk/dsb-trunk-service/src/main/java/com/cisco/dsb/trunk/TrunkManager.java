@@ -168,6 +168,5 @@ public class TrunkManager {
       return Mono.error(ex);
     }
   }
-
   // TODO Akshay - we can expose response handling once best response is received
 }

@@ -16,8 +16,8 @@ import reactor.core.publisher.Mono;
 public class PSTNTrunk extends AbstractTrunk {
 
   @Builder(setterPrefix = "set")
-  public PSTNTrunk(String name, Ingress ingress, Egress egress) {
-    super(name, ingress, egress, null, null, null);
+  public PSTNTrunk(String name, Ingress ingress, Egress egress, boolean enableCircuitBreaker) {
+    super(name, ingress, egress, enableCircuitBreaker);
   }
 
   @Override

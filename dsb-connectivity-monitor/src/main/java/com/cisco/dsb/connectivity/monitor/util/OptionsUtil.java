@@ -1,6 +1,7 @@
 package com.cisco.dsb.connectivity.monitor.util;
 
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
+import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -117,24 +118,31 @@ public class OptionsUtil {
         ServerGroup serverGroupNew = sg.getValue();
         ServerGroup serverGroupOld = oldMap.get(sg.getKey());
         if (serverGroupNew.equals(serverGroupOld)) {
-          if (serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
-            result = true;
+          if (!serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
+            return true;
           } else {
-            for (ServerGroupElement sgeNew : serverGroupNew.getElements()) {
-              result =
-                  (serverGroupOld.getElements().stream()
-                      .allMatch(
-                          sgeOld -> {
-                            if (sgeOld.compareTo(sgeNew) != 0) {
-                              return true;
-                            }
-                            return false;
-                          }));
-              if (result) return true;
+            if (serverGroupNew.getSgType().equals(SGType.STATIC)
+                && serverGroupNew.getElements() != null) {
+              for (ServerGroupElement sgeNew : serverGroupNew.getElements()) {
+                result =
+                    (serverGroupOld.getElements().stream()
+                        .allMatch(
+                            sgeOld -> {
+                              if (sgeOld.compareTo(sgeNew) != 0) {
+                                return true;
+                              }
+                              return false;
+                            }));
+                if (result) {
+                  return true;
+                }
+              }
             }
           }
         }
-        if (result) return true;
+        if (result) {
+          return true;
+        }
       }
       return result;
     }

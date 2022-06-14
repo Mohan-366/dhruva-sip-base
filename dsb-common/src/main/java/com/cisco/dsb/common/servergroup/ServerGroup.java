@@ -121,21 +121,21 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   This is needed in operations such as config refresh.
    */
   public boolean isCompleteObjectEqual(ServerGroup obj) {
-    if (this.equals(obj)) {
-      if (this.compareTo(obj) != 0
-          || !(this.getNetworkName().equals(obj.getNetworkName()))
-          || this.isPingOn() != obj.isPingOn()
-          || ((this.getRoutePolicy() != null || obj.getRoutePolicy() != null)
-              && !this.getRoutePolicy().equals(obj.getRoutePolicy()))
-          || ((this.getOptionsPingPolicy() != null || obj.getOptionsPingPolicy() != null)
-              && !this.getOptionsPingPolicy().equals(obj.getOptionsPingPolicy()))
-          || !this.getLbType().equals(obj.getLbType())
-          || !this.getSgType().equals(obj.getSgType())
-          || !this.getTransport().equals(obj.getTransport())) {
-        return true;
-      } else return false;
+    if (!this.equals(obj) || (this.compareTo(obj) != 0)) {
+      return false;
     }
-    return false;
+
+    if (this.networkName.equals(obj.networkName)
+        && this.pingOn == obj.pingOn
+        && this.transport.equals(obj.transport)
+        && this.lbType.equals(obj.lbType)
+        && this.sgType.equals(obj.sgType)
+        && ((this.routePolicy == null && obj.routePolicy == null)
+            || this.routePolicy.equals(obj.routePolicy))
+        && ((this.optionsPingPolicy == null && obj.optionsPingPolicy == null)
+            || this.optionsPingPolicy.equals(obj.optionsPingPolicy))) {
+      return true;
+    } else return false;
   }
 
   @Override

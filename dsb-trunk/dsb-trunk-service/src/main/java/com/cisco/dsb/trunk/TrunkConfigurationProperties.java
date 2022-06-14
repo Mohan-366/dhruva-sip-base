@@ -1,5 +1,6 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -27,6 +28,7 @@ public class TrunkConfigurationProperties {
   private CommonConfigurationProperties commonConfigurationProperties;
   private DnsServerGroupUtil dnsServerGroupUtil;
   @Getter private OptionsPingController optionsPingController;
+  @Autowired DsbCircuitBreaker dsbCircuitBreaker;
 
   @Autowired
   public void setCommonConfigurationProperties(
@@ -99,6 +101,10 @@ public class TrunkConfigurationProperties {
     trunk.setDnsServerGroupUtil(dnsServerGroupUtil);
     trunk.setOptionsPingController(optionsPingController);
     trunk.setLoadBalancerMetric(this.createSGECounterForLBMetric(trunk.getElements()));
+    if (trunk.isEnableCircuitBreaker()) {
+      trunk.setDsbCircuitBreaker(dsbCircuitBreaker);
+      logger.info("Setting DsbCircuitBreaker for {}", trunk.getName());
+    }
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {

@@ -6,7 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreakerState;
 import com.cisco.dsb.common.config.RoutePolicy;
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dns.DnsException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -17,6 +20,7 @@ import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -44,6 +48,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 public class TrunkTest {
@@ -60,6 +65,8 @@ public class TrunkTest {
   @InjectMocks protected DnsServerGroupUtil dnsServerGroupUtil;
   @Mock protected SipServerLocatorService locatorService;
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
+  @Mock protected CommonConfigurationProperties commonConfigurationProperties;
+  @InjectMocks protected DsbCircuitBreaker dsbCircuitBreaker;
   protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
   MetricService metricService;
@@ -154,7 +161,7 @@ public class TrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk, null);
     antaresTrunk.setLoadBalancerMetric(new ConcurrentHashMap<>());
     ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
     List<Hop> getHops = trunkTestUtil.getHops(2, sg1, false);
@@ -212,7 +219,7 @@ public class TrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk, null);
     List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(3, true);
     sg1.setElements(serverGroupElements);
 
@@ -279,7 +286,7 @@ public class TrunkTest {
             .build();
 
     antaresTrunk.setOptionsPingController(optionsPingController);
-    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk, null);
     List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(3, true);
     sg1.setElements(serverGroupElements);
 
@@ -357,7 +364,7 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .build();
 
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, null);
 
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -435,7 +442,7 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .setElements(trunkTestUtil.getServerGroupElements(2, false))
             .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, null);
 
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -505,7 +512,7 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .setElements(trunkTestUtil.getServerGroupElements(1, false))
             .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, null);
 
     AtomicInteger state = new AtomicInteger(0);
     doAnswer(
@@ -552,7 +559,7 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .build();
     ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk, null);
 
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -621,6 +628,7 @@ public class TrunkTest {
             .setPriority(10)
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
+            .setName("sg1")
             .build();
 
     ServerGroup sg2 =
@@ -631,9 +639,22 @@ public class TrunkTest {
             .setPriority(10)
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
+            .setName("sg2")
             .build();
 
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk);
+    Map<String, ServerGroup> sgMap = new HashMap<>();
+    sgMap.put(sg1.getName(), sg1);
+    sgMap.put(sg2.getName(), sg2);
+    RoutePolicy routePolicy =
+        RoutePolicy.builder()
+            .setName("routePolicy")
+            .setFailoverResponseCodes(Arrays.asList(502, 503))
+            .build();
+    sg1.setRoutePolicyFromConfig(routePolicy);
+    sg2.setRoutePolicyFromConfig(routePolicy);
+
+    when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, null);
 
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -710,7 +731,7 @@ public class TrunkTest {
             .setNetworkName("testNetwork")
             .build();
     ServerGroup sg3 = sg2.toBuilder().setHostName("test3.akg.com").setPriority(20).build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2, sg3), antaresTrunk, null);
     ProxySIPResponse bestResponse = mock(ProxySIPResponse.class);
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -791,7 +812,7 @@ public class TrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Collections.singletonList(sg1), pstnTrunk);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), pstnTrunk, null);
 
     // define proxySIPRequest, locatorService Behavior
     doAnswer(
@@ -846,7 +867,7 @@ public class TrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Collections.singletonList(sg1), callingTrunk);
+    trunkTestUtil.initTrunk(Collections.singletonList(sg1), callingTrunk, null);
 
     // define proxySIPRequest, locatorService Behavior
     doAnswer(
@@ -876,5 +897,117 @@ public class TrunkTest {
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
     verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
+  }
+
+  @Test(
+      description = "Test trunk egress with CB. When none of the endpoints have CB open return 502")
+  public void testCircuitBreaker() throws InterruptedException {
+    AntaresTrunk antaresTrunk = new AntaresTrunk();
+    RoutePolicy routePolicy =
+        RoutePolicy.builder()
+            .setName("sgPolicy")
+            .setFailoverResponseCodes(Arrays.asList(502, 503))
+            .build();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setHostName("test1.akg.com")
+            .setSgType(SGType.A_RECORD)
+            .setPort(5060)
+            .setWeight(100)
+            .setPriority(10)
+            .setRoutePolicy(routePolicy)
+            .setNetworkName("testNetwork")
+            .setName("sg1")
+            .build();
+
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setHostName("test2.akg.com")
+            .setSgType(SGType.SRV)
+            .setWeight(100)
+            .setPriority(5)
+            .setRoutePolicy(routePolicy)
+            .setNetworkName("testNetwork")
+            .setName("sg2")
+            .build();
+
+    Map<String, ServerGroup> sgMap = new HashMap<>();
+    sgMap.put(sg1.getName(), sg1);
+    sgMap.put(sg2.getName(), sg2);
+
+    sg1.setRoutePolicyFromConfig(routePolicy);
+    sg2.setRoutePolicyFromConfig(routePolicy);
+
+    when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, dsbCircuitBreaker);
+
+    AtomicInteger state =
+        new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
+    doAnswer(
+            invocationOnMock -> {
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.SERVICE_UNAVAILABLE);
+              return CompletableFuture.completedFuture(failedProxySIPResponse);
+            })
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+    doAnswer(
+            invocationOnMock -> {
+              DnsDestination dnsDestination = invocationOnMock.getArgument(1);
+              if (dnsDestination.getPort() != 0) {
+                when(locateSIPServersResponse.getDnsException())
+                    .thenReturn(Optional.of(new DnsException("LookupFailed")));
+              } else {
+                when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
+                when(locateSIPServersResponse.getHops())
+                    .thenReturn(
+                        Arrays.asList(
+                            new Hop(
+                                sg2.getHostName(),
+                                "1.1.1.1",
+                                Transport.UDP,
+                                5060,
+                                5,
+                                100,
+                                DNSRecordSource.INJECTED)));
+              }
+              return CompletableFuture.completedFuture(locateSIPServersResponse);
+            })
+        .when(locatorService)
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
+
+    EndPoint endPoint =
+        new EndPoint("testNetwork", "1.1.1.1", 5060, Transport.UDP, "test2.akg.com");
+    doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
+        .when(rUri)
+        .getParameter(SipParamConstants.CALLTYPE);
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(failedProxySIPResponse)
+        .verifyComplete();
+    Thread.sleep(10);
+    Assert.assertEquals(
+        DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(failedProxySIPResponse)
+        .verifyComplete();
+    Thread.sleep(10);
+    Assert.assertEquals(
+        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectError(DhruvaRuntimeException.class)
+        .verify();
+    try {
+      antaresTrunk.processEgress(proxySIPRequest);
+    } catch (DhruvaRuntimeException dre) {
+      Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
+    }
+    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest);
+    response.subscribe(
+        next -> {},
+        err -> {
+          Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left");
+        });
+    Assert.assertEquals(
+        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 }

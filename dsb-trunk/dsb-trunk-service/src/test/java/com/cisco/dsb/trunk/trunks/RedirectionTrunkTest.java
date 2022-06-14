@@ -115,7 +115,7 @@ public class RedirectionTrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk, null);
     // setup location service
     doAnswer(
             invocationOnMock -> {
@@ -212,7 +212,7 @@ public class RedirectionTrunkTest {
             .setRoutePolicy(sgRoutePolicy)
             .setNetworkName("testNetwork")
             .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk, null);
     // setup location service
     doAnswer(
             invocationOnMock -> {
