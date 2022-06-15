@@ -107,6 +107,7 @@ common:
 trunk:
   PSTN:
     CcpFusionUS:
+      enableCircuitBreaker: true
       name: CcpFusionUS
       ingress:
         name: ingress1
@@ -124,6 +125,7 @@ trunk:
             weight: 100
     CcpFusionIN:
       name: CcpFusionIN
+      enableCircuitBreaker: true
       ingress:
         name: ingress1
       egress:
@@ -138,6 +140,7 @@ trunk:
   B2B:
     Antares:
       name: Antares
+      enableCircuitBreaker: true
       ingress:
         name: antares_ig
       egress:

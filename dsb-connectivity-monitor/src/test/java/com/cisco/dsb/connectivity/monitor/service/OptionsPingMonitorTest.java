@@ -699,9 +699,27 @@ public class OptionsPingMonitorTest {
             .setWeight(100)
             .build();
     sg2.setElements(Arrays.asList(sge2, sge4));
+    ServerGroup sg3_1 =
+        ServerGroup.builder()
+            .setName("s3")
+            .setHostName("s3")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroup sg3_2 =
+        ServerGroup.builder()
+            .setName("s3")
+            .setHostName("s3")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .build();
 
-    map1.put("sg1", sg1);
-    map2.put("sg1", sg2);
+    map1.put("s1", sg1);
+    map1.put("s3", sg3_1);
+    map2.put("s1", sg2);
+    map2.put("s3", sg3_2);
     Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setPingOn(true);
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));

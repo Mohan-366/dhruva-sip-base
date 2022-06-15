@@ -1,5 +1,6 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
@@ -62,7 +63,10 @@ public class TrunkTestUtil {
     return sgeList;
   }
 
-  public void initTrunk(List<ServerGroup> serverGroups, AbstractTrunk abstractTrunk) {
+  public void initTrunk(
+      List<ServerGroup> serverGroups,
+      AbstractTrunk abstractTrunk,
+      DsbCircuitBreaker dsbCircuitBreaker) {
     Egress egrees = new Egress();
     Map<String, ServerGroup> serverGroupMap = egrees.getServerGroupMap();
     RoutePolicy rp =
@@ -79,6 +83,7 @@ public class TrunkTestUtil {
             });
     abstractTrunk.setEgress(egrees);
     abstractTrunk.setDnsServerGroupUtil(dnsServerGroupUtil);
+    abstractTrunk.setDsbCircuitBreaker(dsbCircuitBreaker);
   }
 
   public List<Hop> getHops(int count, ServerGroup sg1, boolean srv) {

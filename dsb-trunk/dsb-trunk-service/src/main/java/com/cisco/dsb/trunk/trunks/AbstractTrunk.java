@@ -1,5 +1,8 @@
 package com.cisco.dsb.trunk.trunks;
 
+import com.cisco.dsb.common.circuitbreaker.ConditionalTransformer;
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreakerUtil;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
@@ -30,6 +33,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -39,7 +43,6 @@ import reactor.util.retry.Retry;
 /** Abstract class for all kinds of trunks */
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 @CustomLog
 public abstract class AbstractTrunk implements LoadBalancable {
@@ -50,6 +53,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
   private OptionsPingController optionsPingController;
   private ConcurrentHashMap<String, Long> loadBalancerMetric;
   private static int MAX_ELEMENT_RETRIES = 100;
+  @Getter private boolean enableCircuitBreaker = false;
+  @Setter private DsbCircuitBreaker dsbCircuitBreaker;
 
   public AbstractTrunk(AbstractTrunk abstractTrunk) {
     this.name = abstractTrunk.name;
@@ -58,6 +63,14 @@ public abstract class AbstractTrunk implements LoadBalancable {
     this.dnsServerGroupUtil = abstractTrunk.dnsServerGroupUtil;
     this.optionsPingController = abstractTrunk.optionsPingController;
     this.loadBalancerMetric = abstractTrunk.loadBalancerMetric;
+    this.enableCircuitBreaker = abstractTrunk.enableCircuitBreaker;
+  }
+
+  public AbstractTrunk(String name, Ingress ingress, Egress egress, boolean enableCircuitBreaker) {
+    this.name = name;
+    this.ingress = ingress;
+    this.egress = egress;
+    this.enableCircuitBreaker = enableCircuitBreaker;
   }
 
   static MetricService getMetricService() {
@@ -109,11 +122,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
     if (((SipUri) proxySIPRequest.getRequest().getRequestURI())
         .hasParameter(SipParamConstants.TEST_CALL)) userId = SipParamConstants.INJECTED_DNS_UUID;
     String finalUserId = userId;
+
     return Mono.defer(() -> getEndPoint(cookie, finalUserId))
         .doOnNext(endPoint -> doPostRouteNorm(cookie))
         .flatMap(
-            endPoint ->
-                Mono.defer(() -> Mono.fromFuture(cookie.getClonedRequest().proxy(endPoint))))
+            endPoint -> {
+              return sendToProxy(cookie, endPoint);
+            })
         .<ProxySIPResponse>handle(
             (proxySIPResponse, sink) -> {
               // process Response, based on that send error signal to induce retry
@@ -143,6 +158,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 sink.next(cookie.getBestResponse());
               }
             })
+        .onErrorMap(err -> (DsbCircuitBreakerUtil.isCircuitBreakerException(err)), (err) -> {
+          DhruvaRuntimeException dre = new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT,
+              "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(), err);
+          return dre;
+        })
         // retry only it matches TRUNK_RETRY ERROR CODE
         .retryWhen(this.retryTrunkOnException)
         .onErrorResume(
@@ -439,9 +459,9 @@ public abstract class AbstractTrunk implements LoadBalancable {
           .filter(
               (err) ->
                   err instanceof DhruvaRuntimeException
-                      && ((DhruvaRuntimeException) err)
-                          .getErrCode()
-                          .equals(ErrorCode.TRUNK_RETRY_NEXT));
+                          && ((DhruvaRuntimeException) err)
+                              .getErrCode()
+                              .equals(ErrorCode.TRUNK_RETRY_NEXT));
 
   @Override
   public String toString() {
@@ -471,5 +491,25 @@ public abstract class AbstractTrunk implements LoadBalancable {
     private void init() {
       this.sgLoadBalancer = LoadBalancer.of(abstractTrunk);
     }
+  }
+
+  /*
+   * returns the predicate required in CircuitBreaker to distinguish
+   * success and failure responses
+   */
+  private Predicate getCircuitBreakerRecordResult(TrunkCookie cookie) {
+    return response -> {
+      return response instanceof ProxySIPResponse
+          && ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
+              .getRoutePolicy()
+              .getFailoverResponseCodes()
+              .contains(((ProxySIPResponse) response).getStatusCode());
+    };
+  }
+
+  private Mono<ProxySIPResponse> sendToProxy(TrunkCookie cookie, EndPoint endPoint) {
+    Predicate<Object> cbRecordResult = getCircuitBreakerRecordResult(cookie);
+    return Mono.defer(() -> Mono.fromFuture(cookie.getClonedRequest().proxy(endPoint)))
+        .transformDeferred(ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult));
   }
 }

@@ -24,7 +24,7 @@ public enum ErrorCode {
   APP_REQ_PROC(500, Action.SEND_ERR_RESPONSE),
   NOT_FOUND(404, Action.SEND_ERR_RESPONSE),
   TRUNK_RETRY_NEXT(0),
-  TRUNK_NO_RETRY(500, Action.SEND_ERR_RESPONSE),
+  TRUNK_NO_RETRY(502, Action.SEND_ERR_RESPONSE),
   INIT(0);
 
   @Getter private final int responseCode;
