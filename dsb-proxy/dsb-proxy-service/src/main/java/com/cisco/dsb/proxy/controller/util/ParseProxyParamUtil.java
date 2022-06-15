@@ -28,7 +28,7 @@ public class ParseProxyParamUtil {
   public static Map<String, String> getParsedProxyParams(
       ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter)
       throws DhruvaException {
-    logger.info("Parsing proxy parameter for type: " + type);
+    logger.info("Parsing proxy parameter for type: {}", type);
     SIPRequest request = proxySIPRequest.getRequest();
     String userPortion = null;
     HeaderAddress header = null;
@@ -56,7 +56,7 @@ public class ParseProxyParamUtil {
       default:
         break;
     }
-    logger.info("Got user portion post parsing proxy param as: " + userPortion);
+    logger.info("Got user portion post parsing proxy param as: {}", userPortion);
     if (userPortion == null) {
       return null;
     }

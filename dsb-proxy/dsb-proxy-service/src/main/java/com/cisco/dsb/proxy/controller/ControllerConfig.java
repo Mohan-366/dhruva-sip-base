@@ -140,8 +140,8 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
     // currentConfig.listenHash.put(newInterface, new Integer(index));
     logger.debug(
-        "addListenInterface() - New list of interfaces we are listening on is: "
-            + listenIf.keySet());
+        "addListenInterface() - New list of interfaces we are listening on is: {}",
+        listenIf.keySet());
   }
 
   public ArrayList<ListenIf> getListenPorts() {
@@ -191,7 +191,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
     recordRoutesMap.put(direction.getName(), recordRouteHeader);
 
-    logger.info("Setting record route(" + recordRouteHeader + ") on network: " + direction);
+    logger.debug("Setting record route( {} ) on network: {}", recordRouteHeader, direction);
   }
 
   // Always return stateful
@@ -506,7 +506,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
                           .orElse(null);
 
                   if (bInfo != null) {
-                    logger.info("found matching host after dns resolution", host);
+                    logger.info("found matching host {} after dns resolution", host);
                     synchronousSink.next(true);
                   }
                 }
@@ -586,7 +586,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
             currentRRURL.getTransportParam());
 
     if (name != null) {
-      logger.debug("Record Route URL to be modified : " + currentRRURL);
+      logger.debug("Record Route URL to be modified : {}", currentRRURL);
       String user = currentRRURL.getUser();
       StringTokenizer st = new StringTokenizer(user, ReConstants.DELIMITER_STR);
       String t = st.nextToken();
@@ -634,7 +634,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       } else {
         currentRRURL.removeParameter("transport");
       }
-      logger.debug("Modified Record route URL to : " + currentRRURL);
+      logger.debug("Modified Record route URL to : {}", currentRRURL);
     }
   }
 }

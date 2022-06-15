@@ -88,7 +88,8 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
       throw new RuntimeException("proxy interface not set, unable to forward the request");
     }
     logger.error(
-        "dhruva message record {}",
+        "reject with response code {} ,dhruva message record {}",
+        responseCode,
         this.getAppRecord() == null ? "None" : this.getAppRecord().toString());
     if (!this.getRequest().getMethod().equals(Request.ACK)) {
       this.proxyInterface.respond(responseCode, this);

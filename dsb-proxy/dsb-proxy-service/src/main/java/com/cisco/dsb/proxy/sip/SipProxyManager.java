@@ -98,7 +98,7 @@ public class SipProxyManager {
             throw new DhruvaRuntimeException(ErrorCode.TRANSACTION_ERROR, ex.getMessage(), ex);
         }
       }
-      logger.info("Server transaction: {}", serverTransaction);
+      logger.info("Server transaction created");
 
       sendProvisionalResponse().apply(request, serverTransaction, sipProvider);
 
@@ -114,7 +114,7 @@ public class SipProxyManager {
           logger.debug("Sending provisional 100 response for {}", request.getMethod());
           ProxySendMessage.sendResponse(
               Response.TRYING, sipProvider, serverTransaction, (SIPRequest) request);
-          logger.info("Successfully sent 100 provisional response for {}", request.getMethod());
+          logger.info("Successfully sent 100 provisional response for INVITE");
         } catch (Exception e) {
           logger.error("Error sending provisional 100 response", e);
         }
@@ -146,7 +146,7 @@ public class SipProxyManager {
 
       if (serverTransaction != null && requestType.equals(Request.ACK)) {
         // for 4xx-ACK -> jain gives us this (one that matches the INVITE)
-        logger.info("Server transaction exists for ACK: {}", serverTransaction);
+        logger.info("Server transaction exists for ACK");
         ProxyTransaction proxyTransaction =
             (ProxyTransaction) serverTransaction.getApplicationData();
 
@@ -154,7 +154,7 @@ public class SipProxyManager {
           // for non2xx-ACK -> since we are using the INVITE's serverTransaction, it already has the
           // proxyTransaction also
           // So, do not create it again and the controller.
-          logger.info("Proxy transaction exists for ACK: {}", proxyTransaction);
+          logger.info("Proxy transaction exists for ACK");
           ProxyController controller = (ProxyController) proxyTransaction.getController();
 
           // behaviours based on method-type
@@ -189,7 +189,8 @@ public class SipProxyManager {
                   proxyAppConfig);
       proxySIPRequest.setProxyInterface(controller);
       logger.info(
-          "New ProxyController created for request {}", proxySIPRequest.getRequest().getMethod());
+          "New ProxyController created for request method {}",
+          proxySIPRequest.getRequest().getMethod());
       return controller;
     };
   }

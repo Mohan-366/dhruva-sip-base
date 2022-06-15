@@ -114,4 +114,9 @@ public class DhruvaNetwork implements Cloneable {
   public static void clearSipProviderMap() {
     networkToProviderMap.clear();
   }
+
+  @Override
+  public String toString() {
+    return "DhruvaNetwork{" + "sipListenPoint=" + sipListenPoint + '}';
+  }
 }

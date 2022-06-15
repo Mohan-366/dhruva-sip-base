@@ -88,14 +88,14 @@ public class SipServer implements Server {
         serverStartFuture.complete(sipStack);
         break;
       } catch (Exception e) {
-        logger.error("Unable to start listenPoint", e);
+        logger.warn("Unable to start listenPoint", e);
         if (retryCount == 0 || !(e.getCause() instanceof IOException)) {
           serverStartFuture.completeExceptionally(e);
           break;
         }
         retryCount--;
         logger.info(
-            "Retrying to bind on {}:{} after {}seconds." + "Retries left:{}",
+            "Retrying to bind on {}:{} after {} seconds. Retries left:{}",
             address.getHostAddress(),
             port,
             retryDelay,
