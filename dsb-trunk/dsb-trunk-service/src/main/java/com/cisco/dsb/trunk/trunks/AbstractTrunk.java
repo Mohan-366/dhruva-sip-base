@@ -116,6 +116,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   protected abstract boolean enableRedirection();
 
+  protected abstract void applyEgressNorm(ProxySIPRequest proxySIPRequest);
+
   protected Mono<ProxySIPResponse> sendToProxy(ProxySIPRequest proxySIPRequest) {
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest);
     String userId = null;
@@ -158,11 +160,16 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 sink.next(cookie.getBestResponse());
               }
             })
-        .onErrorMap(err -> (DsbCircuitBreakerUtil.isCircuitBreakerException(err)), (err) -> {
-          DhruvaRuntimeException dre = new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT,
-              "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(), err);
-          return dre;
-        })
+        .onErrorMap(
+            err -> (DsbCircuitBreakerUtil.isCircuitBreakerException(err)),
+            (err) -> {
+              DhruvaRuntimeException dre =
+                  new DhruvaRuntimeException(
+                      ErrorCode.TRUNK_RETRY_NEXT,
+                      "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(),
+                      err);
+              return dre;
+            })
         // retry only it matches TRUNK_RETRY ERROR CODE
         .retryWhen(this.retryTrunkOnException)
         .onErrorResume(
@@ -459,9 +466,9 @@ public abstract class AbstractTrunk implements LoadBalancable {
           .filter(
               (err) ->
                   err instanceof DhruvaRuntimeException
-                          && ((DhruvaRuntimeException) err)
-                              .getErrCode()
-                              .equals(ErrorCode.TRUNK_RETRY_NEXT));
+                      && ((DhruvaRuntimeException) err)
+                          .getErrCode()
+                          .equals(ErrorCode.TRUNK_RETRY_NEXT));
 
   @Override
   public String toString() {

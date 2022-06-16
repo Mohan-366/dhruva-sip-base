@@ -21,6 +21,7 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.dto.Hop;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -31,6 +32,7 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.TrunkTestUtil;
+import com.cisco.dsb.trunk.util.RequestHelper;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -41,6 +43,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.sip.address.SipURI;
+import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
 import org.mockito.*;
 import org.springframework.context.ApplicationContext;
@@ -69,6 +73,7 @@ public class TrunkTest {
   @InjectMocks protected DsbCircuitBreaker dsbCircuitBreaker;
   protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
+  protected ToHeader toHeader;
   MetricService metricService;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
@@ -84,6 +89,11 @@ public class TrunkTest {
             .setFailoverResponseCodes(Arrays.asList(500, 501, 502, 503))
             .build();
     trunkTestUtil = new TrunkTestUtil(dnsServerGroupUtil);
+    try {
+      toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    } catch (ParseException ex) {
+      ex.printStackTrace();
+    }
   }
 
   @BeforeMethod
@@ -109,6 +119,7 @@ public class TrunkTest {
     when(clonedPSR.getRequest()).thenReturn(clonedRequest);
     when(clonedRequest.getRequestURI()).thenReturn(clonedUri);
     when(clonedPSR.getAppRecord()).thenReturn(new DhruvaAppRecord());
+    when(request.getToHeader()).thenReturn(toHeader);
     doNothing()
         .when(proxySIPRequest)
         .handleProxyEvent(any(MetricService.class), any(SipMetricsContext.State.class));
@@ -1009,5 +1020,40 @@ public class TrunkTest {
         });
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+  }
+
+  @Test(
+      description =
+          "test all the normalization policies applied in processEgress function of PSTN trunk, primarily DialOut")
+  public void testEgressNormPSTN() throws ParseException {
+    PSTNTrunk pstnTrunk = new PSTNTrunk();
+    SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
+    ProxySIPRequest pRequest = mock(ProxySIPRequest.class);
+    when(pRequest.getRequest()).thenReturn(request);
+    SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@webex.com;dtg=\"CcpFusionUS\"");
+    request.setRequestURI(sipUri);
+    SipURI sipToURI = (SipURI) toHeader.getAddress().getURI();
+    sipToURI.setParameter("dtg", "CcpFusionUS");
+
+    pstnTrunk.applyEgressNorm(pRequest);
+    SipURI testURI = (SipURI) pRequest.getRequest().getToHeader().getAddress().getURI();
+    Assert.assertNull(testURI.getParameter("dtg"));
+    SipUri sUri = (SipUri) pRequest.getRequest().getRequestURI();
+    Assert.assertNull(sUri.getParameter("dtg"));
+  }
+
+  @Test(
+      description =
+          "test negative scenario wherein there no dtg param.There should not be any exception")
+  public void testEgressNormPSTNNegativeCase() throws ParseException {
+    PSTNTrunk pstnTrunk = new PSTNTrunk();
+    SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
+    ProxySIPRequest pRequest = mock(ProxySIPRequest.class);
+    when(pRequest.getRequest()).thenReturn(request);
+    SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@webex.com");
+    request.setRequestURI(sipUri);
+    pstnTrunk.applyEgressNorm(pRequest);
+    SipURI testURI = (SipURI) pRequest.getRequest().getToHeader().getAddress().getURI();
+    Assert.assertNull(testURI.getParameter("dtg"));
   }
 }

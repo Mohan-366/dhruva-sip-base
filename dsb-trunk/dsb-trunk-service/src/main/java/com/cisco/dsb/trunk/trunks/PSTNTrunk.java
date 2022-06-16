@@ -34,11 +34,7 @@ public class PSTNTrunk extends AbstractTrunk {
 
   @Override
   public Mono<ProxySIPResponse> processEgress(ProxySIPRequest proxySIPRequest) {
-    // apply pre Route normalisation specific to PSTN Trunk- None as of now
-    // remove DTG params
-    SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
-    rUri.removeParameter(SipParamConstants.DTG);
-
+    applyEgressNorm(proxySIPRequest);
     return sendToProxy(proxySIPRequest);
   }
 
@@ -58,5 +54,18 @@ public class PSTNTrunk extends AbstractTrunk {
   @Override
   protected boolean enableRedirection() {
     return false;
+  }
+
+  @Override
+  protected void applyEgressNorm(ProxySIPRequest proxySIPRequest) {
+    // apply pre Route normalisation specific to PSTN Trunk- None as of now
+    // remove DTG params
+    SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
+    rUri.removeParameter(SipParamConstants.DTG);
+    // Remove dtg parameter in To header.We should not leak internal routing details.
+    // Calling Dial out header format To:
+    // <sip:+18776684488@10.252.103.171:5060;user=phone;dtg=DhruBwFxSIUS>
+    SipUri sipURI = (SipUri) proxySIPRequest.getRequest().getToHeader().getAddress().getURI();
+    sipURI.removeParameter(SipParamConstants.DTG);
   }
 }
