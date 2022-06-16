@@ -152,7 +152,7 @@ public class CommonConfigurationProperties {
   }
 
   public void setRoutePolicy(Map<String, RoutePolicy> routePolicyMap) {
-    logger.info("Configuring ServerGroups");
+    logger.info("Configuring ServerGroups route policy");
     this.serverGroups
         .values()
         .forEach(
@@ -167,7 +167,7 @@ public class CommonConfigurationProperties {
   }
 
   public void setOptionsPingPolicy(Map<String, OptionsPingPolicy> optionsPingPolicyMap) {
-    logger.info("Configuring ServerGroups");
+    logger.info("Configuring ServerGroups OptionsPingPolicy");
     this.serverGroups
         .values()
         .forEach(

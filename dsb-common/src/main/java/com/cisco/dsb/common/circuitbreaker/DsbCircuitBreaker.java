@@ -74,6 +74,6 @@ public class DsbCircuitBreaker implements RemovalListener {
 
   @Override
   public void onRemoval(RemovalNotification removalNotification) {
-    logger.info("RemovalNotifcation: {}", removalNotification.toString());
+    logger.debug("RemovalNotifcation: {}", removalNotification.toString());
   }
 }
