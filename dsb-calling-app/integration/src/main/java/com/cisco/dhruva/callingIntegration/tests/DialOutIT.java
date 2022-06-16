@@ -1,11 +1,11 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
-import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
-import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
+import static org.cafesip.sipunit.SipAssert.*;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 
 import com.cisco.dhruva.callingIntegration.util.Token;
+import gov.nist.javax.sip.address.SipUri;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.EventObject;
@@ -232,6 +232,11 @@ public class DialOutIT extends DhruvaIT {
         antaresHeaderFactory.createFromHeader(antares.getAddress(), antares.generateNewTag());
     Address toAddress =
         antaresAddrFactory.createAddress(antaresAddrFactory.createURI(pstnContactAddr));
+
+    // Calling Dial out header format To:
+    // <sip:+18776684488@10.252.103.171:5060;user=phone;dtg=DhruBwFxSIUS>
+    SipUri sipURI = (SipUri) toAddress.getURI();
+    sipURI.setParameter("dtg", "CcpFusionUS");
     ToHeader to_header = antaresHeaderFactory.createToHeader(toAddress, null);
     MaxForwardsHeader max_forwards = antaresHeaderFactory.createMaxForwardsHeader(5);
     List<ViaHeader> via_headers = antares.getViaHeaders();
@@ -284,6 +289,13 @@ public class DialOutIT extends DhruvaIT {
         pstnRcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetSpPort + ";transport=udp;lr>");
+    // To: <sip:pstn-it-guest@127.0.0.1;dtg=CcpFusionUS;user=phone>
+    // dtg param in To header must not be there
+    ToHeader toTest = (ToHeader) pstnRcvdInv.getMessage().getHeader(ToHeader.NAME);
+    assertEquals(
+        "To header assertion failed",
+        "<sip:pstn-it-guest@127.0.0.1>",
+        toTest.getAddress().toString());
 
     // antares will receive 100 from Dhruva
     EventObject responseEvent = antares.waitResponse(antaresTrans, timeout);

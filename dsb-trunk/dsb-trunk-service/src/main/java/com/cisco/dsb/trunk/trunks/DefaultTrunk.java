@@ -24,4 +24,7 @@ public class DefaultTrunk extends AbstractTrunk {
   protected boolean enableRedirection() {
     return true;
   }
+
+  @Override
+  protected void applyEgressNorm(ProxySIPRequest proxySIPRequest) {}
 }

@@ -30,23 +30,12 @@ public class AntaresTrunk extends B2BTrunk {
 
   @Override
   public Mono<ProxySIPResponse> processEgress(ProxySIPRequest proxySIPRequest) {
-    // apply normalisation specific to Trunk
-    SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
-    try {
-      if (Objects.equals(
-          rUri.getParameter(SipParamConstants.CALLTYPE), SipParamConstants.DIAL_OUT_TAG)) {
-        rUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
-        rUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
-      } else {
-        rUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
-        rUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
-      }
-    } catch (ParseException e) {
-      return Mono.error(
-          new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Unable to add OPN/DPN params", e));
-    }
     // apply normalisation specific to Egress
-
+    try {
+      applyEgressNorm(proxySIPRequest);
+    } catch (DhruvaRuntimeException ex) {
+      return Mono.error(ex);
+    }
     return sendToProxy(proxySIPRequest);
   }
 
@@ -81,5 +70,22 @@ public class AntaresTrunk extends B2BTrunk {
       rUri.removeParameter(SipParamConstants.CALLTYPE);
       return rUri;
     };
+  }
+
+  protected void applyEgressNorm(ProxySIPRequest proxySIPRequest) {
+    // apply normalisation specific to Trunk
+    SipUri rUri = (SipUri) proxySIPRequest.getRequest().getRequestURI();
+    try {
+      if (Objects.equals(
+          rUri.getParameter(SipParamConstants.CALLTYPE), SipParamConstants.DIAL_OUT_TAG)) {
+        rUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT);
+        rUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
+      } else {
+        rUri.setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
+        rUri.setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
+      }
+    } catch (ParseException e) {
+      throw new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Unable to add OPN/DPN params", e);
+    }
   }
 }

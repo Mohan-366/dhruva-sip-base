@@ -8,6 +8,7 @@ import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sip.InvalidArgumentException;
+import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -51,6 +53,7 @@ public class RedirectionTrunkTest {
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
   protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
+  protected ToHeader toHeader;
 
   @BeforeTest
   public void init() {
@@ -61,6 +64,12 @@ public class RedirectionTrunkTest {
             .setFailoverResponseCodes(Arrays.asList(500, 502, 503))
             .build();
     trunkTestUtil = new TrunkTestUtil(dnsServerGroupUtil);
+
+    try {
+      toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    } catch (ParseException ex) {
+      ex.printStackTrace();
+    }
   }
 
   @BeforeMethod
@@ -71,6 +80,7 @@ public class RedirectionTrunkTest {
     when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     when(clonedPSR.getAppRecord()).thenReturn(new DhruvaAppRecord());
     when(request.getRequestURI()).thenReturn(rUri);
+    when(request.getToHeader()).thenReturn(toHeader);
     when(clonedPSR.getRequest()).thenReturn(clonedRequest);
     when(clonedRequest.getRequestURI()).thenReturn(clonedUri);
 

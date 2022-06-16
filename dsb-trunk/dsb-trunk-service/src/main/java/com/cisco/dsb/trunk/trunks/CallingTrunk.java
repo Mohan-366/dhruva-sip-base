@@ -53,4 +53,9 @@ public class CallingTrunk extends AbstractTrunk {
   protected boolean enableRedirection() {
     return true;
   }
+
+  @Override
+  protected void applyEgressNorm(ProxySIPRequest proxySIPRequest) {
+    // No policies to be applied
+  }
 }

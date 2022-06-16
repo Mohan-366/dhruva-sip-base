@@ -116,6 +116,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   protected abstract boolean enableRedirection();
 
+  protected abstract void applyEgressNorm(ProxySIPRequest proxySIPRequest);
+
   protected Mono<ProxySIPResponse> sendToProxy(ProxySIPRequest proxySIPRequest) {
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest);
     String userId = null;
