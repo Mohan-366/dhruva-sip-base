@@ -9,6 +9,7 @@ import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
+import com.cisco.dsb.common.ua.SessionId;
 import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.google.common.collect.ImmutableMap;
@@ -19,10 +20,12 @@ import gov.nist.javax.sip.message.SIPResponse;
 import java.util.*;
 import javax.sip.message.Message;
 import lombok.CustomLog;
+import lombok.Setter;
 
 @CustomLog
 public class Event {
 
+  @Setter
   private static EventingService eventingService =
       SpringApplicationContext.getAppContext() == null
           ? null
@@ -133,6 +136,12 @@ public class Event {
     }
     if (appRecord != null) {
       messageInfoMap.put("appRecord", appRecord.toString());
+    }
+
+    SessionId sessionId = SessionId.extractFromSipEvent(message);
+    if (sessionId != null) {
+      messageInfoMap.put("localSessionId", sessionId.getLocalSessionId());
+      messageInfoMap.put("remoteSessionId", sessionId.getRemoteSessionId());
     }
 
     if (eventingService != null) {

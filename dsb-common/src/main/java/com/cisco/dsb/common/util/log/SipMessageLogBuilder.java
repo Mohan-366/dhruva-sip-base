@@ -1,5 +1,6 @@
 package com.cisco.dsb.common.util.log;
 
+import com.cisco.dsb.common.ua.SessionId;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.util.Formatter;
@@ -99,6 +100,12 @@ public class SipMessageLogBuilder {
 
     formatter.format("transactionId=\"%s\"%n", sipMessage.getTransactionId());
     formatter.format("callId=\"%s\"%n", getCallId(sipMessage));
+
+    SessionId sessionId = SessionId.extractFromSipEvent(sipMessage);
+    if (sessionId != null) {
+      formatter.format("localSessionId=\"%s\"%n", sessionId.getLocalSessionId());
+      formatter.format("remoteSessionId=\"%s\"%n", sessionId.getRemoteSessionId());
+    }
     formatter.format("firstLine=\"%s\"%n", getFirstLine(sipMessage));
     formatter.format("CSeq=\"%s\"%n", getCSeqLine(sipMessage));
     formatter.format(">%n");
