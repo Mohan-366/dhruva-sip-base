@@ -87,8 +87,10 @@ public class DhruvaMetricServiceHealthListner implements ServiceHealthListener {
   public void serviceHealthChanged(ServiceHealth oldHealth, ServiceHealth newHealth) {
     // metricService.sendUpstreamHealthMetric(newHealth);
     logger.info(
-        "Service health listener : Health of service is changed for service: {}",
-        newHealth.getServiceName());
+        "Health of service is changed for service: {} from {} to {}",
+        newHealth.getServiceName(),
+        oldHealth.getServiceState(),
+        newHealth.getServiceState());
     // service health can change if an upstream health service is changed or the main service health
     // is changed, emit metric for both cases
     reportServiceHealth(null, true);

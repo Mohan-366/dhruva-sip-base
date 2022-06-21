@@ -228,7 +228,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             ErrorCode.PROXY_REQ_PROC_ERR, "Unable to add Endpoint as route to request", pe);
       }
       proxySIPRequest.setOutgoingNetwork(network.getName());
-      logger.info("setting outgoing network to ", network.getName());
+      logger.info("setting outgoing network to {}", network.getName());
     } else {
       if (proxySIPRequest.getOutgoingNetwork() == null) {
         logger.warn("Could not find the network to set to the request");
@@ -389,9 +389,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     if (parsedProxyParams != null) {
-      // logger.info("Dhruva " + parsedProxyParams.toString());
       logger.debug(
-          "Dhruva- network name found in proxy param: " + parsedProxyParams.get(ReConstants.N));
+          "Dhruva- network name found in proxy param: {}", parsedProxyParams.get(ReConstants.N));
       if (parsedProxyParams.get(ReConstants.N) != null)
         return DhruvaNetwork.getNetwork(parsedProxyParams.get(ReConstants.N));
     }
@@ -410,8 +409,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     if (parsedProxyParams != null) {
-      logger.info("Dhruva " + parsedProxyParams);
-      logger.info("Dhruva " + parsedProxyParams.get(ReConstants.N));
+      logger.info("Parsed proxy params: {}", parsedProxyParams);
       if (parsedProxyParams.get(ReConstants.N) != null)
         return DhruvaNetwork.getNetwork(parsedProxyParams.get(ReConstants.N));
     }
@@ -546,7 +544,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                       SipURI sipLrFixUri = (SipURI) lrfixUri;
                       if (ProxyUtils.checkSipUriMatches(sipUri, sipLrFixUri)) {
                         logger.debug(
-                            "removing top most route header that matches dhruva addr:", uri);
+                            "removing top most route header that matches dhruva addr:{}", uri);
                         Optional<DhruvaNetwork> optionalDhruvaNetwork = getNetworkFromMyRoute();
                         optionalDhruvaNetwork.ifPresent(
                             dhruvaNetwork ->
@@ -573,7 +571,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                             proxySIPRequest.setLrFixUri(finalUriAsync);
                             request.removeFirst(RouteHeader.NAME);
                             logger.debug(
-                                "removing top most route header that matches dhruva addr:",
+                                "removing top most route header that matches dhruva addr:{}",
                                 finalUriAsync);
                           }
                           sink.next(proxySIPRequest);
@@ -649,7 +647,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             return proxySIPRequest;
           } else {
             try {
-              logger.info(
+              logger.error(
                   "Received REGISTER is not supported by Proxy. Sending 405 error response");
               Response sipResponse =
                   JainSipHelper.getMessageFactory()
@@ -740,7 +738,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             header.setOptionTag(val);
             supportedHeaders.add(header);
           } catch (ParseException e) {
-            e.printStackTrace();
+            logger.error("Unable to set OptionTag to supported header", e);
           }
         });
     supportedHeaders.forEach(response::addHeader);
@@ -755,7 +753,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   SipConstants.Content_Type_Application + "/" + SipConstants.ContentSubType.Sdp);
       response.addHeader(acceptHeader);
     } catch (Exception e) {
-      logger.warn("Exception adding 'Accept' header");
+      logger.error("Exception adding 'Accept' header", e);
     }
   }
   /**
@@ -827,7 +825,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
     if (err instanceof SipException && err.getCause() instanceof IOException)
       errorCode = ErrorCode.DESTINATION_UNREACHABLE;
-    logger.error("Error occurred while forwarding request with message:", err);
+    logger.error("Error occurred while forwarding request", err);
     SIPResponse sipResponse;
     try {
       sipResponse =

@@ -34,6 +34,7 @@ import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -72,7 +73,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected void startMonitoring(Map<String, ServerGroup> map) {
-    logger.info("Starting OPTIONS pings. Map {}", map);
+    logger.debug("Starting OPTIONS pings. Map {}", map);
     for (Entry<String, ServerGroup> entry : map.entrySet()) {
       ServerGroup serverGroup = entry.getValue();
       // Servergroup should have pingOn = true and elements to ping
@@ -300,10 +301,10 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       Event.emitSGEvent(serverGroupName, false);
     }
     Set<String> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
-    if (sgeHashSet != null) {
+    if (CollectionUtils.isNotEmpty(sgeHashSet)) {
       sgeHashSet.remove(elementKey);
+      logger.info("Total DOWN Elements for {}: {}", serverGroupName, sgeHashSet);
     }
-    logger.info("Total DOWN Elements for {}: {}", serverGroupName, sgeHashSet);
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
@@ -349,7 +350,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
               // Refresh OPTIONS pings only when serverGroup config has some changes.
               return key.contains("serverGroups");
             })) {
-      logger.info("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getKeys());
+      logger.info("ServerGroups environment config changed with keys :{}", event.getKeys());
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();
@@ -357,7 +358,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected void disposeExistingFlux() {
-    logger.info("Disposing existing fluxes");
+    logger.debug("Disposing existing fluxes");
     opFlux.forEach(Disposable::dispose);
   }
 

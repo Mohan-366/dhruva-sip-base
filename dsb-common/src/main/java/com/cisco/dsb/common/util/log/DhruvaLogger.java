@@ -217,6 +217,11 @@ public class DhruvaLogger implements Logger {
     return logger.isTraceEnabled();
   }
 
+  @Override
+  public boolean isWarnEnabled() {
+    return logger.isWarnEnabled();
+  }
+
   // Should be removed once we have lambda support in Slf4j
   private Object[] getAllLambda(Supplier<?>[] suppliers) {
     if (suppliers == null) {

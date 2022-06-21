@@ -129,7 +129,7 @@ public class ProxyService {
               sipProvidertoNetworkMap.put(sipProvider, networkConfig.getName());
               DhruvaNetwork.setSipProvider(networkConfig.getName(), sipProvider);
               try {
-                logger.info("Server socket created for {}", sipStack);
+                logger.info("Server socket created for {}", sipListenPoint.getName());
                 controllerConfig.addListenInterface(
                     networkConfig,
                     InetAddress.getByName(sipListenPoint.getHostIPAddress()),
@@ -148,13 +148,15 @@ public class ProxyService {
               } catch (Exception e) {
                 logger.error(
                     "Configuring Listenpoint in DsControllerConfig failed for ListenPoint  "
-                        + sipStack,
+                        + sipListenPoint.getName(),
                     e);
               }
             } else {
               // TODO: should Dhruva exit ? or generate an Alarm
               logger.error(
-                  "Server socket creation failed for {} , error is {} ", sipStack, throwable);
+                  "Server socket creation failed for {} , error is {} ",
+                  sipListenPoint.getName(),
+                  throwable);
             }
           });
 

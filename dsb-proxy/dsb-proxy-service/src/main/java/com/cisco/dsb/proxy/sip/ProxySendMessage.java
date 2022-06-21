@@ -50,7 +50,7 @@ public class ProxySendMessage {
 
                 SIPResponse sipResponse = (SIPResponse) response;
                 handleResponseLMA(sipProvider, sipResponse, true, false);
-                logger.info("Successfully sent response for  {}", responseID);
+                logger.info("Successfully sent async response for  {}", responseID);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }
@@ -170,7 +170,9 @@ public class ProxySendMessage {
                               .getRequest()); // getNext comment has exactly steps to find the
               // dest, first priority is given to route
               logger.info(
-                  "Sending the proxy request to next hop {}:{}", hop.getHost(), hop.getPort());
+                  "Sending the proxy async request to next hop {}:{}",
+                  hop.getHost(),
+                  hop.getPort());
               if (transaction != null) {
                 transaction.sendRequest();
               } else {

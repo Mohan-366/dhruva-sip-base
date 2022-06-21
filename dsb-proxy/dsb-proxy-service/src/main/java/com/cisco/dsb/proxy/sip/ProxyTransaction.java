@@ -190,8 +190,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       throw new InternalProxyErrorException(e.getMessage());
     }
 
-    logger.info("New ProxyTransaction created for request {}", request.getMethod());
-    logger.debug("Leaving init()");
+    logger.debug("Leaving ProxyTransaction init()");
   }
 
   /**
@@ -338,14 +337,12 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       if (statefulClientTransaction) {
         logger.info("Sending request statefully on client side");
         clientTrans = sipProvider.getNewClientTransaction(request);
-        logger.info(
-            "Created a new client transaction for {} : {}", request.getMethod(), clientTrans);
+        logger.info("Created a new client transaction for {}", request.getMethod());
 
         ProxyClientTransaction proxyClientTrans =
             createProxyClientTransaction(clientTrans, cookie, proxySIPRequest);
         proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_CLIENT_CREATED, null);
-        logger.info(
-            "ProxyClientTransaction created for {} is {}", request.getMethod(), proxyClientTrans);
+        logger.info("ProxyClientTransaction created for {}", request.getMethod());
 
         if ((!m_isForked) && (m_originalClientTrans == null)) {
           m_originalProxyClientTrans = proxyClientTrans;
@@ -435,7 +432,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         controller.onResponseSuccess(this, getServerTransaction());
         logger.debug("Response sent");
       } else {
-        logger.info("Didn't send response to stray ACK or CANCEL: " + getStrayStatus());
+        logger.info("Didn't send response to stray ACK or CANCEL: {}", getStrayStatus());
       }
     } catch (DestinationUnreachableException e) {
       controller.onResponseFailure(
@@ -523,7 +520,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     branchDone();
 
     if (clientState == ProxyClientTransaction.STATE_PROV_RECVD) {
-      logger.info("Cancelling ProxyClientTrans");
       try {
         // When this timeOut is invoked by Timer C expiration (which waits for final response),
         // we need to terminate the client transaction.
@@ -532,6 +528,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
         logger.warn("Exception while trying to terminate client tx", e);
       }
       // invoke the cancel method on the transaction
+      logger.info("Cancelling ProxyClientTrans");
       proxyClientTrans.cancel();
     }
 

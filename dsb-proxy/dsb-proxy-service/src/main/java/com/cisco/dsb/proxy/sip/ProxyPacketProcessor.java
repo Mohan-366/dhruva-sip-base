@@ -44,13 +44,13 @@ public class ProxyPacketProcessor implements SipListenerExt {
 
   @Override
   public void processTimeout(TimeoutEvent timeoutEvent) {
-    logger.info("received timeout event from sip stack");
+    logger.error("received timeout event from sip stack");
     proxyEventListener.timeOut(timeoutEvent);
   }
 
   @Override
   public void processIOException(IOExceptionEvent ioExceptionEvent) {
-    logger.info(
+    logger.error(
         "received IO exception event from sip stack for host {} port {} transport {}",
         ioExceptionEvent.getHost(),
         ioExceptionEvent.getPort(),
@@ -59,7 +59,7 @@ public class ProxyPacketProcessor implements SipListenerExt {
         (ioExceptionEvent instanceof IOExceptionEventExt
             && ((IOExceptionEventExt) ioExceptionEvent).getReason() == Reason.KeepAliveTimeout);
     if (keepAliveTimeoutFired) {
-      logger.info(
+      logger.error(
           "KeepAlive Time out reason : {} ", ((IOExceptionEventExt) ioExceptionEvent).getReason());
     }
   }
@@ -72,12 +72,12 @@ public class ProxyPacketProcessor implements SipListenerExt {
 
   @Override
   public void processDialogTerminated(DialogTerminatedEvent dialogTerminatedEvent) {
-    logger.info("received dialog terminated event from sip stack");
+    logger.debug("received dialog terminated event from sip stack");
   }
 
   @Override
   public void processDialogTimeout(DialogTimeoutEvent timeoutEvent) {
-    logger.info("received dialog timeout event from sip stack");
+    logger.debug("received dialog timeout event from sip stack");
   }
 
   public void registerOptionsListener(OptionsPingResponseListener listener) {

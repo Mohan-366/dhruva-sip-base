@@ -95,7 +95,7 @@ public class SipServer implements Server {
         }
         retryCount--;
         logger.info(
-            "Retrying to bind on {}:{} after {}seconds." + "Retries left:{}",
+            "Retrying to bind on {}:{} after {} seconds. Retries left:{}",
             address.getHostAddress(),
             port,
             retryDelay,

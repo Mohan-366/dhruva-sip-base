@@ -148,7 +148,7 @@ public final class TrackingId {
           URLEncoder.encode(canaryOpts.trim(), StandardCharsets.UTF_8.name()),
           TID_PREFIX_SEPARATOR);
     } catch (UnsupportedEncodingException e) {
-      logger.info("Failed encoding canaryOpts=[{}]", canaryOpts);
+      logger.error("Failed encoding canaryOpts=[{}]", canaryOpts, e);
     }
     return null;
   }

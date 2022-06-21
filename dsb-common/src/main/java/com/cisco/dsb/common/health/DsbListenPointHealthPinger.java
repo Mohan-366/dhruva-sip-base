@@ -161,7 +161,7 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
           e.getMessage());
       return false;
     } catch (Exception e) {
-      logger.info("Some other exception during health check has occurred");
+      logger.error("Some other exception during health check has occurred", e);
       return true;
     } finally {
       if (socket != null)

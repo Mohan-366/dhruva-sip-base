@@ -65,16 +65,16 @@ public class DhruvaStackLogger implements StackLogger {
     log(traceLevel, buffer.toString());
   }
 
-  // We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR.
+  // We map JAIN SIP FATAL to ERROR.
   private void log(int traceLevel, String message, Object... parameters) {
     if (traceLevel == TRACE_INFO) {
       logger.info(message, parameters);
     } else if (traceLevel == TRACE_FATAL) {
       logger.error(message, parameters);
     } else if (traceLevel == TRACE_ERROR) {
-      logger.info(message, parameters);
+      logger.error(message, parameters);
     } else if (traceLevel == TRACE_WARN) {
-      logger.info(message, parameters);
+      logger.warn(message, parameters);
     } else if (traceLevel == TRACE_DEBUG) {
       logger.debug(message, parameters);
     } else if (traceLevel == TRACE_TRACE) {
@@ -255,23 +255,23 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   /**
-   * Log an error message. We map JAIN SIP ERROR to WARN.
+   * Log an error message.
    *
    * @param message error message to log.
    */
   @Override
   public void logError(String message) {
-    if (logger.isInfoEnabled()) {
+    if (logger.isErrorEnabled()) {
       String newMsg = this.enhanceMessage(message);
       countLines(newMsg);
-      logger.warn(newMsg);
+      logger.error(newMsg);
     }
   }
 
-  /** Log an error message. We map JAIN SIP ERROR to WARN. */
+  /** Log an error message.*/
   @Override
   public void logError(String message, Exception ex) {
-    if (logger.isInfoEnabled()) {
+    if (logger.isErrorEnabled()) {
       String newMsg = this.enhanceMessage(message);
       countLines(newMsg);
       // "Could not connect" IOExceptions and SSLHandshakeException for certificate validation
@@ -282,17 +282,21 @@ public class DhruvaStackLogger implements StackLogger {
               && ex.getMessage() != null
               && ex.getMessage().startsWith("Could not connect"))
           || ex instanceof SSLHandshakeException) {
-        logger.warn(newMsg + " " + LogUtils.getExceptionChain(ex));
+        logger.error(newMsg + " " + LogUtils.getExceptionChain(ex));
       } else {
-        logger.warn(newMsg, ex);
+        logger.error(newMsg, ex);
       }
     }
   }
 
-  /** Log a warning mesasge. We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR. */
+  /** Log a warning mesasge.*/
   @Override
-  public void logWarning(String string) {
-    logInfo(string);
+  public void logWarning(String message) {
+    if (logger.isWarnEnabled()) {
+      String newMessage = this.enhanceMessage(message);
+      countLines(newMessage);
+      logger.warn(newMessage);
+    }
   }
 
   // Don't log either of:
@@ -319,7 +323,7 @@ public class DhruvaStackLogger implements StackLogger {
   }
 
   /**
-   * Log an error message. We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR.
+   * Log an error message. We map JAIN SIP FATAL to ERROR.
    *
    * @param message error message to log.
    */
@@ -345,7 +349,7 @@ public class DhruvaStackLogger implements StackLogger {
     return isLoggingEnabled() && isLoggingEnabledInternal(logLevel);
   }
 
-  // We map JAIN SIP ERROR and WARN to INFO. We also map FATAL to ERROR.
+  // We map JAIN SIP FATAL to ERROR.
   // TODO DSB
   private boolean isLoggingEnabledInternal(int logLevel) {
     boolean result = false;
@@ -354,9 +358,9 @@ public class DhruvaStackLogger implements StackLogger {
     } else if (logLevel == TRACE_FATAL) {
       result = logger.isErrorEnabled();
     } else if (logLevel == TRACE_ERROR) {
-      result = logger.isInfoEnabled();
+      result = logger.isErrorEnabled();
     } else if (logLevel == TRACE_WARN) {
-      result = logger.isInfoEnabled();
+      result = logger.isWarnEnabled();
     } else if (logLevel == TRACE_DEBUG) {
       result = logger.isDebugEnabled();
     } else if (logLevel == TRACE_TRACE) {
