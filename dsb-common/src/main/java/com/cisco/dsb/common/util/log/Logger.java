@@ -85,4 +85,6 @@ public interface Logger {
   boolean isErrorEnabled();
 
   boolean isTraceEnabled();
+
+  boolean isWarnEnabled();
 }
