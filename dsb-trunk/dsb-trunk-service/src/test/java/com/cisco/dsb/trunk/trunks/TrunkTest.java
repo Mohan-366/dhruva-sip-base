@@ -1022,6 +1022,99 @@ public class TrunkTest {
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 
+  @Test(description = "Test trunk egress with CB. When proxy returns 408 Request Timeout")
+  public void testCircuitBreakerWith408RequestTimeout() throws InterruptedException {
+    AntaresTrunk antaresTrunk = new AntaresTrunk();
+    RoutePolicy routePolicy =
+        RoutePolicy.builder()
+            .setName("sgPolicy")
+            .setFailoverResponseCodes(Arrays.asList(502, 503))
+            .build();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setHostName("test1.akg.com")
+            .setSgType(SGType.A_RECORD)
+            .setPort(5060)
+            .setWeight(100)
+            .setPriority(10)
+            .setRoutePolicy(routePolicy)
+            .setNetworkName("testNetwork")
+            .setName("sg1")
+            .build();
+
+    Map<String, ServerGroup> sgMap = new HashMap<>();
+    sgMap.put(sg1.getName(), sg1);
+    sg1.setRoutePolicyFromConfig(routePolicy);
+
+    when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
+    trunkTestUtil.initTrunk(Arrays.asList(sg1), antaresTrunk, dsbCircuitBreaker);
+
+    AtomicInteger state =
+        new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
+    doAnswer(
+            invocationOnMock -> {
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.REQUEST_TIMEOUT);
+              return CompletableFuture.completedFuture(failedProxySIPResponse);
+            })
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+    doAnswer(
+            invocationOnMock -> {
+              DnsDestination dnsDestination = invocationOnMock.getArgument(1);
+
+              when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
+              when(locateSIPServersResponse.getHops())
+                  .thenReturn(
+                      Arrays.asList(
+                          new Hop(
+                              sg1.getHostName(),
+                              "2.1.1.1",
+                              Transport.UDP,
+                              5060,
+                              5,
+                              100,
+                              DNSRecordSource.INJECTED)));
+              return CompletableFuture.completedFuture(locateSIPServersResponse);
+            })
+        .when(locatorService)
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
+
+    EndPoint endPoint =
+        new EndPoint("testNetwork", "2.1.1.1", 5060, Transport.UDP, "test2.akg.com");
+    doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
+        .when(rUri)
+        .getParameter(SipParamConstants.CALLTYPE);
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(failedProxySIPResponse)
+        .verifyComplete();
+    Thread.sleep(10);
+    Assert.assertEquals(
+        DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectNext(failedProxySIPResponse)
+        .verifyComplete();
+    Thread.sleep(10);
+    Assert.assertEquals(
+        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+        .expectError(DhruvaRuntimeException.class)
+        .verify();
+    try {
+      antaresTrunk.processEgress(proxySIPRequest);
+    } catch (DhruvaRuntimeException dre) {
+      Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
+    }
+    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest);
+    response.subscribe(
+        next -> {},
+        err -> {
+          Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left");
+        });
+    Assert.assertEquals(
+        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+  }
+
   @Test(
       description =
           "test all the normalization policies applied in processEgress function of PSTN trunk, primarily DialOut")
