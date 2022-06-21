@@ -294,7 +294,7 @@ public class DialOutIT extends DhruvaIT {
     ToHeader toTest = (ToHeader) pstnRcvdInv.getMessage().getHeader(ToHeader.NAME);
     assertEquals(
         "To header assertion failed",
-        "<sip:pstn-it-guest@127.0.0.1>",
+        "<sip:pstn-it-guest@" + testHostAddress + ">",
         toTest.getAddress().toString());
 
     // antares will receive 100 from Dhruva
