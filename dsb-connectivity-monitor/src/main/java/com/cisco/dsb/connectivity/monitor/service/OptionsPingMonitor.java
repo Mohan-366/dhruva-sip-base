@@ -350,7 +350,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
               // Refresh OPTIONS pings only when serverGroup config has some changes.
               return key.contains("serverGroups");
             })) {
-      logger.debug("onApplicationEvent: {} invoked on OptionsPingMonitor", event.getKeys());
+      logger.info("ServerGroups environment config changed with keys :{}", event.getKeys());
       RefreshHandle refreshHandle = new RefreshHandle();
       Thread postRefresh = new Thread(refreshHandle);
       postRefresh.start();

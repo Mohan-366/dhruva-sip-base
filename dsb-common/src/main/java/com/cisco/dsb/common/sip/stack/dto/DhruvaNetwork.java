@@ -117,6 +117,6 @@ public class DhruvaNetwork implements Cloneable {
 
   @Override
   public String toString() {
-    return "DhruvaNetwork{" + "sipListenPoint=" + sipListenPoint + '}';
+    return "DhruvaNetwork{" + "sipListenPoint=" + sipListenPoint.getName() + '}';
   }
 }

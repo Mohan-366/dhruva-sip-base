@@ -111,7 +111,7 @@ public class SipProxyManager {
     return (request, serverTransaction, sipProvider) -> {
       if (request.getMethod().equals(Request.INVITE)) {
         try {
-          logger.debug("Sending provisional 100 response for {}", request.getMethod());
+          logger.debug("Sending provisional 100 response for INVITE");
           ProxySendMessage.sendResponse(
               Response.TRYING, sipProvider, serverTransaction, (SIPRequest) request);
           logger.info("Successfully sent 100 provisional response for INVITE");
@@ -254,7 +254,7 @@ public class SipProxyManager {
                 header.setOptionTag(val);
                 unsupportedHeaders.add(header);
               } catch (ParseException e) {
-                e.printStackTrace();
+                logger.error("Unable to set OptionTag to unsupported header", e);
               }
             });
         return unsupportedHeaders;

@@ -150,7 +150,7 @@ public class ProxyClientTransaction {
           //   port, and transport for the CANCEL MUST be identical to those used to
           //   send the original request.
           ClientTransaction cancelTransaction = sipProvider.getNewClientTransaction(cancelRequest);
-          logger.info("Create Client transaction for CANCEL: {}", cancelRequest);
+          logger.info("Client transaction for CANCEL: {}", cancelRequest);
           ProxySendMessage.sendRequest(cancelRequest, cancelTransaction, sipProvider);
           state = STATE_CANCEL_SENT;
         }

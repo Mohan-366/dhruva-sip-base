@@ -109,7 +109,7 @@ public abstract class ProxyResponseGenerator {
     // SIPResponse.getReasonPhrase(statusCode);
     // response.setApp();
 
-    logger.debug("Created " + response.getStatusCode() + " response");
+    logger.debug("Created {} response", response.getStatusCode());
 
     ToHeader toHeader = response.getToHeader();
     if (toHeader.getTag() == null) {

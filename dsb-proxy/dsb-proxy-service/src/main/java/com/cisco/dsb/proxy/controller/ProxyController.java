@@ -738,7 +738,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             header.setOptionTag(val);
             supportedHeaders.add(header);
           } catch (ParseException e) {
-            e.printStackTrace();
+            logger.error("Unable to set OptionTag to supported header", e);
           }
         });
     supportedHeaders.forEach(response::addHeader);
@@ -753,7 +753,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   SipConstants.Content_Type_Application + "/" + SipConstants.ContentSubType.Sdp);
       response.addHeader(acceptHeader);
     } catch (Exception e) {
-      logger.warn("Exception adding 'Accept' header", e);
+      logger.error("Exception adding 'Accept' header", e);
     }
   }
   /**
@@ -825,8 +825,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
     if (err instanceof SipException && err.getCause() instanceof IOException)
       errorCode = ErrorCode.DESTINATION_UNREACHABLE;
-    logger.error(
-        "Error occurred while forwarding request with message: {} ", err.getMessage(), err);
+    logger.error("Error occurred while forwarding request", err);
     SIPResponse sipResponse;
     try {
       sipResponse =
