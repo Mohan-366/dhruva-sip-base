@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import javax.sip.message.Response;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -505,13 +506,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
    * success and failure responses
    */
   private Predicate getCircuitBreakerRecordResult(TrunkCookie cookie) {
-    return response -> {
-      return response instanceof ProxySIPResponse
-          && ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
-              .getRoutePolicy()
-              .getFailoverResponseCodes()
-              .contains(((ProxySIPResponse) response).getStatusCode());
-    };
+    return response ->
+        response instanceof ProxySIPResponse
+            && (((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
+                    .getRoutePolicy()
+                    .getFailoverResponseCodes()
+                    .contains(((ProxySIPResponse) response).getStatusCode())
+                || (((ProxySIPResponse) response).getStatusCode() == Response.REQUEST_TIMEOUT));
   }
 
   private Mono<ProxySIPResponse> sendToProxy(TrunkCookie cookie, EndPoint endPoint) {

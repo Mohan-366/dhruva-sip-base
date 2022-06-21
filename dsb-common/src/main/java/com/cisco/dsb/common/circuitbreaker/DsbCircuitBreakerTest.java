@@ -24,9 +24,11 @@ public class DsbCircuitBreakerTest {
   DsbCircuitBreaker dsbCircuitBreaker = new DsbCircuitBreaker();
   AtomicBoolean successResponse = new AtomicBoolean(false);
   AtomicBoolean exceptionResponse = new AtomicBoolean(false);
+  AtomicBoolean requestTimeoutResponse = new AtomicBoolean(false);
   Proxy proxy;
   Response responseFailure = mock(Response.class);
   Response responseSuccess = mock(Response.class);
+  Response responseTimeOut = mock(Response.class);
   Predicate<Object> cbRecordResult;
   List<Integer> failoverCodes;
 
@@ -42,8 +44,12 @@ public class DsbCircuitBreakerTest {
     proxy = mock(Proxy.class);
     when(responseFailure.getStatusCode()).thenReturn(503);
     when(responseSuccess.getStatusCode()).thenReturn(200);
+    when(responseTimeOut.getStatusCode()).thenReturn(408);
     doAnswer(
             invocationOnMock -> {
+              if (requestTimeoutResponse.get()) {
+                return Mono.just(responseTimeOut);
+              }
               if (exceptionResponse.get()) {
                 return Mono.error(new DhruvaRuntimeException("TimeOut Exception"));
               }
@@ -208,6 +214,57 @@ public class DsbCircuitBreakerTest {
         .verify();
     Thread.sleep(waitDurationInOpenState * 1000);
     exceptionResponse.set(false);
+    successResponse.set(true);
+    StepVerifier.create(
+            Mono.defer(() -> proxy.send(endPoint))
+                .transformDeferred(
+                    ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult)))
+        .expectNext(responseSuccess)
+        .verifyComplete();
+    Assert.assertEquals(
+        dsbCircuitBreaker.getCircuitBreakerState(endPoint).get(), DsbCircuitBreakerState.CLOSED);
+  }
+
+  @Test(
+      description =
+          "DhruvaRunTimeException is returned instead of SIPProxyResponse multiple times. Circuit should open.")
+  public void testCircuitBreakerForTimeOutResponses() throws InterruptedException {
+    EndPoint endPoint = new EndPoint("net_sp", "4.4.4.4", 5060, Transport.UDP, "test.kvishnan.com");
+
+    List<Integer> failoverCodes = Arrays.asList(502, 503);
+    Predicate<Object> cbRecordResult =
+        response -> {
+          return response instanceof Response
+              && (failoverCodes.contains(((Response) response).getStatusCode())
+                  || ((Response) response).getStatusCode() == 408);
+        };
+    int waitDurationInOpenState = 1;
+    dsbCircuitBreaker.setWaitDurationInOpenState(waitDurationInOpenState);
+
+    successResponse.set(true);
+    StepVerifier.create(
+            Mono.defer(() -> proxy.send(endPoint))
+                .transformDeferred(
+                    ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult)))
+        .expectNext(responseSuccess)
+        .verifyComplete();
+    Assert.assertEquals(
+        dsbCircuitBreaker.getCircuitBreakerState(endPoint).get(), DsbCircuitBreakerState.CLOSED);
+    requestTimeoutResponse.set(true);
+    StepVerifier.create(
+            Mono.defer(() -> proxy.send(endPoint))
+                .transformDeferred(
+                    ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult)))
+        .expectNext(responseTimeOut)
+        .verifyComplete();
+    StepVerifier.create(
+            Mono.defer(() -> proxy.send(endPoint))
+                .transformDeferred(
+                    ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult)))
+        .expectError(CallNotPermittedException.class)
+        .verify();
+    Thread.sleep(waitDurationInOpenState * 1000);
+    requestTimeoutResponse.set(false);
     successResponse.set(true);
     StepVerifier.create(
             Mono.defer(() -> proxy.send(endPoint))
