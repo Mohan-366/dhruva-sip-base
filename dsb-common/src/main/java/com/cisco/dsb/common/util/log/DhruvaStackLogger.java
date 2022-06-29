@@ -268,7 +268,7 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /** Log an error message.*/
+  /** Log an error message. */
   @Override
   public void logError(String message, Exception ex) {
     if (logger.isErrorEnabled()) {
@@ -289,7 +289,7 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /** Log a warning mesasge.*/
+  /** Log a warning mesasge. */
   @Override
   public void logWarning(String message) {
     if (logger.isWarnEnabled()) {

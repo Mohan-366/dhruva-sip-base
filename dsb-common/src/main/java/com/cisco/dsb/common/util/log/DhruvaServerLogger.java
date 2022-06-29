@@ -3,7 +3,6 @@ package com.cisco.dsb.common.util.log;
 import com.cisco.dsb.common.sip.util.SipConstants;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import gov.nist.core.LogLevels;
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.message.SIPMessage;
@@ -84,23 +83,23 @@ public class DhruvaServerLogger implements ServerLogger {
     // If sip message has request received header and debug is not enabled, then log only the
     // headers
     // else, log the entire message
-
-    if (hasRequestReceivedHeader(message) && !stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG)) {
-      log(
-          message,
-          new SipMessageLogBuilder().buildHeadersOnly(message, from, to, status, sender, time));
+    String messageToLog;
+    if (hasRequestReceivedHeader(message)) {
+      messageToLog =
+          new SipMessageLogBuilder().buildHeadersOnly(message, from, to, status, sender, time);
     } else {
-      log(
-          message,
-          new SipMessageLogBuilder().buildWithContent(message, from, to, status, sender, time));
+      messageToLog =
+          new SipMessageLogBuilder().buildWithContent(message, from, to, status, sender, time);
     }
+
+    log(message, messageToLog, LogMsgType.getLogMsgType(message, status, sender));
   }
 
   private boolean hasRequestReceivedHeader(SIPMessage message) {
     return message.getHeader("Request-Received") != null;
   }
 
-  protected void log(SIPMessage message, String log) {
+  protected void log(SIPMessage message, String log, LogMsgType logMsgType) {
     String callId = message.getCallId().getCallId();
     long cSeq = message.getCSeq().getSeqNumber();
     ReasonHeader reasonHeader = (ReasonHeader) message.getHeader(ReasonHeader.NAME);
@@ -130,10 +129,7 @@ public class DhruvaServerLogger implements ServerLogger {
         return;
       }
 
-      // Mandating Options msg to be sent only when debug is enabled.
-      if (stackLogger.isLoggingEnabled(LogLevels.TRACE_DEBUG)
-          || message.getCSeq().getMethod().equalsIgnoreCase("OPTIONS")) stackLogger.logDebug(log);
-      else stackLogger.logInfo(log);
+      logMsgType.apply(stackLogger, log);
     }
     TrackingId.setMDC(SipTrackingConstants.SIP_CALL_ID_FIELD, callId);
   }

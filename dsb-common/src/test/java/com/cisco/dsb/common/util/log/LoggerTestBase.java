@@ -29,6 +29,14 @@ public abstract class LoggerTestBase {
         sipMessage,
         "fromAddress",
         "toAddress",
+        null,
+        true,
+        Calendar.getInstance().getTimeInMillis());
+
+    serverLogger.logMessage(
+        sipMessage,
+        "fromAddress",
+        "toAddress",
         "status",
         false,
         Calendar.getInstance().getTimeInMillis());
@@ -37,7 +45,7 @@ public abstract class LoggerTestBase {
 
     if (expectContent || !(serverLogger instanceof DsbHeaderLogger)) {
       if (sipMessage.getCSeq().getMethod().equalsIgnoreCase("OPTIONS"))
-        verify(stackLogger).logDebug(argumentCaptor.capture());
+        verify(stackLogger, times(2)).logDebug(argumentCaptor.capture());
       else {
         verify(stackLogger).logInfo(argumentCaptor.capture());
 
