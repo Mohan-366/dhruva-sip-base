@@ -2,6 +2,7 @@ package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.proxy.ProxyState;
@@ -30,6 +31,8 @@ public interface CallType {
 
   TrunkManager getTrunkManager();
 
+  Normalization getNormalization();
+
   static MetricService getMetricService() {
     return SpringApplicationContext.getAppContext() == null
         ? null
@@ -54,7 +57,7 @@ public interface CallType {
     proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_PROCESS_REQUEST, checks);
     trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress);
     trunkManager
-        .handleEgress(getEgressTrunk(), proxySIPRequest, egress)
+        .handleEgress(getEgressTrunk(), proxySIPRequest, egress, getNormalization())
         .doFinally(
             (signalType) -> {
               // Emit latency metric for non mid-dialog requests

@@ -1,6 +1,7 @@
 package com.cisco.dhruva.calltype;
 
 import com.cisco.dhruva.application.TrunkSampleAppConfigurationProperty;
+import com.cisco.dhruva.normalization.SampleNormalization;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -30,7 +31,8 @@ public class DefaultCallType {
         .handleEgress(
             TrunkType.DEFAULT,
             proxySIPRequest,
-            trunkSampleAppConfigurationProperty.getDefaultEgress())
+            trunkSampleAppConfigurationProperty.getDefaultEgress(),
+            new SampleNormalization())
         .subscribe(
             proxySIPResponse -> {
               logger.debug(

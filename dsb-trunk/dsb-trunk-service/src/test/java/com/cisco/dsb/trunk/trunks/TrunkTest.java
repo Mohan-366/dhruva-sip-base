@@ -1,7 +1,7 @@
 package com.cisco.dsb.trunk.trunks;
 
-import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_DPN;
-import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_OPN;
+// import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_DPN;
+// import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_OPN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -15,6 +15,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
@@ -32,9 +33,13 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.TrunkTestUtil;
-import com.cisco.dsb.trunk.util.RequestHelper;
+import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
+import com.cisco.dsb.trunk.util.NormalizationHelper;
 import com.cisco.dsb.trunk.util.SipParamConstants;
+import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
+import gov.nist.javax.sip.header.HeaderFactoryImpl;
+import gov.nist.javax.sip.header.RequestLine;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
@@ -43,7 +48,13 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.sip.address.SipURI;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.sip.address.Address;
+import javax.sip.header.CSeqHeader;
+import javax.sip.header.FromHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
 import org.mockito.*;
@@ -77,6 +88,7 @@ public class TrunkTest {
   MetricService metricService;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
+  Normalization normalization = new NormalizationHelper();
 
   @BeforeTest
   public void init() {
@@ -150,7 +162,7 @@ public class TrunkTest {
     // dnsServerGroupUtil is not set, which will throw NPE. Since this fails before sending request
     // to proxy,
     // there is no point trying again for next EndPoint, hence error is thrown
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectErrorMatches(
             err ->
                 err instanceof DhruvaRuntimeException
@@ -203,18 +215,15 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
 
     Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
   }
 
   @Test(description = "single static sg")
@@ -266,17 +275,14 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(bestResponse)
         .verifyComplete();
 
     Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
     // verification
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(4)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(3)).setHost(eq(sg1.getHostName()));
     // antaresTrunk.getLoadBalancerMetric().
 
   }
@@ -330,7 +336,7 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(bestResponse)
         .verifyComplete();
     when(optionsPingController.getStatus(sg1)).thenReturn(false);
@@ -339,7 +345,7 @@ public class TrunkTest {
     when(optionsPingController.getStatus(serverGroupElements.get(1))).thenReturn(false);
     when(optionsPingController.getStatus(serverGroupElements.get(2))).thenReturn(false);
     // Verify when SG and all elements are down, we send back 502 response
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectErrorMatches(
             err ->
                 err instanceof DhruvaRuntimeException
@@ -414,17 +420,13 @@ public class TrunkTest {
         .when(locatorService)
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "multiple static sg")
@@ -482,23 +484,19 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(
       description =
           "multiple static sg, but trunk's failover not matching with error response (best error response)")
-  public void testMultipleStaticFail() throws ParseException {
+  public void testMultipleStaticFail() {
 
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
@@ -541,7 +539,9 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer = (cookie, endPoint) -> {};
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
   }
@@ -614,17 +614,15 @@ public class TrunkTest {
         .when(locatorService)
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer = (cookie, endPoint) -> {};
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_IN));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_IN));
     verify(proxySIPRequest, times(3)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg1.getHostName()));
-    verify(clonedUri, atLeast(1)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "DNS lookup failure")
@@ -704,18 +702,29 @@ public class TrunkTest {
         .when(rUri)
         .getParameter(SipParamConstants.CALLTYPE);
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer =
+        (trunkCookie, endPoint) -> {
+          SipUri rUri = ((SipUri) trunkCookie.getClonedRequest().getRequest().getRequestURI());
+          try {
+            rUri.setHost(
+                ((ServerGroup) trunkCookie.getSgLoadBalancer().getCurrentElement()).getHostName());
+          } catch (ParseException e) {
+            throw new DhruvaRuntimeException(
+                ErrorCode.APP_REQ_PROC,
+                "Unable to change Host portion of rUri",
+                e); // should this be Trunk.RETRY??
+          }
+        };
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
 
     // verification
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_OPN), eq(SipParamConstants.OPN_OUT));
-    verify(rUri, times(1)).setParameter(eq(X_CISCO_DPN), eq(SipParamConstants.DPN_OUT));
     verify(proxySIPRequest, atLeast(3)).clone();
     verify(proxySIPRequest, atMost(4)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
     verify(clonedUri, times(0)).setHost(eq(sg1.getHostName()));
-    verify(clonedUri, times(2)).setHost(eq(sg2.getHostName()));
   }
 
   @Test(description = "test overall timeout")
@@ -788,7 +797,9 @@ public class TrunkTest {
         .when(locatorService)
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
-    StepVerifier.withVirtualTime(() -> antaresTrunk.processEgress(proxySIPRequest))
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer = (cookie, endPoint) -> {};
+    StepVerifier.withVirtualTime(() -> antaresTrunk.processEgress(proxySIPRequest, normalization))
         .thenAwait(Duration.ofSeconds(antaresTrunk.getEgress().getOverallResponseTimeout()))
         .expectNext(bestResponse)
         .verifyComplete();
@@ -798,16 +809,6 @@ public class TrunkTest {
   public void testProcessIngressAntares() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     antaresTrunk.processIngress(proxySIPRequest);
-    verify(rUri, times(1)).removeParameter(eq(X_CISCO_OPN));
-    verify(rUri, times(1)).removeParameter(eq(X_CISCO_DPN));
-  }
-
-  @Test
-  public void testProcessIngressPSTN() throws ParseException {
-    PSTNTrunk pstnTrunk = new PSTNTrunk();
-    pstnTrunk.processIngress(proxySIPRequest);
-    Mockito.verify(rUri, Mockito.times(1))
-        .setParameter(eq(SipParamConstants.CALLTYPE), eq(SipParamConstants.DIAL_IN_TAG));
   }
 
   @Test
@@ -846,23 +847,27 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(pstnTrunk.processEgress(proxySIPRequest))
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer =
+        (cookie, endPoint) -> {
+          SipUri rUri = ((SipUri) cookie.getClonedRequest().getRequest().getRequestURI());
+          try {
+            rUri.setHost(
+                ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getHostName());
+          } catch (ParseException e) {
+            throw new DhruvaRuntimeException(
+                ErrorCode.APP_REQ_PROC,
+                "Unable to change Host portion of rUri",
+                e); // should this be Trunk.RETRY??
+          }
+        };
+    StepVerifier.create(pstnTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
-    verify(rUri, times(1)).removeParameter(SipParamConstants.DTG);
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
-  }
-
-  @Test
-  public void testProcessIngressCalling() throws ParseException {
-    CallingTrunk callingTrunk = new CallingTrunk();
-    callingTrunk.processIngress(proxySIPRequest);
-    Mockito.verify(rUri, Mockito.times(1))
-        .setParameter(eq(SipParamConstants.CALLTYPE), eq(SipParamConstants.DIAL_OUT_TAG));
   }
 
   @Test
@@ -899,15 +904,28 @@ public class TrunkTest {
             })
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer =
+        (trunkCookie, endPoint) -> {
+          SipUri rUri = ((SipUri) trunkCookie.getClonedRequest().getRequest().getRequestURI());
+          try {
+            rUri.setHost(
+                ((ServerGroup) trunkCookie.getSgLoadBalancer().getCurrentElement()).getHostName());
+          } catch (ParseException e) {
+            throw new DhruvaRuntimeException(
+                ErrorCode.APP_REQ_PROC,
+                "Unable to change Host portion of rUri",
+                e); // should this be Trunk.RETRY??
+          }
+        };
 
-    StepVerifier.create(callingTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(callingTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     // verification
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(2)).setHost(eq(sg1.getHostName()));
   }
 
   @Test(
@@ -991,28 +1009,28 @@ public class TrunkTest {
     doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
         .when(rUri)
         .getParameter(SipParamConstants.CALLTYPE);
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectError(DhruvaRuntimeException.class)
         .verify();
     try {
-      antaresTrunk.processEgress(proxySIPRequest);
+      antaresTrunk.processEgress(proxySIPRequest, normalization);
     } catch (DhruvaRuntimeException dre) {
       Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
     }
-    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest);
+    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
     response.subscribe(
         next -> {},
         err -> {
@@ -1084,28 +1102,28 @@ public class TrunkTest {
     doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
         .when(rUri)
         .getParameter(SipParamConstants.CALLTYPE);
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
 
-    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest))
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectError(DhruvaRuntimeException.class)
         .verify();
     try {
-      antaresTrunk.processEgress(proxySIPRequest);
+      antaresTrunk.processEgress(proxySIPRequest, normalization);
     } catch (DhruvaRuntimeException dre) {
       Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
     }
-    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest);
+    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
     response.subscribe(
         next -> {},
         err -> {
@@ -1115,38 +1133,57 @@ public class TrunkTest {
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 
-  @Test(
-      description =
-          "test all the normalization policies applied in processEgress function of PSTN trunk, primarily DialOut")
-  public void testEgressNormPSTN() throws ParseException {
-    PSTNTrunk pstnTrunk = new PSTNTrunk();
-    SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
-    ProxySIPRequest pRequest = mock(ProxySIPRequest.class);
-    when(pRequest.getRequest()).thenReturn(request);
-    SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@webex.com;dtg=\"CcpFusionUS\"");
-    request.setRequestURI(sipUri);
-    SipURI sipToURI = (SipURI) toHeader.getAddress().getURI();
-    sipToURI.setParameter("dtg", "CcpFusionUS");
+  @Test
+  public void testExtractIPFromHeader() throws Exception {
+    SIPRequest sipRequest = new SIPRequest();
+    SipUri requestUri = new SipUri();
+    requestUri.setUser("bob");
+    requestUri.setHost("bob@example.com");
+    RequestLine requestLine = new RequestLine();
+    requestLine.setMethod("INVITE");
+    requestLine.setUri(requestUri);
+    requestLine.setSipVersion("SIP/2.0");
+    sipRequest.setRequestLine(requestLine);
 
-    pstnTrunk.applyEgressNorm(pRequest);
-    SipURI testURI = (SipURI) pRequest.getRequest().getToHeader().getAddress().getURI();
-    Assert.assertNull(testURI.getParameter("dtg"));
-    SipUri sUri = (SipUri) pRequest.getRequest().getRequestURI();
-    Assert.assertNull(sUri.getParameter("dtg"));
+    sipRequest.setCallId("1-2-3-4");
+    SipUri toUri = new SipUri();
+    toUri.setUser("bob");
+    toUri.setHost("bob@example.com");
+    Address toAddress = new AddressImpl();
+    toAddress.setURI(toUri);
+    ToHeader toHeader = new HeaderFactoryImpl().createToHeader(toAddress, "totag1234");
+    sipRequest.setTo(toHeader);
+    CSeqHeader cSeqHeader = new HeaderFactoryImpl().createCSeqHeader(1, "INVITE");
+    sipRequest.setCSeq(cSeqHeader);
+
+    SipUri fromUri = new SipUri();
+    fromUri.setUser("alice");
+    fromUri.setHost("alice@example.com");
+    fromUri.setHost("10.10.10.103");
+    Address fromAddress = new AddressImpl();
+    fromAddress.setURI(fromUri);
+    FromHeader fromHeader = new HeaderFactoryImpl().createFromHeader(fromAddress, "fromTag4321");
+    sipRequest.setFrom(fromHeader);
+    String fromHeaderString = sipRequest.getHeader("From").toString();
+    String ipToReplace = getIPToReplace(sipRequest.getHeader("From").toString());
+    String headerValue = fromHeaderString.replaceFirst(ipToReplace, "4.3.2.1");
+    headerValue = headerValue.split("From: ")[1];
+    System.out.println(headerValue);
+    HeaderFactoryImpl headerFactory = new HeaderFactoryImpl();
+    sipRequest.setHeader(headerFactory.createHeader("From", headerValue));
+    System.out.println(sipRequest);
   }
 
-  @Test(
-      description =
-          "test negative scenario wherein there no dtg param.There should not be any exception")
-  public void testEgressNormPSTNNegativeCase() throws ParseException {
-    PSTNTrunk pstnTrunk = new PSTNTrunk();
-    SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
-    ProxySIPRequest pRequest = mock(ProxySIPRequest.class);
-    when(pRequest.getRequest()).thenReturn(request);
-    SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@webex.com");
-    request.setRequestURI(sipUri);
-    pstnTrunk.applyEgressNorm(pRequest);
-    SipURI testURI = (SipURI) pRequest.getRequest().getToHeader().getAddress().getURI();
-    Assert.assertNull(testURI.getParameter("dtg"));
+  private String getIPToReplace(String headerString) {
+    String IPADDRESS_PATTERN =
+        "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
+
+    Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
+    Matcher matcher = pattern.matcher(headerString);
+    if (matcher.find()) {
+      return matcher.group();
+    } else {
+      return "0.0.0.0";
+    }
   }
 }

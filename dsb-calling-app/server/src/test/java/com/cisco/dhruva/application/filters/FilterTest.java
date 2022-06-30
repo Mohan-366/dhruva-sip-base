@@ -69,10 +69,10 @@ public class FilterTest {
     when(applicationContext.getBean(FilterFactory.class)).thenReturn(filterFactory);
 
     CallTypeFactory callTypeFactory = new CallTypeFactory();
-    callTypeFactory.setDialInPSTN(new DialInPSTN(null, null));
-    callTypeFactory.setDialInB2B(new DialInB2B(null, null));
-    callTypeFactory.setDialOutWxC(new DialOutWxC(null, null));
-    callTypeFactory.setDialOutB2B(new DialOutB2B(null, null));
+    callTypeFactory.setDialInPSTN(new DialInPSTN(null, null, null));
+    callTypeFactory.setDialInB2B(new DialInB2B(null, null, null));
+    callTypeFactory.setDialOutWxC(new DialOutWxC(null, null, null));
+    callTypeFactory.setDialOutB2B(new DialOutB2B(null, null, null));
 
     filter = new Filter(callTypeFactory, filterFactory);
     List<CallTypeEnum> interestedCallTypes = new ArrayList<>();

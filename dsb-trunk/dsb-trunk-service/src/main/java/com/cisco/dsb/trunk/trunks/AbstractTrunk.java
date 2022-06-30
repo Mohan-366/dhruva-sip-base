@@ -9,6 +9,7 @@ import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.loadbalancer.LoadBalancer;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -111,15 +112,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   public abstract ProxySIPRequest processIngress(ProxySIPRequest proxySIPRequest);
 
-  public abstract Mono<ProxySIPResponse> processEgress(ProxySIPRequest proxySIPRequest);
-
-  protected abstract void doPostRouteNorm(TrunkCookie cookie);
+  public abstract Mono<ProxySIPResponse> processEgress(
+      ProxySIPRequest proxySIPRequest, Normalization normalization);
 
   protected abstract boolean enableRedirection();
 
-  protected abstract void applyEgressNorm(ProxySIPRequest proxySIPRequest);
-
-  protected Mono<ProxySIPResponse> sendToProxy(ProxySIPRequest proxySIPRequest) {
+  protected Mono<ProxySIPResponse> sendToProxy(
+      ProxySIPRequest proxySIPRequest, Normalization normalization) {
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest);
     String userId = null;
     if (((SipUri) proxySIPRequest.getRequest().getRequestURI())
@@ -127,7 +126,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     String finalUserId = userId;
 
     return Mono.defer(() -> getEndPoint(cookie, finalUserId))
-        .doOnNext(endPoint -> doPostRouteNorm(cookie))
+        .doOnNext(endPoint -> normalization.postNormalize().accept(cookie, endPoint))
         .flatMap(
             endPoint -> {
               return sendToProxy(cookie, endPoint);
@@ -478,7 +477,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   @Getter
   @Setter
-  protected class TrunkCookie {
+  public class TrunkCookie {
     ProxySIPRequest clonedRequest;
     ProxySIPResponse bestResponse;
     LoadBalancer sgeLoadBalancer;

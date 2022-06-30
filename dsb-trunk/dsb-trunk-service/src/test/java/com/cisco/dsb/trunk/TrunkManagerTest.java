@@ -6,18 +6,24 @@ import static org.testng.Assert.*;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.trunks.*;
+import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
+import com.cisco.dsb.trunk.util.NormalizationHelper;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.junit.Assert;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -125,19 +131,23 @@ public class TrunkManagerTest {
 
   @Test(description = "test egress for all types of trunks", dataProvider = "trunkType")
   public void testEgress(TrunkType type, String key, Map<String, AbstractTrunk> trunkMap) {
-
+    Normalization normalization = new NormalizationHelper();
+    Consumer<ProxySIPRequest> requestConsumer = request -> {};
+    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer = (cookie, ep) -> {};
     // Test handle egress for type and key present
     doAnswer(invocationOnMock -> Mono.just(proxySIPResponse))
         .when(trunkMap.get(key))
-        .processEgress(proxySIPRequest);
-    StepVerifier.create(trunkManager.handleEgress(type, proxySIPRequest, key))
+        .processEgress(proxySIPRequest, normalization);
+
+    StepVerifier.create(trunkManager.handleEgress(type, proxySIPRequest, key, normalization))
         .assertNext(
             proxySIPResponse1 -> {
               assertEquals(proxySIPResponse1, proxySIPResponse);
             })
         .verifyComplete();
     // Test, handle egress for Trunk type not found
-    StepVerifier.create(trunkManager.handleEgress(TrunkType.NOT_FOUND, proxySIPRequest, key))
+    StepVerifier.create(
+            trunkManager.handleEgress(TrunkType.NOT_FOUND, proxySIPRequest, key, normalization))
         .expectErrorMatches(
             err ->
                 err instanceof DhruvaRuntimeException
@@ -145,7 +155,8 @@ public class TrunkManagerTest {
         .verify();
 
     // Test, handle egress for PSTN, key not found
-    StepVerifier.create(trunkManager.handleEgress(type, proxySIPRequest, "key_not_present"))
+    StepVerifier.create(
+            trunkManager.handleEgress(type, proxySIPRequest, "key_not_present", normalization))
         .expectErrorMatches(
             err ->
                 err instanceof DhruvaRuntimeException

@@ -24,6 +24,7 @@ public class DsbCircuitBreakerTest {
   DsbCircuitBreaker dsbCircuitBreaker = new DsbCircuitBreaker();
   AtomicBoolean successResponse = new AtomicBoolean(false);
   AtomicBoolean exceptionResponse = new AtomicBoolean(false);
+
   AtomicBoolean requestTimeoutResponse = new AtomicBoolean(false);
   Proxy proxy;
   Response responseFailure = mock(Response.class);

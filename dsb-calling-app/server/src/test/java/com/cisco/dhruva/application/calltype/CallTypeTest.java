@@ -5,8 +5,14 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCNorm;
+import com.cisco.dhruva.util.NormalizationHelper;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -36,6 +42,7 @@ public class CallTypeTest {
   MetricService metricService;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
+  Normalization normalization = new NormalizationHelper();
 
   @BeforeTest
   public void init() {
@@ -57,7 +64,8 @@ public class CallTypeTest {
 
     springApplicationContext.setApplicationContext(context);
     when(context.getBean(MetricService.class)).thenReturn(metricService);
-    when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
+    when(trunkManager.handleEgress(
+            any(TrunkType.class), any(ProxySIPRequest.class), anyString(), any()))
         .thenReturn(Mono.just(proxySIPResponse));
     when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
   }
@@ -65,10 +73,10 @@ public class CallTypeTest {
   @DataProvider
   public Object[] getCallTypes() {
     return new Object[] {
-      new DialInPSTN(trunkManager, configurationProperty),
-      new DialInB2B(trunkManager, configurationProperty),
-      new DialOutWxC(trunkManager, configurationProperty),
-      new DialOutB2B(trunkManager, configurationProperty)
+      new DialInPSTN(trunkManager, configurationProperty, new DialInPSTNNorm()),
+      new DialInB2B(trunkManager, configurationProperty, new DialInB2BNorm()),
+      new DialOutWxC(trunkManager, configurationProperty, new DialOutWXCNorm()),
+      new DialOutB2B(trunkManager, configurationProperty, new DialOutB2BNorm())
     };
   }
 
@@ -88,14 +96,17 @@ public class CallTypeTest {
         .handleIngress(callType.getIngressTrunk(), proxySIPRequest, callType.getIngressKey());
     verify(trunkManager, times(1))
         .handleEgress(
-            callType.getEgressTrunk(), proxySIPRequest, callType.getEgressKey(proxySIPRequest));
+            callType.getEgressTrunk(),
+            proxySIPRequest,
+            callType.getEgressKey(proxySIPRequest),
+            callType.getNormalization());
 
     verify(metricService, times(1)).sendTrunkMetric(callType.getIngressKey(), 0, null);
   }
 
   @Test(description = "dtg null DialOutB2B")
   public void nullDtgTest() throws ParseException {
-    CallType callType = new DialOutB2B(trunkManager, configurationProperty);
+    CallType callType = new DialOutB2B(trunkManager, configurationProperty, new DialOutB2BNorm());
     SIPRequest sipRequest = mock(SIPRequest.class);
     SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@akg.com");
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
@@ -108,10 +119,12 @@ public class CallTypeTest {
 
   @Test(description = "handle egress throws exception")
   public void testHandleEgressException() {
-    CallType callType = new DialInPSTN(trunkManager, configurationProperty);
+    DialInPSTNNorm normalization = new DialInPSTNNorm();
+    CallType callType = new DialInPSTN(trunkManager, configurationProperty, normalization);
     DhruvaRuntimeException dhruvaRuntimeException =
         new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Error while proxying the request");
-    when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
+    when(trunkManager.handleEgress(
+            any(TrunkType.class), any(ProxySIPRequest.class), anyString(), any()))
         .thenReturn(Mono.error(dhruvaRuntimeException));
     callType.processRequest(proxySIPRequest);
     verify(proxySIPRequest, times(1)).reject(dhruvaRuntimeException.getErrCode().getResponseCode());
@@ -121,7 +134,8 @@ public class CallTypeTest {
             callType.getIngressKey(), dhruvaRuntimeException.getErrCode().getResponseCode(), null);
     reset(proxySIPRequest, metricService);
 
-    when(trunkManager.handleEgress(any(TrunkType.class), any(ProxySIPRequest.class), anyString()))
+    when(trunkManager.handleEgress(
+            any(TrunkType.class), any(ProxySIPRequest.class), anyString(), any()))
         .thenReturn(Mono.error(new NullPointerException()));
     when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     callType.processRequest(proxySIPRequest);

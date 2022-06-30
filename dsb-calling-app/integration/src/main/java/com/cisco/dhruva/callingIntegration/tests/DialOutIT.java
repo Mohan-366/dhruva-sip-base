@@ -108,7 +108,9 @@ public class DialOutIT extends DhruvaIT {
     assertEquals(
         "Requri assertion failed",
         "sip:antares-it-guest@"
-            + antaresARecord
+            + testHostAddress
+            + ":"
+            + antaresPort
             + ";x-cisco-test;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
         antaresRcvdInv.getRequestURI());
     assertHeaderContains(
@@ -272,7 +274,7 @@ public class DialOutIT extends DhruvaIT {
     SipRequest pstnRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
         "Requri assertion failed",
-        "sip:pstn-it-guest@UsPoolB;x-cisco-test",
+        "sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolBPort + ";x-cisco-test",
         pstnRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",
@@ -339,7 +341,7 @@ public class DialOutIT extends DhruvaIT {
     pstnRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
         "Requri assertion failed",
-        "sip:pstn-it-guest@UsPoolA;x-cisco-test",
+        "sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolASg1Port + ";x-cisco-test",
         pstnRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",
@@ -395,7 +397,7 @@ public class DialOutIT extends DhruvaIT {
     pstnRcvdInv = new SipRequest(incReq.getRequest());
     assertEquals(
         "Requri assertion failed",
-        "sip:pstn-it-guest@UsPoolA;x-cisco-test",
+        "sip:pstn-it-guest@" + testHostAddress + ":" + pstnUsPoolASg2Port + ";x-cisco-test",
         pstnRcvdInv.getRequestURI());
     assertHeaderContains(
         "Via header assertion failed",

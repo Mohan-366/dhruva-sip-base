@@ -1,0 +1,75 @@
+package com.cisco.dhruva.normalisation.callTypeNormalization;
+
+import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.normalize;
+
+import com.cisco.dsb.common.normalization.Normalization;
+import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
+import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
+import com.cisco.dsb.trunk.util.SipParamConstants;
+import gov.nist.javax.sip.message.SIPRequest;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import lombok.CustomLog;
+import org.springframework.stereotype.Component;
+
+@CustomLog
+@Component
+public class DialInB2BNorm implements Normalization {
+
+  List<String> headersToReplaceWithOwnIP =
+      Arrays.asList(
+          "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion", "From");
+  List<String> headersToReplaceWithRemoteIP = Arrays.asList("To");
+  List<String> headersToRemove = Arrays.asList("Server", "User-Agent");
+  List<String[]> paramsToRemove =
+      Arrays.asList(
+          new String[] {"requestUri", SipParamConstants.X_CISCO_OPN},
+          new String[] {"requestUri", SipParamConstants.X_CISCO_DPN},
+          new String[] {"requestUri", SipParamConstants.CALLTYPE});
+
+  private Consumer<ProxySIPRequest> preNormConsumer =
+      proxySIPRequest -> {
+        logger.debug(
+            "DialInB2BN Pre-normalization triggered for paramsToRemove: {}", paramsToRemove);
+        normalize(proxySIPRequest.getRequest(), paramsToRemove, null);
+      };
+
+  private BiConsumer<TrunkCookie, EndPoint> postNormConsumer =
+      (cookie, endPoint) -> {
+        logger.debug(
+            "DialInB2BN Post-normalization triggered for rUri host change, "
+                + "\nheadersToReplaceWithOwnIP: {}"
+                + "\nheadersToReplaceWithRemoteIP: {}"
+                + "\nheadersToRemove: {}",
+            headersToReplaceWithOwnIP,
+            headersToReplaceWithRemoteIP,
+            headersToRemove);
+        SIPRequest request = cookie.getClonedRequest().getRequest();
+        DhruvaNetwork outgoingNetwork =
+            DhruvaNetwork.getNetwork(
+                    ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getNetworkName())
+                .get();
+        normalize(
+            request,
+            outgoingNetwork,
+            endPoint,
+            headersToReplaceWithOwnIP,
+            headersToReplaceWithRemoteIP,
+            headersToRemove);
+      };
+
+  @Override
+  public Consumer<ProxySIPRequest> preNormalize() {
+    return preNormConsumer;
+  }
+
+  @Override
+  public BiConsumer<TrunkCookie, EndPoint> postNormalize() {
+    return postNormConsumer;
+  }
+}

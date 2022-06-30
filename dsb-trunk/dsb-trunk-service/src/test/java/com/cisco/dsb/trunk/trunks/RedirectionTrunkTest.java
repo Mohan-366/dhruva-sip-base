@@ -15,6 +15,7 @@ import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkTestUtil;
+import com.cisco.dsb.trunk.util.NormalizationHelper;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.ContactList;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -175,17 +176,13 @@ public class RedirectionTrunkTest {
     ProxySIPResponse expectedPSR;
     if (trunk instanceof PSTNTrunk) expectedPSR = redirectPSR;
     else expectedPSR = successProxySIPResponse;
-    StepVerifier.create(trunk.processEgress(proxySIPRequest))
+    StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
         .expectNext(expectedPSR)
         .verifyComplete();
-
-    verify(clonedUri, times(1)).setHost(contains("ns"));
     if (trunk instanceof PSTNTrunk) {
       verify(clonedPSR, times(1)).proxy(any(EndPoint.class));
-      verify(clonedUri, times(0)).setHost(contains("as"));
     } else {
       verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-      verify(clonedUri, times(2)).setHost(contains("as"));
     }
   }
 
@@ -300,12 +297,10 @@ public class RedirectionTrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    StepVerifier.create(trunk.processEgress(proxySIPRequest))
+    StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
     verify(clonedPSR, times(7)).proxy(any(EndPoint.class));
-    verify(clonedUri, times(5)).setHost(contains("as"));
-    verify(clonedUri, times(2)).setHost(contains("ns"));
   }
 }

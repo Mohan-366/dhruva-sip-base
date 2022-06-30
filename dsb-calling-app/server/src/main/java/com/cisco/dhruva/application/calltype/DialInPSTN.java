@@ -1,6 +1,8 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNNorm;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
@@ -14,12 +16,16 @@ public class DialInPSTN implements CallType {
 
   private TrunkManager trunkManager;
   private CallingAppConfigurationProperty configurationProperty;
+  private Normalization normalization;
 
   @Autowired
   public DialInPSTN(
-      TrunkManager trunkManager, CallingAppConfigurationProperty configurationProperty) {
+      TrunkManager trunkManager,
+      CallingAppConfigurationProperty configurationProperty,
+      DialInPSTNNorm dialInPSTNNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
+    this.normalization = dialInPSTNNorm;
   }
 
   @Override
@@ -45,5 +51,10 @@ public class DialInPSTN implements CallType {
   @Override
   public TrunkManager getTrunkManager() {
     return trunkManager;
+  }
+
+  @Override
+  public Normalization getNormalization() {
+    return normalization;
   }
 }

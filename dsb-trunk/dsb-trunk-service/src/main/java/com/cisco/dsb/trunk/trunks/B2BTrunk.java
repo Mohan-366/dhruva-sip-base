@@ -1,5 +1,6 @@
 package com.cisco.dsb.trunk.trunks;
 
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import reactor.core.publisher.Mono;
@@ -19,18 +20,13 @@ public class B2BTrunk extends AbstractTrunk {
   }
 
   @Override
-  public Mono<ProxySIPResponse> processEgress(ProxySIPRequest proxySIPRequest) {
+  public Mono<ProxySIPResponse> processEgress(
+      ProxySIPRequest proxySIPRequest, Normalization normalization) {
     return null;
   }
-
-  @Override
-  protected void doPostRouteNorm(TrunkCookie cookie) {}
 
   @Override
   protected boolean enableRedirection() {
     return true;
   }
-
-  @Override
-  protected void applyEgressNorm(ProxySIPRequest proxySIPRequest) {}
 }

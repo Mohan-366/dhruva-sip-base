@@ -1,6 +1,8 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
@@ -13,12 +15,16 @@ import org.springframework.stereotype.Component;
 public class DialInB2B implements CallType {
   private TrunkManager trunkManager;
   private CallingAppConfigurationProperty configurationProperty;
+  private Normalization normalization;
 
   @Autowired
   public DialInB2B(
-      TrunkManager trunkManager, CallingAppConfigurationProperty configurationProperty) {
+      TrunkManager trunkManager,
+      CallingAppConfigurationProperty configurationProperty,
+      DialInB2BNorm dialInB2BNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
+    this.normalization = dialInB2BNorm;
   }
 
   @Override
@@ -45,5 +51,9 @@ public class DialInB2B implements CallType {
   @Override
   public TrunkManager getTrunkManager() {
     return trunkManager;
+  }
+
+  public Normalization getNormalization() {
+    return normalization;
   }
 }

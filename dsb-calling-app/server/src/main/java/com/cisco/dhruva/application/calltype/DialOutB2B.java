@@ -1,6 +1,8 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BNorm;
+import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
@@ -15,12 +17,16 @@ public class DialOutB2B implements CallType {
   private final CallingAppConfigurationProperty configurationProperty;
   private TrunkManager trunkManager;
   private static final String DTG = "dtg";
+  private Normalization normalization;
 
   @Autowired
   public DialOutB2B(
-      TrunkManager trunkManager, CallingAppConfigurationProperty configurationProperty) {
+      TrunkManager trunkManager,
+      CallingAppConfigurationProperty configurationProperty,
+      DialOutB2BNorm dialOutB2BNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
+    this.normalization = dialOutB2BNorm;
   }
 
   private String getDtg(ProxySIPRequest proxySIPRequest) {
@@ -50,5 +56,10 @@ public class DialOutB2B implements CallType {
   @Override
   public TrunkManager getTrunkManager() {
     return trunkManager;
+  }
+
+  @Override
+  public Normalization getNormalization() {
+    return normalization;
   }
 }
