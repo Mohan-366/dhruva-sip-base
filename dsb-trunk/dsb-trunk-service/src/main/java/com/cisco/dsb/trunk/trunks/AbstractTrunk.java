@@ -517,6 +517,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
   private Mono<ProxySIPResponse> sendToProxy(TrunkCookie cookie, EndPoint endPoint) {
     Predicate<Object> cbRecordResult = getCircuitBreakerRecordResult(cookie);
     return Mono.defer(() -> Mono.fromFuture(cookie.getClonedRequest().proxy(endPoint)))
-        .transformDeferred(ConditionalTransformer.of(dsbCircuitBreaker, endPoint, cbRecordResult));
+        .transformDeferred(
+            ConditionalTransformer.of(
+                dsbCircuitBreaker,
+                endPoint,
+                cbRecordResult,
+                getEgress().getRoutePolicy().getCircuitBreakConfig()));
   }
 }

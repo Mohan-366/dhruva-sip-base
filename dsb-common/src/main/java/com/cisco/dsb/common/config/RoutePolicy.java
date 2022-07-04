@@ -17,6 +17,7 @@ public class RoutePolicy {
   @NotBlank private String name;
   @NotBlank private List<Integer> failoverResponseCodes;
   private int retryResponseCode;
+  @Builder.Default private CircuitBreakConfig circuitBreakConfig = new CircuitBreakConfig();
 
   @Override
   public boolean equals(Object a) {

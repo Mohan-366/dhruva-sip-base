@@ -28,7 +28,7 @@ public class TrunkConfigurationProperties {
   private CommonConfigurationProperties commonConfigurationProperties;
   private DnsServerGroupUtil dnsServerGroupUtil;
   @Getter private OptionsPingController optionsPingController;
-  @Autowired DsbCircuitBreaker dsbCircuitBreaker;
+  private DsbCircuitBreaker dsbCircuitBreaker;
 
   @Autowired
   public void setCommonConfigurationProperties(
@@ -45,6 +45,12 @@ public class TrunkConfigurationProperties {
   public void setOptionsPingController(OptionsPingController optionsPingController) {
     this.optionsPingController = optionsPingController;
   }
+
+  @Autowired
+  public void setDsbCircuitBreaker(DsbCircuitBreaker dsbCircuitBreaker) {
+    this.dsbCircuitBreaker = dsbCircuitBreaker;
+  }
+
   // Key is name of trunk
   // <String,PSTNTrunk> pstnTrunks;
   @Getter private Map<String, PSTNTrunk> pstnTrunkMap = new HashMap<>();

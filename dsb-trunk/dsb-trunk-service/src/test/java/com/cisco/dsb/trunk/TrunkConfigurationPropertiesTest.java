@@ -1,5 +1,7 @@
 package com.cisco.dsb.trunk;
 
+import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
+import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.loadbalancer.LBType;
@@ -26,10 +28,12 @@ public class TrunkConfigurationPropertiesTest {
         Mockito.mock(CommonConfigurationProperties.class);
     DnsServerGroupUtil dnsServerGroupUtil = Mockito.mock(DnsServerGroupUtil.class);
     OptionsPingController opController = new OptionsPingControllerImpl();
+    DsbCircuitBreaker dsbCircuitBreaker = new DsbCircuitBreaker();
 
     configurationProperties.setCommonConfigurationProperties(commonConfigurationProperties);
     configurationProperties.setDnsServerGroupUtil(dnsServerGroupUtil);
     configurationProperties.setOptionsPingController(opController);
+    configurationProperties.setDsbCircuitBreaker(dsbCircuitBreaker);
 
     ServerGroup sg1 = new ServerGroup();
     sg1.setName("SG1");
@@ -40,6 +44,9 @@ public class TrunkConfigurationPropertiesTest {
     serverGroups.put("SG1", sg1);
     serverGroups.put("SG2", sg2);
     Mockito.when(commonConfigurationProperties.getServerGroups()).thenReturn(serverGroups);
+    RoutePolicy routePolicy = RoutePolicy.builder().build();
+    Mockito.when(commonConfigurationProperties.getRoutePolicyMap())
+        .thenReturn(Collections.singletonMap("UsPoolA", routePolicy));
 
     Ingress ingress1 = new Ingress();
     ingress1.setName("ingress1");
@@ -50,8 +57,10 @@ public class TrunkConfigurationPropertiesTest {
 
     egress1.setServerGroups(Arrays.asList(sgs1, sgs2));
     egress1.setOverallResponseTimeout(300);
+    egress1.setRoutePolicyFromConfig(routePolicy);
     PSTNTrunk pstnTrunk1 =
         PSTNTrunk.builder().setName("UsPoolA").setIngress(ingress1).setEgress(egress1).build();
+    pstnTrunk1.setEnableCircuitBreaker(true);
     Ingress ingress2 = new Ingress();
     ingress2.setName("ingress2");
     Egress egress2 = new Egress();
