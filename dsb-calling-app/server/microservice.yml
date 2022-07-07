@@ -92,10 +92,9 @@ publish:
 # Dhruva in Corona: https://corona.cisco.com/products/4699
 # Catch-all Infosec Jira: https://infosec-jira.cisco.com/jira/browse/CTSM-46481
 security-automation:
-  credentials-id: "hw-security.gen"
-  corona-pid: 4699
-  enabled_scans: ['corona', 'spotbugs']
-  ctsm_jira_id: CTSM-46481
+  credentials-id: "dhruva-security.gen"
+  notify-room: Y2lzY29zcGFyazovL3VzL1JPT00vNDU5NWUzNTAtZjYyMy0xMWU5LThmMWQtYmY3OTJhYmQ3MzY0
+  enabled_scans: ['corona']
   threat-model-id: 29366
 
 # Settings pertaining to FedRAMP.

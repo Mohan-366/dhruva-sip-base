@@ -1,5 +1,6 @@
 #!groovy
-@Library(['kubedPipeline', 'sparkPipeline', 'ciHelper@master']) _
+@Library(['sparkPipeline', 'kubedPipeline', 'ciHelper@master']) _
+
 node('SPARK_BUILDER_JAVA11') {
 
     try{
@@ -12,7 +13,7 @@ node('SPARK_BUILDER_JAVA11') {
 
         // 'DSB Build & Deploy Notifications - spark room
         notifySparkRoomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMDc1NDVhZDAtMWYyMi0xMWViLWIxZjgtMzdmOGEzNjNhOGQ5'
-
+    
         stage('Checkout') {
             cleanWs notFailBuild: true
             checkout scm
@@ -58,10 +59,17 @@ node('SPARK_BUILDER_JAVA11') {
              failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
          }
          stage('archive') {
-             archiveArtifacts artifacts: 'dsb-calling-app/server/microservice-itjenkins.yml', allowEmptyArchive: true
+             archiveArtifacts artifacts: 'dsb-calling-app/server/microservice.yml', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/integration/docker/*', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
+             archiveArtifacts artifacts: '**/spotbugsXml.xml', allowEmptyArchive: true
+
+         }
+         if (env.GIT_BRANCH == 'master') {
+             stage('Security Automation'){ 
+                runSecurityScanJob()
+             }
          }
          stage('build and publish wbx3 images') {
              try {
@@ -74,14 +82,14 @@ node('SPARK_BUILDER_JAVA11') {
                      // TODO will be nice to have a BUILD_ID+TIMESTAMP+GIT_COMMIT_ID here instead of just BUILD_NUMBER
                      // Since the existing pipeline currently uses
                      // dockerhub.cisco.com but the new build pipeline uses containers.cisco.com, we
-                     // pass a file called microservice-itjenkins.yml in this case (which lets us handle
+                     // pass a file called microservice.yml in this case (which lets us handle
                      // both requirements for now).
 
-                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", TAG, REGISTRY_CREDENTIALS)
+                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice.yml", TAG, REGISTRY_CREDENTIALS)
                  }
                  if (env.CHANGE_ID != null) {
                      def PULL_REQUEST = env.CHANGE_ID+'-pr'
-                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice-itjenkins.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
+                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
                  }
 
              } catch (Exception ex) {
@@ -163,8 +171,10 @@ node('SPARK_BUILDER_JAVA11') {
         }
     } // end finally
 }
+
 def failBuildIfUnsuccessfulBuildResult(message) {
     // Check for UNSTABLE/FAILURE build result or any result other than "SUCCESS" (or null)
+    this.checkoutPipeline()
     if (currentBuild.result != null && currentBuild.result != 'SUCCESS') {
         failBuild(message)
     }
