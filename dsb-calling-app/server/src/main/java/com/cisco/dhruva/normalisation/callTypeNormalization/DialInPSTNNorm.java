@@ -24,8 +24,8 @@ public class DialInPSTNNorm implements Normalization {
           new String[] {"requestUri", SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN});
   private Consumer<ProxySIPRequest> preNormConsumer =
       proxySIPRequest -> {
-        logger.debug("DialOutPSTN Pre-normalization triggered for paramsToAdd: {}", paramsToAdd);
-        normalize(proxySIPRequest.getRequest(), null, paramsToAdd);
+        logger.debug("DialInPSTN Pre-normalization triggered for paramsToAdd: {}", paramsToAdd);
+        normalize(proxySIPRequest.getRequest(), paramsToAdd);
       };
 
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer =

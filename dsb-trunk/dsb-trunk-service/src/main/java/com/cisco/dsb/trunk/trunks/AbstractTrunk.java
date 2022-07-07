@@ -22,6 +22,7 @@ import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.trunk.util.RedirectionSet;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import com.cisco.wx2.util.Utilities;
@@ -119,6 +120,10 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   protected Mono<ProxySIPResponse> sendToProxy(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
+    // mid call requests must be simply be sent to proxy by-passing LB logic
+    if (proxySIPRequest.isMidCall()) {
+      return sendMidCallRequestToProxy(proxySIPRequest);
+    }
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest);
     String userId = null;
     if (((SipUri) proxySIPRequest.getRequest().getRequestURI())
@@ -523,5 +528,36 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 endPoint,
                 cbRecordResult,
                 getEgress().getRoutePolicy().getCircuitBreakConfig()));
+  }
+
+  private Mono<ProxySIPResponse> sendMidCallRequestToProxy(ProxySIPRequest proxySIPRequest) {
+    // TODO: KALPA Response handling can be optimized by sending back the response to CallType
+    logger.info("Sending to proxy for midDiallog request {}", proxySIPRequest.getRequest());
+    ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
+    proxyInterface
+        .proxyRequest(proxySIPRequest)
+        .whenComplete(
+            (proxySIPResponse, throwable) -> {
+              if (proxySIPResponse != null) {
+                logger.info(
+                    "dhruva message record {}",
+                    proxySIPRequest.getAppRecord() == null
+                        ? "None"
+                        : proxySIPRequest.getAppRecord().toString());
+                proxySIPResponse.proxy();
+                return;
+              }
+
+              if (throwable != null) {
+                Utilities.Checks checks = new Utilities.Checks();
+                checks.add("proxy request for mid dialog failed", throwable.getMessage());
+                proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_SEND_FAILED, checks);
+                logger.error(
+                    "Error while sending out mid dialog request based on rURI/Route Header",
+                    throwable);
+                proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+              }
+            });
+    return Mono.empty();
   }
 }

@@ -21,30 +21,34 @@ public class NormalizeUtil {
   private static HeaderFactoryImpl headerFactory = new HeaderFactoryImpl();
 
   public static void normalize(
-      SIPRequest request,
-      DhruvaNetwork outgoingNetwork,
-      EndPoint endPoint,
-      List<String> headersToReplaceWithOwnIP,
-      List<String> headersToReplaceWithRemoteIP,
-      List<String> headersToRemove) {
-    normalize(
-        request,
-        outgoingNetwork,
-        endPoint,
-        headersToReplaceWithOwnIP,
-        headersToReplaceWithRemoteIP,
-        headersToRemove,
-        null,
-        null);
+      SIPRequest request, EndPoint endPoint, List<String> headersToReplaceWithRemoteIP) {
+    normalize(request, null, endPoint, null, headersToReplaceWithRemoteIP, null, null, null);
   }
 
   public static void normalize(
-      SIPRequest request, List<String[]> paramsToRemove, List<String[]> paramsToAdd) {
-    normalize(request, null, null, null, null, null, paramsToRemove, paramsToAdd);
+      SIPRequest request,
+      DhruvaNetwork outGoingNetwork,
+      List<String> headersToRemoveWithOwnIP,
+      List<String> headersToRemove,
+      List<String[]> paramsToRemove,
+      List<String[]> paramsToAdd) {
+    normalize(
+        request,
+        outGoingNetwork,
+        null,
+        headersToRemoveWithOwnIP,
+        null,
+        headersToRemove,
+        paramsToRemove,
+        paramsToAdd);
   }
 
   public static void normalize(SIPRequest request, EndPoint endPoint) {
     normalize(request, null, endPoint, null, null, null, null, null);
+  }
+
+  public static void normalize(SIPRequest request, List<String[]> paramsToAdd) {
+    normalize(request, null, null, null, null, null, null, paramsToAdd);
   }
 
   public static void normalize(
@@ -88,8 +92,12 @@ public class NormalizeUtil {
 
       // Replace IP in Headers with own IP
       if (headersToReplaceWithOwnIP != null) {
-        ownIPAddress = outgoingNetwork.getListenPoint().getHostIPAddress();
-        replaceIPInHeader(request, headersToReplaceWithOwnIP, ownIPAddress);
+        if (outgoingNetwork != null) {
+          ownIPAddress = outgoingNetwork.getListenPoint().getHostIPAddress();
+          replaceIPInHeader(request, headersToReplaceWithOwnIP, ownIPAddress);
+        } else {
+          logger.error("Outgoing network is null. Cannot set own IP");
+        }
       }
 
       // Replace IP in Headers with own IP

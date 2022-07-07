@@ -12,5 +12,7 @@ public abstract class SipParamConstants {
   public static final String DPN_OUT = "eccse10099";
   public static final String TEST_CALL = "x-cisco-test";
   public static final String DTG = "dtg";
+  public static final String DEFAULT_DTG_VALUE_FOR_MIDCALL = "defaultDtg";
+  public static final String DEFAULT_TRUNK_FOR_MIDCALL = "defaultPSTNTrunk";
   public static final String INJECTED_DNS_UUID = "2cd3da89-2e9c-48a8-8fa8-d7296018b7e7";
 }

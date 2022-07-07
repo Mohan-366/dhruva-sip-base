@@ -43,7 +43,7 @@ public class DhruvaCallingApp {
             ._4xx(true)
             ._5xx(true)
             ._6xx(true)
-            .midDialog(false)
+            .midDialog(true)
             .requestConsumer(getRequestConsumer())
             .build();
 

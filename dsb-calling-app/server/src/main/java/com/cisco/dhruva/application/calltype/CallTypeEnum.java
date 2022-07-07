@@ -19,7 +19,8 @@ public enum CallTypeEnum {
       case 1:
         filterIds =
             ImmutableList.of(
-                new FilterId(FilterId.Id.NETWORK_B2B), new FilterId(FilterId.Id.CALLTYPE_DIAL_IN));
+                new FilterId(FilterId.Id.NETWORK_B2B),
+                new FilterId(FilterId.Id.CALLTYPE_DIAL_IN_OR_MID_DIALOG_DIAL_IN));
         break;
       case 2:
         filterIds = ImmutableList.of(new FilterId(FilterId.Id.NETWORK_WXC));
@@ -27,7 +28,8 @@ public enum CallTypeEnum {
       case 3:
         filterIds =
             ImmutableList.of(
-                new FilterId(FilterId.Id.NETWORK_B2B), new FilterId(FilterId.Id.CALLTYPE_DIAL_OUT));
+                new FilterId(FilterId.Id.NETWORK_B2B),
+                new FilterId(FilterId.Id.CALLTYPE_DIAL_OUT_OR_MID_DIALOG_DIAL_OUT));
         break;
     }
   }

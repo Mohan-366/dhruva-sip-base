@@ -10,6 +10,7 @@ import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingControllerImpl;
 import com.cisco.dsb.trunk.trunks.*;
+import com.cisco.dsb.trunk.util.SipParamConstants;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,6 +102,11 @@ public class TrunkConfigurationPropertiesTest {
     configurationProperties.setPSTN(pstnTrunkMap);
     configurationProperties.setB2B(b2bTrunkMap);
     configurationProperties.setCallingCore(ccTrunkMap);
+    pstnTrunkMap.put(
+        SipParamConstants.DEFAULT_DTG_VALUE_FOR_MIDCALL,
+        configurationProperties
+            .getPstnTrunkMap()
+            .get(SipParamConstants.DEFAULT_DTG_VALUE_FOR_MIDCALL));
 
     Assert.assertEquals(pstnTrunkMap, configurationProperties.getPstnTrunkMap());
     Assert.assertEquals(

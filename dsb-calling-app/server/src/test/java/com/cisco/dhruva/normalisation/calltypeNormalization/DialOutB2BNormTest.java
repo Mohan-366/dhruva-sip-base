@@ -50,7 +50,7 @@ public class DialOutB2BNormTest {
   }
 
   @Test
-  public void preNormalizeTest() throws ParseException {
+  public void preNormalizeTest() throws ParseException, DhruvaException {
     request = (SIPRequest) RequestHelper.getInviteRequest();
     ((SipUri) request.getRequestURI())
         .setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT);
@@ -60,44 +60,8 @@ public class DialOutB2BNormTest {
         .setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_OUT_TAG);
     ((SipUri) request.getRequestURI()).setParameter(SipParamConstants.DTG, "CcpFusionUS");
     request.getTo().setParameter(SipParamConstants.DTG, "CcpFusionUS");
-    when(proxySIPRequest.getRequest()).thenReturn(request);
-
-    // testing preNormalize
-    dialOutB2BNorm.preNormalize().accept(proxySIPRequest);
-
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.DTG), null);
-    assertEquals(request.getTo().getParameter(SipParamConstants.DTG), null);
-  }
-
-  @Test
-  public void postNormalizeTest() throws ParseException, DhruvaException {
-    PSTNTrunk pstnTrunk = new PSTNTrunk();
-    Egress egress = new Egress();
-    ServerGroup serverGroup =
-        ServerGroup.builder()
-            .setName("SG")
-            .setHostName("alpha.webex.com")
-            .setTransport(Transport.TCP)
-            .setSgType(SGType.SRV)
-            .setLbType(LBType.WEIGHT)
-            .setWeight(100)
-            .setPriority(10)
-            .setNetworkName("DhruvaNetwork")
-            .build();
-    Map<String, ServerGroup> serverGroupMap = egress.getServerGroupMap();
-    egress.setLbType(LBType.WEIGHT);
-    serverGroupMap.put(serverGroup.getHostName(), serverGroup);
-    pstnTrunk.setEgress(egress);
-    request = (SIPRequest) RequestHelper.getInviteRequest();
     ((SipUri) request.getFrom().getAddress().getURI()).setHost("20.20.20.20");
     ((SipUri) request.getFrom().getAddress().getURI()).setPort(5060);
-    ((SipUri) request.getTo().getAddress().getURI()).setHost("30.30.30.30");
-    ((SipUri) request.getTo().getAddress().getURI()).setPort(5060);
     Header ppId =
         headerFactory.createHeader(
             "P-Preferred-Identity", "<sip:+10982345764@192.168.90.206:5061>");
@@ -117,24 +81,23 @@ public class DialOutB2BNormTest {
         headerFactory.createHeader(
             "X-BroadWorks-Correlation-Info", "279bcde4-62aa-453a-a0d6-8dadd338fb82");
     request.setHeader(xBroadWorksCorrelationIfo);
-
-    when(cookie.getClonedRequest()).thenReturn(proxySIPRequest);
     when(proxySIPRequest.getRequest()).thenReturn(request);
-    when(endpoint.getHost()).thenReturn("1.2.3.4");
-    when(endpoint.getPort()).thenReturn(5060);
-    loadBalancer = LoadBalancer.of(pstnTrunk);
-    when(cookie.getSgLoadBalancer()).thenReturn(loadBalancer);
+
     when(dhruvaNetwork.getListenPoint()).thenReturn(sipListenPoint);
     when(sipListenPoint.getHostIPAddress()).thenReturn("10.10.10.10");
-    when(sipListenPoint.getName()).thenReturn("DhruvaNetwork");
-    DhruvaNetwork.createNetwork("DhruvaNetwork", sipListenPoint);
+    when(sipListenPoint.getName()).thenReturn("net_sp");
+    DhruvaNetwork.createNetwork("net_sp", sipListenPoint);
 
-    // testing postNormalize
-    dialOutB2BNorm.postNormalize().accept(cookie, endpoint);
+    // testing preNormalize
+    dialOutB2BNorm.preNormalize().accept(proxySIPRequest);
 
-    assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
-    assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
-    assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "1.2.3.4");
+    assertEquals(
+        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
+    assertEquals(
+        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
+    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
+    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.DTG), null);
+    assertEquals(request.getTo().getParameter(SipParamConstants.DTG), null);
     assertEquals(((SipUri) request.getFrom().getAddress().getURI()).getHost(), "10.10.10.10");
     assertEquals(
         request.getHeader("P-Asserted-Identity").toString().trim(),
@@ -147,5 +110,43 @@ public class DialOutB2BNormTest {
         "Diversion: <sip:+10982345764@10.10.10.10:5061>");
     assertEquals(request.getHeader("X-BroadWorks-DNC"), null);
     assertEquals(request.getHeader("X-BroadWorks-Correlation-Info"), null);
+  }
+
+  @Test
+  public void postNormalizeTest() throws ParseException {
+    PSTNTrunk pstnTrunk = new PSTNTrunk();
+    Egress egress = new Egress();
+    ServerGroup serverGroup =
+        ServerGroup.builder()
+            .setName("SG")
+            .setHostName("alpha.webex.com")
+            .setTransport(Transport.TCP)
+            .setSgType(SGType.SRV)
+            .setLbType(LBType.WEIGHT)
+            .setWeight(100)
+            .setPriority(10)
+            .setNetworkName("DhruvaNetwork")
+            .build();
+    Map<String, ServerGroup> serverGroupMap = egress.getServerGroupMap();
+    egress.setLbType(LBType.WEIGHT);
+    serverGroupMap.put(serverGroup.getHostName(), serverGroup);
+    pstnTrunk.setEgress(egress);
+    request = (SIPRequest) RequestHelper.getInviteRequest();
+    ((SipUri) request.getTo().getAddress().getURI()).setHost("30.30.30.30");
+    ((SipUri) request.getTo().getAddress().getURI()).setPort(5060);
+
+    when(cookie.getClonedRequest()).thenReturn(proxySIPRequest);
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    when(endpoint.getHost()).thenReturn("1.2.3.4");
+    when(endpoint.getPort()).thenReturn(5060);
+    loadBalancer = LoadBalancer.of(pstnTrunk);
+    when(cookie.getSgLoadBalancer()).thenReturn(loadBalancer);
+
+    // testing postNormalize
+    dialOutB2BNorm.postNormalize().accept(cookie, endpoint);
+
+    assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
+    assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
+    assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "1.2.3.4");
   }
 }

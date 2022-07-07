@@ -9,8 +9,8 @@ public class FilterId {
     NETWORK_PSTN,
     NETWORK_B2B,
     NETWORK_WXC,
-    CALLTYPE_DIAL_IN,
-    CALLTYPE_DIAL_OUT
+    CALLTYPE_DIAL_IN_OR_MID_DIALOG_DIAL_IN,
+    CALLTYPE_DIAL_OUT_OR_MID_DIALOG_DIAL_OUT
   }
 
   public final Id id;

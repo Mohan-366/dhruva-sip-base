@@ -9,6 +9,7 @@ import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.trunk.trunks.*;
+import com.cisco.dsb.trunk.util.SipParamConstants;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.CustomLog;
@@ -63,6 +64,8 @@ public class TrunkConfigurationProperties {
   public void setPSTN(Map<String, PSTNTrunk> pstnTrunkMap) {
     updateMap(this.pstnTrunkMap, pstnTrunkMap);
     this.pstnTrunkMap.values().forEach(this::createSGFromConfig);
+    this.pstnTrunkMap.put(
+        SipParamConstants.DEFAULT_DTG_VALUE_FOR_MIDCALL, getDefaultPSTNTrunkForMidCall());
   }
 
   public void setB2B(Map<String, B2BTrunk> b2BTrunkMap) {
@@ -149,5 +152,16 @@ public class TrunkConfigurationProperties {
                   });
         });
     return serverGroupElements;
+  }
+
+  private PSTNTrunk getDefaultPSTNTrunkForMidCall() {
+    Egress egress = new Egress();
+    Map<String, String> defaultDtgMap = new HashMap<>();
+    defaultDtgMap.put(SipParamConstants.DTG, SipParamConstants.DEFAULT_DTG_VALUE_FOR_MIDCALL);
+    egress.setSelector(defaultDtgMap);
+    Ingress ingress = new Ingress();
+    ingress.setName("default-midcall-ingress");
+    PSTNTrunk defaultPSTNTrunk = new PSTNTrunk("default-midcall-egress", ingress, egress, false);
+    return defaultPSTNTrunk;
   }
 }

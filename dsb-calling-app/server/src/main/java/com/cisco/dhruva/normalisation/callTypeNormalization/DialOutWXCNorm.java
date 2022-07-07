@@ -25,7 +25,7 @@ public class DialOutWXCNorm implements Normalization {
   private Consumer<ProxySIPRequest> preNormConsumer =
       proxySIPRequest -> {
         logger.debug("DialOutWXC preNormalization triggered.");
-        normalize(proxySIPRequest.getRequest(), null, paramsToAdd);
+        normalize(proxySIPRequest.getRequest(), paramsToAdd);
       };
 
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer =

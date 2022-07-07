@@ -3,7 +3,6 @@ package com.cisco.dhruva.normalisation.callTypeNormalization;
 import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.normalize;
 
 import com.cisco.dsb.common.normalization.Normalization;
-import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -33,6 +32,7 @@ public class DialOutB2BNorm implements Normalization {
           "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion", "From");
   List<String> headersToReplaceWithRemoteIP = Arrays.asList("To");
   List<String> headersToRemove = Arrays.asList("X-BroadWorks-Correlation-Info", "X-BroadWorks-DNC");
+  private static final String OUTGOING_NETWORK_NAME = "net_sp";
 
   private Consumer<ProxySIPRequest> preNormConsumer =
       proxySIPRequest -> {
@@ -41,32 +41,32 @@ public class DialOutB2BNorm implements Normalization {
         // Remove dtg parameter in To header.We should not leak internal routing details.
         // Calling Dial out header format To:
         // <sip:+18776684488@10.252.103.171:5060;user=phone;dtg=DhruBwFxSIUS>
-        logger.debug("DialOutB2BN Pre-normalization paramsToRemove: {}", paramsToRemove);
-        normalize(proxySIPRequest.getRequest(), paramsToRemove, null);
+        DhruvaNetwork outgoingNetwork = DhruvaNetwork.getNetwork(OUTGOING_NETWORK_NAME).get();
+        logger.debug(
+            "DialOutB2BN Pre-normalization "
+                + "\nheadersToReplaceWithOwnIP: {}"
+                + "\nheadersToRemove: {}"
+                + "\nparamsToRemove: {}",
+            headersToReplaceWithOwnIP,
+            headersToRemove,
+            paramsToRemove);
+        normalize(
+            proxySIPRequest.getRequest(),
+            outgoingNetwork,
+            headersToReplaceWithOwnIP,
+            headersToRemove,
+            paramsToRemove,
+            null);
       };
 
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer =
       (cookie, endPoint) -> {
         logger.debug(
             "DialOutB2BN Post-normalization triggered for rUri host change,"
-                + "\nheadersToReplaceWithOwnIP: {}"
-                + "\nheadersToReplaceWithRemoteIP: {}"
-                + "\nheadersToRemove: {}",
-            headersToReplaceWithOwnIP,
-            headersToReplaceWithRemoteIP,
-            headersToRemove);
+                + " headersToReplaceWithRemoteIP: {}",
+            headersToReplaceWithRemoteIP);
         SIPRequest request = cookie.getClonedRequest().getRequest();
-        DhruvaNetwork outgoingNetwork =
-            DhruvaNetwork.getNetwork(
-                    ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement()).getNetworkName())
-                .get();
-        normalize(
-            request,
-            outgoingNetwork,
-            endPoint,
-            headersToReplaceWithOwnIP,
-            headersToReplaceWithRemoteIP,
-            headersToRemove);
+        normalize(request, endPoint, headersToReplaceWithRemoteIP);
       };
 
   @Override

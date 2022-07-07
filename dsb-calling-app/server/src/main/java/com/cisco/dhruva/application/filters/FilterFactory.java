@@ -34,10 +34,10 @@ public class FilterFactory {
         return networkPSTN;
       case NETWORK_WXC:
         return networkWxC;
-      case CALLTYPE_DIAL_IN:
-        return new CallTypeDialInTag();
-      case CALLTYPE_DIAL_OUT:
-        return new CallTypeDialOutTag();
+      case CALLTYPE_DIAL_IN_OR_MID_DIALOG_DIAL_IN:
+        return new CallTypeDialInTagOrMidDialogDialIn();
+      case CALLTYPE_DIAL_OUT_OR_MID_DIALOG_DIAL_OUT:
+        return new CallTypeDialOutTagOrMidDialogDialOut();
       default:
         return null;
     }
