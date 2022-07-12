@@ -71,80 +71,23 @@ node('SPARK_BUILDER_JAVA11') {
                 runSecurityScanJob()
              }
          }
-         stage('build and publish wbx3 images') {
-             try {
-                 if (env.GIT_BRANCH == 'master') {
-                     sh 'ls -lrth'
-                     def TAG="2."+env.BUILD_NUMBER
-                     /* This is in WebexPlatform/pipeline. It reads dhruva's microservice.yml
-                 to determine where to build and push (in our case, containers.cisco.com/edge_group)
-                 */
-                     // TODO will be nice to have a BUILD_ID+TIMESTAMP+GIT_COMMIT_ID here instead of just BUILD_NUMBER
-                     // Since the existing pipeline currently uses
-                     // dockerhub.cisco.com but the new build pipeline uses containers.cisco.com, we
-                     // pass a file called microservice.yml in this case (which lets us handle
-                     // both requirements for now).
-
-                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice.yml", TAG, REGISTRY_CREDENTIALS)
-                 }
-                 if (env.CHANGE_ID != null) {
-                     def PULL_REQUEST = env.CHANGE_ID+'-pr'
-                     buildAndPushWbx3DockerImages("dsb-calling-app/server/microservice.yml", PULL_REQUEST, REGISTRY_CREDENTIALS)
-                 }
-
-             } catch (Exception ex) {
-                 echo "ERROR: Could not trigger the build and publish of dsb-calling-app docker image."
-                 throw ex
+         stage('build and push') {
+             // build and push DSB application
+             def tag = getTag()
+             def buildArgs = [component: "dhruva", manifest: "manifest.yaml", tag: tag, metadata: getMetaData(tag)]
+             dir('dsb-calling-app/server/'){
+                 sh "cp target/*.war docker/"
+                 sh "ls -lart docker/"
+                 buildCI(this,buildArgs)
+             }
+             // build and push Test client
+             buildArgs = [component: "dhruva-test-client", manifest: "manifest.yaml", tag: tag, metadata: getMetaDataTest(tag)]
+             dir('dsb-calling-app/integration'){
+                 sh "cp target/*.jar docker/"
+                 sh "ls -lart docker/"
+                 buildCI(this,buildArgs)
              }
          }
-        if (env.GIT_BRANCH == 'master') {
-            stage('ecr sync') {
-                def tag = "2."+env.BUILD_NUMBER
-                //Pull dhruva image and get SHA of that image which will be artifactID
-                sh "docker pull containers.cisco.com/edge_group/dhruva:${tag}"
-                def artifactID = sh(
-                        script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva:${tag} | cut -f 2 -d \':\'",
-                        returnStdout: true
-                ).trim()
-                sh "docker pull containers.cisco.com/edge_group/dhruva-test-client:${tag}"
-                def testartifactID = sh(
-                        script: "docker inspect --format=\'{{.Id}}\' containers.cisco.com/edge_group/dhruva-test-client:${tag} | cut -f 2 -d \':\'",
-                        returnStdout: true
-                ).trim()
-                try {
-                    def metaBody = {
-                        artifact_id = artifactID
-                        description = 'DSB'
-                        image_name = 'dhruva'
-                        operation_type = "Int"
-                        image_tag = tag
-                        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
-                        registry_url = 'containers.cisco.com'
-                        service_group = 'WebEx'
-                    }
-                    def buildArgs = [component: "dhruva", manifest: "dsb-calling-app/server/manifest.yaml", tag: tag, metadata: metaBody]
-                    buildCI(this, buildArgs)
-                    def testmetaBody = {
-                        artifact_id = testartifactID
-                        description = 'dhruva-test-client'
-                        image_name = 'dhruva-test-client'
-                        operation_type = "Int"
-                        image_tag = tag
-                        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
-                        registry_url = 'containers.cisco.com'
-                        service_group = 'WebEx'
-                    }
-                    def testbuildArgs = [component: "dhruva-test-client", manifest: "dsb-calling-app/integration/manifest.yaml", tag: tag, metadata: testmetaBody]
-                    buildCI(this, testbuildArgs)
-                    sh "curl https://ecr-sync.int.mccprod02.prod.infra.webex.com/api/v1/sync"
-                    sh "docker rmi containers.cisco.com/edge_group/dhruva-test-client:${tag}"
-                    sh "docker rmi containers.cisco.com/edge_group/dhruva:${tag}"
-                } catch (Exception e) {
-                    echo "ERROR: An error occurred while syncing images to ECR"
-                    throw e
-                }
-            }
-        }
     }
     catch (Exception ex) {
         currentBuild.result = 'FAILURE'
@@ -183,4 +126,64 @@ def failBuildIfUnsuccessfulBuildResult(message) {
 def failBuild(message) {
     echo message
     throw new SparkException(message)
+}
+
+def getTag(){
+    if (env.GIT_BRANCH == "master"){
+        return "2."+env.BUILD_NUMBER
+    }
+    if (env.CHANGE_ID != null){
+        return env.CHANGE_ID+"-pr"
+    }
+    // this condition should not happen I think
+    return "default"
+
+}
+
+def getMetaData(tag){
+    if (env.GIT_BRANCH == 'master'){
+        return {
+                description = 'Dhruva-proxy for calling application'
+                image_name = 'dhruva'
+                operation_type = "QA-Done"
+                image_tag = tag
+                labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+                registry_url = 'containers.cisco.com'
+                service_group = 'WebEx'
+            }
+
+    }
+    return {
+        description = 'Dhruva-proxy for calling application'
+        image_name = 'dhruva'
+        operation_type = "Dev"
+        image_tag = tag
+        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+        registry_url = 'containers.cisco.com'
+        service_group = 'WebEx'
+    }
+
+}
+
+def getMetaDataTest(tag){
+    if (env.GIT_BRANCH == 'master'){
+        return {
+            description = 'dhruva-test-client for dhruva-proxy calling app'
+            image_name = 'dhruva-test-client'
+            operation_type = "QA-Done"
+            image_tag = tag
+            labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+            registry_url = 'containers.cisco.com'
+            service_group = 'WebEx'
+        }
+    }
+    return {
+        description = 'dhruva-test-client for dhruva-proxy calling app'
+        image_name = 'dhruva-test-client'
+        operation_type = "Dev"
+        image_tag = tag
+        labels = '{"image_tag": "' + tag + '","environment": "dev","job": "metadata-service"}'
+        registry_url = 'containers.cisco.com'
+        service_group = 'WebEx'
+    }
 }

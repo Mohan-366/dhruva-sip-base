@@ -11,10 +11,11 @@
       namespace: edge_group
       component: dhruva
       type: docker
-      publish: false
+      publish-always: true
       jenkins-id: dhruva_ccc_bot
       docker:
         - dockerfile: docker/dsb-calling-app-server.Dockerfile
+          build: true
           lint:
             enable: false
           scan:
