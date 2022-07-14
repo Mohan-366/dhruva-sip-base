@@ -74,7 +74,8 @@ public class ProxySendMessageTest {
         DhruvaException.class,
         () -> ProxySendMessage.sendResponse(1, null, null, new SIPRequest()));
     assertThrows(
-        DhruvaException.class, () -> ProxySendMessage.sendResponse(new SIPResponse(), null, null));
+        DhruvaException.class,
+        () -> ProxySendMessage.sendResponse(new SIPResponse(), null, null, true));
   }
 
   @Test

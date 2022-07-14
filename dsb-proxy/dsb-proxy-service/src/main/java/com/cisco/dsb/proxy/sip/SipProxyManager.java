@@ -309,7 +309,7 @@ public class SipProxyManager {
                     .createResponse(Response.BAD_EXTENSION, sipRequest);
             unsupportedHeaders.forEach(sipResponse::addHeader);
             ProxySendMessage.sendResponse(
-                sipResponse, request.getServerTransaction(), request.getProvider());
+                sipResponse, request.getServerTransaction(), request.getProvider(), true);
           } catch (DhruvaException | ParseException e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
@@ -391,8 +391,8 @@ public class SipProxyManager {
         return;
       }
       try {
-        sipProvider.get().sendResponse(response);
-      } catch (SipException exception) {
+        ProxySendMessage.sendResponse(response, null, sipProvider.get(), false);
+      } catch (DhruvaException exception) {
         logger.error("Unable to send out stray response using sipProvider", exception);
       }
     };

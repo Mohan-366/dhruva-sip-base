@@ -653,7 +653,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   JainSipHelper.getMessageFactory()
                       .createResponse(Response.METHOD_NOT_ALLOWED, sipRequest);
               addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
-              ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
+              ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
             } catch (Exception e) {
               throw new DhruvaRuntimeException(
                   ErrorCode.SEND_RESPONSE_ERR,
@@ -669,7 +669,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             logger.info("Sending 200 (OK) response for received CANCEL");
             Response sipResponse =
                 JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
-            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
+            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
 
             // Sending CANCEL to server
             ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
@@ -707,7 +707,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             addAcceptHeader(sipResponse);
             // TODO: if we know the data for 'Accept-Language' & 'AcceptEncoding' headers, add them
             // to this OPTIONS 200 OK response (as per rfc)
-            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider);
+            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
           } catch (Exception e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,

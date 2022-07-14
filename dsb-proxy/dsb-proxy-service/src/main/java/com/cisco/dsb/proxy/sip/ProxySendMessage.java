@@ -94,17 +94,21 @@ public class ProxySendMessage {
    * @param response
    * @param serverTransaction
    * @param sipProvider
+   * @param internal response is internally generated
    * @throws DhruvaException
    */
   public static void sendResponse(
-      Response response, ServerTransaction serverTransaction, SipProvider sipProvider)
+      Response response,
+      ServerTransaction serverTransaction,
+      SipProvider sipProvider,
+      boolean internal)
       throws DhruvaException {
     try {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
 
       SIPResponse sipResponse = (SIPResponse) response;
-      handleResponseLMA(sipProvider, sipResponse, true, false);
+      handleResponseLMA(sipProvider, sipResponse, internal, false);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
