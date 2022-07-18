@@ -129,8 +129,12 @@ def failBuild(message) {
 }
 
 def getTag(){
-    if (env.GIT_BRANCH == "master"){
-        return "2."+env.BUILD_NUMBER
+    if (env.GIT_BRANCH == "master" || env.GIT_BRANCH == 'normalization' ){
+        def TAG="2."+env.BUILD_NUMBER
+        if(env.GIT_BRANCH == 'normalization'){
+            TAG = TAG +"-norm"
+        }
+        return TAG
     }
     if (env.CHANGE_ID != null){
         return env.CHANGE_ID+"-pr"

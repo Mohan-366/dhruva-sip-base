@@ -6,6 +6,8 @@ import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -61,6 +63,19 @@ public class DialInB2BNorm implements Normalization {
         normalize(request, endPoint, headersToReplaceWithRemoteIP);
       };
 
+  private Consumer<ProxySIPResponse> responseNorm =
+      proxySIPResponse -> {
+        // no norm to apply as of now
+      };
+
+  private Consumer<ProxySIPRequest> responseNormConsumerSetter =
+      (proxySIPRequest -> {
+        ((ProxyCookieImpl) proxySIPRequest.getCookie()).setResponseNormConsumer(responseNorm);
+        ((ProxyCookieImpl) proxySIPRequest.getCookie())
+            .setRequestIncomingNetwork(
+                DhruvaNetwork.getNetwork(proxySIPRequest.getNetwork()).get());
+      });
+
   @Override
   public Consumer<ProxySIPRequest> preNormalize() {
     return preNormConsumer;
@@ -69,5 +84,10 @@ public class DialInB2BNorm implements Normalization {
   @Override
   public BiConsumer<TrunkCookie, EndPoint> postNormalize() {
     return postNormConsumer;
+  }
+
+  @Override
+  public Consumer setNormForFutureResponse() {
+    return responseNormConsumerSetter;
   }
 }

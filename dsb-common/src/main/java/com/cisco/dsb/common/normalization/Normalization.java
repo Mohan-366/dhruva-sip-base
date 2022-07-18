@@ -10,4 +10,6 @@ public interface Normalization {
   public Consumer preNormalize();
 
   public BiConsumer postNormalize();
+
+  public Consumer setNormForFutureResponse();
 }

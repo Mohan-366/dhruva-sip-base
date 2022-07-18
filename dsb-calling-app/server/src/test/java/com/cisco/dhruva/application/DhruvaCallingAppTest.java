@@ -8,6 +8,8 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.DhruvaEvent;
 import com.cisco.dsb.common.util.log.event.EventingService;
 import com.cisco.dsb.common.util.log.event.LoggingEvent;
@@ -15,6 +17,7 @@ import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.TrunkManager;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +37,10 @@ public class DhruvaCallingAppTest {
   @Mock ProxySIPResponse proxySIPResponse;
   @Mock CallType callType;
   @Mock EventingService eventingService;
+  @Mock TrunkManager trunkManager;
+  @Mock DhruvaNetwork dhruvaNetwork;
+  @Mock SIPListenPoint sipListenPoint;
+  @Mock CallingAppConfigurationProperty callingAppConfigurationProperty;
   Optional<CallType> optionalCallType;
   ProxyAppConfig proxyAppConfig;
 

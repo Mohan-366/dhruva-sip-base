@@ -16,6 +16,7 @@ public class CallingTrunk extends AbstractTrunk {
   public Mono<ProxySIPResponse> processEgress(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
     normalization.preNormalize().accept(proxySIPRequest);
+    normalization.setNormForFutureResponse().accept(proxySIPRequest);
     return sendToProxy(proxySIPRequest, normalization);
   }
 

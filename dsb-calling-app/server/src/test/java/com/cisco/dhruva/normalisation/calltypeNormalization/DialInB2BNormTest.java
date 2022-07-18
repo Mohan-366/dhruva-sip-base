@@ -21,7 +21,6 @@ import com.cisco.dsb.trunk.trunks.Egress;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.HeaderFactoryImpl;
-import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.text.ParseException;
 import java.util.Map;
@@ -145,7 +144,5 @@ public class DialInB2BNormTest {
     assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
     assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
     assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "1.2.3.4");
-
-    System.out.println(((Route) request.getRouteHeaders().getFirst()).getHeaderValue());
   }
 }

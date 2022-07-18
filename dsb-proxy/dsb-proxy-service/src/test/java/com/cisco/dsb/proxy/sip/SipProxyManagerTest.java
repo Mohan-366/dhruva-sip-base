@@ -6,9 +6,11 @@ import static org.testng.Assert.assertNull;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
@@ -25,6 +27,8 @@ import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
 import gov.nist.javax.sip.SipProviderImpl;
+import gov.nist.javax.sip.address.AddressImpl;
+import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -34,6 +38,7 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.sip.*;
+import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.*;
@@ -74,7 +79,8 @@ public class SipProxyManagerTest {
   }
 
   @Test(description = "test to find ProxyTransaction for incoming Stray Response")
-  public void findProxyTransactionStrayResponseTest() throws ParseException, SipException {
+  public void findProxyTransactionStrayResponseTest()
+      throws ParseException, SipException, InvalidArgumentException, DhruvaException {
     ResponseEvent responseEvent = mock(ResponseEvent.class);
     when(responseEvent.getClientTransaction()).thenReturn(null);
     SIPResponse sipResponse = mock(SIPResponse.class);
@@ -173,8 +179,26 @@ public class SipProxyManagerTest {
     reset(sipProvider);
 
     // Test: Valid ViaList, RR does contain outbound network and network a valid listenIf
-    when(sipResponse.getApplicationData()).thenReturn("test_out_network");
+    String outNetwork = "test_out_network";
+    HeaderFactory headerFactory = new HeaderFactoryImpl();
+    Address address = new AddressImpl();
+    address.setURI(new SipUri());
+    To to = (To) headerFactory.createToHeader(address, "abc");
+    From from = (From) headerFactory.createFromHeader(address, "abc");
+    when(sipResponse.getApplicationData()).thenReturn(outNetwork);
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
+    when(sipResponse.getTo()).thenReturn(to);
+    when(sipResponse.getFrom()).thenReturn(from);
+    ViaHeader via = new HeaderFactoryImpl().createViaHeader("10.10.10.10", 5060, "UDP", null);
+    when(sipResponse.getTopmostVia()).thenReturn((Via) via);
+    SIPListenPoint sipListenPoint =
+        SIPListenPoint.SIPListenPointBuilder()
+            .setHostIPAddress("1.1.1.1")
+            .setPort(5060)
+            .setTransport(Transport.UDP)
+            .setName(outNetwork)
+            .build();
+    DhruvaNetwork.createNetwork(outNetwork, sipListenPoint);
     proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipProvider, Mockito.times(1)).sendResponse(sipResponse);

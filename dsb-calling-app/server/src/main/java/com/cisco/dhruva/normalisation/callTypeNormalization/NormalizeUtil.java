@@ -2,9 +2,13 @@ package com.cisco.dhruva.normalisation.callTypeNormalization;
 
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.HeaderFactoryImpl;
+import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -110,8 +114,30 @@ public class NormalizeUtil {
     }
   }
 
+  public static void normalizeResponse(
+      ProxySIPResponse proxySIPResponse,
+      List<String> headersToReplaceWithOwnIP,
+      List<String> headersToReplaceWithRemoteIP,
+      List<String> headersToRemove) {
+    logger.debug("Response to normalize: {}", proxySIPResponse.getResponse());
+    DhruvaNetwork responseOutgoingNetwork =
+        ((ProxyCookieImpl) proxySIPResponse.getCookie()).getRequestIncomingNetwork();
+    String ownIPAddress = responseOutgoingNetwork.getListenPoint().getHostIPAddress();
+    String remoteIP = proxySIPResponse.getResponse().getTopmostViaHeader().getHost();
+    SIPResponse response = proxySIPResponse.getResponse();
+    if (CollectionUtils.isNotEmpty(headersToReplaceWithOwnIP)) {
+      replaceIPInHeader(response, headersToReplaceWithOwnIP, ownIPAddress);
+    }
+    if (CollectionUtils.isNotEmpty(headersToReplaceWithRemoteIP)) {
+      replaceIPInHeader(response, headersToReplaceWithRemoteIP, remoteIP);
+    }
+    if (CollectionUtils.isNotEmpty(headersToRemove)) {
+      headersToRemove.stream().forEach(response::removeHeader);
+    }
+  }
+
   private static void replaceIPInHeader(
-      SIPRequest request, List<String> headerList, String ipAddress) {
+      SIPMessage message, List<String> headerList, String ipAddress) {
     if (ipAddress == null) {
       logger.error(
           "IP address cannot be determined. IP Address normalization cannot be performed.");
@@ -120,7 +146,7 @@ public class NormalizeUtil {
     headerList.stream()
         .forEach(
             headerString -> {
-              Header header = request.getHeader(headerString);
+              Header header = message.getHeader(headerString);
               if (header == null) {
                 return;
               }
@@ -132,7 +158,7 @@ public class NormalizeUtil {
               }
               headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
               try {
-                request.setHeader(headerFactory.createHeader(headerName, headerValue));
+                message.setHeader(headerFactory.createHeader(headerName, headerValue));
               } catch (ParseException e) {
                 logger.error(
                     "Error while replacingIPHeader normalization in {}: {}", headerName, e);

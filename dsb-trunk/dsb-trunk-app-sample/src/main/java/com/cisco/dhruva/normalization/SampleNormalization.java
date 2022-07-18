@@ -21,4 +21,9 @@ public class SampleNormalization implements Normalization {
   public BiConsumer<TrunkCookie, EndPoint> postNormalize() {
     return postNormConsumer;
   }
+
+  @Override
+  public Consumer setNormForFutureResponse() {
+    return null;
+  }
 }

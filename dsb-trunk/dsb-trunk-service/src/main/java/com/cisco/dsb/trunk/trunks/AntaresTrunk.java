@@ -22,6 +22,7 @@ public class AntaresTrunk extends B2BTrunk {
   public Mono<ProxySIPResponse> processEgress(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
     normalization.preNormalize().accept(proxySIPRequest);
+    normalization.setNormForFutureResponse().accept(proxySIPRequest);
     return sendToProxy(proxySIPRequest, normalization);
   }
 }

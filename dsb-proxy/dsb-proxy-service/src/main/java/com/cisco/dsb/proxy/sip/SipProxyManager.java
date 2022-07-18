@@ -1,5 +1,7 @@
 package com.cisco.dsb.proxy.sip;
 
+import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
+
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -365,6 +367,7 @@ public class SipProxyManager {
 
       response.removeFirst(ViaHeader.NAME);
 
+      // do stray response default norm here using via and routeHeader
       ViaHeader via;
       via = response.getTopmostViaHeader();
       if (via == null) {
@@ -390,6 +393,7 @@ public class SipProxyManager {
             "Outbound network present in RR does not match any ListenIf, dropping stray response");
         return;
       }
+      doStrayResponseDefaultNormalization(response, network, via);
       try {
         ProxySendMessage.sendResponse(response, null, sipProvider.get(), false);
       } catch (DhruvaException exception) {

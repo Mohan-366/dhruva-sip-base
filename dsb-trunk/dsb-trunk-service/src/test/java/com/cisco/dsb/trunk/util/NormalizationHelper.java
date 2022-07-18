@@ -13,6 +13,8 @@ public class NormalizationHelper implements Normalization {
 
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer = (trunkCookie, endPoint) -> {};
 
+  private Consumer<ProxySIPRequest> responseNormConsumer = (proxySIPRequest) -> {};
+
   @Override
   public Consumer<ProxySIPRequest> preNormalize() {
     return preNormConsumer;
@@ -21,5 +23,10 @@ public class NormalizationHelper implements Normalization {
   @Override
   public BiConsumer<TrunkCookie, EndPoint> postNormalize() {
     return postNormConsumer;
+  }
+
+  @Override
+  public Consumer setNormForFutureResponse() {
+    return responseNormConsumer;
   }
 }

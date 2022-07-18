@@ -30,12 +30,20 @@ import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.ContactList;
+import gov.nist.javax.sip.header.HeaderFactoryImpl;
+import gov.nist.javax.sip.message.SIPMessage;
+import java.text.ParseException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.sip.header.Header;
 import javax.sip.message.Response;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -117,6 +125,54 @@ public abstract class AbstractTrunk implements LoadBalancable {
       ProxySIPRequest proxySIPRequest, Normalization normalization);
 
   protected abstract boolean enableRedirection();
+
+  // This code has to be removed
+  // If we use normalize class, it will be cyclic dependency
+  /// Hence copied for time being
+  // TODO
+  private static final String IPADDRESS_PATTERN =
+      "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
+
+  private static HeaderFactoryImpl headerFactory = new HeaderFactoryImpl();
+
+  private static String getIPToReplace(String headerString) {
+    Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
+    Matcher matcher = pattern.matcher(headerString);
+    if (matcher.find()) {
+      return matcher.group();
+    } else {
+      return null;
+    }
+  }
+
+  private void replaceIPInHeader(SIPMessage message, List<String> headerList, String ipAddress) {
+    if (ipAddress == null) {
+      logger.error(
+          "IP address cannot be determined. IP Address normalization cannot be performed.");
+      return;
+    }
+    headerList.stream()
+        .forEach(
+            headerString -> {
+              Header header = message.getHeader(headerString);
+              if (header == null) {
+                return;
+              }
+              String headerName = header.getName();
+              String headerValue = header.toString().split(headerName + ": ")[1];
+              String ipToReplace = getIPToReplace(headerValue);
+              if (ipToReplace == null) {
+                return;
+              }
+              headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
+              try {
+                message.setHeader(headerFactory.createHeader(headerName, headerValue));
+              } catch (ParseException e) {
+                logger.error(
+                    "Error while replacingIPHeader normalization in {}: {}", headerName, e);
+              }
+            });
+  }
 
   protected Mono<ProxySIPResponse> sendToProxy(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
@@ -532,7 +588,15 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   private Mono<ProxySIPResponse> sendMidCallRequestToProxy(ProxySIPRequest proxySIPRequest) {
     // TODO: KALPA Response handling can be optimized by sending back the response to CallType
-    logger.info("Sending to proxy for midDiallog request {}", proxySIPRequest.getRequest());
+    logger.info(
+        "Sending to proxy for midDiallog request {}", proxySIPRequest.getRequest().getRequestURI());
+
+    // For mid-dialog requests , post normalization is not applied.Hence this workaround.Need to
+    // clean up
+    List<String> headersToReplaceWithRemoteIPInResponse = Arrays.asList("To");
+    SipUri rUri = ((SipUri) proxySIPRequest.getRequest().getRequestURI());
+    replaceIPInHeader(
+        proxySIPRequest.getRequest(), headersToReplaceWithRemoteIPInResponse, rUri.getHost());
     ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
     proxyInterface
         .proxyRequest(proxySIPRequest)
