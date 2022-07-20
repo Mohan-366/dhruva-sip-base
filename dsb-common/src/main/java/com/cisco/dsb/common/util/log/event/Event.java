@@ -94,6 +94,7 @@ public class Event {
       long dhruvaProcessingDelayInMillis,
       DhruvaAppRecord appRecord) {
 
+    String remoteIP = messageBindingInfo.getRemoteAddressStr();
     Map<String, String> messageInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
@@ -102,7 +103,7 @@ public class Event {
                 "cseqMethod",
                 String.valueOf(message.getHeader(CSeq.NAME)),
                 Event.REMOTEIP,
-                messageBindingInfo.getRemoteAddressStr()));
+                remoteIP.startsWith("/") ? remoteIP.substring(1) : remoteIP));
 
     if (MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
       SIPRequest sipRequest = (SIPRequest) message;

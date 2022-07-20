@@ -26,8 +26,9 @@ public class DialOutWXCNorm implements Normalization {
           new String[] {"requestUri", SipParamConstants.CALLTYPE, SipParamConstants.DIAL_OUT_TAG},
           new String[] {"requestUri", SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_OUT},
           new String[] {"requestUri", SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_OUT});
-  List<String> headersToReplaceWithOwnIPInResponse = Arrays.asList("To",
-      "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion");
+  List<String> headersToReplaceWithOwnIPInResponse =
+      Arrays.asList(
+          "To", "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion");
   List<String> headersToReplaceWithRemoteIPInResponse = Arrays.asList("From");
   List<String> headersToRemoveInResponse = Arrays.asList("Server", "User-Agent");
   private Consumer<ProxySIPRequest> preNormConsumer =

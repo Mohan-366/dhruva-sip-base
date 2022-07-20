@@ -26,9 +26,11 @@ public class DialInPSTNNorm implements Normalization {
           new String[] {"requestUri", SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG},
           new String[] {"requestUri", SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN},
           new String[] {"requestUri", SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN});
-  List<String> headersToReplaceWithOwnIPInResponse = Arrays.asList("To",
-      "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion");
-  List<String> headersToRemoveInResponse = Arrays.asList("X-BroadWorks-Correlation-Info", "X-BroadWorks-DNC");
+  List<String> headersToReplaceWithOwnIPInResponse =
+      Arrays.asList(
+          "To", "P-Asserted-Identity", "P-Preferred-Identity", "RPID-Privacy", "Diversion");
+  List<String> headersToRemoveInResponse =
+      Arrays.asList("X-BroadWorks-Correlation-Info", "X-BroadWorks-DNC");
   List<String> headersToReplaceWithRemoteIPInResponse = Arrays.asList("From");
   private Consumer<ProxySIPRequest> preNormConsumer =
       proxySIPRequest -> {
