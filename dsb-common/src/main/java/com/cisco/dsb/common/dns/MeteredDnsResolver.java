@@ -89,4 +89,10 @@ class MeteredDnsResolver implements DnsLookup {
 
     return f1;
   }
+
+  @Override
+  public List<DNSARecord> lookupAAsync(String lookup)
+      throws InterruptedException, ExecutionException {
+    return List.of();
+  }
 }

@@ -2,30 +2,43 @@ package com.cisco.dsb.common.dns;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
+import static org.mockito.AdditionalAnswers.answer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
+import org.xbill.DNS.lookup.LookupSession;
 
+@Test
 public class DnsLookupImplTest {
   DnsLookup resolver;
 
   LookupFactory lookupFactory;
   Resolver xbillResolver;
+  Resolver mockResolver;
+
+  public static final Name DUMMY_NAME = Name.fromConstantString("to.be.replaced.");
+  private static ARecord LOOPBACK_A =
+      new ARecord(DUMMY_NAME, DClass.IN, 3600, InetAddress.getLoopbackAddress());
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -39,6 +52,7 @@ public class DnsLookupImplTest {
     resolver = new DnsLookupImpl(srvCache, aCache, lookupFactory);
 
     xbillResolver = mock(Resolver.class);
+    mockResolver = mock(Resolver.class);
   }
 
   @AfterTest
@@ -120,6 +134,24 @@ public class DnsLookupImplTest {
     // assertThat(f.get().isEmpty(), is(true));
   }
 
+  @Test(description = "test aysnc lookup")
+  public void testAsyncLookup() throws ExecutionException, InterruptedException {
+    String fqdn = "cisco.webex.com";
+    wireUpMockResolver(mockResolver, query -> answer(query, name -> LOOPBACK_A));
+    Cache mockCache = mock(Cache.class);
+    when(mockCache.getDClass()).thenReturn(DClass.IN);
+
+    LookupSession lookupSession =
+        LookupSession.builder().resolver(mockResolver).cache(mockCache).build();
+    when(lookupFactory.createLookupAsync(fqdn)).thenReturn(lookupSession);
+
+    List<DNSARecord> dnsaRecordList = resolver.lookupAAsync(fqdn);
+    Assert.assertNotNull(dnsaRecordList);
+    Assert.assertFalse(dnsaRecordList.isEmpty());
+    Assert.assertEquals(
+        dnsaRecordList.get(0).getAddress(), InetAddress.getLoopbackAddress().getHostAddress());
+  }
+
   private Message messageWithRCode(String query, int rcode) throws TextParseException {
     Name queryName = Name.fromString(query);
     Record question = Record.newRecord(queryName, Type.SRV, DClass.IN);
@@ -163,5 +195,30 @@ public class DnsLookupImplTest {
     }
 
     return result;
+  }
+
+  private void wireUpMockResolver(Resolver mockResolver, Function<Message, Message> handler) {
+    when(mockResolver.sendAsync(any(Message.class), any(Executor.class)))
+        .thenAnswer(
+            invocation -> {
+              Message query = invocation.getArgument(0);
+              return CompletableFuture.completedFuture(handler.apply(query));
+            });
+  }
+
+  public static Message answer(Message query, Function<Name, Record> recordMaker) {
+    Message answer = new Message(query.getHeader().getID());
+    answer.addRecord(query.getQuestion(), Section.QUESTION);
+    Name questionName = query.getQuestion().getName();
+    Record response = recordMaker.apply(questionName);
+    if (response == null) {
+      answer.getHeader().setRcode(Rcode.NXDOMAIN);
+    } else {
+      if (DUMMY_NAME.equals(response.getName())) {
+        response = response.withName(query.getQuestion().getName());
+      }
+      answer.addRecord(response, Section.ANSWER);
+    }
+    return answer;
   }
 }

@@ -508,6 +508,12 @@ public class SipServerLocatorTest {
       records.complete(aRecords.getOrDefault(lookup, new ArrayList<>()));
       return records;
     }
+
+    @Override
+    public List<DNSARecord> lookupAAsync(String lookup)
+        throws InterruptedException, ExecutionException {
+      return Collections.emptyList();
+    }
   }
 
   @Test

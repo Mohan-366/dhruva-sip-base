@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
-import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import org.xbill.DNS.Lookup;
@@ -44,12 +43,5 @@ public class SimpleLookupFactoryTest {
     thrown.expect(DnsException.class);
 
     factory.createLookup("bad\\1 name", Type.SRV);
-  }
-
-  @Test
-  public void noResolverSetForLookup() {
-    SimpleLookupFactory factory = new SimpleLookupFactory(null);
-    Lookup second = factory.createLookup("some.other.name.", Type.SRV);
-    Assert.assertNull(Lookup.getDefaultResolver());
   }
 }

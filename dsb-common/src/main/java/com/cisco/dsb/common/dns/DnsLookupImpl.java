@@ -4,12 +4,18 @@ import static java.util.Objects.requireNonNull;
 
 import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
+import com.cisco.dsb.common.util.TriFunction;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import lombok.CustomLog;
-import org.xbill.DNS.Lookup;
-import org.xbill.DNS.Record;
-import org.xbill.DNS.Type;
+import org.xbill.DNS.*;
+import org.xbill.DNS.lookup.LookupResult;
+import org.xbill.DNS.lookup.LookupSession;
+import org.xbill.DNS.lookup.NoSuchDomainException;
+import org.xbill.DNS.lookup.NoSuchRRSetException;
 
 // DNS lookup behavior follows csb ParallelDnsResolver where lookups are always performed against
 // DNS
@@ -60,6 +66,14 @@ public class DnsLookupImpl implements DnsLookup {
     return aRecords;
   }
 
+  @Override
+  public List<DNSARecord> lookupAAsync(String lookup)
+      throws InterruptedException, ExecutionException {
+    DnsLookupResult dnsLookupResult = doLookupAsync(lookup, Type.A).toCompletableFuture().get();
+    List<DNSARecord> dnsARecords = aCache.lookup(lookup, dnsLookupResult);
+    return dnsARecords;
+  }
+
   public DnsLookupResult doLookup(String query, int queryType) {
 
     Lookup lookup = lookupFactory.createLookup(query, queryType);
@@ -74,5 +88,42 @@ public class DnsLookupImpl implements DnsLookup {
       return new DnsLookupResult(records, lookup.getResult(), lookup.getErrorString(), queryType);
     }
     return new DnsLookupResult(null, null, null, queryType);
+  }
+
+  private TriFunction<LookupResult, Integer, Throwable, DnsLookupResult> handleDnsLookupResult =
+      (result, queryType, ex) -> {
+        if (ex == null) {
+          if (result.getRecords().isEmpty()) {
+            logger.warn("empty records for query");
+            return new DnsLookupResult(null, Lookup.SUCCESSFUL, "empty records", queryType);
+          }
+          return new DnsLookupResult(
+              result.getRecords().toArray(Record[]::new), Lookup.SUCCESSFUL, null, queryType);
+        } else {
+          Throwable cause = ex;
+          int reason = Lookup.UNRECOVERABLE;
+          if (ex instanceof CompletionException && ex.getCause() != null) {
+            cause = ex.getCause();
+          }
+          if (cause instanceof NoSuchRRSetException || cause instanceof NoSuchDomainException) {
+            logger.warn("No results returned for query result from dnsjava: {}", ex.getMessage());
+            reason = Lookup.HOST_NOT_FOUND;
+          }
+          return new DnsLookupResult(null, reason, ex.getMessage(), queryType);
+        }
+      };
+
+  public CompletionStage<DnsLookupResult> doLookupAsync(String query, int queryType) {
+    LookupSession session = lookupFactory.createLookupAsync(query);
+    Name name;
+    try {
+      name = Name.fromString(query);
+    } catch (TextParseException e) {
+      throw new DnsException(queryType, query, DnsErrorCode.ERROR_DNS_INVALID_QUERY);
+    }
+    logger.info("executing async dns lookup for query {} with querytype {}", query, queryType);
+    return session
+        .lookupAsync(name, queryType, DClass.IN)
+        .handle((result, ex) -> handleDnsLookupResult.apply(result, queryType, ex));
   }
 }
