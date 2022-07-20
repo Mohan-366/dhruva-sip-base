@@ -6,11 +6,14 @@ import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.ProxyCookieImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.HeaderFactoryImpl;
+import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sip.header.Header;
@@ -136,6 +139,12 @@ public class NormalizeUtil {
     }
   }
 
+  /* IP is going to be replaced in all headers of a given name and not just the top most.
+   * Currently no use case for only top most header. There is either a single header
+   * or multiple headers (Diversion) for IP replacement.
+   * TODO: KALPA - refactor to have both options.
+   */
+
   private static void replaceIPInHeader(
       SIPMessage message, List<String> headerList, String ipAddress) {
     if (ipAddress == null) {
@@ -146,23 +155,26 @@ public class NormalizeUtil {
     headerList.stream()
         .forEach(
             headerString -> {
-              Header header = message.getHeader(headerString);
-              if (header == null) {
-                return;
+              List<SIPHeader> newHeaderList = new ArrayList<>();
+              ListIterator<SIPHeader> headers = message.getHeaders(headerString);
+              while(headers.hasNext()) {
+                SIPHeader header = headers.next();
+                String headerName = header.getName();
+                String headerValue = header.toString().split(headerName + ": ")[1];
+                String ipToReplace = getIPToReplace(headerValue);
+                if (ipToReplace != null) {
+                  headerValue = headerValue.replace(ipToReplace, ipAddress);
+                  try {
+                    newHeaderList.add(
+                        (SIPHeader) headerFactory.createHeader(headerName, headerValue));
+                  } catch (ParseException e) {
+                    logger.error(
+                        "Error while replacingIPHeader normalization in {}: {}", headerName, e);
+                  }
+                }
               }
-              String headerName = header.getName();
-              String headerValue = header.toString().split(headerName + ": ")[1];
-              String ipToReplace = getIPToReplace(headerValue);
-              if (ipToReplace == null) {
-                return;
-              }
-              headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
-              try {
-                message.setHeader(headerFactory.createHeader(headerName, headerValue));
-              } catch (ParseException e) {
-                logger.error(
-                    "Error while replacingIPHeader normalization in {}: {}", headerName, e);
-              }
+              message.removeHeader(headerString);
+              message.setHeaders(newHeaderList);
             });
   }
 

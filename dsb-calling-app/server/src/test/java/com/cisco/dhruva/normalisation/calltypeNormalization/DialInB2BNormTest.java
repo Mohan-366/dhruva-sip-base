@@ -2,6 +2,7 @@ package com.cisco.dhruva.normalisation.calltypeNormalization;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
 import com.cisco.dhruva.util.RequestHelper;
@@ -21,8 +22,12 @@ import com.cisco.dsb.trunk.trunks.Egress;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.HeaderFactoryImpl;
+import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import javax.sip.header.Header;
 import org.mockito.Mock;
@@ -64,9 +69,22 @@ public class DialInB2BNormTest {
         headerFactory.createHeader(
             "P-Preferred-Identity", "<sip:+10982345764@192.168.90.206:5061>");
     request.addHeader(ppId);
-    Header diversion =
-        headerFactory.createHeader("Diversion", "<sip:+10982345764@192.168.90.206:5061>");
-    request.addHeader(diversion);
+    List<SIPHeader> diversionHeaders = new ArrayList<>();
+    SIPHeader diversion =
+        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@1.1.1.1:5061>");
+    diversionHeaders.add(diversion);
+    diversion =
+        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@2.2.2.2:5061>");
+    diversionHeaders.add(diversion);
+    diversion =
+        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@3.3.3.3:5061>");
+    diversionHeaders.add(diversion);
+    diversion =
+        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@4.4.4.4:5061>");
+    diversionHeaders.add(diversion);
+
+
+    request.setHeaders(diversionHeaders);
     Header rpidPrivacy =
         headerFactory.createHeader("RPID-Privacy", "<sip:+10982345764@192.168.90.206:5061>");
     request.addHeader(rpidPrivacy);
@@ -80,7 +98,6 @@ public class DialInB2BNormTest {
     when(sipListenPoint.getHostIPAddress()).thenReturn("10.10.10.10");
     when(sipListenPoint.getName()).thenReturn("net_cc");
     DhruvaNetwork.createNetwork("net_cc", sipListenPoint);
-
     // testing preNormalize
     dialInB2BNorm.preNormalize().accept(proxySIPRequest);
 
@@ -97,6 +114,16 @@ public class DialInB2BNormTest {
     assertEquals(
         request.getHeader("P-Preferred-Identity").toString().trim(),
         "P-Preferred-Identity: <sip:+10982345764@10.10.10.10:5061>");
+    ListIterator<SIPHeader> diversionHeadersReceived = request.getHeaders("Diversion");
+    assertTrue(diversionHeadersReceived != null);
+    int count = 0;
+    while (diversionHeadersReceived.hasNext()) {
+      assertEquals(
+          diversionHeadersReceived.next().toString().trim(),
+          "Diversion: <sip:+10982345764@10.10.10.10:5061>");
+      count++;
+    }
+    assertTrue(count == 4);
     assertEquals(
         request.getHeader("Diversion").toString().trim(),
         "Diversion: <sip:+10982345764@10.10.10.10:5061>");
