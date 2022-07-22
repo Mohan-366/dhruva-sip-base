@@ -3,12 +3,14 @@ package com.cisco.dsb.common.metric;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.wx2.util.Token;
 import com.google.common.base.Strings;
+import lombok.Getter;
 import lombok.NonNull;
 
 public class SipMetricsContext implements AutoCloseable {
   // SIP Call ID used to track metric timings
   // http://tools.ietf.org/html/rfc3261#section-8.1.1.4
   private String callId = Token.EmptyString;
+  @Getter private String callType = Token.EmptyString;
 
   // Did the metric event that triggered this metric context succeed?
   private boolean success = false;
@@ -36,16 +38,19 @@ public class SipMetricsContext implements AutoCloseable {
    * @param callId Sip call id related to this metric, if null or empty this field ignored
    * @param value Increase metric count by this amount
    * @param emitMetric If true, sends metric immediately and assumes event that generated this
-   *     metric was successful
+   * @param callType holds information of internal calltype derived by dhruva, e.g: dialInPstn,
+   *     dialInB2B metric was successful
    */
   public SipMetricsContext(
       @NonNull MetricService metricsService,
       State state,
       String callId,
       long value,
+      String callType,
       boolean emitMetric) {
     this.metricsService = metricsService;
     this.value = value;
+    this.callType = callType;
     if (metricsService != null) {
       setCallId(callId);
       this.state = state;
@@ -70,11 +75,20 @@ public class SipMetricsContext implements AutoCloseable {
 
   public SipMetricsContext(
       MetricService metricsService, State state, String callId, boolean emitMetric) {
-    this(metricsService, state, callId, 1, emitMetric);
+    this(metricsService, state, callId, 1, null, emitMetric);
+  }
+
+  public SipMetricsContext(
+      MetricService metricsService,
+      State state,
+      String callId,
+      String callType,
+      boolean emitMetric) {
+    this(metricsService, state, callId, 1, callType, emitMetric);
   }
 
   public SipMetricsContext(MetricService metricsService, State state, long value) {
-    this(metricsService, state, null, value, true);
+    this(metricsService, state, null, value, null, true);
   }
 
   // Sets the callId for tracking metric events under this context. Note

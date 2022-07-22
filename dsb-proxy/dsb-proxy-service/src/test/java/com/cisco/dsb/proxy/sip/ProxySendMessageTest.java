@@ -1,8 +1,5 @@
 package com.cisco.dsb.proxy.sip;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
-
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
@@ -15,13 +12,17 @@ import gov.nist.javax.sip.header.AcceptEncodingList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransactionImpl;
-import java.text.ParseException;
-import javax.sip.*;
-import javax.sip.address.Hop;
-import javax.sip.address.Router;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import reactor.test.StepVerifier;
+
+import javax.sip.*;
+import javax.sip.address.Hop;
+import javax.sip.address.Router;
+import java.text.ParseException;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class ProxySendMessageTest {
 
@@ -31,10 +32,12 @@ public class ProxySendMessageTest {
     SipProvider sipProvider = mock(SipProvider.class);
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
+    String TEST_CALLTYPE = "testCalltype";
     doNothing().when(serverTransaction).sendResponse(any());
 
     StepVerifier.create(
-            ProxySendMessage.sendResponseAsync(200, sipProvider, serverTransaction, request))
+            ProxySendMessage.sendResponseAsync(
+                200, sipProvider, serverTransaction, request, TEST_CALLTYPE))
         .expectNextCount(0)
         .verifyComplete();
   }
@@ -44,13 +47,15 @@ public class ProxySendMessageTest {
     SipProvider sipProvider = mock(SipProvider.class);
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
+    String TEST_CALLTYPE = "testCalltype";
 
     doThrow(new SipException("dummy jain sip exception"))
         .when(serverTransaction)
         .sendResponse(any());
 
     StepVerifier.create(
-            ProxySendMessage.sendResponseAsync(200, sipProvider, serverTransaction, request))
+            ProxySendMessage.sendResponseAsync(
+                200, sipProvider, serverTransaction, request, TEST_CALLTYPE))
         .expectError()
         .verify();
   }
@@ -62,8 +67,10 @@ public class ProxySendMessageTest {
     doNothing().when(sipProvider).sendResponse(any());
 
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
+    String TEST_CALLTYPE = "testCalltype";
 
-    StepVerifier.create(ProxySendMessage.sendResponseAsync(404, sipProvider, null, request))
+    StepVerifier.create(
+            ProxySendMessage.sendResponseAsync(404, sipProvider, null, request, TEST_CALLTYPE))
         .expectNextCount(0)
         .verifyComplete();
   }
@@ -72,10 +79,10 @@ public class ProxySendMessageTest {
   void testSendResponse() {
     assertThrows(
         DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(1, null, null, new SIPRequest()));
+        () -> ProxySendMessage.sendResponse(1, "testCallType", null, null, new SIPRequest()));
     assertThrows(
         DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(new SIPResponse(), null, null, true));
+        () -> ProxySendMessage.sendResponse(new SIPResponse(), null, null, true, "testCallType"));
   }
 
   @Test
@@ -85,7 +92,8 @@ public class ProxySendMessageTest {
     doNothing().when(sipServerTransactionImpl).sendResponse(any());
     assertThrows(
         DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true));
+        () ->
+            ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true, null));
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -100,7 +108,7 @@ public class ProxySendMessageTest {
     sipResponse.addHeader(new RemotePartyID());
     assertThrows(
         DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true));
+        () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null));
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -113,7 +121,7 @@ public class ProxySendMessageTest {
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
-    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -127,7 +135,7 @@ public class ProxySendMessageTest {
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     sipResponse.addHeader(new Accept());
-    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -141,7 +149,7 @@ public class ProxySendMessageTest {
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     sipResponse.addHeader(new AcceptEncodingList());
-    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -158,7 +166,7 @@ public class ProxySendMessageTest {
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.setReasonPhrase("Just cause");
     sipResponse.addHeader(accept);
-    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true);
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -166,7 +174,8 @@ public class ProxySendMessageTest {
   @Test
   void testSendRequest() {
     assertThrows(
-        DhruvaException.class, () -> ProxySendMessage.sendRequest(new SIPRequest(), null, null));
+        DhruvaException.class,
+        () -> ProxySendMessage.sendRequest(new SIPRequest(), null, null, null));
   }
 
   @Test
@@ -174,7 +183,7 @@ public class ProxySendMessageTest {
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
     doNothing().when(clientTransaction).sendRequest();
-    ProxySendMessage.sendRequest(request, clientTransaction, null);
+    ProxySendMessage.sendRequest(request, clientTransaction, null, null);
     verify(clientTransaction).sendRequest();
   }
 
@@ -183,7 +192,7 @@ public class ProxySendMessageTest {
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
     SipProvider sipProvider = mock(SipProvider.class);
     doNothing().when(sipProvider).sendRequest(request);
-    ProxySendMessage.sendRequest(request, null, sipProvider);
+    ProxySendMessage.sendRequest(request, null, sipProvider, null);
     verify(sipProvider).sendRequest(request);
   }
 

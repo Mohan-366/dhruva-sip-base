@@ -1,7 +1,5 @@
 package com.cisco.dsb.proxy.controller;
 
-import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doResponseNormalization;
-
 import com.cisco.dsb.common.context.CommonContext;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
@@ -136,7 +134,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         }*/
         if (proxyTransaction != null) {
           SIPResponse response = proxySIPResponse.getResponse();
-          doResponseNormalization(proxySIPResponse);
           ((ProxyTransaction) proxyTransaction).respond(response);
           logger.info("Sent response: {}", response.getStatusCode());
         } else {
@@ -656,7 +653,12 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   JainSipHelper.getMessageFactory()
                       .createResponse(Response.METHOD_NOT_ALLOWED, sipRequest);
               addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
-              ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
+              ProxySendMessage.sendResponse(
+                  sipResponse,
+                  serverTransaction,
+                  sipProvider,
+                  true,
+                  proxySIPRequest.getCallTypeName());
             } catch (Exception e) {
               throw new DhruvaRuntimeException(
                   ErrorCode.SEND_RESPONSE_ERR,
@@ -672,7 +674,12 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             logger.info("Sending 200 (OK) response for received CANCEL");
             Response sipResponse =
                 JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
-            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
+            ProxySendMessage.sendResponse(
+                sipResponse,
+                serverTransaction,
+                sipProvider,
+                true,
+                proxySIPRequest.getCallTypeName());
 
             // Sending CANCEL to server
             ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
@@ -710,7 +717,12 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             addAcceptHeader(sipResponse);
             // TODO: if we know the data for 'Accept-Language' & 'AcceptEncoding' headers, add them
             // to this OPTIONS 200 OK response (as per rfc)
-            ProxySendMessage.sendResponse(sipResponse, serverTransaction, sipProvider, true);
+            ProxySendMessage.sendResponse(
+                sipResponse,
+                serverTransaction,
+                sipProvider,
+                true,
+                proxySIPRequest.getCallTypeName());
           } catch (Exception e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,

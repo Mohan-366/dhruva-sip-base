@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49387,
-  "iteration": 1641360026412,
+  "iteration": 1658303464112,
   "links": [],
   "panels": [
     {
@@ -32,9 +32,7 @@
       },
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "80%",
@@ -115,7 +113,6 @@
       "decimals": 1,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -149,7 +146,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 2,
       "points": true,
       "renderer": "flot",
@@ -251,9 +248,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "percent",
@@ -426,9 +421,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "percent",
@@ -604,9 +597,7 @@
       },
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "80%",
@@ -680,9 +671,7 @@
       "columns": [],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "100%",
@@ -780,9 +769,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "percent",
@@ -955,9 +942,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "percent",
@@ -1133,9 +1118,7 @@
       },
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "80%",
@@ -1209,9 +1192,7 @@
       "columns": [],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "100%",
@@ -1302,7 +1283,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -1310,17 +1291,13 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
-          "tags": [],
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": "influx_microservice_metrics",
         "definition": "",
+        "description": null,
         "error": null,
         "hide": 0,
         "includeAll": true,

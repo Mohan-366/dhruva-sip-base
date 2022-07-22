@@ -9,11 +9,6 @@ import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.proxy.sip.*;
-import com.cisco.dsb.proxy.sip.ProxyClientTransaction;
-import com.cisco.dsb.proxy.sip.ProxyCookie;
-import com.cisco.dsb.proxy.sip.ProxyInterface;
-import com.cisco.dsb.proxy.sip.ProxyParamsInterface;
-import com.cisco.dsb.proxy.sip.ProxyStatelessTransaction;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.io.IOException;
 import java.text.ParseException;
@@ -198,6 +193,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
       (metricService, state) -> {
         // Emit latency metric for non mid-dialog requests
         if (metricService != null && !SipUtils.isMidDialogRequest(this.getRequest()))
-          new SipMetricsContext(metricService, state, this.getCallId(), true);
+          new SipMetricsContext(
+              metricService, state, this.getCallId(), this.getCallTypeName(), true);
       };
 }

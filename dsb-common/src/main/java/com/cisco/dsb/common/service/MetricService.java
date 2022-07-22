@@ -4,10 +4,6 @@
 
 package com.cisco.dsb.common.service;
 
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
-import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
-
 import com.cisco.dsb.common.dto.ConnectionInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
@@ -25,15 +21,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import gov.nist.javax.sip.stack.MessageChannel;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +30,20 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.Supplier;
+
+import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
+import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 
 @Service
 @CustomLog
@@ -458,9 +459,8 @@ public class MetricService {
       boolean isMidCall,
       boolean isInternallyGenerated,
       long dhruvaProcessingDelayInMillis,
-      String requestUri
-      // String callType
-      ) {
+      String requestUri,
+      String callType) {
 
     Metric metric =
         Metrics.newMetric()
@@ -471,6 +471,7 @@ public class MetricService {
             .tag("isMidCall", isMidCall)
             .tag("transport", transport.name())
             .tag("isInternallyGenerated", isInternallyGenerated)
+            .tag("callType", callType)
             .field("callId", callId)
             .field("cSeq", cseq);
 
@@ -508,7 +509,14 @@ public class MetricService {
     if (context != null) {
       callId = context.getCallId();
     }
-    update(metric, 1, duration, timeUnit, context != null ? context.isSuccessful() : null, callId);
+    update(
+        metric,
+        1,
+        duration,
+        timeUnit,
+        context != null ? context.isSuccessful() : null,
+        callId,
+        context.getCallType());
   }
 
   public void update(
@@ -517,8 +525,9 @@ public class MetricService {
       long duration,
       TimeUnit timeUnit,
       Boolean isSuccess,
-      @Nullable String callId) {
-    update(metric, count, duration, timeUnit, 0, null, isSuccess, callId);
+      @Nullable String callId,
+      String callType) {
+    update(metric, count, duration, timeUnit, 0, null, isSuccess, callId, callType);
   }
 
   public void update(
@@ -529,7 +538,8 @@ public class MetricService {
       long expectedDuration,
       TimeUnit expectedTimeUnit,
       Boolean isSuccess,
-      String callId) {
+      String callId,
+      String callType) {
 
     update(
         createMetric(
@@ -540,7 +550,8 @@ public class MetricService {
             expectedDuration,
             expectedTimeUnit,
             isSuccess,
-            callId));
+            callId,
+            callType));
   }
 
   public void update(Metric influxPoint) {
@@ -567,6 +578,8 @@ public class MetricService {
    * @param expectedDuration How long did you expect this to take?
    * @param expectedTimeUnit What TimeUnit is expectedDuration?
    * @param isSuccess If event that generated this metric was successful
+   * @param callType holds information of internal calltype derived by dhruva, e.g: dialInPstn,
+   *     dialInB2B
    */
   private static Metric createMetric(
       String metric,
@@ -576,7 +589,8 @@ public class MetricService {
       long expectedDuration,
       TimeUnit expectedTimeUnit,
       Boolean isSuccess,
-      String callId) {
+      String callId,
+      String callType) {
 
     long normalizedDuration =
         duration > 0 && durationTimeUnit != null
@@ -608,6 +622,9 @@ public class MetricService {
       }
       if (callId != null) {
         point.field("callId", callId);
+      }
+      if (callType != null) {
+        point.tag("callType", callType);
       }
     }
 

@@ -151,7 +151,8 @@ public class ProxyClientTransaction {
           //   send the original request.
           ClientTransaction cancelTransaction = sipProvider.getNewClientTransaction(cancelRequest);
           logger.info("Client transaction for CANCEL: {}", cancelRequest);
-          ProxySendMessage.sendRequest(cancelRequest, cancelTransaction, sipProvider);
+          String callTypeName = getProxySIPRequest().getCallTypeName();
+          ProxySendMessage.sendRequest(cancelRequest, cancelTransaction, sipProvider, callTypeName);
           state = STATE_CANCEL_SENT;
         }
 

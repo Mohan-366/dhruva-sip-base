@@ -69,9 +69,12 @@ public class ProxyServerTransaction {
           controllerConfig.setRecordRouteInterface(response, false, rrIndexFromEnd);
         else controllerConfig.setRecordRouteInterface(response, true, rrIndexFromEnd);
       }
-
+      String callTypeName =
+          this.proxy.getClientTransaction() != null
+              ? this.proxy.getClientTransaction().getProxySIPRequest().getCallTypeName()
+              : null;
       ProxySendMessage.sendResponse(
-          serverTransaction, response, this.isInternallyGeneratedResponse());
+          serverTransaction, response, this.isInternallyGeneratedResponse(), callTypeName);
       // TODO there can be multiple responses associated with single serverTransaction, so this
       // should be a list?
       this.response = response;

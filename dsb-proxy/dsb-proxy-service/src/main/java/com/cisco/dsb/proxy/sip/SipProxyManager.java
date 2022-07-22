@@ -1,7 +1,5 @@
 package com.cisco.dsb.proxy.sip;
 
-import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
-
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -33,26 +31,26 @@ import gov.nist.javax.sip.header.Unsupported;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransaction;
+import lombok.CustomLog;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+import javax.sip.*;
+import javax.sip.address.URI;
+import javax.sip.header.MaxForwardsHeader;
+import javax.sip.header.TooManyHopsException;
+import javax.sip.header.ViaHeader;
+import javax.sip.message.Request;
+import javax.sip.message.Response;
 import java.text.ParseException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.sip.*;
-import javax.sip.RequestEvent;
-import javax.sip.ResponseEvent;
-import javax.sip.SipProvider;
-import javax.sip.address.URI;
-import javax.sip.header.*;
-import javax.sip.header.MaxForwardsHeader;
-import javax.sip.header.ViaHeader;
-import javax.sip.message.Request;
-import javax.sip.message.Response;
-import lombok.CustomLog;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
+
+import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
 
 @Service
 @CustomLog
@@ -115,7 +113,7 @@ public class SipProxyManager {
         try {
           logger.debug("Sending provisional 100 response for INVITE");
           ProxySendMessage.sendResponse(
-              Response.TRYING, sipProvider, serverTransaction, (SIPRequest) request);
+              Response.TRYING, null, sipProvider, serverTransaction, (SIPRequest) request);
           logger.info("Successfully sent 100 provisional response for INVITE");
         } catch (Exception e) {
           logger.error("Error sending provisional 100 response", e);
@@ -274,6 +272,7 @@ public class SipProxyManager {
         try {
           ProxySendMessage.sendResponse(
               Response.UNSUPPORTED_URI_SCHEME,
+              request.getCallTypeName(),
               request.getProvider(),
               request.getServerTransaction(),
               sipRequest);
@@ -289,6 +288,7 @@ public class SipProxyManager {
         try {
           ProxySendMessage.sendResponse(
               Response.TOO_MANY_HOPS,
+              request.getCallTypeName(),
               request.getProvider(),
               request.getServerTransaction(),
               sipRequest);
@@ -311,7 +311,11 @@ public class SipProxyManager {
                     .createResponse(Response.BAD_EXTENSION, sipRequest);
             unsupportedHeaders.forEach(sipResponse::addHeader);
             ProxySendMessage.sendResponse(
-                sipResponse, request.getServerTransaction(), request.getProvider(), true);
+                sipResponse,
+                request.getServerTransaction(),
+                request.getProvider(),
+                true,
+                request.getCallTypeName());
           } catch (DhruvaException | ParseException e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
@@ -395,7 +399,7 @@ public class SipProxyManager {
       }
       doStrayResponseDefaultNormalization(response, network, via);
       try {
-        ProxySendMessage.sendResponse(response, null, sipProvider.get(), false);
+        ProxySendMessage.sendResponse(response, null, sipProvider.get(), false, null);
       } catch (DhruvaException exception) {
         logger.error("Unable to send out stray response using sipProvider", exception);
       }
@@ -553,7 +557,8 @@ public class SipProxyManager {
             SipUtils.isMidDialogRequest(sipRequest),
             false, // internally generated
             0L,
-            String.valueOf(sipRequest.getRequestURI()));
+            String.valueOf(sipRequest.getRequestURI()),
+            null);
 
         logger.info(
             "received incoming request {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",
@@ -577,6 +582,17 @@ public class SipProxyManager {
         Generate Event and metrics for sip messages.
          */
 
+        // populate calltype information for metrics
+        ProxySIPResponse proxySIPResponse = this.findProxyTransaction().apply(responseEvent);
+        String callType =
+            proxySIPResponse != null
+                ? proxySIPResponse
+                    .getProxyTransaction()
+                    .getClientTransaction()
+                    .getProxySIPRequest()
+                    .getCallTypeName()
+                : null;
+
         Transport transportType = LMAUtil.getTransportType(sipProvider);
 
         // BindingInfo messageBindingInfo = LMAUtill.populateBindingInfo(sipResponse,
@@ -598,10 +614,11 @@ public class SipProxyManager {
             Event.MESSAGE_TYPE.RESPONSE,
             transportType,
             Event.DIRECTION.IN,
-            false, // false -- ProxyUtils.isMidDialogRequest(sipRequest)
-            false, // internally generated
+            false,
+            false,
             0L,
-            String.valueOf(sipResponse.getReasonPhrase()));
+            String.valueOf(sipResponse.getReasonPhrase()),
+            callType);
 
         logger.info(
             "received incoming response: {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",

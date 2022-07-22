@@ -22,7 +22,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49346,
-  "iteration": 1640156243183,
+  "iteration": 1658308135195,
   "links": [],
   "panels": [
     {
@@ -33,7 +33,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "custom": {},
           "decimals": 2,
           "mappings": [
             {
@@ -93,7 +92,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "aggr_query": "SELECT mean(\"max\") FROM (SELECT max(\"availability\") FROM \"l2sip.health.l2sip.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment, instance_index fill(null))",
@@ -181,6 +180,45 @@
     },
     {
       "aggr_source": "influx_microservice_metrics",
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                50
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "1m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "Dhruva Service Availability alert",
+        "noDataState": "no_data",
+        "notifications": [
+          {
+            "uid": "fh2SB_Cnk"
+          }
+        ]
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -189,9 +227,7 @@
       "editable": true,
       "error": false,
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fill": 1,
@@ -225,7 +261,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -276,7 +312,16 @@
           "tags": []
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 50,
+          "visible": true
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": "15s",
@@ -396,7 +441,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "aggr_query": "SELECT \"availability\" FROM \"l2sip.health.upstream.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY \"name\"",
@@ -497,9 +542,7 @@
       "editable": true,
       "error": false,
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fill": 1,
@@ -533,7 +576,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -626,111 +669,38 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "allValue": ".*",
+        "allValue": null,
         "current": {
-          "selected": true,
-          "tags": [],
-          "text": [
-            "wdfwintsip-a-1"
-          ],
-          "value": [
-            "wdfwintsip-a-1"
-          ]
+          "selected": false,
+          "text": "wdfwintsip-a-1",
+          "value": "wdfwintsip-a-1"
         },
+        "datasource": "influx_microservice_metrics",
+        "definition": "show tag values from \"dhruva.service.health\" with key = \"environment\"",
         "description": null,
         "error": null,
         "hide": 0,
-        "includeAll": true,
+        "includeAll": false,
         "label": "Environment Filter",
-        "multi": true,
+        "multi": false,
         "name": "env_host_query_str",
-        "options": [
-          {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "ecp",
-            "value": "ecp"
-          },
-          {
-            "selected": false,
-            "text": "intb1",
-            "value": "intb1"
-          },
-          {
-            "selected": false,
-            "text": "intb2",
-            "value": "intb2"
-          },
-          {
-            "selected": false,
-            "text": "intb3",
-            "value": "intb3"
-          },
-          {
-            "selected": false,
-            "text": "intb4",
-            "value": "intb4"
-          },
-          {
-            "selected": false,
-            "text": "intb5",
-            "value": "intb5"
-          },
-          {
-            "selected": false,
-            "text": "intb6",
-            "value": "intb6"
-          },
-          {
-            "selected": false,
-            "text": "intc1",
-            "value": "intc1"
-          },
-          {
-            "selected": false,
-            "text": "internal",
-            "value": "internal"
-          },
-          {
-            "selected": false,
-            "text": "loada1",
-            "value": "loada1"
-          },
-          {
-            "selected": false,
-            "text": "wdfwint01",
-            "value": "wdfwint01"
-          },
-          {
-            "selected": false,
-            "text": "wsjcint01",
-            "value": "wsjcint01"
-          },
-          {
-            "selected": true,
-            "text": "wdfwintsip-a-1",
-            "value": "wdfwintsip-a-1"
-          },
-          {
-            "selected": false,
-            "text": "local",
-            "value": "local"
-          }
-        ],
-        "query": "ecp,intb1,intb2,intb3,intb4,intb5,intb6,intc1,internal,loada1,wdfwint01,wsjcint01,wdfwintsip-a-1,local",
-        "queryValue": "",
+        "options": [],
+        "query": "show tag values from \"dhruva.service.health\" with key = \"environment\"",
+        "refresh": 1,
+        "regex": "",
         "skipUrlSync": false,
-        "type": "custom"
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       },
       {
         "allValue": null,
@@ -793,5 +763,5 @@
   "timezone": "browser",
   "title": "Dhruva Service Availibility",
   "uid": "qpPpqf27k",
-  "version": 5
+  "version": 8
 }

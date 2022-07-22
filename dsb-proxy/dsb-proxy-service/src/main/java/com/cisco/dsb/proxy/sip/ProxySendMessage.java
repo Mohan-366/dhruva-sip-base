@@ -39,7 +39,8 @@ public class ProxySendMessage {
       int responseID,
       SipProvider sipProvider,
       ServerTransaction serverTransaction,
-      SIPRequest request) {
+      SIPRequest request,
+      String callType) {
     return Mono.<Void>fromRunnable(
             () -> {
               try {
@@ -49,7 +50,7 @@ public class ProxySendMessage {
                 else sipProvider.sendResponse(response);
 
                 SIPResponse sipResponse = (SIPResponse) response;
-                handleResponseLMA(sipProvider, sipResponse, true, false);
+                handleResponseLMA(sipProvider, sipResponse, true, false, null);
                 logger.info("Successfully sent async response for  {}", responseID);
               } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -69,6 +70,7 @@ public class ProxySendMessage {
    */
   public static void sendResponse(
       int responseID,
+      String callType,
       SipProvider sipProvider,
       ServerTransaction serverTransaction,
       SIPRequest request)
@@ -82,7 +84,7 @@ public class ProxySendMessage {
 
       // LMA
       SIPResponse sipResponse = (SIPResponse) response;
-      handleResponseLMA(sipProvider, sipResponse, true, false);
+      handleResponseLMA(sipProvider, sipResponse, true, false, callType);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -94,21 +96,21 @@ public class ProxySendMessage {
    * @param response
    * @param serverTransaction
    * @param sipProvider
-   * @param internal response is internally generated
    * @throws DhruvaException
    */
   public static void sendResponse(
       Response response,
       ServerTransaction serverTransaction,
       SipProvider sipProvider,
-      boolean internal)
+      boolean internal,
+      String callType)
       throws DhruvaException {
     try {
       if (serverTransaction != null) serverTransaction.sendResponse(response);
       else sipProvider.sendResponse(response);
 
       SIPResponse sipResponse = (SIPResponse) response;
-      handleResponseLMA(sipProvider, sipResponse, internal, false);
+      handleResponseLMA(sipProvider, sipResponse, internal, false, callType);
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -124,7 +126,8 @@ public class ProxySendMessage {
   public static void sendResponse(
       @NonNull ServerTransaction serverTransaction,
       @NonNull SIPResponse response,
-      boolean isInternallyGeneratedResponse)
+      boolean isInternallyGeneratedResponse,
+      String callType)
       throws DhruvaException {
     try {
       serverTransaction.sendResponse(response);
@@ -135,7 +138,7 @@ public class ProxySendMessage {
               ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
               : null;
 
-      handleResponseLMA(sipProvider, response, isInternallyGeneratedResponse, false);
+      handleResponseLMA(sipProvider, response, isInternallyGeneratedResponse, false, callType);
 
     } catch (Exception e) {
       logger.error("Exception occurred while trying to send  response", e);
@@ -147,14 +150,17 @@ public class ProxySendMessage {
   // e.g cancel.Be careful if we want to add appRecord, it may not be created.Right now it is not
   // added.
   public static void sendRequest(
-      Request request, ClientTransaction clientTransaction, SipProvider sipProvider)
+      Request request,
+      ClientTransaction clientTransaction,
+      SipProvider sipProvider,
+      String callType)
       throws DhruvaException {
     try {
       if (clientTransaction != null) clientTransaction.sendRequest();
       else sipProvider.sendRequest(request);
 
       SIPRequest sipRequest = (SIPRequest) request;
-      handleRequestLMA(sipRequest, sipProvider, null);
+      handleRequestLMA(sipRequest, sipProvider, callType, null);
 
     } catch (Exception e) {
       throw new DhruvaException(e);
@@ -188,7 +194,10 @@ public class ProxySendMessage {
               proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_MESSAGE_SENT, checks);
 
               handleRequestLMA(
-                  proxySIPRequest.getRequest(), provider, proxySIPRequest.getAppRecord());
+                  proxySIPRequest.getRequest(),
+                  provider,
+                  proxySIPRequest.getCallTypeName(),
+                  proxySIPRequest.getAppRecord());
 
               return proxySIPRequest;
             })
@@ -197,7 +206,7 @@ public class ProxySendMessage {
   }
 
   public static void handleRequestLMA(
-      SIPRequest request, SipProvider provider, DhruvaAppRecord appRecord) {
+      SIPRequest request, SipProvider provider, String callType, DhruvaAppRecord appRecord) {
     Transport transportType = LMAUtil.getTransportType(provider);
 
     LMAUtil.emitSipMessageEvent(
@@ -221,7 +230,8 @@ public class ProxySendMessage {
           SipUtils.isMidDialogRequest(request),
           true, // not generated
           0L,
-          String.valueOf(request.getRequestURI()));
+          String.valueOf(request.getRequestURI()),
+          callType);
     }
   }
 
@@ -229,7 +239,8 @@ public class ProxySendMessage {
       SipProvider sipProvider,
       SIPResponse response,
       boolean isInternallyGeneratedResponse,
-      boolean isMidDialog) {
+      boolean isMidDialog,
+      String callType) {
     LMAUtil.emitSipMessageEvent(
         sipProvider,
         response,
@@ -252,7 +263,8 @@ public class ProxySendMessage {
           isMidDialog,
           isInternallyGeneratedResponse,
           0L,
-          String.valueOf(response.getReasonPhrase()));
+          String.valueOf(response.getReasonPhrase()),
+          callType);
     }
   }
 }

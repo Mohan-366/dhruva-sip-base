@@ -273,6 +273,7 @@ public class ProxyService {
         SipProvider sipProvider = null;
         ServerTransaction serverTransaction = null;
         SIPRequest sipRequest = null;
+        String callType = null;
         if (o instanceof RequestEvent) {
           sipProvider = (SipProvider) ((RequestEvent) o).getSource();
           serverTransaction = ((RequestEvent) o).getServerTransaction();
@@ -281,6 +282,7 @@ public class ProxyService {
           sipProvider = ((ProxySIPRequest) o).getProvider();
           serverTransaction = ((ProxySIPRequest) o).getServerTransaction();
           sipRequest = ((ProxySIPRequest) o).getRequest();
+          callType = ((ProxySIPRequest) o).getCallTypeName();
         }
         if (err instanceof DhruvaRuntimeException) {
           DhruvaRuntimeException dre = (DhruvaRuntimeException) err;
@@ -290,7 +292,11 @@ public class ProxyService {
             case SEND_ERR_RESPONSE:
               try {
                 ProxySendMessage.sendResponse(
-                    errorCode.getResponseCode(), sipProvider, serverTransaction, sipRequest);
+                    errorCode.getResponseCode(),
+                    callType,
+                    sipProvider,
+                    serverTransaction,
+                    sipRequest);
               } catch (DhruvaException ex) {
                 logger.error("Unable to send err response {}", errorCode.getResponseCode());
               }
@@ -304,7 +310,11 @@ public class ProxyService {
         } else {
           try {
             ProxySendMessage.sendResponse(
-                Response.SERVER_INTERNAL_ERROR, sipProvider, serverTransaction, sipRequest);
+                Response.SERVER_INTERNAL_ERROR,
+                callType,
+                sipProvider,
+                serverTransaction,
+                sipRequest);
           } catch (DhruvaException ex) {
             logger.error("Unable to send err response {}", Response.SERVER_INTERNAL_ERROR, ex);
           }
@@ -315,6 +325,7 @@ public class ProxyService {
               metricService,
               SipMetricsContext.State.proxyNewRequestFinalResponseProcessed,
               sipRequest.getCallId().getCallId(),
+              callType,
               true);
         }
       } catch (Exception exception) {

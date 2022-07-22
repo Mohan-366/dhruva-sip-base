@@ -16,9 +16,133 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49106,
-  "iteration": 1640156123550,
+  "iteration": 1658308047852,
   "links": [],
   "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 71,
+      "panels": [],
+      "title": "Row title",
+      "type": "row"
+    },
+    {
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 3,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 68,
+      "options": {
+        "graph": {},
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.2",
+      "targets": [
+        {
+          "alias": "CPS {CallType: $tag_callType}",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"count\") FROM \"dhruva.cps\" WHERE $timeFilter AND \"environment\" =~ /$env/  GROUP BY \"callType\" , time($__interval) fill(0)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "CPS / Calltype",
+      "type": "timeseries"
+    },
     {
       "aliasColors": {},
       "bars": false,
@@ -28,7 +152,6 @@
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -39,7 +162,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 18,
@@ -60,7 +183,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -166,6 +289,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:77",
           "decimals": null,
           "format": "short",
           "label": "No.of msgs",
@@ -175,6 +299,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:78",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -195,7 +320,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 21
       },
       "id": 60,
       "panels": [],
@@ -211,9 +336,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "flowchartsData": {
@@ -252,7 +375,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 22
       },
       "id": 51,
       "interval": null,
@@ -260,10 +383,12 @@
       "mappingType": 1,
       "mappingTypes": [
         {
+          "$$hashKey": "object:103",
           "name": "value to text",
           "value": 1
         },
         {
+          "$$hashKey": "object:104",
           "name": "range to text",
           "value": 2
         }
@@ -385,7 +510,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '180' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(\"callId\") AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isMidCall\" = 'false') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -421,6 +546,7 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
           "query": "SELECT count(\"callId\") AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
@@ -456,6 +582,7 @@
       "valueMappingColorBackground": "#767171",
       "valueMaps": [
         {
+          "$$hashKey": "object:106",
           "op": "=",
           "text": "No data",
           "value": "null"
@@ -473,9 +600,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "flowchartsData": {
@@ -514,7 +639,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 22
       },
       "id": 35,
       "interval": null,
@@ -522,10 +647,12 @@
       "mappingType": 1,
       "mappingTypes": [
         {
+          "$$hashKey": "object:220",
           "name": "value to text",
           "value": 1
         },
         {
+          "$$hashKey": "object:221",
           "name": "range to text",
           "value": 2
         }
@@ -718,6 +845,7 @@
       "valueMappingColorBackground": "#767171",
       "valueMaps": [
         {
+          "$$hashKey": "object:223",
           "op": "=",
           "text": "No data",
           "value": "null"
@@ -737,7 +865,6 @@
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -748,7 +875,7 @@
         "h": 17,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 32
       },
       "hiddenSeries": false,
       "id": 22,
@@ -769,7 +896,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 2,
       "points": true,
       "renderer": "flot",
@@ -904,7 +1031,6 @@
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -915,7 +1041,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 32
       },
       "hiddenSeries": false,
       "id": 23,
@@ -936,7 +1062,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 2,
       "points": true,
       "renderer": "flot",
@@ -1039,7 +1165,6 @@
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -1050,7 +1175,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 38
       },
       "hiddenSeries": false,
       "id": 24,
@@ -1072,7 +1197,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.5",
+      "pluginVersion": "7.5.2",
       "pointradius": 1,
       "points": true,
       "renderer": "flot",
@@ -1168,7 +1293,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 49
       },
       "id": 64,
       "panels": [],
@@ -1180,15 +1305,13 @@
       "colorBackground": false,
       "colorValue": true,
       "colors": [
-        "#F2495C",
-        "rgba(237, 129, 40, 0.89)",
+        "#FFEE52",
+        "#E02F44",
         "#299c46"
       ],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "short",
@@ -1201,9 +1324,9 @@
       },
       "gridPos": {
         "h": 16,
-        "w": 4,
+        "w": 3,
         "x": 0,
-        "y": 41
+        "y": 50
       },
       "id": 54,
       "interval": null,
@@ -1211,10 +1334,136 @@
       "mappingType": 1,
       "mappingTypes": [
         {
+          "$$hashKey": "object:253",
           "name": "value to text",
           "value": 1
         },
         {
+          "$$hashKey": "object:254",
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "pluginVersion": "6.7.3",
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false,
+        "ymax": null,
+        "ymin": null
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "alias": "",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": "",
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Total Invites",
+      "type": "singlestat",
+      "valueFontSize": "200%",
+      "valueMaps": [
+        {
+          "$$hashKey": "object:256",
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "total"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": true,
+      "colors": [
+        "#F2495C",
+        "rgba(237, 129, 40, 0.89)",
+        "#299c46"
+      ],
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "format": "short",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 3,
+        "x": 3,
+        "y": 50
+      },
+      "id": 69,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "$$hashKey": "object:253",
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "$$hashKey": "object:254",
           "name": "range to text",
           "value": 2
         }
@@ -1291,6 +1540,7 @@
       "valueFontSize": "200%",
       "valueMaps": [
         {
+          "$$hashKey": "object:256",
           "op": "=",
           "text": "N/A",
           "value": "null"
@@ -1309,9 +1559,7 @@
       ],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "short",
@@ -1325,8 +1573,8 @@
       "gridPos": {
         "h": 8,
         "w": 5,
-        "x": 4,
-        "y": 41
+        "x": 6,
+        "y": 50
       },
       "id": 47,
       "interval": null,
@@ -1433,9 +1681,7 @@
       "decimals": 2,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "flowchartsData": {
@@ -1473,8 +1719,8 @@
       "gridPos": {
         "h": 16,
         "w": 4,
-        "x": 9,
-        "y": 41
+        "x": 11,
+        "y": 50
       },
       "id": 66,
       "interval": null,
@@ -1712,18 +1958,16 @@
       },
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "80%",
       "format": "short",
       "gridPos": {
         "h": 8,
-        "w": 10,
-        "x": 13,
-        "y": 41
+        "w": 9,
+        "x": 15,
+        "y": 50
       },
       "id": 43,
       "interval": null,
@@ -1739,7 +1983,7 @@
       "strokeWidth": 1,
       "targets": [
         {
-          "alias": "$tag_environment {method: $tag_method}",
+          "alias": "$tag_environment {method: $tag_method CallType: $tag_callType}",
           "groupBy": [
             {
               "params": [
@@ -1756,7 +2000,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"messageType\", \"method\", \"direction\", \"isMidCall\", \"environment\", \"isInternallyGenerated\"\n",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"messageType\", \"method\", \"direction\", \"isMidCall\", \"environment\", \"isInternallyGenerated\", \"callType\"\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1794,9 +2038,7 @@
       ],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "format": "short",
@@ -1810,8 +2052,8 @@
       "gridPos": {
         "h": 8,
         "w": 5,
-        "x": 4,
-        "y": 49
+        "x": 6,
+        "y": 58
       },
       "id": 49,
       "interval": null,
@@ -1918,18 +2160,16 @@
       },
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "80%",
       "format": "short",
       "gridPos": {
         "h": 8,
-        "w": 10,
-        "x": 13,
-        "y": 49
+        "w": 9,
+        "x": 15,
+        "y": 58
       },
       "id": 45,
       "interval": null,
@@ -1945,7 +2185,7 @@
       "strokeWidth": 1,
       "targets": [
         {
-          "alias": "$tag_environment {method: $tag_method}",
+          "alias": "$tag_environment {method: $tag_method CallType: $tag_callType}",
           "groupBy": [
             {
               "params": [
@@ -1962,7 +2202,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"environment\", \"method\"\n",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"environment\", \"method\", \"callType\"\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1990,12 +2230,670 @@
       "valueName": "total"
     },
     {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "id": 75,
+      "panels": [],
+      "title": "Error Alerts",
+      "type": "row"
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "keep_state",
+        "for": "10m",
+        "frequency": "60s",
+        "handler": 1,
+        "name": "4xx response exceeding alert",
+        "noDataState": "ok",
+        "notifications": []
+      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 67
+      },
+      "hiddenSeries": false,
+      "id": 77,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "4xx response count",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [],
+          "hide": true,
+          "measurement": "dhruva.sipMessage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wdfwintsip-a-1' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "responseCode"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wdfwwxc-int-2' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wsjcwxc-int-3' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "D",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 100,
+          "visible": true
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "4XX responses",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:278",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:279",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "D",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "10m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "5XX responses alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 67
+      },
+      "hiddenSeries": false,
+      "id": 78,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "4xx response count",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [],
+          "hide": true,
+          "measurement": "dhruva.sipMessage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wdfwintsip-a-1' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "responseCode"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wdfwwxc-int-2' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT count(\"callId\") FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"method\" != '200' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"environment\" = 'wsjcwxc-int-3' AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "rawQuery": true,
+          "refId": "D",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 100,
+          "visible": true
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "5XX responses",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:278",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:279",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 75
+      },
+      "id": 73,
+      "panels": [],
+      "title": "Request Details",
+      "type": "row"
+    },
+    {
       "columns": [],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "100%",
@@ -2003,7 +2901,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 76
       },
       "id": 4,
       "pageSize": 50,
@@ -2125,9 +3023,7 @@
       "columns": [],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "100%",
@@ -2135,7 +3031,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 85
       },
       "id": 56,
       "links": [],
@@ -2220,9 +3116,7 @@
       "columns": [],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fontSize": "100%",
@@ -2230,7 +3124,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 95
       },
       "id": 58,
       "links": [],
@@ -2317,7 +3211,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 105
       },
       "id": 62,
       "panels": [
@@ -3504,7 +4398,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -3512,92 +4406,30 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
-          "text": "wdfwintsip-a-1",
-          "value": "wdfwintsip-a-1"
+          "selected": false,
+          "text": "wsjcwxc-int-3",
+          "value": "wsjcwxc-int-3"
         },
+        "datasource": "influx_microservice_metrics",
+        "definition": "show tag values from \"dhruva.sipMessage\" with key = \"environment\"",
+        "description": null,
         "error": null,
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Environment Filter",
         "multi": false,
         "name": "env",
-        "options": [
-          {
-            "selected": false,
-            "text": "ecp",
-            "value": "ecp"
-          },
-          {
-            "selected": false,
-            "text": "intb1",
-            "value": "intb1"
-          },
-          {
-            "selected": false,
-            "text": "intb2",
-            "value": "intb2"
-          },
-          {
-            "selected": false,
-            "text": "intb3",
-            "value": "intb3"
-          },
-          {
-            "selected": false,
-            "text": "intb4",
-            "value": "intb4"
-          },
-          {
-            "selected": false,
-            "text": "intb5",
-            "value": "intb5"
-          },
-          {
-            "selected": false,
-            "text": "intb6",
-            "value": "intb6"
-          },
-          {
-            "selected": false,
-            "text": "intc1",
-            "value": "intc1"
-          },
-          {
-            "selected": false,
-            "text": "internal",
-            "value": "internal"
-          },
-          {
-            "selected": false,
-            "text": "loada1",
-            "value": "loada1"
-          },
-          {
-            "selected": false,
-            "text": "wdfwint01",
-            "value": "wdfwint01"
-          },
-          {
-            "selected": false,
-            "text": "wsjcint01",
-            "value": "wsjcint01"
-          },
-          {
-            "selected": false,
-            "text": "sip-dev",
-            "value": "sip-dev"
-          },
-          {
-            "selected": true,
-            "text": "wdfwintsip-a-1",
-            "value": "wdfwintsip-a-1"
-          }
-        ],
-        "query": "ecp,intb1,intb2,intb3,intb4,intb5,intb6,intc1,internal,loada1,wdfwint01,wsjcint01,sip-dev,wdfwintsip-a-1",
-        "queryValue": "",
+        "options": [],
+        "query": "show tag values from \"dhruva.sipMessage\" with key = \"environment\"",
+        "refresh": 1,
+        "regex": "",
         "skipUrlSync": false,
-        "type": "custom"
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       },
       {
         "allValue": null,
@@ -3606,6 +4438,7 @@
           "text": "All",
           "value": "$__all"
         },
+        "description": null,
         "error": null,
         "hide": 0,
         "includeAll": true,
@@ -3642,12 +4475,12 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "SIP messages overview",
   "uid": "QwET7bD7z",
-  "version": 27
+  "version": 38
 }
