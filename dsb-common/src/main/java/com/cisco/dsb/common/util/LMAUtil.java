@@ -5,6 +5,7 @@ import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.common.util.log.event.EventingService;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.util.Locale;
 import java.util.Optional;
@@ -31,7 +32,7 @@ public class LMAUtil {
         isInternallyGenerated,
         isMidDialogRequest,
         dhruvaProcessDelayInMilis,
-        null);
+        null, null);
   }
 
   public static void emitSipMessageEvent(
@@ -42,7 +43,8 @@ public class LMAUtil {
       boolean isInternallyGenerated,
       boolean isMidDialogRequest,
       long dhruvaProcessDelayInMilis,
-      DhruvaAppRecord appRecord) {
+      DhruvaAppRecord appRecord,
+      EventingService eventingService) {
 
     Transport transportType;
 
@@ -62,7 +64,7 @@ public class LMAUtil {
         isInternallyGenerated,
         isMidDialogRequest,
         dhruvaProcessDelayInMilis,
-        appRecord);
+        appRecord, eventingService);
   }
 
   public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {

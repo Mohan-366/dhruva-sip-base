@@ -7,6 +7,7 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.common.util.log.event.EventingService;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -30,6 +31,8 @@ public class OptionsPingTransactionTest {
   @Mock SIPListenPoint sipListenPoint;
   @Mock SipProvider sipProvider;
   @Mock DhruvaExecutorService dhruvaExecutorService;
+  @Mock
+  EventingService eventingService;
 
   @BeforeClass
   void init() throws TransactionUnavailableException {
@@ -40,6 +43,7 @@ public class OptionsPingTransactionTest {
     when(sipListenPoint.getTransport()).thenReturn(Transport.TCP);
     when(dhruvaNetwork.getListenPoint()).thenReturn(sipListenPoint);
     when(sipProvider.getNewClientTransaction(any())).thenReturn(clientTransaction);
+    doNothing().when(eventingService).publishEvents(any());
   }
 
   @Test(description = "send OptionsPing request" + "recieve the response without any failures")
@@ -47,7 +51,7 @@ public class OptionsPingTransactionTest {
       throws SipException, ExecutionException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     doNothing().when(clientTransaction).sendRequest();
     CompletableFuture<SIPResponse> responseCompletableFuture =
         optionsPingTransaction.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
@@ -74,7 +78,7 @@ public class OptionsPingTransactionTest {
   void testTimeOutForUDP() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     OptionsPingTransaction optionsPingTransaction1 = Mockito.spy(optionsPingTransaction);
     when(optionsPingTransaction1.getTimeOutForUDP()).thenReturn(500);
     when(sipListenPoint.getTransport()).thenReturn(Transport.UDP);
@@ -88,7 +92,7 @@ public class OptionsPingTransactionTest {
   void testTimeOutForUDPException() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     OptionsPingTransaction optionsPingTransaction1 = Mockito.spy(optionsPingTransaction);
     when(optionsPingTransaction1.getTimeOutForUDP()).thenReturn(500);
     when(sipListenPoint.getTransport()).thenReturn(Transport.UDP);
@@ -105,7 +109,7 @@ public class OptionsPingTransactionTest {
   void testTimeOutForTCP() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     OptionsPingTransaction optionsPingTransaction1 = Mockito.spy(optionsPingTransaction);
     when(optionsPingTransaction1.getTimeOutForUDP()).thenReturn(500);
     when(sipListenPoint.getTransport()).thenReturn(Transport.TCP);
@@ -119,7 +123,7 @@ public class OptionsPingTransactionTest {
   void testCFOptionWithException() throws SipException, InterruptedException {
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     when(clientTransaction.getRequest()).thenReturn(request);
     when(((SIPRequest) clientTransaction.getRequest()).getRemoteAddress()).thenReturn(null);
     when(((SIPRequest) clientTransaction.getRequest()).getRemotePort()).thenReturn(123);
@@ -141,7 +145,7 @@ public class OptionsPingTransactionTest {
     when(response.getCSeq().getMethod()).thenReturn("INVITE");
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
 
     optionsPingTransaction.processResponse(responseEvent);
     verify(responseEvent, times(0)).getClientTransaction();
@@ -153,7 +157,7 @@ public class OptionsPingTransactionTest {
     request = Mockito.spy(request1);
 
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     when(sipListenPoint.getTransport()).thenReturn(Transport.UDP);
     when(sipListenPoint.getPort()).thenReturn(5999);
     request.setLocalPort(5888);
@@ -164,21 +168,21 @@ public class OptionsPingTransactionTest {
   @Test(expectedExceptions = {NullPointerException.class})
   void testNullSIPRequest() throws SipException {
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     optionsPingTransaction.proxySendOutBoundRequest(null, null, null);
   }
 
   @Test(expectedExceptions = {NullPointerException.class})
   void testNullNetwork() throws SipException {
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     optionsPingTransaction.proxySendOutBoundRequest(new SIPRequest(), null, null);
   }
 
   @Test(expectedExceptions = {NullPointerException.class})
   void testNullSipProvider() throws SipException {
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     optionsPingTransaction.proxySendOutBoundRequest(
         new SIPRequest(), DhruvaNetwork.getDefault(), null);
   }
@@ -186,7 +190,7 @@ public class OptionsPingTransactionTest {
   @Test
   public void testNullClientTransaction() {
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     SIPResponse sipResponse = new SIPResponse();
     Assert.assertNull(optionsPingTransaction.getValidOptionsResponse(null, sipResponse));
   }
@@ -198,7 +202,7 @@ public class OptionsPingTransactionTest {
     ClientTransaction mockClientTransaction = mock(ClientTransaction.class);
     when(mockClientTransaction.getApplicationData()).thenReturn(applicationDataCookie);
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     Assert.assertNull(
         optionsPingTransaction.getValidOptionsResponse(mockClientTransaction, new SIPResponse()));
   }
@@ -206,7 +210,7 @@ public class OptionsPingTransactionTest {
   @Test
   public void testDefaultValueForApplicationDataCookie() {
     OptionsPingTransaction optionsPingTransaction =
-        new OptionsPingTransaction(dhruvaExecutorService);
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     Assert.assertNull(optionsPingTransaction.getApplicationDataCookie(Type.DEFAULT, null));
   }
 }

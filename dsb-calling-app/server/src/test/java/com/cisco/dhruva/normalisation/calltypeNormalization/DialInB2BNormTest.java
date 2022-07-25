@@ -83,7 +83,6 @@ public class DialInB2BNormTest {
         (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@4.4.4.4:5061>");
     diversionHeaders.add(diversion);
 
-
     request.setHeaders(diversionHeaders);
     Header rpidPrivacy =
         headerFactory.createHeader("RPID-Privacy", "<sip:+10982345764@192.168.90.206:5061>");

@@ -7,6 +7,7 @@ import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.common.util.log.event.EventingService;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
@@ -27,6 +28,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
 
   private DhruvaExecutorService dhruvaExecutorService;
   protected ApplicationDataCookie applicationDataCookie;
+  private EventingService eventingService;
 
   private final int timeOutForUDP = 5000;
 
@@ -35,8 +37,9 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
   }
 
   @Autowired
-  public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService) {
+  public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService, EventingService eventingService) {
     this.dhruvaExecutorService = dhruvaExecutorService;
+    this.eventingService = eventingService;
     dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING);
   }
 
@@ -64,7 +67,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
                 true,
                 false,
                 0L,
-                null);
+                null, eventingService);
           } catch (SipException e) {
             logger.error(
                 "Error Sending OPTIONS request to {}:{} on network {} ",

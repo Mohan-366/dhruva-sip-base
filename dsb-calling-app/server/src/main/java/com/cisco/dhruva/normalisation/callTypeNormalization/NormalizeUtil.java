@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.sip.header.Header;
 import lombok.CustomLog;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -157,7 +156,7 @@ public class NormalizeUtil {
             headerString -> {
               List<SIPHeader> newHeaderList = new ArrayList<>();
               ListIterator<SIPHeader> headers = message.getHeaders(headerString);
-              while(headers.hasNext()) {
+              while (headers.hasNext()) {
                 SIPHeader header = headers.next();
                 String headerName = header.getName();
                 String headerValue = header.toString().split(headerName + ": ")[1];
