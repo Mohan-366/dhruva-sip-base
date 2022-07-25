@@ -10,10 +10,7 @@ import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.loadbalancer.LoadBalancer;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.normalization.Normalization;
-import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
-import com.cisco.dsb.common.servergroup.SGType;
-import com.cisco.dsb.common.servergroup.ServerGroup;
-import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.transport.Transport;
@@ -34,10 +31,7 @@ import gov.nist.javax.sip.header.HeaderFactoryImpl;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -307,35 +301,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
   private Mono<EndPoint> getEndPoint(TrunkCookie cookie, String userId) {
     LoadBalancer sgLB = cookie.getSgLoadBalancer();
     ServerGroup serverGroup = (ServerGroup) sgLB.getCurrentElement();
-    ServerGroupElement redirectSGE = null;
     cookie.setClonedRequest(((ProxySIPRequest) cookie.originalRequest.clone()));
     // try all the contacts present in redirection set
-    if (enableRedirection()) {
-      if ((cookie.redirectionLB == null
-              || (redirectSGE = (ServerGroupElement) cookie.redirectionLB.getNextElement()) == null)
-          && cookie.redirectionSet.first() != null) {
-        // create new SG from first contact header present in redirection set
-        Contact contact = cookie.redirectionSet.pollFirst();
-        return dnsServerGroupUtil
-            .createDNSServerGroup(getSGFromContact(serverGroup, contact), userId)
-            .map(
-                rsg -> {
-                  cookie.redirectionLB = LoadBalancer.of(rsg);
-                  cookie.redirectionSG = rsg;
-                  return getEndPointFromSge(
-                      rsg, (ServerGroupElement) cookie.redirectionLB.getCurrentElement());
-                });
-
-      }
-      // send the Endpoint from the present RSG, till all the elements are tried out
-      else if (redirectSGE != null)
-        return Mono.just(getEndPointFromSge(cookie.redirectionSG, redirectSGE));
-
-      // clear redirectionSG and redirectionLB
-      // NOTE: not removing redirectionSet as it's single copy per request
-      else {
-        cookie.setRedirectionLB(null);
-        cookie.setRedirectionSG(null);
+    if (enableRedirection() && !cookie.redirectionSet.isEmpty()) {
+      EndPoint endPoint = getActiveRedirectionEndpoint(cookie);
+      if (endPoint != null) {
+        return Mono.just(endPoint);
       }
     }
 
@@ -449,27 +420,6 @@ public abstract class AbstractTrunk implements LoadBalancable {
     return ep;
   }
 
-  private ServerGroup getSGFromContact(ServerGroup serverGroup, Contact contact) {
-    int port = ((AddressImpl) contact.getAddress()).getPort();
-    port = (port == -1) ? 0 : port;
-    Transport transport;
-    if (contact.getParameter("transport") != null) {
-      try {
-        transport = Transport.valueOf(contact.getParameter("transport").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException ex) {
-        logger.debug("Invalid transport type in contact header", ex);
-        transport = serverGroup.getTransport();
-      }
-
-    } else transport = serverGroup.getTransport();
-    return serverGroup
-        .toBuilder()
-        .setHostName(((AddressImpl) contact.getAddress()).getHost())
-        .setPort(port)
-        .setTransport(transport)
-        .build();
-  }
-
   private void addLBMetric(ServerGroup sg) {
     if (sg == null) return;
     if (this.getLoadBalancerMetric() == null) return;
@@ -543,8 +493,6 @@ public abstract class AbstractTrunk implements LoadBalancable {
     ProxySIPResponse bestResponse;
     LoadBalancer sgeLoadBalancer;
     LoadBalancer sgLoadBalancer;
-    LoadBalancer redirectionLB;
-    ServerGroup redirectionSG;
     final ProxySIPRequest originalRequest;
     final AbstractTrunk abstractTrunk;
     final RedirectionSet redirectionSet;
@@ -623,5 +571,39 @@ public abstract class AbstractTrunk implements LoadBalancable {
               }
             });
     return Mono.empty();
+  }
+
+  private EndPoint getActiveRedirectionEndpoint(TrunkCookie cookie) {
+    Contact contact;
+    ServerGroup serverGroup = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement());
+    while ((contact = cookie.redirectionSet.pollFirst()) != null) {
+      ServerGroupElement sge = getSGEFromContact(contact, cookie);
+      if (isActive(sge)) return new EndPoint(serverGroup, sge);
+    }
+    return null;
+  }
+
+  private boolean isActive(@NonNull Pingable object) {
+    return optionsPingController != null ? optionsPingController.getStatus(object) : true;
+  }
+
+  private ServerGroupElement getSGEFromContact(Contact contact, TrunkCookie cookie) {
+    ServerGroup serverGroup = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement());
+    Transport transport;
+    if (contact.getParameter("transport") != null) {
+      try {
+        transport = Transport.valueOf(contact.getParameter("transport").toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException ex) {
+        logger.debug("Invalid transport type in contact header", ex);
+        transport = serverGroup.getTransport();
+      }
+    } else {
+      transport = serverGroup.getTransport();
+    }
+    return ServerGroupElement.builder()
+        .setIpAddress(((AddressImpl) contact.getAddress()).getHost())
+        .setPort(((AddressImpl) contact.getAddress()).getPort())
+        .setTransport(transport)
+        .build();
   }
 }

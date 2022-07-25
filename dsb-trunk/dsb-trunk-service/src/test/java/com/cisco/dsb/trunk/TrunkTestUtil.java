@@ -4,6 +4,7 @@ import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
+import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.dto.Hop;
@@ -11,6 +12,7 @@ import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk;
 import com.cisco.dsb.trunk.trunks.Egress;
+import com.github.javafaker.Faker;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
@@ -23,6 +25,7 @@ import javax.sip.InvalidArgumentException;
 public class TrunkTestUtil {
   private DnsServerGroupUtil dnsServerGroupUtil;
   private SecureRandom random = new SecureRandom();
+  private Faker faker = Faker.instance();
 
   public TrunkTestUtil(DnsServerGroupUtil dnsServerGroupUtil) {
     this.dnsServerGroupUtil = dnsServerGroupUtil;
@@ -94,7 +97,7 @@ public class TrunkTestUtil {
       Hop hop =
           new Hop(
               sg1.getHostName(),
-              rand + "." + rand + "." + rand + "." + rand,
+              faker.internet().ipV4Address(),
               sg1.getTransport(),
               srv ? rand * 30 : sg1.getPort(),
               10,
@@ -105,7 +108,7 @@ public class TrunkTestUtil {
     return hops;
   }
 
-  public ContactList getContactList(int count, String type, String host)
+  public ContactList getContactList(int count, String type)
       throws ParseException, InvalidArgumentException {
     ContactList contactList = new ContactList();
     float[] qValues = {0.9f, 0.8f, 0.4f};
@@ -113,15 +116,17 @@ public class TrunkTestUtil {
       Contact contact = new Contact();
       AddressImpl address = new AddressImpl();
       SipUri uri = new SipUri();
-      uri.setUser("user" + i);
-      if (host == null) uri.setHost("as" + random.nextInt(1000) + ".akg.com");
-      else uri.setHost(host);
+      uri.setUser(faker.name().firstName());
       switch (type.toLowerCase(Locale.ROOT)) {
         case "static":
-        case "A":
-          uri.setPort(5060);
+          uri.setHost(faker.internet().ipV4Address());
+          break;
+        case "a":
+        default:
+          uri.setHost(faker.internet().domainName());
           break;
       }
+      uri.setPort(faker.number().numberBetween(5060, 5070));
       address.setURI(uri);
       contact.setAddress(address);
       contact.setQValue(qValues[random.nextInt(qValues.length)]);
@@ -129,5 +134,31 @@ public class TrunkTestUtil {
     }
 
     return contactList;
+  }
+
+  public List<ServerGroup> getNSServerGroups(RoutePolicy sgRoutePolicy) {
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setHostName("ns1.akg.com")
+            .setSgType(SGType.A_RECORD)
+            .setPort(5060)
+            .setWeight(100)
+            .setPriority(1)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .build();
+
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setHostName("ns2.akg.com")
+            .setSgType(SGType.A_RECORD)
+            .setPort(5060)
+            .setWeight(100)
+            .setPriority(10)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .build();
+
+    return Arrays.asList(sg1, sg2);
   }
 }

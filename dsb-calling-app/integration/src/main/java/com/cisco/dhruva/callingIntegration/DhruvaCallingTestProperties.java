@@ -15,8 +15,8 @@ public class DhruvaCallingTestProperties {
 
   private static final String DEFAULT_ANTARES_ARECORD = "test.beech.com";
   private static final String DEFAULT_NS_ARECORD = "test1.ns.cisco.com";
-  private static final String DEFAULT_AS_1_ARECORD = "test1.as.com";
-  private static final String DEFAULT_AS_2_ARECORD = "test2.as.com";
+  private static final String DEFAULT_AS_1_ARECORD = "127.0.0.1";
+  private static final String DEFAULT_AS_2_ARECORD = "127.0.0.1";
 
   private static final String DEFAULT_DHRUVA_LISTEN_ADDRESS = "127.0.0.1";
   private static final Integer DEFAULT_DHRUVA_NET_SP_PORT = 5065;

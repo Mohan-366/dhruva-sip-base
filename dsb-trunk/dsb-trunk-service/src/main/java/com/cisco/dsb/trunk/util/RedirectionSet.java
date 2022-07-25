@@ -110,4 +110,8 @@ public class RedirectionSet {
       return Integer.compare(transport_this.getValue(), transport_that.getValue());
     };
   }
+
+  public boolean isEmpty() {
+    return treeSet.isEmpty();
+  }
 }

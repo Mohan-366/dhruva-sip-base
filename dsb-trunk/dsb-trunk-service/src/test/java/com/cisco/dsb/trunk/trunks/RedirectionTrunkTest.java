@@ -5,13 +5,14 @@ import static org.mockito.Mockito.*;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
-import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkTestUtil;
@@ -22,6 +23,7 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +32,7 @@ import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
@@ -105,38 +108,18 @@ public class RedirectionTrunkTest {
     // Redirection without recursion
     // dsb->trunk(302)
     // dsb(follow 302) -> trunk(success Response except 3xx)
-    ServerGroup sg1 =
-        ServerGroup.builder()
-            .setHostName("ns1.akg.com")
-            .setSgType(SGType.A_RECORD)
-            .setPort(5060)
-            .setWeight(100)
-            .setPriority(10)
-            .setRoutePolicy(sgRoutePolicy)
-            .setNetworkName("testNetwork")
-            .build();
-
-    ServerGroup sg2 =
-        ServerGroup.builder()
-            .setHostName("ns2.akg.com")
-            .setSgType(SGType.A_RECORD)
-            .setPort(5060)
-            .setWeight(100)
-            .setPriority(10)
-            .setRoutePolicy(sgRoutePolicy)
-            .setNetworkName("testNetwork")
-            .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk, null);
+    List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
+    trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
     // setup location service
     doAnswer(
             invocationOnMock -> {
               DnsDestination dnsDestination = invocationOnMock.getArgument(1);
               if (dnsDestination.getAddress().equals("ns1.akg.com"))
                 when(locateSIPServersResponse.getHops())
-                    .thenReturn(trunkTestUtil.getHops(1, sg1, false));
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
               else
                 when(locateSIPServersResponse.getHops())
-                    .thenReturn(trunkTestUtil.getHops(1, sg2, false));
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(1), false));
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
@@ -145,7 +128,7 @@ public class RedirectionTrunkTest {
 
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
     SIPResponse redirectSR = mock(SIPResponse.class);
-    ContactList contactList = trunkTestUtil.getContactList(3, "A", null);
+    ContactList contactList = trunkTestUtil.getContactList(3, "static");
     when(redirectPSR.getResponseClass()).thenReturn(3);
     when(redirectPSR.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR.getResponse()).thenReturn(redirectSR);
@@ -158,12 +141,6 @@ public class RedirectionTrunkTest {
                 // initial redirect from NS
                 state.getAndIncrement();
                 return CompletableFuture.completedFuture(redirectPSR);
-              } else if (state.get() == 1) {
-                // failure response from 1st element from redirection set
-                state.getAndIncrement();
-                when(failedProxySIPResponse.getStatusCode())
-                    .thenReturn(Response.SERVICE_UNAVAILABLE);
-                return CompletableFuture.completedFuture(failedProxySIPResponse);
               } else {
                 // success response from 2nd element from redirection set
                 state.getAndIncrement();
@@ -182,57 +159,90 @@ public class RedirectionTrunkTest {
     if (trunk instanceof PSTNTrunk) {
       verify(clonedPSR, times(1)).proxy(any(EndPoint.class));
     } else {
-      verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
+      verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
     }
   }
 
+  @Test(description = "Testing with AS1 marked as down, and AS2 as UP")
+  public void testWithOptionsFailover() throws InvalidArgumentException, ParseException {
+    /*
+    dsb --> ns1[Contact AS1,AS2,AS3]
+    dsb --> AS1[Marked DOWN]
+    dsb --> AS2 (200Ok)--> dsb
+     */
+    CallingTrunk trunk = new CallingTrunk();
+    List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
+    trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
+    // Inject OptionsPingController
+    OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
+    trunk.setOptionsPingController(optionsPingController);
+    AtomicInteger opCount = new AtomicInteger();
+    doAnswer(invocationOnMock -> opCount.getAndIncrement() != 0)
+        .when(optionsPingController)
+        .getStatus(any(ServerGroupElement.class));
+
+    doAnswer(
+            invocationOnMock -> {
+              DnsDestination dnsDestination = invocationOnMock.getArgument(1);
+              if (dnsDestination.getAddress().equals("ns1.akg.com"))
+                when(locateSIPServersResponse.getHops())
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
+              else
+                when(locateSIPServersResponse.getHops())
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(1), false));
+              when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
+              return CompletableFuture.completedFuture(locateSIPServersResponse);
+            })
+        .when(locatorService)
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
+    ProxySIPResponse redirectPSR1 = mock(ProxySIPResponse.class);
+    // redirect from NS
+    SIPResponse redirectSR1 = mock(SIPResponse.class);
+    ContactList contactList1 = trunkTestUtil.getContactList(3, "static");
+    when(redirectPSR1.getResponseClass()).thenReturn(3);
+    when(redirectPSR1.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
+    when(redirectPSR1.getResponse()).thenReturn(redirectSR1);
+    when(redirectSR1.getContactHeaders()).thenReturn(contactList1);
+    AtomicInteger state = new AtomicInteger();
+    doAnswer(
+            invocationOnMock ->
+                state.getAndIncrement() == 0
+                    ? CompletableFuture.completedFuture(redirectPSR1)
+                    : CompletableFuture.completedFuture(successProxySIPResponse))
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+
+    StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
+
+    verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
+    verify(optionsPingController, times(2)).getStatus(any(ServerGroupElement.class));
+  }
+
   @Test()
-  public void recursiveRedirect() throws InvalidArgumentException, ParseException {
+  public void recursiveRedirectWithFailover() throws InvalidArgumentException, ParseException {
     /*
      * dsb -->ns1 (302)[ contact has as1,as2,as3]
      * dsb --> as1.ns1(503)
-     * dsb --> as2.ns1(302) [ contact has as1.as2 only, which is SRV]
+     * dsb --> as2.ns1(302) [ contact has as1.as2 only]
      * dsb --> as1.as2(502) element 1
-     * dsb --> as1.as2(502) element 2
      * dsb --> as3.ns1(500)
      * dsb --> ns2(200)
      */
     CallingTrunk trunk = new CallingTrunk();
-    ServerGroup sg1 =
-        ServerGroup.builder()
-            .setHostName("ns1.akg.com")
-            .setSgType(SGType.A_RECORD)
-            .setPort(5060)
-            .setWeight(100)
-            .setPriority(1)
-            .setRoutePolicy(sgRoutePolicy)
-            .setNetworkName("testNetwork")
-            .build();
-
-    ServerGroup sg2 =
-        ServerGroup.builder()
-            .setHostName("ns2.akg.com")
-            .setSgType(SGType.A_RECORD)
-            .setPort(5060)
-            .setWeight(100)
-            .setPriority(10)
-            .setRoutePolicy(sgRoutePolicy)
-            .setNetworkName("testNetwork")
-            .build();
-    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), trunk, null);
+    List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
+    trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
     // setup location service
     doAnswer(
             invocationOnMock -> {
               DnsDestination dnsDestination = invocationOnMock.getArgument(1);
               if (dnsDestination.getAddress().equals("ns1.akg.com"))
                 when(locateSIPServersResponse.getHops())
-                    .thenReturn(trunkTestUtil.getHops(1, sg1, false));
-              else if (dnsDestination.getAddress().contains("as1.as2.com"))
-                when(locateSIPServersResponse.getHops())
-                    .thenReturn(trunkTestUtil.getHops(2, sg1, true));
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
               else
                 when(locateSIPServersResponse.getHops())
-                    .thenReturn(trunkTestUtil.getHops(1, sg2, false));
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(1), false));
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
@@ -242,7 +252,7 @@ public class RedirectionTrunkTest {
     ProxySIPResponse redirectPSR1 = mock(ProxySIPResponse.class);
     // redirect from NS
     SIPResponse redirectSR1 = mock(SIPResponse.class);
-    ContactList contactList1 = trunkTestUtil.getContactList(3, "A", null);
+    ContactList contactList1 = trunkTestUtil.getContactList(3, "static");
     when(redirectPSR1.getResponseClass()).thenReturn(3);
     when(redirectPSR1.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR1.getResponse()).thenReturn(redirectSR1);
@@ -251,7 +261,7 @@ public class RedirectionTrunkTest {
     // redirect from AS
     ProxySIPResponse redirectPSR2 = mock(ProxySIPResponse.class);
     SIPResponse redirectSR2 = mock(SIPResponse.class);
-    ContactList contactList2 = trunkTestUtil.getContactList(1, "SRV", "as1.as2.com");
+    ContactList contactList2 = trunkTestUtil.getContactList(1, "static");
     when(redirectPSR2.getResponseClass()).thenReturn(3);
     when(redirectPSR2.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR2.getResponse()).thenReturn(redirectSR2);
@@ -277,19 +287,13 @@ public class RedirectionTrunkTest {
                 return CompletableFuture.completedFuture(redirectPSR2);
 
               } else if (stateInt == 3) {
-                // failure response from 1st element as1.as2(this was chosen because of highest
+                // failure response from as1.as2(this was chosen because of highest
                 // qValue)
                 state.getAndIncrement();
                 when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.BAD_GATEWAY);
                 return CompletableFuture.completedFuture(failedProxySIPResponse);
-              } else if (stateInt == 4 || stateInt == 5) {
-                // failure response from 3rd element i.e as3.ns1, which is SRV with 2 elements
-                state.getAndIncrement();
-                when(failedProxySIPResponse.getStatusCode())
-                    .thenReturn(Response.SERVER_INTERNAL_ERROR);
-                return CompletableFuture.completedFuture(failedProxySIPResponse);
               } else {
-                // success response from 2nd element from redirection set
+                // success response from 3rd element from redirection set as3
                 state.getAndIncrement();
                 return CompletableFuture.completedFuture(successProxySIPResponse);
               }
@@ -301,6 +305,69 @@ public class RedirectionTrunkTest {
         .expectNext(successProxySIPResponse)
         .verifyComplete();
 
-    verify(clonedPSR, times(7)).proxy(any(EndPoint.class));
+    verify(clonedPSR, times(5)).proxy(any(EndPoint.class));
+  }
+
+  @Test(description = "NS1 elements are marked as down, try NS elements")
+  public void testCompleteFailover() throws InvalidArgumentException, ParseException {
+    /*
+    dsb --> ns1[Contact AS1,AS2,AS3]
+    dsb --> AS1[Marked DOWN]
+    dsb --> AS2[Marked DOWN]
+    dsb --> ns2[Contact AS3]
+    dsb --> AS3-->200Ok
+     */
+    CallingTrunk trunk = new CallingTrunk();
+    List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
+    trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
+    // Inject OptionsPingController
+    OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
+    trunk.setOptionsPingController(optionsPingController);
+    AtomicInteger opCount = new AtomicInteger();
+    doAnswer(invocationOnMock -> opCount.getAndIncrement() > 1)
+        .when(optionsPingController)
+        .getStatus(any(ServerGroupElement.class));
+
+    doAnswer(
+            invocationOnMock -> {
+              DnsDestination dnsDestination = invocationOnMock.getArgument(1);
+              if (dnsDestination.getAddress().equals("ns1.akg.com"))
+                when(locateSIPServersResponse.getHops())
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
+              else
+                when(locateSIPServersResponse.getHops())
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(1), false));
+              when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
+              return CompletableFuture.completedFuture(locateSIPServersResponse);
+            })
+        .when(locatorService)
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
+
+    // redirect from NS1
+    ProxySIPResponse redirectPSR1 = mock(ProxySIPResponse.class);
+    SIPResponse redirectSR1 = mock(SIPResponse.class);
+    when(redirectPSR1.getResponseClass()).thenReturn(3);
+    when(redirectPSR1.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
+    when(redirectPSR1.getResponse()).thenReturn(redirectSR1);
+    doAnswer(
+            invocationOnMock -> {
+              return trunkTestUtil.getContactList(2, "static");
+            })
+        .when(redirectSR1)
+        .getContactHeaders();
+    AtomicInteger state = new AtomicInteger();
+    doAnswer(
+            invocationOnMock ->
+                state.getAndIncrement() < 2
+                    ? CompletableFuture.completedFuture(redirectPSR1)
+                    : CompletableFuture.completedFuture(successProxySIPResponse))
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+    StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
+
+    verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
+    verify(optionsPingController, times(3)).getStatus(any(ServerGroupElement.class));
   }
 }
