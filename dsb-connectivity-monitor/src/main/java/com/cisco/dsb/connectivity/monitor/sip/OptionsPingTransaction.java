@@ -37,7 +37,8 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
   }
 
   @Autowired
-  public OptionsPingTransaction(DhruvaExecutorService dhruvaExecutorService, EventingService eventingService) {
+  public OptionsPingTransaction(
+      DhruvaExecutorService dhruvaExecutorService, EventingService eventingService) {
     this.dhruvaExecutorService = dhruvaExecutorService;
     this.eventingService = eventingService;
     dhruvaExecutorService.startExecutorService(ExecutorType.OPTIONS_PING);
@@ -67,7 +68,8 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
                 true,
                 false,
                 0L,
-                null, eventingService);
+                null,
+                eventingService);
           } catch (SipException e) {
             logger.error(
                 "Error Sending OPTIONS request to {}:{} on network {} ",

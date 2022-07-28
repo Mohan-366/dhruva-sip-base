@@ -10,12 +10,11 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
 import com.cisco.wx2.util.Utilities;
-import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.sip.message.Response;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import javax.sip.message.Response;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 
 public interface CallType {
 

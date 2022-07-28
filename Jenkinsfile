@@ -64,8 +64,8 @@ node('SPARK_BUILDER_JAVA11') {
              archiveArtifacts artifacts: 'dsb-calling-app/integration/docker/*', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
              archiveArtifacts artifacts: '**/spotbugsXml.xml', allowEmptyArchive: true
-
          }
+
          if (env.GIT_BRANCH == 'master') {
              stage('Security Automation'){ 
                 runSecurityScanJob()

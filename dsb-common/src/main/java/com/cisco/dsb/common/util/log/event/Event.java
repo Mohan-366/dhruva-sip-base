@@ -92,21 +92,23 @@ public class Event {
       boolean isInternallyGenerated,
       boolean isMidDialog,
       long dhruvaProcessingDelayInMillis,
-      DhruvaAppRecord appRecord, EventingService eventService) {
+      DhruvaAppRecord appRecord,
+      EventingService eventService) {
 
     String remoteAddress =
-            messageBindingInfo.getRemoteAddress() != null
-                    ? Optional.ofNullable(messageBindingInfo.getRemoteAddress().getHostAddress()).orElse("")
-                    : "";
+        messageBindingInfo.getRemoteAddress() != null
+            ? Optional.ofNullable(messageBindingInfo.getRemoteAddress().getHostAddress()).orElse("")
+            : "";
 
     Map<String, String> messageInfoMap =
-            Maps.newHashMap(
-                    ImmutableMap.of(
-                            "sipMessageType",
-                            sipMessageType.name(),
-                            "cseqMethod",
-                            String.valueOf(message.getHeader(CSeq.NAME)),
-                            Event.REMOTEIP, remoteAddress));
+        Maps.newHashMap(
+            ImmutableMap.of(
+                "sipMessageType",
+                sipMessageType.name(),
+                "cseqMethod",
+                String.valueOf(message.getHeader(CSeq.NAME)),
+                Event.REMOTEIP,
+                remoteAddress));
 
     if (MESSAGE_TYPE.REQUEST.equals(sipMessageType)) {
       SIPRequest sipRequest = (SIPRequest) message;
@@ -148,7 +150,7 @@ public class Event {
       messageInfoMap.put("remoteSessionId", sessionId.getRemoteSessionId());
     }
     // TODO LMAUtil and Event classes needs to be refactored and made spring classes
-    if(eventingService == null && eventService != null) {
+    if (eventingService == null && eventService != null) {
       eventingService = eventService;
     }
 

@@ -1,5 +1,7 @@
 package com.cisco.dsb.proxy.sip;
 
+import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
+
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -31,11 +33,12 @@ import gov.nist.javax.sip.header.Unsupported;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransaction;
-import lombok.CustomLog;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-
+import java.text.ParseException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.sip.*;
 import javax.sip.address.URI;
 import javax.sip.header.MaxForwardsHeader;
@@ -43,14 +46,10 @@ import javax.sip.header.TooManyHopsException;
 import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.text.ParseException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
+import lombok.CustomLog;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 @CustomLog

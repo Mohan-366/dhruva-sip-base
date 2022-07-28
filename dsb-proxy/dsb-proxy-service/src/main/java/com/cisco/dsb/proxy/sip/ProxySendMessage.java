@@ -217,7 +217,8 @@ public class ProxySendMessage {
         true,
         SipUtils.isMidDialogRequest(request),
         0L,
-        appRecord, null);
+        appRecord,
+        null);
 
     if (metricServiceBean != null) {
       metricServiceBean.sendSipMessageMetric(

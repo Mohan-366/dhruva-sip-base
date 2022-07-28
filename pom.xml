@@ -26,8 +26,8 @@
     <parent>
         <groupId>com.ciscospark</groupId>
         <artifactId>cisco-spark-parent</artifactId>
-        <version>3.3.12-rc.215</version>
-        <!--<relativePath>../cisco-spark-base/cisco-spark-parent</relativePath>-->
+        <version>3.5.3</version>
+<!--        <relativePath>../cisco-spark-base/cisco-spark-parent</relativePath>-->
         <relativePath/>
     </parent>
     <modules>

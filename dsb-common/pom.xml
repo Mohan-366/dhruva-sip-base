@@ -150,18 +150,13 @@
         <dependency>
             <groupId>com.cisco.wx2</groupId>
             <artifactId>ci-client</artifactId>
-            <version>3.3.7</version>
+            <version>${common-identity-modules.version}</version>
         </dependency>
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>
             <version>3.9</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.cisco.wx2</groupId>
-            <artifactId>core-client</artifactId>
-            <version>3.3.7</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
@@ -182,6 +177,17 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cisco.wx2</groupId>
+            <artifactId>ci-client</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.cisco.wx2</groupId>
+            <artifactId>core-client</artifactId>
+            <version>3.4.5</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>

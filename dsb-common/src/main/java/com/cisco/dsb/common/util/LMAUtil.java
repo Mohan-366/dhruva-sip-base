@@ -32,7 +32,8 @@ public class LMAUtil {
         isInternallyGenerated,
         isMidDialogRequest,
         dhruvaProcessDelayInMilis,
-        null, null);
+        null,
+        null);
   }
 
   public static void emitSipMessageEvent(
@@ -64,7 +65,8 @@ public class LMAUtil {
         isInternallyGenerated,
         isMidDialogRequest,
         dhruvaProcessDelayInMilis,
-        appRecord, eventingService);
+        appRecord,
+        eventingService);
   }
 
   public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {

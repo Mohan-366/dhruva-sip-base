@@ -31,8 +31,7 @@ public class OptionsPingTransactionTest {
   @Mock SIPListenPoint sipListenPoint;
   @Mock SipProvider sipProvider;
   @Mock DhruvaExecutorService dhruvaExecutorService;
-  @Mock
-  EventingService eventingService;
+  @Mock EventingService eventingService;
 
   @BeforeClass
   void init() throws TransactionUnavailableException {

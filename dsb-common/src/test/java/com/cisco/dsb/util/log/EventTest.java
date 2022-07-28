@@ -55,7 +55,8 @@ public class EventTest {
         false,
         false,
         10000,
-        null, null);
+        null,
+        null);
 
     Class<ArrayList<DhruvaEvent>> listClass =
         (Class<ArrayList<DhruvaEvent>>) (Class) ArrayList.class;
@@ -97,7 +98,8 @@ public class EventTest {
         false,
         false,
         10000,
-        null, null);
+        null,
+        null);
 
     Class<ArrayList<DhruvaEvent>> listClass =
         (Class<ArrayList<DhruvaEvent>>) (Class) ArrayList.class;
