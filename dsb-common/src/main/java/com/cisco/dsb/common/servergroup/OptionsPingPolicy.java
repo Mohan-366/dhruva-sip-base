@@ -19,7 +19,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @Builder(setterPrefix = "set")
 public class OptionsPingPolicy {
   @NotBlank private String name;
-  private List<Integer> failoverResponseCodes;
+  private List<Integer> failureResponseCodes;
   @Builder.Default private int upTimeInterval = 30000;
   @Builder.Default private int downTimeInterval = 5000;
   @Builder.Default private int pingTimeOut = 500;

@@ -443,6 +443,18 @@ public class DialOutIT extends DhruvaIT {
     LOGGER.info("180 Ringing successfully sent by PSTN UsPoolA SGE 2 to Dhruva !!!");
     // antares receiving 180
     responseEvent = antares.waitResponse(antaresTrans, timeout);
+
+    // TODO @Shri
+    // This is temp fix for intermittent IT test failure
+    // Occasionally we receive 100 trying instead of 180 expected.
+    // This may be due to delay that happens sometimes, Dhruva may just send 100 trying
+    // before 180 is received.
+    // We need to find a way to come over the timing issues which plagues generally all tests
+    // historically
+    if (((ResponseEvent) responseEvent).getResponse().getStatusCode() == Response.TRYING) {
+      // ignore and again wait for 180
+      responseEvent = antares.waitResponse(antaresTrans, timeout);
+    }
     assertNotNull("Antares await 180 response failed - " + antares.format(), responseEvent);
     assertEquals(Response.RINGING, ((ResponseEvent) responseEvent).getResponse().getStatusCode());
     LOGGER.info("180 Ringing successfully received by Antares from Dhruva !!!");

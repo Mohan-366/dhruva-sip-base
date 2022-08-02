@@ -91,7 +91,7 @@ public class OptionsPingMonitorTest {
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder()
             .setName("opPolicy1")
-            .setFailoverResponseCodes(failoverCodes)
+            .setFailureResponseCodes(failoverCodes)
             .setUpTimeInterval(500)
             .setDownTimeInterval(200)
             .setPingTimeOut(150)
@@ -164,7 +164,7 @@ public class OptionsPingMonitorTest {
       OptionsPingPolicy optionsPingPolicy =
           OptionsPingPolicy.builder()
               .setName("opPolicy1")
-              .setFailoverResponseCodes(failoverCodes)
+              .setFailureResponseCodes(failoverCodes)
               .setUpTimeInterval(30000)
               .setDownTimeInterval(500)
               .setPingTimeOut(500)
@@ -270,7 +270,7 @@ public class OptionsPingMonitorTest {
     OptionsPingPolicy opPolicy =
         OptionsPingPolicy.builder()
             .setDownTimeInterval(5000)
-            .setFailoverResponseCodes(Collections.singletonList(503))
+            .setFailureResponseCodes(Collections.singletonList(503))
             .setPingTimeOut(5000)
             .setUpTimeInterval(30000)
             .setName("op1")
@@ -353,7 +353,7 @@ public class OptionsPingMonitorTest {
                         sg.getOptionsPingPolicy().getUpTimeInterval(),
                         sg.getOptionsPingPolicy().getDownTimeInterval(),
                         sg.getOptionsPingPolicy().getPingTimeOut(),
-                        sg.getOptionsPingPolicy().getFailoverResponseCodes())
+                        sg.getOptionsPingPolicy().getFailureResponseCodes())
                     .log())
         .thenAwait(Duration.ofSeconds(5))
         .expectNext(r1.get(), r1.get(), r1.get(), r1.get())
@@ -369,7 +369,7 @@ public class OptionsPingMonitorTest {
                         sg.getElements(),
                         sg.getOptionsPingPolicy().getDownTimeInterval(),
                         sg.getOptionsPingPolicy().getPingTimeOut(),
-                        sg.getOptionsPingPolicy().getFailoverResponseCodes())
+                        sg.getOptionsPingPolicy().getFailureResponseCodes())
                     .log())
         .expectNextCount(0)
         .thenCancel()
@@ -398,7 +398,7 @@ public class OptionsPingMonitorTest {
                         sg.getElements(),
                         sg.getOptionsPingPolicy().getDownTimeInterval(),
                         sg.getOptionsPingPolicy().getPingTimeOut(),
-                        sg.getOptionsPingPolicy().getFailoverResponseCodes())
+                        sg.getOptionsPingPolicy().getFailureResponseCodes())
                     .log())
         .thenAwait(Duration.ofSeconds(10000))
         .expectNext(sipResponse2, sipResponse2)

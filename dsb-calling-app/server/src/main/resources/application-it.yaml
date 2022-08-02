@@ -97,7 +97,7 @@ common:
   optionsPingPolicy:
     opPolicy1:
       name: opPolicy1
-      failoverResponseCodes:
+      failureResponseCodes:
         - 501
         - 502
         - 503

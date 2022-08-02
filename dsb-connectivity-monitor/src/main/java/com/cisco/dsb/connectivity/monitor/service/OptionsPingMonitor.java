@@ -94,14 +94,14 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     int upInterval = optionsPingPolicy.getUpTimeInterval();
     int downInterval = optionsPingPolicy.getDownTimeInterval();
     int pingTimeOut = optionsPingPolicy.getPingTimeOut();
-    List<Integer> failoverCodes = optionsPingPolicy.getFailoverResponseCodes();
+    List<Integer> failureCodes = optionsPingPolicy.getFailureResponseCodes();
 
     Flux<SIPResponse> upElementsResponses =
         getUpElementsResponses(
-            serverGroupName, network, list, upInterval, downInterval, pingTimeOut, failoverCodes);
+            serverGroupName, network, list, upInterval, downInterval, pingTimeOut, failureCodes);
     Flux<SIPResponse> downElementsResponses =
         getDownElementsResponses(
-            serverGroupName, network, list, downInterval, pingTimeOut, failoverCodes);
+            serverGroupName, network, list, downInterval, pingTimeOut, failureCodes);
     opFlux.add(Flux.merge(upElementsResponses, downElementsResponses).subscribe());
   }
 

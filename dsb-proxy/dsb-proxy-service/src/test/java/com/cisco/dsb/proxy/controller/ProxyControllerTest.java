@@ -851,8 +851,9 @@ public class ProxyControllerTest {
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
 
-    when(outgoingSipProvider.getNewClientTransaction(any(Request.class)))
-        .thenReturn(clientTransaction);
+    doReturn(clientTransaction)
+        .when(outgoingSipProvider)
+        .getNewClientTransaction(any(Request.class));
 
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
