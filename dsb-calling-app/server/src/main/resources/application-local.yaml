@@ -111,6 +111,7 @@ common:
       upTimeInterval: 30000
       downTimeInterval: 8000
       pingTimeOut: 5000
+      maxForwards: 50
 trunk:
   PSTN:
     CcpFusionUS:

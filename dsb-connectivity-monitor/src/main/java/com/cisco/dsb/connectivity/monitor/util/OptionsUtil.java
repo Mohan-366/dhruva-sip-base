@@ -31,7 +31,10 @@ public class OptionsUtil {
   private static OptionsPingPolicy defaultOptionsPingPolicy;
 
   public static SIPRequest getRequest(
-      ServerGroupElement element, DhruvaNetwork dhruvaNetwork, SipProvider sipProvider)
+      ServerGroupElement element,
+      DhruvaNetwork dhruvaNetwork,
+      SipProvider sipProvider,
+      OptionsPingPolicy optionsPingPolicy)
       throws PeerUnavailableException, ParseException, InvalidArgumentException,
           UnknownHostException {
     SipFactory sipFactory = SipFactory.getInstance();
@@ -65,7 +68,8 @@ public class OptionsUtil {
     CallIdHeader callIdHeader = sipProvider.getNewCallId();
 
     CSeqHeader cSeqHeader = headerFactory.createCSeqHeader((long) 1, Request.OPTIONS);
-    MaxForwardsHeader maxForwards = headerFactory.createMaxForwardsHeader(70);
+    MaxForwardsHeader maxForwards =
+        headerFactory.createMaxForwardsHeader(optionsPingPolicy.getMaxForwards());
 
     String protocol = dhruvaNetwork.getTransport().name();
     List<ViaHeader> viaHeaders = new ArrayList<>();

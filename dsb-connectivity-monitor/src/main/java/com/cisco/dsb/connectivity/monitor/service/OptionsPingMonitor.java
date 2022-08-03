@@ -91,17 +91,11 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     String network = serverGroup.getNetworkName();
     List<ServerGroupElement> list = serverGroup.getElements();
     OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
-    int upInterval = optionsPingPolicy.getUpTimeInterval();
-    int downInterval = optionsPingPolicy.getDownTimeInterval();
-    int pingTimeOut = optionsPingPolicy.getPingTimeOut();
-    List<Integer> failureCodes = optionsPingPolicy.getFailureResponseCodes();
 
     Flux<SIPResponse> upElementsResponses =
-        getUpElementsResponses(
-            serverGroupName, network, list, upInterval, downInterval, pingTimeOut, failureCodes);
+        getUpElementsResponses(serverGroupName, network, list, optionsPingPolicy);
     Flux<SIPResponse> downElementsResponses =
-        getDownElementsResponses(
-            serverGroupName, network, list, downInterval, pingTimeOut, failureCodes);
+        getDownElementsResponses(serverGroupName, network, list, optionsPingPolicy);
     opFlux.add(Flux.merge(upElementsResponses, downElementsResponses).subscribe());
   }
 
@@ -109,25 +103,16 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       String serverGroupName,
       String network,
       List<ServerGroupElement> list,
-      int upInterval,
-      int downInterval,
-      int pingTimeOut,
-      List<Integer> failoverCodes) {
+      OptionsPingPolicy optionsPingPolicy) {
     return getUpElements(list)
         .flatMap(
             element ->
                 sendPingRequestToUpElement(
-                    network,
-                    element,
-                    downInterval,
-                    pingTimeOut,
-                    failoverCodes,
-                    serverGroupName,
-                    list.size()))
+                    network, element, optionsPingPolicy, serverGroupName, list.size()))
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(upInterval),
+                    Duration.ofMillis(optionsPingPolicy.getUpTimeInterval()),
                     Schedulers.newBoundedElastic(20, 50, "BE-Up-Elements")));
   }
 
@@ -135,18 +120,15 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       String serverGroupName,
       String network,
       List<ServerGroupElement> list,
-      int downInterval,
-      int pingTimeOut,
-      List<Integer> failoverCodes) {
+      OptionsPingPolicy optionsPingPolicy) {
     return getDownElements(list)
         .flatMap(
             element ->
-                sendPingRequestToDownElement(
-                    network, element, pingTimeOut, failoverCodes, serverGroupName))
+                sendPingRequestToDownElement(network, element, optionsPingPolicy, serverGroupName))
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(downInterval),
+                    Duration.ofMillis(optionsPingPolicy.getDownTimeInterval()),
                     Schedulers.newBoundedElastic(20, 50, "BE-Down-Elements")));
   }
 
@@ -173,24 +155,24 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    *
    * @param network
    * @param element
-   * @param downInterval
-   * @param pingTimeout
-   * @param failoverCodes
+   * @param optionsPingPolicy
    * @return
    */
   protected Mono<SIPResponse> sendPingRequestToUpElement(
       String network,
       ServerGroupElement element,
-      int downInterval,
-      int pingTimeout,
-      List<Integer> failoverCodes,
+      OptionsPingPolicy optionsPingPolicy,
       String serverGroupName,
       int sgeSize) {
+
+    int downInterval = optionsPingPolicy.getDownTimeInterval();
+    int pingTimeout = optionsPingPolicy.getPingTimeOut();
 
     logger.debug("Sending ping to UP element: {}", element);
     String key = element.toUniqueElementString();
     Boolean status = elementStatus.get(key);
-    return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
+    return Mono.defer(
+            () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
         .timeout(Duration.ofMillis(pingTimeout))
         .doOnError(
             throwable ->
@@ -215,7 +197,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
             })
         .doOnNext(
             n -> {
-              if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
+              if (optionsPingPolicy.getFailureResponseCodes().stream()
+                  .anyMatch(val -> val == n.getStatusCode())) {
                 elementStatus.put(key, false);
                 logger.info(
                     "{} received for UP element: {}. Marking it as DOWN.",
@@ -256,19 +239,19 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    *
    * @param network
    * @param element
-   * @param pingTimeout
-   * @param failoverCodes
+   * @param optionsPingPolicy
    * @return
    */
   protected Mono<SIPResponse> sendPingRequestToDownElement(
       String network,
       ServerGroupElement element,
-      int pingTimeout,
-      List<Integer> failoverCodes,
+      OptionsPingPolicy optionsPingPolicy,
       String serverGroupName) {
+    int pingTimeout = optionsPingPolicy.getPingTimeOut();
     logger.debug("Sending ping to DOWN element: {}", element);
     String key = element.toUniqueElementString();
-    return Mono.defer(() -> Mono.fromFuture(createAndSendRequest(network, element)))
+    return Mono.defer(
+            () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
         .timeout(Duration.ofMillis(pingTimeout))
         .onErrorResume(
             throwable -> {
@@ -280,7 +263,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
             })
         .doOnNext(
             n -> {
-              if (failoverCodes.stream().anyMatch(val -> val == n.getStatusCode())) {
+              if (optionsPingPolicy.getFailureResponseCodes().stream()
+                  .anyMatch(val -> val == n.getStatusCode())) {
                 logger.info(
                     "{} received for element: {}. Keeping status as DOWN.",
                     n.getStatusCode(),
@@ -308,7 +292,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
-      String network, ServerGroupElement element) throws DhruvaRuntimeException {
+      String network, ServerGroupElement element, OptionsPingPolicy optionsPingPolicy)
+      throws DhruvaRuntimeException {
     Optional<DhruvaNetwork> optionalDhruvaNetwork = DhruvaNetwork.getNetwork(network);
     DhruvaNetwork dhruvaNetwork = optionalDhruvaNetwork.orElseGet(DhruvaNetwork::getDefault);
     Optional<SipProvider> optionalSipProvider =
@@ -323,7 +308,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
             "unable to find provider for outbound request with network:" + dhruvaNetwork.getName());
       }
 
-      SIPRequest sipRequest = getRequest(element, dhruvaNetwork, sipProvider);
+      SIPRequest sipRequest = getRequest(element, dhruvaNetwork, sipProvider, optionsPingPolicy);
       return optionsPingTransaction.proxySendOutBoundRequest(
           sipRequest, dhruvaNetwork, sipProvider);
     } catch (SipException

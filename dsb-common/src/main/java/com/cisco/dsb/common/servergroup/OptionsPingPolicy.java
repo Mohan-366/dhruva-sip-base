@@ -23,6 +23,7 @@ public class OptionsPingPolicy {
   @Builder.Default private int upTimeInterval = 30000;
   @Builder.Default private int downTimeInterval = 5000;
   @Builder.Default private int pingTimeOut = 500;
+  @Builder.Default private int maxForwards = 70;
 
   @Override
   public boolean equals(Object a) {
