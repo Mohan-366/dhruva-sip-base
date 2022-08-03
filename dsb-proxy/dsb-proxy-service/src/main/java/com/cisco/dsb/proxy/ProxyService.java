@@ -364,7 +364,7 @@ public class ProxyService {
     return responseEventMono.handle(
         (responseEvent, sink) -> {
           ProxySIPResponse proxySIPResponse =
-              sipProxyManager.findProxyTransaction().apply(responseEvent);
+              sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
           if (proxySIPResponse != null) {
             proxySIPResponse = sipProxyManager.processProxyTransaction().apply(proxySIPResponse);
             if (proxySIPResponse != null) {

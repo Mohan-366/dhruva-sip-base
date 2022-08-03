@@ -55,7 +55,7 @@ public interface CallType {
     checks.add("ingress key lookup", ingress);
     checks.add("egress key lookup", egress);
     proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_PROCESS_REQUEST, checks);
-    trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress);
+    trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress, getNormalization());
     trunkManager
         .handleEgress(getEgressTrunk(), proxySIPRequest, egress, getNormalization())
         .doFinally(

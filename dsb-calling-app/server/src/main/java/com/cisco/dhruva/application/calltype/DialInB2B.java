@@ -1,7 +1,7 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BToCallingCoreNorm;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -21,10 +21,10 @@ public class DialInB2B implements CallType {
   public DialInB2B(
       TrunkManager trunkManager,
       CallingAppConfigurationProperty configurationProperty,
-      DialInB2BNorm dialInB2BNorm) {
+      DialInB2BToCallingCoreNorm dialInB2BToCallingCoreNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
-    this.normalization = dialInB2BNorm;
+    this.normalization = dialInB2BToCallingCoreNorm;
   }
 
   @Override

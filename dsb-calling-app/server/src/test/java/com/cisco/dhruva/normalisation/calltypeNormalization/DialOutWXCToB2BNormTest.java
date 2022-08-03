@@ -3,7 +3,7 @@ package com.cisco.dhruva.normalisation.calltypeNormalization;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCToB2BNorm;
 import com.cisco.dhruva.util.RequestHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
@@ -17,8 +17,8 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class DialOutWXCNormTest {
-  private DialOutWXCNorm dialOutWXCNorm;
+public class DialOutWXCToB2BNormTest {
+  private DialOutWXCToB2BNorm dialOutWXCToB2BNorm;
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock TrunkCookie cookie;
   @Mock EndPoint endpoint;
@@ -27,7 +27,7 @@ public class DialOutWXCNormTest {
   @BeforeClass
   public void prepare() {
     MockitoAnnotations.openMocks(this);
-    dialOutWXCNorm = new DialOutWXCNorm();
+    dialOutWXCToB2BNorm = new DialOutWXCToB2BNorm();
   }
 
   @Test
@@ -36,7 +36,7 @@ public class DialOutWXCNormTest {
     when(proxySIPRequest.getRequest()).thenReturn(request);
 
     // testing preNormalize
-    dialOutWXCNorm.preNormalize().accept(proxySIPRequest);
+    dialOutWXCToB2BNorm.egressPreNormalize().accept(proxySIPRequest);
 
     assertEquals(
         ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN),
@@ -58,7 +58,7 @@ public class DialOutWXCNormTest {
     when(endpoint.getPort()).thenReturn(5060);
 
     // testing postNormalize
-    dialOutWXCNorm.postNormalize().accept(cookie, endpoint);
+    dialOutWXCToB2BNorm.egressPostNormalize().accept(cookie, endpoint);
     assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
     assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
   }

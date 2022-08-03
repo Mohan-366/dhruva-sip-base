@@ -1,7 +1,5 @@
 package com.cisco.dsb.proxy.sip;
 
-import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doStrayResponseDefaultNormalization;
-
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -343,7 +341,7 @@ public class SipProxyManager {
    * Process stray response based on IP:PORT present in Via header. Sends out using the network
    * through which the corresponding request came in if found, else send out via default network
    */
-  public Consumer<ResponseEvent> processStrayResponse() {
+  public Consumer<ResponseEvent> processStrayResponse(ProxyAppConfig proxyAppConfig) {
     return responseEvent -> {
       SIPResponse response = (SIPResponse) responseEvent.getResponse();
       // process only 2xx as they are critical
@@ -396,7 +394,16 @@ public class SipProxyManager {
             "Outbound network present in RR does not match any ListenIf, dropping stray response");
         return;
       }
-      doStrayResponseDefaultNormalization(response, network, via);
+
+      if (proxyAppConfig != null) {
+        Consumer strayResponseNormalization = proxyAppConfig.getStrayResponseNormalizer();
+        if(strayResponseNormalization != null) {
+          logger.debug("Applying stray response normalization");
+          proxyAppConfig.getStrayResponseNormalizer().accept(response);
+        } else {
+          logger.debug("No consumer found for stray response norm. Skipping");
+        }
+      }
       try {
         ProxySendMessage.sendResponse(response, null, sipProvider.get(), false, null);
       } catch (DhruvaException exception) {
@@ -455,7 +462,8 @@ public class SipProxyManager {
     };
   }
 
-  public Function<ResponseEvent, ProxySIPResponse> findProxyTransaction() {
+  public Function<ResponseEvent, ProxySIPResponse> findProxyTransaction(
+      ProxyAppConfig proxyAppConfig) {
     return responseEvent -> {
       // transaction will be provided by stack
       ClientTransaction clientTransaction = responseEvent.getClientTransaction();
@@ -472,7 +480,7 @@ public class SipProxyManager {
             "No Client transaction exist for {} {}",
             responseEvent.getResponse().getStatusCode(),
             responseEvent.getResponse().getReasonPhrase());
-        processStrayResponse().accept(responseEvent);
+        processStrayResponse(proxyAppConfig).accept(responseEvent);
         return null;
       }
     };
@@ -582,7 +590,7 @@ public class SipProxyManager {
          */
 
         // populate calltype information for metrics
-        ProxySIPResponse proxySIPResponse = this.findProxyTransaction().apply(responseEvent);
+        ProxySIPResponse proxySIPResponse = this.findProxyTransaction(null).apply(responseEvent);
         String callType =
             proxySIPResponse != null
                 ? proxySIPResponse

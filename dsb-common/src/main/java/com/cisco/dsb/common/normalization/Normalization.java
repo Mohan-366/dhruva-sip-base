@@ -7,9 +7,11 @@ import org.springframework.stereotype.Component;
 @Component
 public interface Normalization {
 
-  public Consumer preNormalize();
+  public Consumer ingressNormalize();
 
-  public BiConsumer postNormalize();
+  public Consumer egressPreNormalize();
+
+  public BiConsumer egressPostNormalize();
 
   public Consumer setNormForFutureResponse();
 }

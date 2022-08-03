@@ -4,7 +4,8 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
+import com.cisco.dhruva.application.CallingAppConfigurationProperty;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BToCallingCoreNorm;
 import com.cisco.dhruva.util.RequestHelper;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.loadbalancer.LBType;
@@ -14,6 +15,7 @@ import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
@@ -35,61 +37,79 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class DialInB2BNormTest {
-  private DialInB2BNorm dialInB2BNorm;
+public class DialInB2BToCallingCoreNormTest {
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock TrunkCookie cookie;
   @Mock EndPoint endpoint;
   LoadBalancer loadBalancer;
-  @Mock ServerGroup serverGroup;
   @Mock DhruvaNetwork dhruvaNetwork;
   @Mock SIPListenPoint sipListenPoint;
+  @Mock CallingAppConfigurationProperty configurationProperty;
   SIPRequest request;
   HeaderFactoryImpl headerFactory;
+  DialInB2BToCallingCoreNorm dialInB2BToCallingCoreNorm;
 
   @BeforeClass
   public void prepare() {
     MockitoAnnotations.openMocks(this);
-    dialInB2BNorm = new DialInB2BNorm();
+    when(configurationProperty.getNetworkCallingCore()).thenReturn("net_cc");
+    dialInB2BToCallingCoreNorm = new DialInB2BToCallingCoreNorm(configurationProperty);
     headerFactory = new HeaderFactoryImpl();
   }
 
   @Test
-  public void preNormalizeTest() throws ParseException, DhruvaException {
+  public void ingressNormalizeTest() throws ParseException {
     request = (SIPRequest) RequestHelper.getInviteRequest();
+    when(proxySIPRequest.getRequest()).thenReturn(request);
     ((SipUri) request.getRequestURI())
         .setParameter(SipParamConstants.X_CISCO_OPN, SipParamConstants.OPN_IN);
     ((SipUri) request.getRequestURI())
         .setParameter(SipParamConstants.X_CISCO_DPN, SipParamConstants.DPN_IN);
     ((SipUri) request.getRequestURI())
         .setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG);
+    dialInB2BToCallingCoreNorm.ingressNormalize().accept(proxySIPRequest);
+    assertEquals(
+        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
+    assertEquals(
+        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
+    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
+  }
+
+  @Test
+  public void preNormalizeTest() throws ParseException, DhruvaException {
+    request = (SIPRequest) RequestHelper.getInviteRequest();
     ((SipUri) request.getFrom().getAddress().getURI()).setHost("20.20.20.20");
     ((SipUri) request.getFrom().getAddress().getURI()).setPort(5060);
     Header ppId =
         headerFactory.createHeader(
-            "P-Preferred-Identity", "<sip:+10982345764@192.168.90.206:5061>");
+            SipConstants.P_PREFERRED_IDENTITY, "<sip:+10982345764@192.168.90.206:5061>");
     request.addHeader(ppId);
     List<SIPHeader> diversionHeaders = new ArrayList<>();
     SIPHeader diversion =
-        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@1.1.1.1:5061>");
+        (SIPHeader)
+            headerFactory.createHeader(SipConstants.DIVERSION, "<sip:+10982345764@1.1.1.1:5061>");
     diversionHeaders.add(diversion);
     diversion =
-        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@2.2.2.2:5061>");
+        (SIPHeader)
+            headerFactory.createHeader(SipConstants.DIVERSION, "<sip:+10982345764@2.2.2.2:5061>");
     diversionHeaders.add(diversion);
     diversion =
-        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@3.3.3.3:5061>");
+        (SIPHeader)
+            headerFactory.createHeader(SipConstants.DIVERSION, "<sip:+10982345764@3.3.3.3:5061>");
     diversionHeaders.add(diversion);
     diversion =
-        (SIPHeader) headerFactory.createHeader("Diversion", "<sip:+10982345764@4.4.4.4:5061>");
+        (SIPHeader)
+            headerFactory.createHeader(SipConstants.DIVERSION, "<sip:+10982345764@4.4.4.4:5061>");
     diversionHeaders.add(diversion);
 
     request.setHeaders(diversionHeaders);
     Header rpidPrivacy =
-        headerFactory.createHeader("RPID-Privacy", "<sip:+10982345764@192.168.90.206:5061>");
+        headerFactory.createHeader(
+            SipConstants.RPID_PRIVACY, "<sip:+10982345764@192.168.90.206:5061>");
     request.addHeader(rpidPrivacy);
-    Header server = headerFactory.createHeader("Server", "Server-1");
+    Header server = headerFactory.createHeader(SipConstants.SERVER, "Server-1");
     request.addHeader(server);
-    Header userAgent = headerFactory.createHeader("User-Agent", "Server-1");
+    Header userAgent = headerFactory.createHeader(SipConstants.USER_AGENT, "Server-1");
     request.addHeader(userAgent);
     when(proxySIPRequest.getRequest()).thenReturn(request);
 
@@ -98,22 +118,16 @@ public class DialInB2BNormTest {
     when(sipListenPoint.getName()).thenReturn("net_cc");
     DhruvaNetwork.createNetwork("net_cc", sipListenPoint);
     // testing preNormalize
-    dialInB2BNorm.preNormalize().accept(proxySIPRequest);
-
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
+    dialInB2BToCallingCoreNorm.egressPreNormalize().accept(proxySIPRequest);
 
     assertEquals(((SipUri) request.getFrom().getAddress().getURI()).getHost(), "10.10.10.10");
     assertEquals(
-        request.getHeader("P-Asserted-Identity").toString().trim(),
+        request.getHeader(SipConstants.P_ASSERTED_IDENTITY).toString().trim(),
         "P-Asserted-Identity: \"host@subdomain.domain.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>");
     assertEquals(
-        request.getHeader("P-Preferred-Identity").toString().trim(),
+        request.getHeader(SipConstants.P_PREFERRED_IDENTITY).toString().trim(),
         "P-Preferred-Identity: <sip:+10982345764@10.10.10.10:5061>");
-    ListIterator<SIPHeader> diversionHeadersReceived = request.getHeaders("Diversion");
+    ListIterator<SIPHeader> diversionHeadersReceived = request.getHeaders(SipConstants.DIVERSION);
     assertTrue(diversionHeadersReceived != null);
     int count = 0;
     while (diversionHeadersReceived.hasNext()) {
@@ -124,10 +138,10 @@ public class DialInB2BNormTest {
     }
     assertTrue(count == 4);
     assertEquals(
-        request.getHeader("Diversion").toString().trim(),
+        request.getHeader(SipConstants.DIVERSION).toString().trim(),
         "Diversion: <sip:+10982345764@10.10.10.10:5061>");
-    assertEquals(request.getHeader("Server"), null);
-    assertEquals(request.getHeader("User-Agent"), null);
+    assertEquals(request.getHeader(SipConstants.SERVER), null);
+    assertEquals(request.getHeader(SipConstants.USER_AGENT), null);
   }
 
   @Test
@@ -165,7 +179,7 @@ public class DialInB2BNormTest {
     when(cookie.getSgLoadBalancer()).thenReturn(loadBalancer);
 
     // testing postNormalize
-    dialInB2BNorm.postNormalize().accept(cookie, endpoint);
+    dialInB2BToCallingCoreNorm.egressPostNormalize().accept(cookie, endpoint);
 
     assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
     assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);

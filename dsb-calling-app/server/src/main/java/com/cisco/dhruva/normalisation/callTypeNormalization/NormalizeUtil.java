@@ -14,6 +14,8 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.CustomLog;
@@ -27,17 +29,15 @@ public class NormalizeUtil {
   private static HeaderFactoryImpl headerFactory = new HeaderFactoryImpl();
 
   public static void normalize(
-      SIPRequest request, EndPoint endPoint, List<String> headersToReplaceWithRemoteIP) {
+      SIPRequest request, EndPoint endPoint, List<HeaderToNormalize> headersToReplaceWithRemoteIP) {
     normalize(request, null, endPoint, null, headersToReplaceWithRemoteIP, null, null, null);
   }
 
   public static void normalize(
       SIPRequest request,
       DhruvaNetwork outGoingNetwork,
-      List<String> headersToRemoveWithOwnIP,
-      List<String> headersToRemove,
-      List<String[]> paramsToRemove,
-      List<String[]> paramsToAdd) {
+      List<HeaderToNormalize> headersToRemoveWithOwnIP,
+      List<String> headersToRemove) {
     normalize(
         request,
         outGoingNetwork,
@@ -45,27 +45,28 @@ public class NormalizeUtil {
         headersToRemoveWithOwnIP,
         null,
         headersToRemove,
-        paramsToRemove,
-        paramsToAdd);
+        null,
+        null);
   }
 
   public static void normalize(SIPRequest request, EndPoint endPoint) {
     normalize(request, null, endPoint, null, null, null, null, null);
   }
 
-  public static void normalize(SIPRequest request, List<String[]> paramsToAdd) {
-    normalize(request, null, null, null, null, null, null, paramsToAdd);
+  public static void normalize(
+      SIPRequest request, List<String[]> paramsToAdd, List<String[]> paramsToRemove) {
+    normalize(request, null, null, null, null, null, paramsToAdd, paramsToRemove);
   }
 
   public static void normalize(
       SIPRequest request,
       DhruvaNetwork outgoingNetwork,
       EndPoint endPoint,
-      List<String> headersToReplaceWithOwnIP,
-      List<String> headersToReplaceWithRemoteIP,
+      List<HeaderToNormalize> headersToReplaceWithOwnIP,
+      List<HeaderToNormalize> headersToReplaceWithRemoteIP,
       List<String> headersToRemove,
-      List<String[]> paramsToRemove,
-      List<String[]> paramsToAdd) {
+      List<String[]> paramsToAdd,
+      List<String[]> paramsToRemove) {
     String remoteIPAddress = null;
     int remotePort;
     String ownIPAddress = null;
@@ -118,10 +119,9 @@ public class NormalizeUtil {
 
   public static void normalizeResponse(
       ProxySIPResponse proxySIPResponse,
-      List<String> headersToReplaceWithOwnIP,
-      List<String> headersToReplaceWithRemoteIP,
+      List<HeaderToNormalize> headersToReplaceWithOwnIP,
+      List<HeaderToNormalize> headersToReplaceWithRemoteIP,
       List<String> headersToRemove) {
-    logger.debug("Response to normalize: {}", proxySIPResponse.getResponse());
     DhruvaNetwork responseOutgoingNetwork =
         ((ProxyCookieImpl) proxySIPResponse.getCookie()).getRequestIncomingNetwork();
     String ownIPAddress = responseOutgoingNetwork.getListenPoint().getHostIPAddress();
@@ -138,14 +138,24 @@ public class NormalizeUtil {
     }
   }
 
-  /* IP is going to be replaced in all headers of a given name and not just the top most.
-   * Currently no use case for only top most header. There is either a single header
-   * or multiple headers (Diversion) for IP replacement.
-   * TODO: KALPA - refactor to have both options.
-   */
+  public static Consumer<SIPResponse> doStrayResponseNormalization() {
+    return sipResponse -> {
+      String network = (String) sipResponse.getApplicationData();
+      Optional<DhruvaNetwork> responseOutgoingNetwork = DhruvaNetwork.getNetwork(network);
+      String remoteIPAddress = sipResponse.getTopmostVia().getHost();
+      try {
+        String ownIPAddress = responseOutgoingNetwork.get().getListenPoint().getHostIPAddress();
+
+        ((SipUri) sipResponse.getTo().getAddress().getURI()).setHost(ownIPAddress);
+        ((SipUri) sipResponse.getFrom().getAddress().getURI()).setHost(remoteIPAddress);
+      } catch (ParseException e) {
+        logger.error("Cannot normalize stray response {}", sipResponse, e);
+      }
+    };
+  }
 
   private static void replaceIPInHeader(
-      SIPMessage message, List<String> headerList, String ipAddress) {
+      SIPMessage message, List<HeaderToNormalize> headerList, String ipAddress) {
     if (ipAddress == null) {
       logger.error(
           "IP address cannot be determined. IP Address normalization cannot be performed.");
@@ -153,28 +163,63 @@ public class NormalizeUtil {
     }
     headerList.stream()
         .forEach(
-            headerString -> {
-              List<SIPHeader> newHeaderList = new ArrayList<>();
-              ListIterator<SIPHeader> headers = message.getHeaders(headerString);
-              while (headers.hasNext()) {
-                SIPHeader header = headers.next();
-                String headerName = header.getName();
-                String headerValue = header.toString().split(headerName + ": ")[1];
-                String ipToReplace = getIPToReplace(headerValue);
-                if (ipToReplace != null) {
-                  headerValue = headerValue.replace(ipToReplace, ipAddress);
+            headerForIPReplacement -> {
+              if (!headerForIPReplacement.updateAllHeaderOccurrences) {
+                SIPHeader header = (SIPHeader) message.getHeader(headerForIPReplacement.header);
+                try {
+                  if (header == null) {
+                    logger.debug(
+                        "Header {} not present in message. Skippig Normalization.",
+                        headerForIPReplacement.header);
+                    return;
+                  }
+                  header = getHeaderWithReplacedIP(header, ipAddress);
+                  if (header != null) {
+                    message.setHeader(header);
+                  } else {
+                    logger.error(
+                        "No IP found to replace in header: {}", headerForIPReplacement.header);
+                  }
+                } catch (ParseException e) {
+                  logger.error(
+                      "Error while replacingIPHeader normalization in {}: {}",
+                      headerForIPReplacement.header,
+                      e);
+                }
+              } else {
+                List<SIPHeader> newHeaderList = new ArrayList<>();
+                ListIterator<SIPHeader> headers = message.getHeaders(headerForIPReplacement.header);
+                while (headers.hasNext()) {
+                  SIPHeader header = headers.next();
                   try {
-                    newHeaderList.add(
-                        (SIPHeader) headerFactory.createHeader(headerName, headerValue));
+                    header = getHeaderWithReplacedIP(header, ipAddress);
+                    if (header != null) {
+                      newHeaderList.add(header);
+                    }
                   } catch (ParseException e) {
                     logger.error(
-                        "Error while replacingIPHeader normalization in {}: {}", headerName, e);
+                        "Error while replacingIPHeader normalization in {}: {}",
+                        headerForIPReplacement.header,
+                        e);
                   }
                 }
+                message.removeHeader(headerForIPReplacement.header);
+                message.setHeaders(newHeaderList);
               }
-              message.removeHeader(headerString);
-              message.setHeaders(newHeaderList);
             });
+  }
+
+  private static SIPHeader getHeaderWithReplacedIP(SIPHeader sipHeader, String ipAddress)
+      throws ParseException {
+    String headerName = sipHeader.getName();
+    String headerValue = sipHeader.toString().split(headerName + ": ")[1];
+    String ipToReplace = getIPToReplace(headerValue);
+    if (ipToReplace != null) {
+      headerValue = headerValue.replace(ipToReplace, ipAddress);
+      return ((SIPHeader) headerFactory.createHeader(headerName, headerValue));
+    } else {
+      return null;
+    }
   }
 
   // Currently removing params only from requestUri, To and From Header
@@ -249,6 +294,17 @@ public class NormalizeUtil {
       return matcher.group();
     } else {
       return null;
+    }
+  }
+
+  public static class HeaderToNormalize {
+
+    String header;
+    Boolean updateAllHeaderOccurrences;
+
+    HeaderToNormalize(String header, Boolean updateAllHeaderOccurrences) {
+      this.header = header;
+      this.updateAllHeaderOccurrences = updateAllHeaderOccurrences;
     }
   }
 }

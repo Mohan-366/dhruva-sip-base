@@ -1,5 +1,7 @@
 package com.cisco.dsb.proxy.controller;
 
+import static com.cisco.dsb.proxy.normalization.NormalizationUtil.doResponseNormalization;
+
 import com.cisco.dsb.common.context.CommonContext;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
@@ -133,6 +135,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           overwriteStatelessMode(req);
         }*/
         if (proxyTransaction != null) {
+          doResponseNormalization(proxySIPResponse);
           SIPResponse response = proxySIPResponse.getResponse();
           ((ProxyTransaction) proxyTransaction).respond(response);
           logger.info("Sent response: {}", response.getStatusCode());

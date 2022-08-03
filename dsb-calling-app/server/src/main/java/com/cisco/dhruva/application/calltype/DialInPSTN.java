@@ -1,7 +1,7 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNToB2BNorm;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -22,10 +22,10 @@ public class DialInPSTN implements CallType {
   public DialInPSTN(
       TrunkManager trunkManager,
       CallingAppConfigurationProperty configurationProperty,
-      DialInPSTNNorm dialInPSTNNorm) {
+      DialInPSTNToB2BNorm dialInPSTNToB2BNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
-    this.normalization = dialInPSTNNorm;
+    this.normalization = dialInPSTNToB2BNorm;
   }
 
   @Override

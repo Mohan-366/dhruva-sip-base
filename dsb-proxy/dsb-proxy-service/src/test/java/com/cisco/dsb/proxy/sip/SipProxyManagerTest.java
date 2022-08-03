@@ -3,6 +3,7 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.context.ExecutionContext;
@@ -37,6 +38,8 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import javax.sip.*;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
@@ -59,6 +62,7 @@ public class SipProxyManagerTest {
   @Mock ControllerConfig controllerConfig;
   @Mock DhruvaExecutorService dhruvaExecutorService;
   @Mock MetricService metricService;
+  @Mock ProxyAppConfig proxyAppConfig;
 
   @BeforeClass
   public void init() {
@@ -74,7 +78,8 @@ public class SipProxyManagerTest {
     ProxyTransaction pt = mock(ProxyTransaction.class);
     when(responseEvent.getClientTransaction()).thenReturn(ct);
     when(ct.getApplicationData()).thenReturn(pt);
-    ProxySIPResponse proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    ProxySIPResponse proxySIPResponse =
+        sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertEquals(proxySIPResponse.getProxyTransaction(), pt);
   }
 
@@ -88,7 +93,8 @@ public class SipProxyManagerTest {
     // Test: Topmost via is null
     when(responseEvent.getResponse()).thenReturn(sipResponse);
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    ProxySIPResponse proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    ProxySIPResponse proxySIPResponse =
+        sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
     reset(sipResponse);
@@ -99,7 +105,7 @@ public class SipProxyManagerTest {
     viaList.addFirst(via1);
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
     verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
     verify(via1, Mockito.times(1)).getBranch();
     assertNull(proxySIPResponse);
@@ -114,7 +120,7 @@ public class SipProxyManagerTest {
     when(via1.getTransport()).thenReturn(Transport.TCP.name());
     when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
         .thenReturn(false);
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipResponse, Mockito.times(0)).removeFirst(eq(ViaHeader.NAME));
     reset(sipResponse);
@@ -131,7 +137,7 @@ public class SipProxyManagerTest {
             })
         .when(sipResponse)
         .removeFirst(eq(ViaHeader.NAME));
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipResponse, Mockito.times(1)).removeFirst(eq(ViaHeader.NAME));
     verify(controllerConfig, Mockito.times(0)).doRecordRoute();
@@ -150,7 +156,7 @@ public class SipProxyManagerTest {
         .when(sipResponse)
         .removeFirst(eq(ViaHeader.NAME));
     when(controllerConfig.doRecordRoute()).thenReturn(true);
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     verify(controllerConfig, Mockito.times(1))
         .setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
     // Can't assert properly because DhruvaNetwork.getProviderFromNetwork is static method
@@ -172,7 +178,7 @@ public class SipProxyManagerTest {
     when(sipResponse.getApplicationData()).thenReturn("not_our_network");
     SipProviderImpl sipProvider = mock(SipProviderImpl.class);
     DhruvaNetwork.setSipProvider("test_out_network", sipProvider);
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
     verify(sipProvider, Mockito.times(0)).sendResponse(sipResponse);
 
@@ -199,8 +205,18 @@ public class SipProxyManagerTest {
             .setName(outNetwork)
             .build();
     DhruvaNetwork.createNetwork(outNetwork, sipListenPoint);
-    proxySIPResponse = sipProxyManager.findProxyTransaction().apply(responseEvent);
+    // Test Stray Response Normalization
+    AtomicInteger normalizationCounter = new AtomicInteger();
+    normalizationCounter.set(0);
+    Consumer<SIPResponse> strayResponseNormalizer =
+        sipResponse1 -> {
+          normalizationCounter.getAndIncrement();
+        };
+    when(proxyAppConfig.getStrayResponseNormalizer()).thenReturn(strayResponseNormalizer);
+    proxySIPResponse = sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
     assertNull(proxySIPResponse);
+    // this simply checks that stayResponseNormalizer was invoked for stray response
+    assertTrue(normalizationCounter.get() == 1);
     verify(sipProvider, Mockito.times(1)).sendResponse(sipResponse);
     // verify previous testcase also here, i.e invalid network in RR
     verify(controllerConfig, Mockito.times(2))

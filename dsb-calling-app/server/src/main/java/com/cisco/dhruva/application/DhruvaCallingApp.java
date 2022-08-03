@@ -1,5 +1,7 @@
 package com.cisco.dhruva.application;
 
+import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.doStrayResponseNormalization;
+
 import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
@@ -45,6 +47,7 @@ public class DhruvaCallingApp {
             ._6xx(true)
             .midDialog(true)
             .requestConsumer(getRequestConsumer())
+            .strayResponseNormalizer(doStrayResponseNormalization())
             .build();
 
     ImmutableList<CallTypeEnum> interestedCallTypes =

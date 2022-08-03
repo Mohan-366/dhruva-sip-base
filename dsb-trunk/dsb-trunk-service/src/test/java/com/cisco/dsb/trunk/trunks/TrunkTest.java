@@ -808,7 +808,7 @@ public class TrunkTest {
   @Test(description = "Test ingress")
   public void testProcessIngressAntares() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
-    antaresTrunk.processIngress(proxySIPRequest);
+    antaresTrunk.processIngress(proxySIPRequest, normalization);
   }
 
   @Test

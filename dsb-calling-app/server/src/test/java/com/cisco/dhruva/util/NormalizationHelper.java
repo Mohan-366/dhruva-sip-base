@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 
 public class NormalizationHelper implements Normalization {
 
+  private Consumer<ProxySIPRequest> ingressNormConsumer = proxySIPRequest -> {};
+
   private Consumer<ProxySIPRequest> preNormConsumer = proxySIPRequest -> {};
 
   private Consumer<ProxySIPRequest> responseNormConsumer = proxySIPRequest -> {};
@@ -16,12 +18,17 @@ public class NormalizationHelper implements Normalization {
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer = (trunkCookie, endPoint) -> {};
 
   @Override
-  public Consumer<ProxySIPRequest> preNormalize() {
+  public Consumer ingressNormalize() {
+    return ingressNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> egressPreNormalize() {
     return preNormConsumer;
   }
 
   @Override
-  public BiConsumer<TrunkCookie, EndPoint> postNormalize() {
+  public BiConsumer<TrunkCookie, EndPoint> egressPostNormalize() {
     return postNormConsumer;
   }
 

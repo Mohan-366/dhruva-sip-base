@@ -15,7 +15,8 @@ public class B2BTrunk extends AbstractTrunk {
 
   // dummy implementation, can't create property binding for abstract class
   @Override
-  public ProxySIPRequest processIngress(ProxySIPRequest proxySIPRequest) {
+  public ProxySIPRequest processIngress(
+      ProxySIPRequest proxySIPRequest, Normalization normalization) {
     return null;
   }
 

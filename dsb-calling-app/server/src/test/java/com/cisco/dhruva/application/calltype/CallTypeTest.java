@@ -5,14 +5,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BNorm;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNNorm;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BNorm;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCNorm;
-import com.cisco.dhruva.util.NormalizationHelper;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BToCallingCoreNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNToB2BNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BToPSTNNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCToB2BNorm;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -42,7 +40,6 @@ public class CallTypeTest {
   MetricService metricService;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
-  Normalization normalization = new NormalizationHelper();
 
   @BeforeTest
   public void init() {
@@ -73,10 +70,14 @@ public class CallTypeTest {
   @DataProvider
   public Object[] getCallTypes() {
     return new Object[] {
-      new DialInPSTN(trunkManager, configurationProperty, new DialInPSTNNorm()),
-      new DialInB2B(trunkManager, configurationProperty, new DialInB2BNorm()),
-      new DialOutWxC(trunkManager, configurationProperty, new DialOutWXCNorm()),
-      new DialOutB2B(trunkManager, configurationProperty, new DialOutB2BNorm())
+      new DialInPSTN(trunkManager, configurationProperty, new DialInPSTNToB2BNorm()),
+      new DialInB2B(
+          trunkManager,
+          configurationProperty,
+          new DialInB2BToCallingCoreNorm(configurationProperty)),
+      new DialOutWxC(trunkManager, configurationProperty, new DialOutWXCToB2BNorm()),
+      new DialOutB2B(
+          trunkManager, configurationProperty, new DialOutB2BToPSTNNorm(configurationProperty))
     };
   }
 
@@ -93,7 +94,11 @@ public class CallTypeTest {
     callType.processRequest(proxySIPRequest);
     verify(proxySIPResponse, times(1)).proxy();
     verify(trunkManager, times(1))
-        .handleIngress(callType.getIngressTrunk(), proxySIPRequest, callType.getIngressKey());
+        .handleIngress(
+            callType.getIngressTrunk(),
+            proxySIPRequest,
+            callType.getIngressKey(),
+            callType.getNormalization());
     verify(trunkManager, times(1))
         .handleEgress(
             callType.getEgressTrunk(),
@@ -106,7 +111,9 @@ public class CallTypeTest {
 
   @Test(description = "dtg null DialOutB2B")
   public void nullDtgTest() throws ParseException {
-    CallType callType = new DialOutB2B(trunkManager, configurationProperty, new DialOutB2BNorm());
+    CallType callType =
+        new DialOutB2B(
+            trunkManager, configurationProperty, new DialOutB2BToPSTNNorm(configurationProperty));
     SIPRequest sipRequest = mock(SIPRequest.class);
     SipUri sipUri = (SipUri) JainSipHelper.createSipURI("sip:abc@akg.com");
     when(sipRequest.getRequestURI()).thenReturn(sipUri);
@@ -119,7 +126,7 @@ public class CallTypeTest {
 
   @Test(description = "handle egress throws exception")
   public void testHandleEgressException() {
-    DialInPSTNNorm normalization = new DialInPSTNNorm();
+    DialInPSTNToB2BNorm normalization = new DialInPSTNToB2BNorm();
     CallType callType = new DialInPSTN(trunkManager, configurationProperty, normalization);
     DhruvaRuntimeException dhruvaRuntimeException =
         new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Error while proxying the request");

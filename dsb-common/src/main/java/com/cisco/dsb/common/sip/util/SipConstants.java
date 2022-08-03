@@ -104,12 +104,18 @@ public class SipConstants {
   public static final String Content_Type_Application = "application";
   public static final String Content_Type_Message = "message";
 
-  public static final String Rpid_Header_Name = "Remote-Party-ID";
-  public static final String Rpid_Header_Name_With_Colon = "Remote-Party-ID:";
-
-  public static final String Paid_Header_Name = "P-Asserted-Identity";
-
-  public static final String Ppi_Header_Name = "P-Preferred-Identity";
+  public static final String REQUEST_URI = "requestUri";
+  public static final String TO = "To";
+  public static final String FROM = "From";
+  public static final String DIVERSION = "Diversion";
+  public static final String SERVER = "Server";
+  public static final String USER_AGENT = "User-Agent";
+  public static final String RPID_PRIVACY = "RPID-Privacy";
+  public static final String REMOTE_PARTY_ID = "Remote-Party-ID";
+  public static final String P_ASSERTED_IDENTITY = "P-Asserted-Identity";
+  public static final String P_PREFERRED_IDENTITY = "P-Preferred-Identity";
+  public static final String X_BROAD_WORKS_CORRELATION_INFO = "X-BroadWorks-Correlation-Info";
+  public static final String X_BROAD_WORKS_DNC = "X-BroadWorks-DNC";
 
   public static final String ISFOCUS_PARAMETER = "isfocus";
 

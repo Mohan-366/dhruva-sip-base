@@ -13,13 +13,13 @@ import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
-import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.trunk.util.RedirectionSet;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import com.cisco.wx2.util.Utilities;
@@ -113,7 +113,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
     return egress.getLbType();
   }
 
-  public abstract ProxySIPRequest processIngress(ProxySIPRequest proxySIPRequest);
+  public abstract ProxySIPRequest processIngress(
+      ProxySIPRequest proxySIPRequest, Normalization normalization);
 
   public abstract Mono<ProxySIPResponse> processEgress(
       ProxySIPRequest proxySIPRequest, Normalization normalization);
@@ -181,7 +182,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     String finalUserId = userId;
 
     return Mono.defer(() -> getEndPoint(cookie, finalUserId))
-        .doOnNext(endPoint -> normalization.postNormalize().accept(cookie, endPoint))
+        .doOnNext(endPoint -> normalization.egressPostNormalize().accept(cookie, endPoint))
         .flatMap(
             endPoint -> {
               return sendToProxy(cookie, endPoint);
@@ -535,42 +536,16 @@ public abstract class AbstractTrunk implements LoadBalancable {
   }
 
   private Mono<ProxySIPResponse> sendMidCallRequestToProxy(ProxySIPRequest proxySIPRequest) {
-    // TODO: KALPA Response handling can be optimized by sending back the response to CallType
     logger.info(
         "Sending to proxy for midDiallog request {}", proxySIPRequest.getRequest().getRequestURI());
 
-    // For mid-dialog requests , post normalization is not applied.Hence this workaround.Need to
+    // For mid-dialog requests, post normalization is not applied. Hence this workaround.Need to
     // clean up
-    List<String> headersToReplaceWithRemoteIPInResponse = Arrays.asList("To");
+    List<String> headersToReplaceWithRemoteIP = Arrays.asList(SipConstants.TO);
     SipUri rUri = ((SipUri) proxySIPRequest.getRequest().getRequestURI());
-    replaceIPInHeader(
-        proxySIPRequest.getRequest(), headersToReplaceWithRemoteIPInResponse, rUri.getHost());
-    ProxyInterface proxyInterface = proxySIPRequest.getProxyInterface();
-    proxyInterface
-        .proxyRequest(proxySIPRequest)
-        .whenComplete(
-            (proxySIPResponse, throwable) -> {
-              if (proxySIPResponse != null) {
-                logger.info(
-                    "dhruva message record {}",
-                    proxySIPRequest.getAppRecord() == null
-                        ? "None"
-                        : proxySIPRequest.getAppRecord().toString());
-                proxySIPResponse.proxy();
-                return;
-              }
-
-              if (throwable != null) {
-                Utilities.Checks checks = new Utilities.Checks();
-                checks.add("proxy request for mid dialog failed", throwable.getMessage());
-                proxySIPRequest.getAppRecord().add(ProxyState.OUT_PROXY_SEND_FAILED, checks);
-                logger.error(
-                    "Error while sending out mid dialog request based on rURI/Route Header",
-                    throwable);
-                proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
-              }
-            });
-    return Mono.empty();
+    replaceIPInHeader(proxySIPRequest.getRequest(), headersToReplaceWithRemoteIP, rUri.getHost());
+    return (Mono.defer(
+        () -> Mono.fromFuture(proxySIPRequest.getProxyInterface().proxyRequest(proxySIPRequest))));
   }
 
   private EndPoint getActiveRedirectionEndpoint(TrunkCookie cookie) {

@@ -1,15 +1,19 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
 import static org.cafesip.sipunit.SipAssert.*;
+import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 
 import com.cisco.dhruva.callingIntegration.util.Token;
 import gov.nist.javax.sip.address.SipUri;
+import gov.nist.javax.sip.header.SIPHeader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
+import java.util.ListIterator;
 import javax.sip.InvalidArgumentException;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
@@ -93,6 +97,9 @@ public class DialOutIT extends DhruvaIT {
                 max_forwards);
     Address contactAddress = wxcAddrFactory.createAddress(wxcContactAddr);
     invite.addHeader(wxcHeaderFactory.createContactHeader(contactAddress));
+    invite.addHeader(paidRemote);
+    invite.addHeader(ppidRemote);
+    invite.addHeader(rpidRemote);
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // WxC (AS) -> INVITE -> Antares (via Dhruva)
@@ -128,6 +135,7 @@ public class DialOutIT extends DhruvaIT {
         antaresRcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_cc@" + dhruvaAddress + ":" + dhruvaNetAntaresPort + ";transport=udp;lr>");
+    testDialOutWxCtoB2BNormRequest(antaresRcvdInv);
 
     // WxC (AS) will receive 100 from Dhruva
     EventObject responseEvent = wxc.waitResponse(trans, timeout);
@@ -155,13 +163,28 @@ public class DialOutIT extends DhruvaIT {
         antares.getParent().getAddressFactory().createAddress(antaresContact);
     String to = antares.generateNewTag();
     // Antares sending 180
-    antares.sendReply(antaresTrans, Response.RINGING, null, to, antaresContactAddr, -1);
+    List<Header> additionalHeaders = new ArrayList<>();
+    additionalHeaders.add(paidRemote);
+    additionalHeaders.add(ppidRemote);
+    additionalHeaders.add(rpidRemote);
+    additionalHeaders.addAll(diversionRemote);
+    antares.sendReply(
+        antaresTrans,
+        Response.RINGING,
+        null,
+        to,
+        antaresContactAddr,
+        -1,
+        (ArrayList<Header>) additionalHeaders,
+        null,
+        null);
     assertLastOperationSuccess("Antares send 180 failed - " + antares.format(), antares);
     LOGGER.info("180 Ringing successfully sent by Antares to Dhruva !!!");
     // AS receiving 180
     responseEvent = wxc.waitResponse(trans, timeout);
     assertNotNull("AS await 180 response failed - " + wxc.format(), responseEvent);
     assertEquals(Response.RINGING, ((ResponseEvent) responseEvent).getResponse().getStatusCode());
+    testDialOutWxCtoB2BNormResponse(((ResponseEvent) responseEvent).getResponse());
     LOGGER.info("180 Ringing successfully received by AS from Dhruva !!!");
 
     // ---- ---- ---- ---- ---- ----
@@ -170,6 +193,13 @@ public class DialOutIT extends DhruvaIT {
         antares.getParent().getMessageFactory().createResponse(Response.OK, incReq.getRequest());
     response_200.addHeader(
         antares.getParent().getHeaderFactory().createContactHeader(antaresContactAddr));
+    response_200.addHeader(paidRemote);
+    response_200.addHeader(ppidRemote);
+    response_200.addHeader(rpidRemote);
+    response_200.addHeader(diversionRemote.get(0));
+    response_200.addHeader(diversionRemote.get(1));
+    response_200.addHeader(diversionRemote.get(2));
+    response_200.addHeader(diversionRemote.get(3));
     // Antares sending 200
     antares.sendReply(antaresTrans, response_200);
     assertLastOperationSuccess("Antares send 200 failed - " + antares.format(), antares);
@@ -180,6 +210,7 @@ public class DialOutIT extends DhruvaIT {
     ResponseEvent respEvent = ((ResponseEvent) responseEvent);
     Response rcvdResponse = respEvent.getResponse();
     assertEquals(Response.OK, rcvdResponse.getStatusCode());
+    testDialOutWxCtoB2BNormResponse(rcvdResponse);
     LOGGER.info("200 OK successfully received by AS from Dhruva !!!");
 
     // WxC (AS) -> ACKs -> Antares (via Dhruva)
@@ -187,6 +218,9 @@ public class DialOutIT extends DhruvaIT {
     if (cSeqHeader.getMethod().equals(Request.INVITE)) {
       try {
         Request ack = respEvent.getDialog().createAck(cSeqHeader.getSeqNumber());
+        ack.addHeader(paidRemote);
+        ack.addHeader(ppidRemote);
+        ack.addHeader(rpidRemote);
         respEvent.getDialog().sendAck(ack);
         LOGGER.info("ACK successfully sent by AS !!!");
       } catch (SipException e) {
@@ -196,6 +230,7 @@ public class DialOutIT extends DhruvaIT {
     incReq = antares.waitRequest(timeout);
     assertNotNull("Antares await ACK for 200 failed - " + antares.format(), incReq);
     assertEquals(Request.ACK, incReq.getRequest().getMethod());
+    testDialOutWxCtoB2BNormRequest(new SipRequest(incReq.getRequest()));
     LOGGER.info("ACK successfully received by Antares !!!");
 
     deleteDns();
@@ -257,6 +292,15 @@ public class DialOutIT extends DhruvaIT {
                 max_forwards);
     Address contactAddress = antaresAddrFactory.createAddress(antaresContactAddr);
     invite.addHeader(antaresHeaderFactory.createContactHeader(contactAddress));
+    invite.addHeader(paidRemote);
+    invite.addHeader(ppidRemote);
+    invite.addHeader(rpidRemote);
+    invite.addHeader(diversionRemote.get(0));
+    invite.addHeader(diversionRemote.get(1));
+    invite.addHeader(diversionRemote.get(2));
+    invite.addHeader(diversionRemote.get(3));
+    invite.addHeader((xBroadworksDnc));
+    invite.addHeader(xBroadWorksCorrelationInfo);
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // antares -> INVITE -> PSTN (via Dhruva)
@@ -298,6 +342,7 @@ public class DialOutIT extends DhruvaIT {
         "To header assertion failed",
         "<sip:pstn-it-guest@" + testHostAddress + ">",
         toTest.getAddress().toString());
+    testDialOutB2BToPSTNNormRequest(pstnRcvdInv);
 
     // antares will receive 100 from Dhruva
     EventObject responseEvent = antares.waitResponse(antaresTrans, timeout);
@@ -490,6 +535,15 @@ public class DialOutIT extends DhruvaIT {
     if (cSeqHeader.getMethod().equals(Request.INVITE)) {
       try {
         Request ack = respEvent.getDialog().createAck(cSeqHeader.getSeqNumber());
+        ack.addHeader(paidRemote);
+        ack.addHeader(ppidRemote);
+        ack.addHeader(rpidRemote);
+        ack.addHeader(xBroadworksDnc);
+        ack.addHeader(xBroadWorksCorrelationInfo);
+        ack.addHeader(diversionRemote.get(0));
+        ack.addHeader(diversionRemote.get(1));
+        ack.addHeader(diversionRemote.get(2));
+        ack.addHeader(diversionRemote.get(3));
         respEvent.getDialog().sendAck(ack);
         LOGGER.info("ACK successfully sent by Antares !!!");
       } catch (SipException e) {
@@ -497,9 +551,12 @@ public class DialOutIT extends DhruvaIT {
       }
     }
     incReq = pstnUsPoolAsg2.waitRequest(timeout);
+    SipRequest incAck = new SipRequest(incReq.getRequest());
     assertNotNull(
         "PSTN UsPoolA SGE 2 await ACK for 200 failed - " + pstnUsPoolAsg2.format(), incReq);
     assertEquals(Request.ACK, incReq.getRequest().getMethod());
+    testDialOutB2BToPSTNNormRequest(incAck);
+
     LOGGER.info("ACK successfully received by PSTN UsPoolA SGE 2 !!!");
 
     pstnUsPoolB.dispose();
@@ -507,4 +564,47 @@ public class DialOutIT extends DhruvaIT {
     pstnUsPoolAsg2.dispose();
     antares.dispose();
   }
+
+  private void testDialOutWxCtoB2BNormRequest(SipRequest sipRequest) {
+    assertHeaderContains("PAID assertion failed", sipRequest, PAID_HEADER, paidHeaderValueRemote);
+    assertHeaderContains("PPID assertion failed", sipRequest, PPID_HEADER, ppidHeaderValueRemote);
+    assertHeaderContains("RPID assertion failed", sipRequest, RPID_HEADER, rpidHeaderValueRemote);
+  }
+
+  private void testDialOutWxCtoB2BNormResponse(Response response) {
+    assertEquals(paidLocal, (response.getHeader(PAID_HEADER)));
+    assertEquals(ppidLocal, response.getHeader(PPID_HEADER));
+    assertEquals(rpidLocal, response.getHeader(RPID_HEADER));
+    ListIterator<SIPHeader> diversionHeadersReceived = (response.getHeaders(DIVERSION));
+    assertTrue(diversionHeadersReceived != null);
+    int count = 0;
+    while (diversionHeadersReceived.hasNext()) {
+      assertEquals(
+          diversionLocal.toString().trim(), diversionHeadersReceived.next().toString().trim());
+      count++;
+    }
+    assertTrue(count == 4);
+  }
+
+  private void testDialOutB2BToPSTNNormRequest(SipRequest sipRequest) {
+    assertHeaderContains("PAID assertion failed", sipRequest, PAID_HEADER, paidHeaderValueLocal);
+    assertHeaderContains("PPID assertion failed", sipRequest, PPID_HEADER, ppidHeaderValueLocal);
+    assertHeaderContains("RPID assertion failed", sipRequest, RPID_HEADER, rpidHeaderValueLocal);
+    assertEquals(null, sipRequest.getMessage().getHeader(X_BROADWORKS_DNC));
+    assertEquals(null, sipRequest.getMessage().getHeader(X_BROADWORKS_CORRELATION_INFO));
+
+    ListIterator<SIPHeader> diversionHeadersReceived =
+        sipRequest.getMessage().getHeaders(DIVERSION);
+    assertTrue(diversionHeadersReceived != null);
+    int count = 0;
+    while (diversionHeadersReceived.hasNext()) {
+      assertEquals(
+          diversionLocal.toString().trim(), diversionHeadersReceived.next().toString().trim());
+      count++;
+    }
+    assertTrue(count == 4);
+  }
+
+  // as of now we do not normalize PSTN to B2B responses
+  private void testDialOutB2BToPSTNNormResponse(Response response) {}
 }

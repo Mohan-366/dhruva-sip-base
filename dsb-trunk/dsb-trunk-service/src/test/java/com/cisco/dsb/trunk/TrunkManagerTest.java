@@ -50,12 +50,14 @@ public class TrunkManagerTest {
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
+  NormalizationHelper normalization;
 
   @BeforeTest
   public void init() {
     MockitoAnnotations.openMocks(this);
     metricService = mock(MetricService.class);
     optionsPingController = mock(OptionsPingController.class);
+    normalization = new NormalizationHelper();
   }
 
   @BeforeMethod
@@ -174,10 +176,11 @@ public class TrunkManagerTest {
     // Test handle ingress, trunk type and key present
     doAnswer(invocationOnMock -> proxySIPRequest)
         .when(trunkMap.get(key))
-        .processIngress(proxySIPRequest);
-    assertEquals(trunkManager.handleIngress(type, proxySIPRequest, key), proxySIPRequest);
+        .processIngress(proxySIPRequest, normalization);
+    assertEquals(
+        trunkManager.handleIngress(type, proxySIPRequest, key, normalization), proxySIPRequest);
     // Test, handle ingress for Trunk type not found
-    trunkManager.handleIngress(TrunkType.NOT_FOUND, proxySIPRequest, key);
+    trunkManager.handleIngress(TrunkType.NOT_FOUND, proxySIPRequest, key, normalization);
   }
 
   @Test(
@@ -185,7 +188,7 @@ public class TrunkManagerTest {
       dependsOnMethods = "testIngress1",
       expectedExceptions = DhruvaRuntimeException.class)
   public void testIngress2() {
-    trunkManager.handleIngress(TrunkType.PSTN, proxySIPRequest, "key_not_present");
+    trunkManager.handleIngress(TrunkType.PSTN, proxySIPRequest, "key_not_present", normalization);
   }
 
   @Test

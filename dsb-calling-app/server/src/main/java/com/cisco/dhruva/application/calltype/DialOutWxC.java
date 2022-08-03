@@ -1,7 +1,7 @@
 package com.cisco.dhruva.application.calltype;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
-import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCToB2BNorm;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -22,10 +22,10 @@ public class DialOutWxC implements CallType {
   public DialOutWxC(
       TrunkManager trunkManager,
       CallingAppConfigurationProperty configurationProperty,
-      DialOutWXCNorm dialOutWXCNorm) {
+      DialOutWXCToB2BNorm dialOutWXCToB2BNorm) {
     this.trunkManager = trunkManager;
     this.configurationProperty = configurationProperty;
-    this.normalization = dialOutWXCNorm;
+    this.normalization = dialOutWXCToB2BNorm;
   }
 
   @Override

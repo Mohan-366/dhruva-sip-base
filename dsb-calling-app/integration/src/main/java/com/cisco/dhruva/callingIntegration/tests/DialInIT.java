@@ -2,14 +2,18 @@ package com.cisco.dhruva.callingIntegration.tests;
 
 import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
 import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
+import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 
 import com.cisco.dhruva.callingIntegration.util.Token;
+import gov.nist.javax.sip.header.SIPHeader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
+import java.util.ListIterator;
 import javax.sip.InvalidArgumentException;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
@@ -89,6 +93,9 @@ public class DialInIT extends DhruvaIT {
                 max_forwards);
     Address contactAddress = pstnAddrFactory.createAddress(pstnContactAddr);
     invite.addHeader(pstnHeaderFactory.createContactHeader(contactAddress));
+    invite.addHeader(paidRemote);
+    invite.addHeader(ppidRemote);
+    invite.addHeader(rpidRemote);
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // pstn -> INVITE -> antares (via Dhruva)
@@ -124,6 +131,7 @@ public class DialInIT extends DhruvaIT {
         antaresRcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_sp@" + dhruvaAddress + ":" + dhruvaNetAntaresPort + ";transport=udp;lr>");
+    testDialInPSTNToB2BNormRequest(antaresRcvdInv);
 
     // pstn receives 100 from dhruva
     EventObject responseEvent = pstn.waitResponse(pstnTrans, timeout);
@@ -153,13 +161,31 @@ public class DialInIT extends DhruvaIT {
         antares.getParent().getAddressFactory().createAddress(antaresContact);
     String to = antares.generateNewTag();
     // antares sending 180
-    antares.sendReply(antaresTrans, Response.RINGING, null, to, antaresContactAddr, -1);
+    List<Header> additionalHeaders = new ArrayList<>();
+    additionalHeaders.add(paidRemote);
+    additionalHeaders.add(ppidRemote);
+    additionalHeaders.add(rpidRemote);
+    additionalHeaders.add(xBroadworksDnc);
+    additionalHeaders.add(xBroadWorksCorrelationInfo);
+    additionalHeaders.addAll(diversionRemote);
+    antares.sendReply(
+        antaresTrans,
+        Response.RINGING,
+        null,
+        to,
+        antaresContactAddr,
+        -1,
+        (ArrayList<Header>) additionalHeaders,
+        null,
+        null);
     assertLastOperationSuccess("Antares send 180 failed - " + antares.format(), antares);
     LOGGER.info("180 Ringing successfully sent by Antares to Dhruva !!!");
     // pstn receiving 180
     responseEvent = pstn.waitResponse(pstnTrans, timeout);
     assertNotNull("PSTN await 180 response failed - " + pstn.format(), responseEvent);
-    assertEquals(Response.RINGING, ((ResponseEvent) responseEvent).getResponse().getStatusCode());
+    assertEquals(
+        Response.RINGING, ((((ResponseEvent) responseEvent).getResponse()).getStatusCode()));
+    testDialInPSTNToB2BNormResponse((((ResponseEvent) responseEvent).getResponse()));
     LOGGER.info("180 Ringing successfully received by PSTN from Dhruva !!!");
 
     // ---- ---- ---- ---- ---- ----
@@ -168,8 +194,19 @@ public class DialInIT extends DhruvaIT {
         antares.getParent().getMessageFactory().createResponse(Response.OK, incReq.getRequest());
     response_200.addHeader(
         antares.getParent().getHeaderFactory().createContactHeader(antaresContactAddr));
+    response_200.addHeader(paidRemote);
+    response_200.addHeader(ppidRemote);
+    response_200.addHeader(rpidRemote);
+    response_200.addHeader(xBroadworksDnc);
+    response_200.addHeader(xBroadWorksCorrelationInfo);
+    response_200.addHeader(diversionRemote.get(0));
+    response_200.addHeader(diversionRemote.get(1));
+    response_200.addHeader(diversionRemote.get(2));
+    response_200.addHeader(diversionRemote.get(3));
+
     // antares sending 200
     antares.sendReply(antaresTrans, response_200);
+
     assertLastOperationSuccess("Antares send 200 failed - " + antares.format(), antares);
     LOGGER.info("200 OK successfully sent by Antares to Dhruva !!!");
     // pstn receiving 200
@@ -178,6 +215,7 @@ public class DialInIT extends DhruvaIT {
     ResponseEvent respEvent = ((ResponseEvent) responseEvent);
     Response rcvdResponse = respEvent.getResponse();
     assertEquals(Response.OK, rcvdResponse.getStatusCode());
+    testDialInPSTNToB2BNormResponse((((ResponseEvent) responseEvent).getResponse()));
     LOGGER.info("200 OK successfully received by PSTN from Dhruva !!!");
 
     // ---- ---- ---- ---- ---- ----
@@ -254,6 +292,9 @@ public class DialInIT extends DhruvaIT {
                 max_forwards);
     Address contactAddress = antaresAddrFactory.createAddress(antaresContactAddr);
     invite.addHeader(antaresHeaderFactory.createContactHeader(contactAddress));
+    invite.addHeader(paidRemote);
+    invite.addHeader(ppidRemote);
+    invite.addHeader(rpidRemote);
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // antares -> INVITE -> NS (via Dhruva)
@@ -287,6 +328,7 @@ public class DialInIT extends DhruvaIT {
         nsRcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetCcPort + ";transport=udp;lr>");
+    testDialInB2BToCallingCoreNormRequest(nsRcvdInv);
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ----
     // antares will receive 100 from Dhruva
@@ -351,6 +393,7 @@ public class DialInIT extends DhruvaIT {
         as1RcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetCcPort + ";transport=udp;lr>");
+    testDialInB2BToCallingCoreNormRequest(as1RcvdInv);
 
     // ---- ---- ---- ---- ---- ----
     // antares <- 404 <- as1
@@ -387,6 +430,7 @@ public class DialInIT extends DhruvaIT {
         as2RcvdInv,
         RecordRouteHeader.NAME,
         "<sip:rr$n=net_antares@" + dhruvaAddress + ":" + dhruvaNetCcPort + ";transport=udp;lr>");
+    testDialInB2BToCallingCoreNormRequest(as2RcvdInv);
 
     // dhruva <- 100 <- as2
     Response response_100 =
@@ -434,6 +478,9 @@ public class DialInIT extends DhruvaIT {
     if (cSeqHeader.getMethod().equals(Request.INVITE)) {
       try {
         Request ack = respEvent.getDialog().createAck(cSeqHeader.getSeqNumber());
+        ack.addHeader(paidRemote);
+        ack.addHeader(ppidRemote);
+        ack.addHeader(rpidRemote);
         respEvent.getDialog().sendAck(ack);
         LOGGER.info("ACK successfully sent by Antares !!!");
       } catch (SipException e) {
@@ -442,8 +489,10 @@ public class DialInIT extends DhruvaIT {
     }
 
     as2IncReq = as2.waitRequest(timeout);
+    SipRequest as2IncAck = new SipRequest(as2IncReq.getRequest());
     assertNotNull("AS 2 await ACK for 200 failed - " + as2.format(), as2IncReq);
     assertEquals(Request.ACK, as2IncReq.getRequest().getMethod());
+    testDialInB2BToCallingCoreNormRequest(as2IncAck);
     LOGGER.info("ACK successfully received by AS 2 !!!");
 
     deleteDns();
@@ -452,4 +501,36 @@ public class DialInIT extends DhruvaIT {
     ns.dispose();
     antares.dispose();
   }
+
+  private void testDialInPSTNToB2BNormRequest(SipRequest sipRequest) {
+    assertHeaderContains("PAID assertion failed", sipRequest, PAID_HEADER, paidHeaderValueRemote);
+    assertHeaderContains("PPID assertion failed", sipRequest, PPID_HEADER, ppidHeaderValueRemote);
+    assertHeaderContains("RPID assertion failed", sipRequest, RPID_HEADER, rpidHeaderValueRemote);
+  }
+
+  private void testDialInPSTNToB2BNormResponse(Response response) {
+    assertEquals(paidLocal, (response.getHeader(PAID_HEADER)));
+    assertEquals(ppidLocal, response.getHeader(PPID_HEADER));
+    assertEquals(rpidLocal, response.getHeader(RPID_HEADER));
+    assertEquals(null, response.getHeader(X_BROADWORKS_DNC));
+    assertEquals(null, response.getHeader(X_BROADWORKS_CORRELATION_INFO));
+    ListIterator<SIPHeader> diversionHeadersReceived = (response.getHeaders(DIVERSION));
+    assertTrue(diversionHeadersReceived != null);
+    int count = 0;
+    while (diversionHeadersReceived.hasNext()) {
+      assertEquals(
+          diversionLocal.toString().trim(), diversionHeadersReceived.next().toString().trim());
+      count++;
+    }
+    assertTrue(count == 4);
+  }
+
+  private void testDialInB2BToCallingCoreNormRequest(SipRequest sipRequest) {
+    assertHeaderContains("PAID assertion failed", sipRequest, PAID_HEADER, paidHeaderValueLocal);
+    assertHeaderContains("PPID assertion failed", sipRequest, PPID_HEADER, ppidHeaderValueLocal);
+    assertHeaderContains("RPID assertion failed", sipRequest, RPID_HEADER, rpidHeaderValueLocal);
+  }
+
+  // as of now we do not normalize CC to B2B responses
+  private void testDialInB2BToCallingCoreNormResponse(Response response) {}
 }

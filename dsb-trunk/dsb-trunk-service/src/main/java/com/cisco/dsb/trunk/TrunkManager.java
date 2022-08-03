@@ -109,7 +109,7 @@ public class TrunkManager {
   }
 
   public ProxySIPRequest handleIngress(
-      TrunkType type, ProxySIPRequest proxySIPRequest, String key) {
+      TrunkType type, ProxySIPRequest proxySIPRequest, String key, Normalization normalization) {
 
     AbstractTrunk trunk =
         this.registry
@@ -120,7 +120,7 @@ public class TrunkManager {
             .get(key);
     if (trunk == null)
       throw new DhruvaRuntimeException("Key \"" + key + "\" does not match trunk of type " + type);
-    return trunk.processIngress(proxySIPRequest);
+    return trunk.processIngress(proxySIPRequest, normalization);
   }
 
   public Mono<ProxySIPResponse> handleEgress(
