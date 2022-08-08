@@ -397,7 +397,7 @@ public class SipProxyManager {
 
       if (proxyAppConfig != null) {
         Consumer strayResponseNormalization = proxyAppConfig.getStrayResponseNormalizer();
-        if(strayResponseNormalization != null) {
+        if (strayResponseNormalization != null) {
           logger.debug("Applying stray response normalization");
           proxyAppConfig.getStrayResponseNormalizer().accept(response);
         } else {

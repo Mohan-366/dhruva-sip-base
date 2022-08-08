@@ -7,7 +7,6 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
-import com.cisco.dsb.common.messaging.models.SipRequest;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
@@ -557,7 +556,8 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.createAndSendRequest(
         "network_tcp", sge, OptionsPingPolicy.builder().setMaxForwards(maxForwards).build());
     ArgumentCaptor<SIPRequest> sipRequestCaptor = ArgumentCaptor.forClass(SIPRequest.class);
-    verify(optionsPingTransaction, times(1)).proxySendOutBoundRequest(sipRequestCaptor.capture(), any(), any());
+    verify(optionsPingTransaction, times(1))
+        .proxySendOutBoundRequest(sipRequestCaptor.capture(), any(), any());
     Assert.assertEquals(sipRequestCaptor.getValue().getMaxForwards().getMaxForwards(), maxForwards);
   }
 

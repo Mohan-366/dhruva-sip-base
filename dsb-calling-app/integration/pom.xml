@@ -97,7 +97,7 @@
                         <artifactInstaller>
                             <groupId>org.apache.tomcat</groupId>
                             <artifactId>tomcat</artifactId>
-                            <version>${tomcat.version}</version>
+                            <version>${tomcat-ft.version}</version>
                         </artifactInstaller>
                         <systemProperties>
                             <!-- The following properties are required to disable the creation of redis cache (which is not needed for IT execution)
