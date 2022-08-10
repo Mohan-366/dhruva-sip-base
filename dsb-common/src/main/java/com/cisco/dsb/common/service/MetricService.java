@@ -280,7 +280,7 @@ public class MetricService {
       cpsMetricSet.add(cpsMetricForTrunk);
     }
     sendMetric(cpsMetricSet);
-  };
+  }
 
   public void emitServerGroupStatusSupplier(String measurement) {
 
@@ -296,7 +296,7 @@ public class MetricService {
       cpsMetricSet.add(cpsMetricForTrunk);
     }
     sendMetric(cpsMetricSet);
-  };
+  }
 
   @NotNull
   private Runnable getMetricFromSupplier(String measurement, Supplier<Set<Metric>> metricSupplier) {
@@ -318,8 +318,7 @@ public class MetricService {
   }
 
   public void sendUpstreamHealthMetric(ServiceHealth upstreamServiceHealth) {
-    this.sendServiceHealthMetric(
-        this.UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME, upstreamServiceHealth);
+    this.sendServiceHealthMetric(UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME, upstreamServiceHealth);
   }
 
   public void sendServiceHealthMetric(String measurementName, ServiceHealth serviceHealth) {

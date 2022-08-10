@@ -61,7 +61,7 @@ node('SPARK_BUILDER_JAVA11') {
          stage('archive') {
              archiveArtifacts artifacts: 'dsb-calling-app/server/microservice.yml', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/docker/*', allowEmptyArchive: true
-             archiveArtifacts artifacts: 'dsb-calling-app/integration/docker/*', allowEmptyArchive: true
+             archiveArtifacts artifacts: 'dsb-calling-app/antares-integration/docker/*', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
              archiveArtifacts artifacts: '**/spotbugsXml.xml', allowEmptyArchive: true
          }
@@ -82,7 +82,7 @@ node('SPARK_BUILDER_JAVA11') {
              }
              // build and push Test client
              buildArgs = [component: "dhruva-test-client", manifest: "manifest.yaml", tag: tag, metadata: getMetaDataTest(tag)]
-             dir('dsb-calling-app/integration'){
+             dir('dsb-calling-app/antares-integration'){
                  sh "cp target/*.jar docker/"
                  sh "ls -lart docker/"
                  buildCI(this,buildArgs)

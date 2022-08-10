@@ -13,7 +13,7 @@ public class TestSuiteListener implements ISuiteListener {
   @Override
   public void onStart(ISuite suite) {
     BlockHound.install();
-    logger.info("BlockHound installed on start of 'dsb-calling-app-integration' test suite !!");
+    logger.info("BlockHound installed on start of 'dsb-calling-app/integration' test suite !!");
   }
 
   @Override

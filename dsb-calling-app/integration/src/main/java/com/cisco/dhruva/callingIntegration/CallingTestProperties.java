@@ -3,7 +3,7 @@ package com.cisco.dhruva.callingIntegration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 
-public class DhruvaCallingTestProperties {
+public class CallingTestProperties {
   private static final String DEFAULT_TEST_LISTEN_ADDRESS = "127.0.0.1";
   private static final Integer DEFAULT_PSTN_US_POOLB_PORT = 4200;
   private static final Integer DEFAULT_PSTN_US_POOLA_SG1_PORT = 4101;

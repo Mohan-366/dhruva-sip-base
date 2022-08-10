@@ -1,6 +1,6 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
-import com.cisco.dhruva.callingIntegration.DhruvaCallingTestProperties;
+import com.cisco.dhruva.callingIntegration.CallingTestProperties;
 import com.cisco.dhruva.callingIntegration.DhruvaTestConfig;
 import com.cisco.dhruva.callingIntegration.util.IntegrationTestListener;
 import com.cisco.dhruva.callingIntegration.util.TestSuiteListener;
@@ -104,7 +104,7 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DhruvaIT.class);
 
-  @Autowired private DhruvaCallingTestProperties testPro;
+  @Autowired private CallingTestProperties testPro;
 
   @PostConstruct
   public void init() throws ParseException {

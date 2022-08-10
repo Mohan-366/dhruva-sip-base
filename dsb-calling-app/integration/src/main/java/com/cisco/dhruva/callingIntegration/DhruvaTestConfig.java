@@ -11,16 +11,16 @@ import org.springframework.context.annotation.Configuration;
 public class DhruvaTestConfig {
 
   @Bean
-  public DhruvaCallingTestProperties dhruvaCallingTestProperties() {
-    return new DhruvaCallingTestProperties();
+  public CallingTestProperties callingTestProperties() {
+    return new CallingTestProperties();
   }
 
   @Bean
   public CallingAppClientFactory callingAppClientFactory(
-      TestProperties testProperties, DhruvaCallingTestProperties dhruvaCallingTestProperties) {
+      TestProperties testProperties, CallingTestProperties callingTestProperties) {
     Preconditions.checkNotNull(testProperties);
 
-    URI dhruvaPublicUri = URI.create(dhruvaCallingTestProperties.getDhruvaPublicUrl());
+    URI dhruvaPublicUri = URI.create(callingTestProperties.getDhruvaPublicUrl());
     return CallingAppClientFactory.builder(testProperties, dhruvaPublicUri).build();
   }
 }

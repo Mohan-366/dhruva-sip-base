@@ -69,7 +69,7 @@ public class NormalizeUtil {
       List<String[]> paramsToRemove) {
     String remoteIPAddress = null;
     int remotePort;
-    String ownIPAddress = null;
+    String ownIPAddress;
     SipUri rUri = ((SipUri) request.getRequestURI());
     // Add all normalizations here
     try {
@@ -265,7 +265,7 @@ public class NormalizeUtil {
               String headerName = headerInfo[0];
               String paramName = headerInfo[1];
               String paramValue = headerInfo[2];
-              SipUri sipUri = null;
+              SipUri sipUri;
               try {
                 if (headerName.equals("requestUri")) {
                   sipUri = (SipUri) request.getRequestURI();
