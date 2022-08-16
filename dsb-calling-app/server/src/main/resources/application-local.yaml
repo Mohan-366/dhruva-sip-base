@@ -5,6 +5,11 @@ app:
   b2b-egress: "Antares"
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
+  maintenance:
+    enabled: true
+    description: "DSB is in maintenance"
+    responseCode: 503
+
 common:
   listenPoints:
     - name: *netsp
@@ -14,6 +19,7 @@ common:
     - name: *netb2b
       port: 5070
       transport: UDP
+
       hostIPAddress: "127.0.0.1"
     - name: *netcc
       port: 5080
@@ -25,7 +31,6 @@ common:
       hostName: "UsPoolA"
       networkName: *netsp
       lbType: weight
-      pingOn: true
       elements:
         - ipAddress: "127.0.0.1"
           port: 6060
@@ -100,7 +105,6 @@ common:
         failureThresholdRate: 50
         permittedNumberOfCallsInHAlfOpenState: 1
         slidingWindowType: COUNT_BASED
-
   optionsPingPolicy:
     opPolicy1:
       name: opPolicy1
@@ -129,7 +133,7 @@ trunk:
             priority: 10
             weight: 100
           - sg: *UsPoolB
-            priority: 10
+            priority: 20
             weight: 100
     CcpFusionIN:
       name: CcpFusionIN

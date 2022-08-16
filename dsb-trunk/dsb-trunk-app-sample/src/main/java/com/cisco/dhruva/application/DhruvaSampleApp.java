@@ -5,6 +5,7 @@ import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,11 +32,14 @@ public class DhruvaSampleApp {
             ._5xx(true)
             ._6xx(true)
             .midDialog(false)
+            .isMaintenanceEnabled(isMaintenance)
             .requestConsumer(getRequestConsumer())
             .build();
 
     proxyService.register(proxyAppConfig);
   }
+
+  private Supplier<Boolean> isMaintenance = () -> false;
 
   private Consumer<ProxySIPRequest> getRequestConsumer() {
     return proxySIPRequest -> {

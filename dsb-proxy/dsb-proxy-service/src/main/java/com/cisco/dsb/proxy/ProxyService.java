@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
@@ -229,10 +230,11 @@ public class ProxyService {
   }
 
   public Mono<ProxySIPRequest> requestPipeline(Mono<RequestEvent> requestEventMono) {
+
     return requestEventMono
         .name("proxyRequest")
         .doOnNext(sipProxyManager.getManageLogAndMetricsForRequest())
-        .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest())
+        .mapNotNull(sipProxyManager.createServerTransactionAndProxySIPRequest(this.proxyAppConfig))
         .flatMap(
             r ->
                 Mono.deferContextual(

@@ -1,5 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
@@ -56,23 +57,27 @@ public class SipProxyManager {
   ProxyControllerFactory proxyControllerFactory;
   ControllerConfig config;
   MetricService metricService;
+  CommonConfigurationProperties commonConfigurationProperties;
 
   @Autowired
   public SipProxyManager(
       ProxyControllerFactory proxyControllerFactory,
       ControllerConfig controllerConfig,
-      MetricService metricService) {
+      MetricService metricService,
+      CommonConfigurationProperties commonConfigurationProperties) {
     this.proxyControllerFactory = proxyControllerFactory;
     this.config = controllerConfig;
     this.metricService = metricService;
+    this.commonConfigurationProperties = commonConfigurationProperties;
   }
 
   /**
    * Create JainSip Server Transaction (if not already exists) & create Proxy SIP Request out of
    * Jain SIP Request
    */
-  public Function<RequestEvent, ProxySIPRequest> createServerTransactionAndProxySIPRequest() {
-    return requestEvent -> {
+  public Function<RequestEvent, ProxySIPRequest> createServerTransactionAndProxySIPRequest(
+      ProxyAppConfig proxyAppConfig) {
+    return (requestEvent) -> {
       Request request = requestEvent.getRequest();
       ServerTransaction serverTransaction = requestEvent.getServerTransaction();
       SipProvider sipProvider = (SipProvider) requestEvent.getSource();
@@ -85,6 +90,9 @@ public class SipProxyManager {
           logger.info(
               "No server transaction exist. Creating new one for {} msg", request.getMethod());
           serverTransaction = sipProvider.getNewServerTransaction(request);
+          if (isStateSuspended(proxyAppConfig, request, sipProvider, serverTransaction))
+            return null;
+
         } catch (TransactionAlreadyExistsException ex) {
           logger.error(
               "Server Transaction Already exists, dropping the message as it's retransmission", ex);
@@ -101,6 +109,40 @@ public class SipProxyManager {
 
       return createProxySipRequest().apply(request, serverTransaction, sipProvider);
     };
+  }
+
+
+  /*
+  * Not applicable for mid-calls
+  * Applicable only for FRESH Invite, Options
+      if maintenance is enabled, we send 503 / specified response code back to the client and return true
+        else return false
+   */
+  public boolean isStateSuspended(
+      ProxyAppConfig proxyAppConfig,
+      Request request,
+      SipProvider sipProvider,
+      ServerTransaction serverTransaction) {
+
+    if (SipUtils.isMidDialogRequest((SIPRequest) request)) {
+      return false;
+    }
+    String requestType = request.getMethod();
+    if (proxyAppConfig.getIsMaintenanceEnabled().get()
+        && (requestType.equals(Request.OPTIONS) || requestType.equals(Request.INVITE))) {
+      try {
+        ProxySendMessage.sendResponse(
+            Response.SERVICE_UNAVAILABLE,
+            "",
+            sipProvider,
+            serverTransaction,
+            (SIPRequest) request);
+        return true;
+      } catch (DhruvaException e) {
+        logger.error("Error while sending response when dsb is in suspend state ", e);
+      }
+    }
+    return false;
   }
 
   /** Sends 100 Trying provisional response */

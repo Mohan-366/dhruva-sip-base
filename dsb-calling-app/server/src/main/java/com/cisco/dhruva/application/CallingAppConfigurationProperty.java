@@ -19,4 +19,7 @@ public class CallingAppConfigurationProperty {
   @NotBlank @Getter @Setter private String b2bEgress;
   @NotBlank @Getter @Setter private String callingEgress;
   @NotBlank @Getter @Setter private String pstnIngress;
+
+  @NotBlank @Getter @Setter
+  private Maintenance maintenance = Maintenance.MaintenanceBuilder().build();
 }

@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.net.ssl.KeyManager;
 import javax.sip.*;
 import org.mockito.*;
@@ -237,6 +238,10 @@ public class ProxyServiceTest {
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
     ExecutionContext context = new ExecutionContext();
 
+    Supplier<Boolean> t = () -> false;
+    ProxyAppConfig proxyAppConfig = mock(ProxyAppConfig.class);
+    when(proxyAppConfig.getIsMaintenanceEnabled()).thenReturn(t);
+
     Consumer<ProxySIPRequest> requestConsumer =
         proxySIPRequest -> {
           Assert.assertEquals(proxySIPRequest.getRequest(), request);
@@ -300,7 +305,8 @@ public class ProxyServiceTest {
 
     Function<RequestEvent, ProxySIPRequest> function1 = mock(Function.class);
     when(function1.apply(any(RequestEvent.class))).thenReturn(proxySIPRequest);
-    when(sipProxyManager.createServerTransactionAndProxySIPRequest()).thenReturn(function1);
+    when(sipProxyManager.createServerTransactionAndProxySIPRequest(any(ProxyAppConfig.class)))
+        .thenReturn(function1);
 
     Function<ProxySIPRequest, Mono<ProxySIPRequest>> function2 = mock(Function.class);
     when(function2.apply(any(ProxySIPRequest.class))).thenReturn(Mono.just(proxySIPRequest));

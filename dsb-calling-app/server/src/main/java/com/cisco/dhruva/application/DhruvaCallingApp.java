@@ -15,6 +15,7 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.collect.ImmutableList;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +28,18 @@ public class DhruvaCallingApp {
   private Filter filter;
   private ProxyAppConfig proxyAppConfig;
   private EventingService eventingService;
+  private CallingAppConfigurationProperty callingAppConfigurationProperty;
 
   @Autowired
-  DhruvaCallingApp(ProxyService proxyService, Filter filter, EventingService eventingService) {
+  DhruvaCallingApp(
+      ProxyService proxyService,
+      Filter filter,
+      EventingService eventingService,
+      CallingAppConfigurationProperty callingAppConfigurationProperty) {
     this.proxyService = proxyService;
     this.filter = filter;
     this.eventingService = eventingService;
+    this.callingAppConfigurationProperty = callingAppConfigurationProperty;
     init();
   }
 
@@ -45,6 +52,7 @@ public class DhruvaCallingApp {
             ._4xx(true)
             ._5xx(true)
             ._6xx(true)
+            .isMaintenanceEnabled(isMaintenance)
             .midDialog(true)
             .requestConsumer(getRequestConsumer())
             .strayResponseNormalizer(doStrayResponseNormalization())
@@ -70,6 +78,13 @@ public class DhruvaCallingApp {
         ImmutableList.of(LoggingEvent.class);
     eventingService.register(interestedEvents);
   }
+
+  private Supplier<Boolean> isMaintenance =
+      () -> callingAppConfigurationProperty.getMaintenance().isEnabled();
+  private Supplier<Integer> getResponse =
+      () -> callingAppConfigurationProperty.getMaintenance().getResponseCode();
+  private Supplier<String> getDescripton =
+      () -> callingAppConfigurationProperty.getMaintenance().getDescription();
 
   private Consumer<ProxySIPRequest> getRequestConsumer() {
     return proxySIPRequest -> {

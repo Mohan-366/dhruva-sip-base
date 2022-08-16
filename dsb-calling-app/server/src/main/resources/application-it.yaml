@@ -5,6 +5,8 @@ app:
   b2b-egress: "Antares"
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
+  maintanence:
+    enabled: false
 common:
   customMonitorPingInitialDelayInSec: 5
   customMonitorPingPeriodInSec: 30

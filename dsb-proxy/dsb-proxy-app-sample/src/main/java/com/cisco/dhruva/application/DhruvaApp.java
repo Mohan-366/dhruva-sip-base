@@ -5,6 +5,7 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.annotation.PostConstruct;
 import javax.sip.message.Response;
 import lombok.CustomLog;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 @CustomLog
 public class DhruvaApp {
   @Autowired ProxyService proxyService;
+
+  private Supplier<Boolean> isMaintenance = () -> false;
 
   private Consumer<ProxySIPRequest> requestConsumer =
       proxySIPRequest -> {
@@ -42,7 +45,12 @@ public class DhruvaApp {
   public void init() {
     // TODO change to single method register(res,req)
     ProxyAppConfig appConfig =
-        ProxyAppConfig.builder()._2xx(true)._4xx(true).requestConsumer(requestConsumer).build();
+        ProxyAppConfig.builder()
+            ._2xx(true)
+            ._4xx(true)
+            .isMaintenanceEnabled(isMaintenance)
+            .requestConsumer(requestConsumer)
+            .build();
     proxyService.register(appConfig);
   }
 }
