@@ -2,7 +2,6 @@ package com.cisco.dsb.common.util;
 
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.common.util.log.event.EventingService;
@@ -16,46 +15,15 @@ import org.jetbrains.annotations.NotNull;
 public class LMAUtil {
 
   public static void emitSipMessageEvent(
-      SipProvider sipProvider,
       SIPMessage message,
       Event.MESSAGE_TYPE messageType,
       Event.DIRECTION directionType,
       boolean isInternallyGenerated,
       boolean isMidDialogRequest,
-      long dhruvaProcessDelayInMilis) {
-
-    emitSipMessageEvent(
-        sipProvider,
-        message,
-        messageType,
-        directionType,
-        isInternallyGenerated,
-        isMidDialogRequest,
-        dhruvaProcessDelayInMilis,
-        null,
-        null);
-  }
-
-  public static void emitSipMessageEvent(
-      SipProvider sipProvider,
-      SIPMessage message,
-      Event.MESSAGE_TYPE messageType,
-      Event.DIRECTION directionType,
-      boolean isInternallyGenerated,
-      boolean isMidDialogRequest,
-      long dhruvaProcessDelayInMilis,
       DhruvaAppRecord appRecord,
       EventingService eventingService) {
 
-    Transport transportType;
-
-    if (sipProvider == null) {
-      transportType = getTransportTypeFromDhruvaNetwork(message);
-    } else {
-      transportType = getTransportType(sipProvider);
-    }
-
-    BindingInfo messageBindingInfo = LMAUtil.populateBindingInfo(message, transportType);
+    BindingInfo messageBindingInfo = LMAUtil.populateBindingInfo(message);
 
     Event.emitMessageEvent(
         messageBindingInfo,
@@ -64,29 +32,16 @@ public class LMAUtil {
         messageType,
         isInternallyGenerated,
         isMidDialogRequest,
-        dhruvaProcessDelayInMilis,
         appRecord,
         eventingService);
   }
 
-  public static Transport getTransportTypeFromDhruvaNetwork(SIPMessage message) {
-    Transport transportType;
-    String network = String.valueOf(message.getApplicationData());
-    transportType =
-        (!StringUtils.isEmpty(network) && DhruvaNetwork.getProviderFromNetwork(network).isPresent())
-            ? getTransportType(DhruvaNetwork.getProviderFromNetwork(network).get())
-            : Transport.NONE;
-    return transportType;
-  }
-
-  public static BindingInfo populateBindingInfo(
-      @NotNull SIPMessage sipMessage, Transport transportType) {
+  public static BindingInfo populateBindingInfo(@NotNull SIPMessage sipMessage) {
     return new BindingInfo.BindingInfoBuilder()
         .setLocalAddress(sipMessage.getLocalAddress())
         .setLocalPort(sipMessage.getLocalPort())
         .setRemotePort(sipMessage.getRemotePort())
         .setRemoteAddress(sipMessage.getRemoteAddress())
-        .setNetwork(transportType.name())
         .setRemoteAddressStr(
             Optional.ofNullable(String.valueOf(sipMessage.getRemoteAddress())).orElse(""))
         .build();

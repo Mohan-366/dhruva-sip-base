@@ -1,6 +1,5 @@
 package com.cisco.dsb.util.log;
 
-import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.log.event.DhruvaEvent;
 import com.cisco.dsb.common.util.log.event.Event;
@@ -48,13 +47,12 @@ public class EventTest {
     sipMessage.setHeader(sessionIdHeader);
 
     Event.emitMessageEvent(
-        LMAUtil.populateBindingInfo(sipMessage, Transport.UDP),
+        LMAUtil.populateBindingInfo(sipMessage),
         sipMessage,
         DIRECTION.IN,
         MESSAGE_TYPE.REQUEST,
         false,
         false,
-        10000,
         null,
         null);
 
@@ -91,13 +89,12 @@ public class EventTest {
     sipMessage.setCallId("1-2-3-4");
 
     Event.emitMessageEvent(
-        LMAUtil.populateBindingInfo(sipMessage, Transport.UDP),
+        LMAUtil.populateBindingInfo(sipMessage),
         sipMessage,
         DIRECTION.IN,
         MESSAGE_TYPE.REQUEST,
         false,
         false,
-        10000,
         null,
         null);
 

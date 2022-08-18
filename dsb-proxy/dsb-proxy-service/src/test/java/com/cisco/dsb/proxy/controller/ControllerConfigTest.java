@@ -6,6 +6,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dns.SipServerLocator;
@@ -119,13 +120,15 @@ public class ControllerConfigTest {
     recordRouteMap.put("test_network_out", rr_out);
     recordRouteMap.put("test2_network_in", rr_in2);
     controllerConfig.setRecordRoutesMap(recordRouteMap);
+    MsgApplicationData msgApplicationData =
+        MsgApplicationData.builder().network("test_network_in").build();
     doAnswer(
             invocationOnMock -> {
-              when(sipResponse.getApplicationData()).thenReturn("test_network_in");
+              when(sipResponse.getApplicationData()).thenReturn(msgApplicationData);
               return null;
             })
         .when(sipResponse)
-        .setApplicationData(eq("test_network_in"));
+        .setApplicationData(eq(msgApplicationData));
     DhruvaNetwork.setDhruvaConfigProperties(mock(CommonConfigurationProperties.class));
     // call
     controllerConfig.setRecordRouteInterface(sipResponse, true, -1);
@@ -147,8 +150,9 @@ public class ControllerConfigTest {
     assert RRUrl_changed_2.getTransportParam().equals(Transport.UDP.name().toLowerCase());
     // verification when multiple matches for outbound network is found, expected behaviour is to
     // pick topmost match
-    verify(sipResponse, Mockito.times(1)).setApplicationData(eq("test_network_in"));
-    verify(sipResponse, Mockito.times(0)).setApplicationData(eq("test2_network_in"));
+    MsgApplicationData applicationData = (MsgApplicationData) sipResponse.getApplicationData();
+    assert applicationData.getNetwork().equals("test_network_in");
+    verify(sipResponse, Mockito.times(1)).setApplicationData(eq(msgApplicationData));
   }
 
   @Test

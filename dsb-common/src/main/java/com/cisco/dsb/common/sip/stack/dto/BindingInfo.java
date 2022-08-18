@@ -48,7 +48,6 @@ public class BindingInfo implements Cloneable, Serializable {
   private boolean m_PendingClosure;
   private boolean m_Compress;
 
-  private String m_Network;
   private String m_strConnectionId;
 
   private BindingInfo(BindingInfoBuilder bindingInfoBuilder) {
@@ -61,7 +60,6 @@ public class BindingInfo implements Cloneable, Serializable {
     this.m_RemoteAddress = bindingInfoBuilder.m_RemoteAddress;
     this.m_RemotePort = bindingInfoBuilder.m_RemotePort;
     this.m_Transport = bindingInfoBuilder.m_Transport;
-    this.m_Network = bindingInfoBuilder.m_Network;
     this.m_RemoteAddressStr = bindingInfoBuilder.m_RemoteAddressStr;
   }
 
@@ -434,7 +432,6 @@ public class BindingInfo implements Cloneable, Serializable {
     private Transport m_Transport = Transport.NONE;
     private boolean m_PendingClosure;
     private boolean m_Compress;
-    private String m_Network;
 
     public BindingInfoBuilder() {
       this.m_IsTrying = false;
@@ -446,7 +443,6 @@ public class BindingInfo implements Cloneable, Serializable {
       this.m_RemoteAddress = null;
       this.m_RemotePort = REMOTE_PORT_UNSPECIFIED;
       this.m_Transport = Transport.NONE;
-      this.m_Network = DhruvaNetwork.NONE;
     }
 
     public BindingInfoBuilder setLocalAddress(InetAddress localAddress) {
@@ -476,11 +472,6 @@ public class BindingInfo implements Cloneable, Serializable {
 
     public BindingInfoBuilder setTransport(Transport transport) {
       this.m_Transport = transport;
-      return this;
-    }
-
-    public BindingInfoBuilder setNetwork(String network) {
-      this.m_Network = network;
       return this;
     }
 

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import javax.sip.header.CSeqHeader;
@@ -20,7 +21,7 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
 
   @Test
   public void testHeaderLogging() throws UnknownHostException {
-    SIPMessage message = mock(SIPMessage.class);
+    SIPMessage message = mock(SIPRequest.class);
     String content =
         "INVITE sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n"
             + "Call-ID: testSipToStratosFourCallBasicEarlyOffer26c3865cbb7647a2d8d764ff0414c8e7@192.168.1.77\n"

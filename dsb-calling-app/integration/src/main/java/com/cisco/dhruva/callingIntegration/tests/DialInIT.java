@@ -1,17 +1,19 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
+import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
+import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
+import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertNotNull;
+
 import com.cisco.dhruva.callingIntegration.util.Token;
 import gov.nist.javax.sip.header.SIPHeader;
-import org.cafesip.sipunit.SipPhone;
-import org.cafesip.sipunit.SipRequest;
-import org.cafesip.sipunit.SipStack;
-import org.cafesip.sipunit.SipTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
+import java.util.ListIterator;
 import javax.sip.InvalidArgumentException;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
@@ -22,18 +24,15 @@ import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.EventObject;
-import java.util.List;
-import java.util.ListIterator;
-
-import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
-import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
-import static org.testng.Assert.assertTrue;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertNotNull;
+import org.cafesip.sipunit.SipPhone;
+import org.cafesip.sipunit.SipRequest;
+import org.cafesip.sipunit.SipStack;
+import org.cafesip.sipunit.SipTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class DialInIT extends DhruvaIT {
 

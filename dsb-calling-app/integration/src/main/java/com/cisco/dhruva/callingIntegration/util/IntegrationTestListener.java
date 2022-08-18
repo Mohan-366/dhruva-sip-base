@@ -17,11 +17,9 @@ public class IntegrationTestListener extends TestListenerAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTestListener.class);
 
-  public static final Set<String> COMPLETED_TESTS =
-      Collections.synchronizedSet(new HashSet<>());
+  public static final Set<String> COMPLETED_TESTS = Collections.synchronizedSet(new HashSet<>());
   public static final Set<String> FAILED_TESTS = Collections.synchronizedSet(new HashSet<>());
-  public static final Set<String> SKIPPED_TESTS =
-      Collections.synchronizedSet(new HashSet<>());
+  public static final Set<String> SKIPPED_TESTS = Collections.synchronizedSet(new HashSet<>());
   public static final Set<String> PASSED_TESTS = Collections.synchronizedSet(new HashSet<>());
   public static final Set<String> ALL_TESTS = Collections.synchronizedSet(new HashSet<>());
 

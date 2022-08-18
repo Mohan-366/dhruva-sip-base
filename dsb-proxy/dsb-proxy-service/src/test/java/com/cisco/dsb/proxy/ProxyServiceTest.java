@@ -301,7 +301,7 @@ public class ProxyServiceTest {
     Consumer<RequestEvent> consumer = mock(Consumer.class);
     doAnswer(ans -> null).when(consumer).accept(requestEvent1);
 
-    when(sipProxyManager.getManageLogAndMetricsForRequest()).thenReturn(consumer);
+    when(sipProxyManager.getManageMetricsForRequest()).thenReturn(consumer);
 
     Function<RequestEvent, ProxySIPRequest> function1 = mock(Function.class);
     when(function1.apply(any(RequestEvent.class))).thenReturn(proxySIPRequest);

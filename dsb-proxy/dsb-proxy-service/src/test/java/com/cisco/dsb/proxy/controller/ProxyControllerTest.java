@@ -496,6 +496,8 @@ public class ProxyControllerTest {
     doNothing().when(serverTransaction).setApplicationData(any(ProxyTransaction.class));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    Request request = mock(SIPRequest.class);
+    when(clientTransaction.getRequest()).thenReturn(request);
 
     when(outgoingSipProvider1.getNewClientTransaction(any(Request.class)))
         .thenReturn(clientTransaction);
@@ -580,6 +582,8 @@ public class ProxyControllerTest {
         .thenReturn(CompletableFuture.completedFuture(locateSIPServersResponse));
 
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    Request request = mock(SIPRequest.class);
+    when(clientTransaction.getRequest()).thenReturn(request);
 
     // Throw SipException
     SipException sipException = new SipException("Destination Unreachable", new IOException());
@@ -855,6 +859,8 @@ public class ProxyControllerTest {
         .when(outgoingSipProvider)
         .getNewClientTransaction(any(Request.class));
 
+    Request request = mock(SIPRequest.class);
+    when(clientTransaction.getRequest()).thenReturn(request);
     LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponse.getHops()).thenReturn(Collections.emptyList());
 

@@ -1,5 +1,6 @@
 package com.cisco.dhruva.normalisation.callTypeNormalization;
 
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
@@ -140,8 +141,9 @@ public class NormalizeUtil {
 
   public static Consumer<SIPResponse> doStrayResponseNormalization() {
     return sipResponse -> {
-      String network = (String) sipResponse.getApplicationData();
-      Optional<DhruvaNetwork> responseOutgoingNetwork = DhruvaNetwork.getNetwork(network);
+      MsgApplicationData msgApplicationData = (MsgApplicationData) sipResponse.getApplicationData();
+      Optional<DhruvaNetwork> responseOutgoingNetwork =
+          DhruvaNetwork.getNetwork(msgApplicationData.getNetwork());
       String remoteIPAddress = sipResponse.getTopmostVia().getHost();
       try {
         String ownIPAddress = responseOutgoingNetwork.get().getListenPoint().getHostIPAddress();

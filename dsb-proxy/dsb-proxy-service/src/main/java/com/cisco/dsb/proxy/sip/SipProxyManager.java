@@ -6,7 +6,9 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.metric.SipMetricsContext.State;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipPredicates;
@@ -17,6 +19,8 @@ import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.common.util.log.LogUtils;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
+import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyController;
@@ -46,6 +50,7 @@ import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -111,7 +116,6 @@ public class SipProxyManager {
     };
   }
 
-
   /*
   * Not applicable for mid-calls
   * Applicable only for FRESH Invite, Options
@@ -132,11 +136,7 @@ public class SipProxyManager {
         && (requestType.equals(Request.OPTIONS) || requestType.equals(Request.INVITE))) {
       try {
         ProxySendMessage.sendResponse(
-            Response.SERVICE_UNAVAILABLE,
-            "",
-            sipProvider,
-            serverTransaction,
-            (SIPRequest) request);
+            Response.SERVICE_UNAVAILABLE, "", sipProvider, serverTransaction, (SIPRequest) request);
         return true;
       } catch (DhruvaException e) {
         logger.error("Error while sending response when dsb is in suspend state ", e);
@@ -425,12 +425,14 @@ public class SipProxyManager {
           logger.info("Unable to set Record Route on stray response");
         }
       }
-      String network = (String) response.getApplicationData();
-      if (Objects.isNull(network)) {
+      MsgApplicationData msgApplicationData = (MsgApplicationData) response.getApplicationData();
+      if (Objects.isNull(msgApplicationData)
+          || StringUtils.isEmpty(msgApplicationData.getNetwork())) {
         logger.error("Unable to find outbound network from RR, dropping the stray response");
         return;
       }
-      Optional<SipProvider> sipProvider = DhruvaNetwork.getProviderFromNetwork(network);
+      Optional<SipProvider> sipProvider =
+          DhruvaNetwork.getProviderFromNetwork(msgApplicationData.getNetwork());
       if (!sipProvider.isPresent()) {
         logger.error(
             "Outbound network present in RR does not match any ListenIf, dropping stray response");
@@ -562,11 +564,11 @@ public class SipProxyManager {
     };
   }
 
-  public Consumer<RequestEvent> getManageLogAndMetricsForRequest() {
-    return manageLogAndMetricsForRequest;
+  public Consumer<RequestEvent> getManageMetricsForRequest() {
+    return manageMetricsForRequest;
   }
 
-  public Consumer<RequestEvent> manageLogAndMetricsForRequest =
+  public Consumer<RequestEvent> manageMetricsForRequest =
       (requestEvent -> {
         SIPRequest sipRequest = (SIPRequest) requestEvent.getRequest();
         SipProvider sipProvider = (SipProvider) requestEvent.getSource();
@@ -580,29 +582,20 @@ public class SipProxyManager {
         if (!SipUtils.isMidDialogRequest(sipRequest)) {
           new SipMetricsContext(
               metricService,
-              SipMetricsContext.State.proxyNewRequestReceived,
+              State.proxyNewRequestReceived,
               sipRequest.getCallId().getCallId(),
               true);
         }
 
         Transport transportType = LMAUtil.getTransportType(sipProvider);
 
-        LMAUtil.emitSipMessageEvent(
-            sipProvider,
-            sipRequest,
-            Event.MESSAGE_TYPE.REQUEST,
-            Event.DIRECTION.IN,
-            false,
-            SipUtils.isMidDialogRequest(sipRequest),
-            0L);
-
         metricService.sendSipMessageMetric(
             sipRequest.getMethod(),
             sipRequest.getCallId().getCallId(),
             sipRequest.getCSeq().getMethod(),
-            Event.MESSAGE_TYPE.REQUEST,
+            MESSAGE_TYPE.REQUEST,
             transportType,
-            Event.DIRECTION.IN,
+            DIRECTION.IN,
             SipUtils.isMidDialogRequest(sipRequest),
             false, // internally generated
             0L,
@@ -618,11 +611,11 @@ public class SipProxyManager {
             sipProvider.getListeningPoints()[0].getSentBy());
       });
 
-  public Consumer<ResponseEvent> getManageLogAndMetricsForResponse() {
-    return manageLogAndMetricsForResponse;
+  public Consumer<ResponseEvent> getManageMetricsForResponse() {
+    return manageMetricsForResponse;
   }
 
-  public Consumer<ResponseEvent> manageLogAndMetricsForResponse =
+  public Consumer<ResponseEvent> manageMetricsForResponse =
       (responseEvent -> {
         SIPResponse sipResponse = (SIPResponse) responseEvent.getResponse();
         SipProvider sipProvider = (SipProvider) responseEvent.getSource();
@@ -643,18 +636,6 @@ public class SipProxyManager {
                 : null;
 
         Transport transportType = LMAUtil.getTransportType(sipProvider);
-
-        // BindingInfo messageBindingInfo = LMAUtill.populateBindingInfo(sipResponse,
-        // transportType);
-
-        LMAUtil.emitSipMessageEvent(
-            sipProvider,
-            sipResponse,
-            Event.MESSAGE_TYPE.RESPONSE,
-            Event.DIRECTION.IN,
-            false,
-            false,
-            0L);
 
         metricService.sendSipMessageMetric(
             String.valueOf(sipResponse.getStatusCode()),

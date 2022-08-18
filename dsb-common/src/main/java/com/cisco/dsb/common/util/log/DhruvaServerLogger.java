@@ -1,12 +1,22 @@
 package com.cisco.dsb.common.util.log;
 
+import com.cisco.dsb.common.record.DhruvaAppRecord;
+import com.cisco.dsb.common.sip.dto.EventMetaData;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.util.SipConstants;
+import com.cisco.dsb.common.sip.util.SipUtils;
+import com.cisco.dsb.common.util.LMAUtil;
+import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
+import com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE;
+import com.cisco.dsb.common.util.log.event.EventingService;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.SIPTransactionStack;
+import java.util.Objects;
 import java.util.Properties;
 import javax.sip.SipStack;
 import javax.sip.header.ReasonHeader;
@@ -80,6 +90,11 @@ public class DhruvaServerLogger implements ServerLogger {
 
   protected void log(
       SIPMessage message, String from, String to, String status, boolean sender, long time) {
+    // status null means it is the log at messagechannel layer, status will "before processing"
+    // when the response reaches transaction layer. to avoid duplicate events this is added.
+    if (status == null) {
+      sendEvent(message, sender);
+    }
     // If sip message has request received header and debug is not enabled, then log only the
     // headers
     // else, log the entire message
@@ -93,6 +108,40 @@ public class DhruvaServerLogger implements ServerLogger {
     }
 
     log(message, messageToLog, LogMsgType.getLogMsgType(message, status, sender));
+  }
+
+  private void sendEvent(SIPMessage message, boolean sender) {
+    boolean isInternallyGenerated = false;
+    boolean isMidDialogReqest = false;
+    DhruvaAppRecord appRecord = null;
+    EventingService eventingService = null;
+    MESSAGE_TYPE messageType = MESSAGE_TYPE.RESPONSE;
+    DIRECTION directionType = sender ? DIRECTION.OUT : DIRECTION.IN;
+
+    if (message instanceof SIPRequest) {
+      SIPRequest sipRequest = (SIPRequest) message;
+      messageType = MESSAGE_TYPE.REQUEST;
+      isMidDialogReqest = SipUtils.isMidDialogRequest(sipRequest);
+    }
+
+    if (Objects.nonNull(message.getApplicationData())) {
+      MsgApplicationData msgApplicationData = (MsgApplicationData) message.getApplicationData();
+      if (Objects.nonNull(msgApplicationData.getEventMetaData())) {
+        EventMetaData eventMetaData = msgApplicationData.getEventMetaData();
+        isInternallyGenerated = eventMetaData.isInternallyGenerated();
+        appRecord = eventMetaData.getAppRecord();
+        eventingService = eventMetaData.getEventingService();
+      }
+    }
+
+    LMAUtil.emitSipMessageEvent(
+        message,
+        messageType,
+        directionType,
+        isInternallyGenerated,
+        isMidDialogReqest,
+        appRecord,
+        eventingService);
   }
 
   private boolean hasRequestReceivedHeader(SIPMessage message) {

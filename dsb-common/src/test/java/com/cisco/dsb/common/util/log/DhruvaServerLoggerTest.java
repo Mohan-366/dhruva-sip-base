@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
 import gov.nist.javax.sip.message.SIPMessage;
+import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;
 import javax.sip.header.CSeqHeader;
 import javax.sip.header.CallIdHeader;
@@ -19,7 +20,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
 
   @Test
   public void testFullContentLogging() throws Exception {
-    SIPMessage message = mock(SIPMessage.class);
+    SIPMessage message = mock(SIPRequest.class);
     String content =
         "INVITE sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n"
             + "Call-ID: testSipToStratosFourCallBasicEarlyOffer26c3865cbb7647a2d8d764ff0414c8e7@192.168.1.77\n"
@@ -81,7 +82,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
   @Test
   public void testHeadersOnlyLogging() throws Exception {
 
-    SIPMessage message = mock(SIPMessage.class);
+    SIPMessage message = mock(SIPRequest.class);
     String content =
         "INVITE sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n"
             + "Call-ID: testSipToStratosFourCallBasicEarlyOffer26c3865cbb7647a2d8d764ff0414c8e7@192.168.1.77\n"
@@ -147,7 +148,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
 
   @Test
   public void testOptionPingDebug() {
-    SIPMessage message = mock(SIPMessage.class);
+    SIPMessage message = mock(SIPRequest.class);
     String content = "OPTIONS sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n";
     when(message.encode()).thenReturn(content);
     CallIdHeader callIdHeader = mock(CallIdHeader.class);

@@ -4,8 +4,6 @@
 
 package com.cisco.dsb.common.util.log.event;
 
-import static com.cisco.dsb.common.util.log.event.Event.DIRECTION.OUT;
-
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
@@ -32,7 +30,6 @@ public class Event {
           : SpringApplicationContext.getAppContext().getBean(EventingService.class);
 
   private static final String ISMIDDIALOG = "isMidDialog";
-  private static final String DHRUVA_PROCESSING_DELAY_IN_MILLIS = "dhruvaProcessingDelayInMillis";
   private static final String ISINTERNALLYGENERATED = "isInternallyGenerated";
   public static String DIRECTION_KEY = "direction";
   public static String REMOTEIP = "remoteIp";
@@ -91,7 +88,6 @@ public class Event {
       MESSAGE_TYPE sipMessageType,
       boolean isInternallyGenerated,
       boolean isMidDialog,
-      long dhruvaProcessingDelayInMillis,
       DhruvaAppRecord appRecord,
       EventingService eventService) {
 
@@ -136,10 +132,6 @@ public class Event {
     messageInfoMap.put(Event.ISMIDDIALOG, String.valueOf(isMidDialog));
     // DSB TODO
     messageInfoMap.put(Event.ISINTERNALLYGENERATED, String.valueOf(isInternallyGenerated));
-    if (direction == OUT) {
-      messageInfoMap.put(
-          Event.DHRUVA_PROCESSING_DELAY_IN_MILLIS, String.valueOf(dhruvaProcessingDelayInMillis));
-    }
     if (appRecord != null) {
       messageInfoMap.put("appRecord", appRecord.toString());
     }

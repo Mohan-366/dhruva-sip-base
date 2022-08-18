@@ -3,10 +3,10 @@ package com.cisco.dsb.connectivity.monitor.sip;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.dto.EventMetaData;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.common.util.LMAUtil;
-import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.common.util.log.event.EventingService;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
@@ -59,17 +59,15 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     CompletableFuture.runAsync(
         () -> {
           try {
+            sipRequest.setApplicationData(
+                MsgApplicationData.builder()
+                    .eventMetaData(
+                        EventMetaData.builder()
+                            .isInternallyGenerated(true)
+                            .eventingService(eventingService)
+                            .build())
+                    .build());
             clientTrans.sendRequest();
-            LMAUtil.emitSipMessageEvent(
-                sipProvider,
-                sipRequest,
-                Event.MESSAGE_TYPE.REQUEST,
-                Event.DIRECTION.OUT,
-                true,
-                false,
-                0L,
-                null,
-                eventingService);
           } catch (SipException e) {
             logger.error(
                 "Error Sending OPTIONS request to {}:{} on network {} ",
@@ -127,10 +125,6 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
       logger.error("Response received is not of type OPTIONS {}", sipResponse);
       return;
     }
-
-    SipProvider provider = (SipProvider) responseEvent.getSource();
-    LMAUtil.emitSipMessageEvent(
-        provider, sipResponse, Event.MESSAGE_TYPE.RESPONSE, Event.DIRECTION.IN, false, false, 0L);
 
     ClientTransaction clientTransaction = responseEvent.getClientTransaction();
     try {

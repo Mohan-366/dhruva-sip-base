@@ -13,6 +13,7 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SupportedExtensions;
@@ -39,9 +40,9 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.sip.*;
 import javax.sip.address.Address;
 import javax.sip.address.SipURI;
@@ -178,7 +179,9 @@ public class SipProxyManagerTest {
         .when(sipResponse)
         .removeFirst(eq(ViaHeader.NAME));
     when(controllerConfig.doRecordRoute()).thenReturn(true);
-    when(sipResponse.getApplicationData()).thenReturn("not_our_network");
+    MsgApplicationData msgApplicationData =
+        MsgApplicationData.builder().network("not_our_network").build();
+    when(sipResponse.getApplicationData()).thenReturn(msgApplicationData);
     SipProviderImpl sipProvider = mock(SipProviderImpl.class);
     DhruvaNetwork.setSipProvider("test_out_network", sipProvider);
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
@@ -188,13 +191,13 @@ public class SipProxyManagerTest {
     reset(sipProvider);
 
     // Test: Valid ViaList, RR does contain outbound network and network a valid listenIf
-    String outNetwork = "test_out_network";
+    msgApplicationData = MsgApplicationData.builder().network("test_out_network").build();
     HeaderFactory headerFactory = new HeaderFactoryImpl();
     Address address = new AddressImpl();
     address.setURI(new SipUri());
     To to = (To) headerFactory.createToHeader(address, "abc");
     From from = (From) headerFactory.createFromHeader(address, "abc");
-    when(sipResponse.getApplicationData()).thenReturn(outNetwork);
+    when(sipResponse.getApplicationData()).thenReturn(msgApplicationData);
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     when(sipResponse.getTo()).thenReturn(to);
     when(sipResponse.getFrom()).thenReturn(from);
@@ -205,9 +208,9 @@ public class SipProxyManagerTest {
             .setHostIPAddress("1.1.1.1")
             .setPort(5060)
             .setTransport(Transport.UDP)
-            .setName(outNetwork)
+            .setName(msgApplicationData.getNetwork())
             .build();
-    DhruvaNetwork.createNetwork(outNetwork, sipListenPoint);
+    DhruvaNetwork.createNetwork(msgApplicationData.getNetwork(), sipListenPoint);
     // Test Stray Response Normalization
     AtomicInteger normalizationCounter = new AtomicInteger();
     normalizationCounter.set(0);
@@ -789,7 +792,7 @@ public class SipProxyManagerTest {
     RequestEvent requestEvent =
         new RequestEvent(sipProvider, serverTransaction, mock(Dialog.class), request);
 
-    sipProxyManager.manageLogAndMetricsForRequest.accept(requestEvent);
+    sipProxyManager.manageMetricsForRequest.accept(requestEvent);
 
     // Response path tests
     SIPResponse sipResponse = ResponseHelper.getSipResponse();
@@ -800,7 +803,7 @@ public class SipProxyManagerTest {
     ResponseEvent responseEvent =
         new ResponseEvent(
             sipProvider, mock(ClientTransaction.class), mock(Dialog.class), sipResponse);
-    sipProxyManager.manageLogAndMetricsForResponse.accept(responseEvent);
+    sipProxyManager.manageMetricsForResponse.accept(responseEvent);
   }
 
   public ProxySIPRequest getProxySipRequest(

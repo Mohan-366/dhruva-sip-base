@@ -85,29 +85,24 @@ public class ProxySendMessageTest {
   }
 
   @Test
-  void testSendResponse2() throws SipException {
+  void testSendResponse2() throws SipException, DhruvaException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
     doNothing().when(sipServerTransactionImpl).sendResponse(any());
-    assertThrows(
-        DhruvaException.class,
-        () ->
-            ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true, null));
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
-  void testSendResponse3() throws SipException {
+  void testSendResponse3() throws SipException, DhruvaException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
     doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.addHeader(new RemotePartyID());
-    assertThrows(
-        DhruvaException.class,
-        () -> ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null));
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
@@ -236,6 +231,7 @@ public class ProxySendMessageTest {
     when(hop.getHost()).thenReturn("1.2.3.4");
     when(hop.getPort()).thenReturn(5080);
     ClientTransaction clientTransaction = mock(ClientTransaction.class);
+    when(clientTransaction.getRequest()).thenReturn(request);
     doNothing().when(clientTransaction).sendRequest();
     ProxySIPRequest proxyRequest =
         MessageConvertor.convertJainSipRequestMessageToDhruvaMessage(

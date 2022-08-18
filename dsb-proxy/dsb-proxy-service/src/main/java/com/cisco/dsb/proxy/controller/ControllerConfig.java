@@ -7,6 +7,7 @@ package com.cisco.dsb.proxy.controller;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
@@ -614,9 +615,10 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         return;
       }
       // set the outbound network into sipmessage application data if not set
+      MsgApplicationData msgApplicationData = MsgApplicationData.builder().network(network).build();
       if (Objects.isNull(msg.getApplicationData())) {
         logger.info("Setting outbound network in sipmessage application data");
-        msg.setApplicationData(network);
+        msg.setApplicationData(msgApplicationData);
       }
       SipURI RRUrl = (SipURI) recordRouteInterfaceHeader.getAddress().getURI();
 
