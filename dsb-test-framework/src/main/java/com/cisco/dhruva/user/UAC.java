@@ -4,6 +4,7 @@ import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
 import com.cisco.dhruva.application.MessageHandler;
 import com.cisco.dhruva.input.TestInput.ProxyCommunication;
+import com.cisco.dhruva.input.TestInput.Type;
 import com.cisco.dhruva.input.TestInput.UacConfig;
 import com.cisco.dhruva.util.SipStackUtil;
 import com.cisco.dhruva.util.TestMessage;
@@ -51,17 +52,24 @@ public class UAC implements UA, Runnable {
     Arrays.stream(this.uacConfig.getMessages())
         .forEach(
             message -> {
+              TEST_LOGGER.info("UAC: Next message: {}", message);
               try {
-                TEST_LOGGER.info("UAC: Next message: {}", message);
-                MessageHandler.actOnMessage(message, callUac, this);
+                if (message.getType().equals(Type.wait)) {
+                  TEST_LOGGER.info("UAC: Waiting: {}", message);
+                  Thread.sleep(Integer.parseInt(message.getTimeout()));
+                } else {
+                  MessageHandler.actOnMessage(message, callUac, this);
+                }
               } catch (Exception e) {
-                e.printStackTrace();
+                TEST_LOGGER.error("UAC Exception occurred {}", e);
               }
             });
     TEST_LOGGER.info("UAC: Latching down");
     TEST_LOGGER.info("UAC: All messages: " + callUac.getAllReceivedResponses());
-    completionLatch.countDown();
+    Thread.sleep(
+        500); // To accomodate sending BYE from testcases.json and not through dispose method.
     uac.dispose();
+    completionLatch.countDown();
   }
 
   @Override

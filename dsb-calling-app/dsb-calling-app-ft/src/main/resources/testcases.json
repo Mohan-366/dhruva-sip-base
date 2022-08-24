@@ -1,0 +1,1217 @@
+{
+  "testCaseConfig": [
+    {
+      "description": "TestCase - 1: NS1 Option failure, INVITE Failover to NS2",
+      "skipTest": false,
+      "id": "1",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "myUri": "sip:ns2@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6062,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS2 after failover from NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6062;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;x-cisco-test"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            },
+            {
+              "description": "waiting normal BYE for testcase 1",
+              "type": "request",
+              "name": "BYE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;transport=udp;lr"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "BYE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 2: NS1 INVITE 503 Response, INVITE Failover to NS2",
+      "skipTest": false,
+      "id": "2",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite on NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6061;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:ns2@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6062,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS2 after failover from NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6062;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;x-cisco-test"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            },
+            {
+              "description": "normal BYE for testcase 3",
+              "type": "request",
+              "name": "BYE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;transport=udp;lr"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "BYE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 3: NS1 and NS2 Option failure, INVITE get 502 bad gateway",
+      "skipTest": false,
+      "id": "3",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 502,
+              "reasonPhrase": "Bad gateway"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "myUri": "sip:ns2@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6062,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 4: NS1 and NS2 Option no response, INVITE get 502 bad gateway",
+      "skipTest": false,
+      "id": "4",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 502,
+              "reasonPhrase": "Bad gateway"
+            }
+          }
+        ]
+      },
+      "uasGroup": []
+    },
+    {
+      "description": "TestCase - 5: AS1 Option failure, INVITE Failover to AS2",
+      "skipTest": false,
+      "id": "5",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6061;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7002;x-cisco-test"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            },
+            {
+              "description": "normal BYE",
+              "type": "request",
+              "name": "BYE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7002;transport=udp;lr"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "BYE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 6: AS1 INVITE 503 response, INVITE Failover to AS2",
+      "skipTest": false,
+      "id": "6",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6061;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite on AS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7002;x-cisco-test"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            },
+            {
+              "description": "normal BYE",
+              "type": "request",
+              "name": "BYE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7002;transport=udp;lr"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "BYE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 7: AS1 and AS2 option 503 response, INVITE receives 502 bad gateway",
+      "skipTest": false,
+      "id": "7",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 502,
+              "reasonPhrase": "Bad gateway"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6061;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Set OPTION response to 503",
+              "responseCode": "503",
+              "type": "action"
+            },
+            {
+              "description": "Wait for DSB to detect option failure",
+              "timeout": "10000",
+              "type": "wait"
+            },
+            {
+              "description": "Reset the option respose to 200",
+              "responseCode": "200",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "TestCase - 8: AS1 and AS2 option no response, INVITE receives 502 bad gateway",
+      "skipTest": false,
+      "id": "8",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 502,
+              "reasonPhrase": "Bad gateway"
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:ns1@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6061,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "Invite landing on NS1",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:6061;x-cisco-test"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Redirect",
+                  "headerAdditions": {
+                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -21,7 +21,6 @@ import com.cisco.dhruva.util.TestMessage;
 import gov.nist.javax.sip.address.AddressFactoryImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
-import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.RecordRoute;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -29,6 +28,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sip.address.Address;
+import javax.sip.address.URI;
+import javax.sip.header.ContactHeader;
 import javax.sip.header.Header;
 import javax.sip.message.Response;
 import org.cafesip.sipunit.SipCall;
@@ -43,7 +44,7 @@ public class MessageHandler {
   private static SipTransaction serverMidCallCancelTransaction;
   private static Map<String, CustomConsumer> consumerMapSend = new HashMap<>();
   private static Map<String, CustomConsumer> consumerMapReceive = new HashMap<>();
-  private static final int INVITE_TIMEOUT = 5000; // to handle multiple uas
+  private static final int INVITE_TIMEOUT = 50000; // to handle multiple uas
   private static final int TIMEOUT = 2000;
   private static boolean isOptionalReceived = false;
 
@@ -198,41 +199,20 @@ public class MessageHandler {
       Arrays.stream(contactListFromTestMessage)
           .forEach(
               contactString -> {
-                Contact contactHeader = new Contact();
-                SipUri uri = null;
+                URI asContact = null;
                 try {
-                  uri = (SipUri) new AddressFactoryImpl().createURI(contactString);
+                  asContact = call.getAddressFactory().createURI(contactString);
                 } catch (ParseException e) {
-                  TEST_LOGGER.error(
-                      "Error: Unable to parse contact header {} from Redirect message, ",
-                      contactString);
+                  TEST_LOGGER.error("Exception while parsing contact", e);
+                  throw new RuntimeException(e);
                 }
-                Address address = new AddressImpl();
-                try {
-                  address.setDisplayName("uas");
-                } catch (ParseException e) {
-                  TEST_LOGGER.error(
-                      "Error: Unable to set display name for contact header {} from Redirect message, ",
-                      contactString);
-                }
-                try {
-                  uri.setParameter("transport", "udp");
-                } catch (ParseException e) {
-                  TEST_LOGGER.error(
-                      "Error: Unable to set transport for contact header {} from Redirect message, ",
-                      contactString);
-                }
-                uri.setLrParam();
-                address.setURI(uri);
-                contactHeader.setAddress(address);
-                TEST_LOGGER.info("Adding contact header, {} in contactList", contactHeader);
-                contactArrayList.add(contactHeader);
+                Address contact1 = call.getAddressFactory().createAddress(asContact);
+                ContactHeader asContactHeader =
+                    call.getHeaderFactory().createContactHeader(contact1);
+                TEST_LOGGER.info("Adding contact header, {} in contactList", asContactHeader);
+                contactArrayList.add(asContactHeader);
               });
-
-      //      Contact multipleContactHeader = new Contact();
-      //      multipleContactHeader.setContactList(contactList);
-      call.sendIncomingCallResponse(
-          Response.MOVED_TEMPORARILY, null, -1, null, contactArrayList, null);
+      call.sendMessageResponse(Response.MOVED_TEMPORARILY, null, -1, contactArrayList, null, null);
     } else if (responseCode.equalsIgnoreCase(String.valueOf(Response.REQUEST_TERMINATED))) {
       call.sendIncomingCallResponse(Response.REQUEST_TERMINATED, null, -1, null, null, null);
     } else if (reasonPhrase.equalsIgnoreCase("OK") && forRequest.equalsIgnoreCase("CANCEL")) {

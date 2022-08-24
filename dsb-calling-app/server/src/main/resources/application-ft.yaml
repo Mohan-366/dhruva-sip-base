@@ -1,0 +1,204 @@
+app:
+  networkPSTN: &netsp "net_sp"
+  networkB2B: &netb2b "net_antares"
+  networkCallingCore: &netcc "net_cc"
+  b2b-egress: "Antares"
+  calling-egress: "NS"
+  pstn-ingress: "CcpFusionUS"
+common:
+  listenPoints:
+    - name: *netsp
+      port: 5060
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netb2b
+      port: 5070
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+    - name: *netcc
+      port: 5080
+      transport: UDP
+      hostIPAddress: "127.0.0.1"
+  serverGroups:
+    UsPoolA:
+      name: &UsPoolA UsPoolA
+      hostName: "UsPoolA"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6060
+          priority: 10
+          weight: 100
+        - ipAddress: "127.0.0.1"
+          port: 6061
+          priority: 5
+          weight: 100
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+    UsPoolB:
+      name: &UsPoolB UsPoolB
+      hostName: "UsPoolB"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6062
+          priority: 10
+          weight: 100
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+    InPoolA:
+      name: &InPoolA InPoolA
+      hostName: "InPoolA"
+      networkName: *netsp
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6063
+          priority: 10
+          weight: 100
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+    Antares:
+      name: &Antares Antares
+      hostName: "test.beech.com"
+      networkName: *netb2b
+      lbType: weight
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7060
+          priority: 10
+          weight: 100
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+    NS1:
+      name: &NS1 NS1
+      hostName: "ns1.cc.com"
+      networkName: *netcc
+      lbType: weight
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+      pingOn: true
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6061
+          priority: 10
+          weight: 100
+    NS2:
+      name: &NS2 NS2
+      hostName: "ns2.cc.com"
+      networkName: *netcc
+      lbType: weight
+      pingOn: true
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6062
+          priority: 10
+          weight: 100
+    AS1:
+      name: AS1
+      hostName: "as1.cc.com"
+      networkName: *netcc
+      lbType: weight
+      pingOn: true
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7001
+          priority: 10
+          weight: 100
+    AS2:
+      name: AS2
+      hostName: "as2.cc.com"
+      networkName: *netcc
+      lbType: weight
+      pingOn: true
+      routePolicy: policy1
+      optionsPingPolicy: opPolicy1
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7002
+          priority: 10
+          weight: 100
+  routePolicy:
+    policy1:
+      name: policy1
+      failoverResponseCodes:
+        - 501
+        - 502
+        - 503
+  optionsPingPolicy:
+    opPolicy1:
+      name: opPolicy1
+      failureResponseCodes:
+        - 501
+        - 502
+        - 503
+      upTimeInterval: 3000
+      downTimeInterval: 3000
+      pingTimeOut: 500
+trunk:
+  PSTN:
+    CcpFusionUS:
+      enableCircuitBreaker: true
+      name: CcpFusionUS
+      ingress:
+        name: ingress1
+      egress:
+        selector:
+          dtg: CcpFusionUS
+        routePolicy: policy1
+        lbType: weight
+        serverGroups:
+          - sg: *UsPoolA
+            priority: 10
+            weight: 100
+          - sg: *UsPoolB
+            priority: 10
+            weight: 100
+    CcpFusionIN:
+      name: CcpFusionIN
+      enableCircuitBreaker: true
+      ingress:
+        name: ingress1
+      egress:
+        selector:
+          dtg: CcpFusionIN
+        routePolicy: policy1
+        lbType: weight
+        serverGroups:
+          - sg: *InPoolA
+            priority: 10
+            weight: 100
+  B2B:
+    Antares:
+      name: Antares
+      enableCircuitBreaker: true
+      ingress:
+        name: antares_ig
+      egress:
+        routePolicy: policy1
+        lbType: ONCE
+        serverGroups:
+          - sg: *Antares
+            priority: 10
+            weight: 100
+  CallingCore:
+    NS:
+      name: NS
+      ingress:
+        name: ns_ig
+      egress:
+        routePolicy: policy1
+        lbType: WEIGHT
+        serverGroups:
+          - sg: *NS1
+            priority: 5
+            weight: 100
+          - sg: *NS2
+            priority: 10
+            weight: 100

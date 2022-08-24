@@ -1,6 +1,5 @@
 package com.cisco.dhruva.input;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
@@ -47,7 +46,9 @@ public class TestInput {
 
   public enum Type {
     request,
-    response
+    response,
+    action,
+    wait
   };
 
   public enum Direction {
@@ -74,7 +75,6 @@ public class TestInput {
     public Message() {}
 
     @JsonProperty("description")
-    @JsonIgnore
     @Getter
     private String description;
 
@@ -105,6 +105,14 @@ public class TestInput {
     @JsonProperty("optional")
     @Getter
     private boolean optional;
+
+    @JsonProperty("responseCode")
+    @Getter
+    private String responseCode;
+
+    @JsonProperty("timeout")
+    @Getter
+    private String timeout;
   }
 
   public static class Parameters {

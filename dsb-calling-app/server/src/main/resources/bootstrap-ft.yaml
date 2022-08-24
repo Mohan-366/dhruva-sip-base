@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: dsb-calling-app-ft
+  cloud:
+    consul:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+management:
+  health:
+    defaults:
+      enabled: false
+  info:
+    defaults:
+      enabled: false
+  metrics:
+    export:
+      influx:
+        enabled: false
+
+
+cisco-spark:
+  initial:
+    servicehealth:
+      response:
+        code: 200
+      enableLifecycleAutoReport: true

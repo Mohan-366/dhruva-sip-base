@@ -235,7 +235,7 @@
     },
     {
       "description": "Redirect Flow with multiple contacts",
-      "skipTest": true,
+      "skipTest": false,
       "id": "3",
       "dsb": {
         "clientCommunicationInfo": {
@@ -343,8 +343,8 @@
               "direction": "sends",
               "parameters": {
                 "responseParameters": {
-                  "responseCode": 404,
-                  "reasonPhrase": "Not Found"
+                  "responseCode": 503,
+                  "reasonPhrase": "Service Unavailable"
                 }
               }
             }

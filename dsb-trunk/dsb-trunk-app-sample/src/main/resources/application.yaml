@@ -27,7 +27,7 @@ common:
           port: 6061
           priority: 5
           weight: 100
-      routePolicy: policy1
+      routePolicy: p1
     DefaultSg2:
       name: &DefaultSg2 DefaultSg2
       hostName: "DefaultSg2"
@@ -42,7 +42,7 @@ common:
           port: 6063
           priority: 5
           weight: 100
-      routePolicy: policy1
+      routePolicy: p1
   routePolicy:
     p1:
       name: p1

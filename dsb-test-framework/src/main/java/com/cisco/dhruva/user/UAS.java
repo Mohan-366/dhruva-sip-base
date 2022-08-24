@@ -3,6 +3,7 @@ package com.cisco.dhruva.user;
 import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
 
 import com.cisco.dhruva.application.MessageHandler;
+import com.cisco.dhruva.input.TestInput.Type;
 import com.cisco.dhruva.input.TestInput.UasConfig;
 import com.cisco.dhruva.util.SipStackUtil;
 import com.cisco.dhruva.util.TestMessage;
@@ -46,15 +47,26 @@ public class UAS implements UA, Runnable {
     SipPhone uas = sipStack.createSipPhone(myUri);
     SipCall callA = uas.createSipCall();
     uas.setLoopback(true);
+    // needed to avoid checking To "user" for OPTIONS ping, and accept all incoming messages.
+    uas.setAcceptTrafficOnEphemeralPorts(true);
     if (callA.listenForIncomingCall()) {
       Arrays.stream(this.uasConfig.getMessages())
           .forEach(
               message -> {
+                TEST_LOGGER.info("UAS: Next message: {}", message);
                 try {
-                  TEST_LOGGER.info("UAS: Next message: {}", message);
-                  MessageHandler.actOnMessage(message, callA, this);
+                  if (message.getType().equals(Type.action)) {
+                    TEST_LOGGER.info("UAS: OPTIONS update: {}", message);
+                    uas.setErrorRespondToOptions(Integer.parseInt(message.getResponseCode()));
+                    uas.setAutoResponseOptionsRequests(false);
+                  } else if (message.getType().equals(Type.wait)) {
+                    TEST_LOGGER.info("UAS: Waiting: {}", message);
+                    Thread.sleep(Integer.parseInt(message.getTimeout()));
+                  } else {
+                    MessageHandler.actOnMessage(message, callA, this);
+                  }
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  TEST_LOGGER.error("UAS Exception occurred {}", e);
                 }
               });
     }
@@ -72,5 +84,10 @@ public class UAS implements UA, Runnable {
   @Override
   public List<TestMessage> getTestMessages() {
     return this.testMessages;
+  }
+
+  @Override
+  public String toString() {
+    return " UAS {" + "uasConfig-port=" + uasConfig.getPort() + '}';
   }
 }
