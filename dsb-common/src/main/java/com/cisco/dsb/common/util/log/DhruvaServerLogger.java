@@ -90,11 +90,6 @@ public class DhruvaServerLogger implements ServerLogger {
 
   protected void log(
       SIPMessage message, String from, String to, String status, boolean sender, long time) {
-    // status null means it is the log at messagechannel layer, status will "before processing"
-    // when the response reaches transaction layer. to avoid duplicate events this is added.
-    if (status == null) {
-      sendEvent(message, sender);
-    }
     // If sip message has request received header and debug is not enabled, then log only the
     // headers
     // else, log the entire message
@@ -107,7 +102,7 @@ public class DhruvaServerLogger implements ServerLogger {
           new SipMessageLogBuilder().buildWithContent(message, from, to, status, sender, time);
     }
 
-    log(message, messageToLog, LogMsgType.getLogMsgType(message, status, sender));
+    log(message, messageToLog, status, sender, LogMsgType.getLogMsgType(message, status, sender));
   }
 
   private void sendEvent(SIPMessage message, boolean sender) {
@@ -148,7 +143,8 @@ public class DhruvaServerLogger implements ServerLogger {
     return message.getHeader("Request-Received") != null;
   }
 
-  protected void log(SIPMessage message, String log, LogMsgType logMsgType) {
+  protected void log(
+      SIPMessage message, String log, String status, boolean sender, LogMsgType logMsgType) {
     String callId = message.getCallId().getCallId();
     long cSeq = message.getCSeq().getSeqNumber();
     ReasonHeader reasonHeader = (ReasonHeader) message.getHeader(ReasonHeader.NAME);
@@ -177,10 +173,13 @@ public class DhruvaServerLogger implements ServerLogger {
         stackLogger.logError("Invalid SIP message " + message);
         return;
       }
-
+      // status null means it is the log at messagechannel layer, status will "before processing"
+      // when the response reaches transaction layer. to avoid duplicate events this is added.
+      if (status == null) {
+        sendEvent(message, sender);
+      }
       logMsgType.apply(stackLogger, log);
     }
-    TrackingId.setMDC(SipTrackingConstants.SIP_CALL_ID_FIELD, callId);
   }
 
   public static boolean isDsbTestCall(Message message) {
