@@ -3,6 +3,7 @@ package com.cisco.dhruva.antares.integration.tests;
 import com.cisco.dhruva.antares.integration.CallingTestProperties;
 import com.cisco.dhruva.antares.integration.DhruvaTestConfig;
 import com.cisco.dhruva.antares.integration.util.IntegrationTestListener;
+import com.cisco.dhruva.antares.integration.util.Token;
 import com.cisco.wx2.test.BaseTestConfig;
 import java.util.Properties;
 import javax.annotation.PostConstruct;
@@ -16,19 +17,23 @@ import org.testng.annotations.Listeners;
 @ContextConfiguration(classes = {BaseTestConfig.class, DhruvaTestConfig.class})
 public class DhruvaIT extends AbstractTestNGSpringContextTests {
 
-  protected static String testHostAddress;
-  protected static String dhruvaAddress;
-  protected static int dhruvaNetSpPort;
-  protected static int dhruvaNetCcPort;
+  protected String testHostAddress;
+  protected String dhruvaAddress;
+  protected int dhruvaNetSpPort;
+  protected int dhruvaNetCcPort;
 
-  protected static int pstnPort;
-  protected static String pstnContactAddr;
+  protected int pstnPort;
+  protected String pstnContactAddr;
+  protected String pstnUser;
 
-  protected static int nsPort;
-  protected static int asPort;
-  protected static String wxcContactAddr;
+  protected int nsPort;
+  protected int asPort;
+  protected String wxcContactAddr;
+  protected String wxcUser;
 
   protected static final int timeout = 10000;
+  protected static final String X_BROADWORKS_CORRELATION_INFO = "X-BroadWorks-Correlation-Info";
+  protected static final String X_BROADWORKS_DNC = "X-BroadWorks-DNC";
 
   protected SipStack pstnStack;
   protected SipStack nsStack;
@@ -48,8 +53,11 @@ public class DhruvaIT extends AbstractTestNGSpringContextTests {
     nsPort = testPro.getTestNsPort();
     asPort = testPro.getTestAsPort();
 
-    pstnContactAddr = "sip:+19876543210@" + testHostAddress;
-    wxcContactAddr = "sip:+10123456789@" + testHostAddress;
+    pstnUser = Token.SIP_COLON + "+19876543210" + Token.AT_SIGN;
+    pstnContactAddr = pstnUser + testHostAddress;
+
+    wxcUser = Token.SIP_COLON + "+10123456789" + Token.AT_SIGN;
+    wxcContactAddr = wxcUser + testHostAddress;
   }
 
   protected Properties getProperties(String stackName) {
