@@ -620,6 +620,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         logger.info("Setting outbound network in sipmessage application data");
         msg.setApplicationData(msgApplicationData);
       }
+
       SipURI RRUrl = (SipURI) recordRouteInterfaceHeader.getAddress().getURI();
 
       // replace local IP with External IP for public network when modifying user portion of RR

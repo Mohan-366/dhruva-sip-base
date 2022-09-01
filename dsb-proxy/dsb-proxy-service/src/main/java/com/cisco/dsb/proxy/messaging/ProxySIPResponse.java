@@ -18,8 +18,8 @@ import lombok.Setter;
 public class ProxySIPResponse extends AbstractSipResponse {
   @Getter @Setter private ProxyTransaction proxyTransaction;
   @Getter @Setter private ProxyCookie cookie;
-  @Getter private final int responseClass;
-  @Getter private final int statusCode;
+  @Getter @Setter private int responseClass;
+  @Getter @Setter private int statusCode;
   @Getter @Setter private boolean toApplication;
   @Getter @Setter private String network;
   @Getter @Setter private ProxyInterface proxyInterface;

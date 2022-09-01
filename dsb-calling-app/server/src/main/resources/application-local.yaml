@@ -6,9 +6,22 @@ app:
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
   maintenance:
-    enabled: true
+    enabled: false
     description: "DSB is in maintenance"
     responseCode: 503
+  errorMappingPolicy:
+    antaresErrorPolicy:
+      name: &antaresErrorPolicy antaresErrorPolicy
+      mappings:
+        - mappedResponseCode: 502
+          mappedResponsePhrase: "Something went bad, irrecoverable"
+          errorCodes:
+            -  503
+            -  408
+  callTypes:
+    dialInPSTN:
+      name: dialInPSTN
+      errorMappingPolicy: *antaresErrorPolicy
 
 common:
   listenPoints:

@@ -1,17 +1,24 @@
 package com.cisco.dhruva.application.calltype;
 
+import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
+import com.cisco.dhruva.application.errormapping.Mappings;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.SpringApplicationContext;
+import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
+import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.trunk.TrunkManager;
 import com.cisco.dsb.trunk.trunks.TrunkType;
 import com.cisco.wx2.util.Utilities;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.Function;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +39,10 @@ public interface CallType {
   TrunkManager getTrunkManager();
 
   Normalization getNormalization();
+
+  Map<Integer, Mappings> getErrorCodeMapping();
+
+  ErrorMappingPolicy getErrorMappingPolicy();
 
   static MetricService getMetricService() {
     return SpringApplicationContext.getAppContext() == null
@@ -70,6 +81,7 @@ public interface CallType {
                   getMetricService(),
                   SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
             })
+        .map(this.getResponseMapper())
         .subscribe(
             proxySIPResponse -> {
               Logger.logger.debug(
@@ -146,5 +158,47 @@ public interface CallType {
     if (getMetricService() != null) {
       getMetricService().sendTrunkMetric(trunk, response, callId);
     }
+  }
+
+  // This function modifies the response object to the one as specified in error mapping policy
+  TriFunction<ProxySIPResponse, Integer, String, ProxySIPResponse> responseMapper =
+      (proxySipResponse, code, reasonPhrase) -> {
+        try {
+          Objects.requireNonNull(proxySipResponse);
+          Objects.requireNonNull(code);
+          proxySipResponse.getResponse().setStatusCode(code);
+          if (Objects.nonNull(reasonPhrase)) {
+            proxySipResponse.getResponse().setReasonPhrase(reasonPhrase);
+          }
+          proxySipResponse.setStatusCode(code);
+          proxySipResponse.setResponseClass(code / 100);
+        } catch (Exception e) {
+          Logger.logger.error(
+              "exception {} while setting the mapped status code {}", e.getMessage(), code);
+        }
+        return proxySipResponse;
+      };
+
+  // Applies the error mapping policy
+  // Find the right config and error code match condition
+  // Config is per calltype , implementation remain common
+  default Function<ProxySIPResponse, ProxySIPResponse> getResponseMapper() {
+    return proxySIPResponse -> {
+      // Apply policy
+      int statusCode = proxySIPResponse.getStatusCode();
+      ErrorMappingPolicy errorMappingPolicy = getErrorMappingPolicy();
+      if (Objects.nonNull(errorMappingPolicy) && statusCode >= 400) {
+        Mappings mapping = getErrorCodeMapping().get(statusCode);
+        if (Objects.nonNull(mapping)) {
+          Logger.logger.info(
+              "applying error mapping code {} to the response code {}",
+              mapping.getMappedResponseCode(),
+              proxySIPResponse.getStatusCode());
+          responseMapper.apply(
+              proxySIPResponse, mapping.getMappedResponseCode(), mapping.getMappedResponsePhrase());
+        }
+      }
+      return proxySIPResponse;
+    };
   }
 }
