@@ -31,6 +31,8 @@ public class Event {
 
   private static final String ISMIDDIALOG = "isMidDialog";
   private static final String ISINTERNALLYGENERATED = "isInternallyGenerated";
+
+  private static final String ISRETRANSMITTED = "isRetransmitted";
   public static String DIRECTION_KEY = "direction";
   public static String REMOTEIP = "remoteIp";
   public static String REMOTEPORT = "remotePort";
@@ -88,6 +90,7 @@ public class Event {
       MESSAGE_TYPE sipMessageType,
       boolean isInternallyGenerated,
       boolean isMidDialog,
+      boolean isRetransmitted,
       DhruvaAppRecord appRecord,
       EventingService eventService) {
 
@@ -132,6 +135,7 @@ public class Event {
     messageInfoMap.put(Event.ISMIDDIALOG, String.valueOf(isMidDialog));
     // DSB TODO
     messageInfoMap.put(Event.ISINTERNALLYGENERATED, String.valueOf(isInternallyGenerated));
+    messageInfoMap.put(Event.ISRETRANSMITTED, String.valueOf(isRetransmitted));
     if (appRecord != null) {
       messageInfoMap.put("appRecord", appRecord.toString());
     }

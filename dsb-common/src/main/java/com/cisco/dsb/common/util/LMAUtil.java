@@ -20,6 +20,7 @@ public class LMAUtil {
       Event.DIRECTION directionType,
       boolean isInternallyGenerated,
       boolean isMidDialogRequest,
+      boolean isRetransmitted,
       DhruvaAppRecord appRecord,
       EventingService eventingService) {
 
@@ -32,6 +33,7 @@ public class LMAUtil {
         messageType,
         isInternallyGenerated,
         isMidDialogRequest,
+        isRetransmitted,
         appRecord,
         eventingService);
   }

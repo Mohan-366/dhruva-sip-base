@@ -20,4 +20,5 @@ public class EventMetaData {
   private boolean isInternallyGenerated;
   private DhruvaAppRecord appRecord;
   private EventingService eventingService;
+  @Builder.Default private boolean isFirstReqRes = true;
 }

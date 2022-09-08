@@ -1,5 +1,7 @@
 package com.cisco.dsb.common.util.log;
 
+import static javax.sip.message.Request.ACK;
+
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.dto.EventMetaData;
 import com.cisco.dsb.common.sip.dto.MsgApplicationData;
@@ -15,6 +17,8 @@ import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPTransaction;
 import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.util.Objects;
 import java.util.Properties;
@@ -30,6 +34,7 @@ import javax.sip.message.Message;
 public class DhruvaServerLogger implements ServerLogger {
 
   protected StackLogger stackLogger;
+  private SIPTransactionStack sipStack;
 
   public DhruvaServerLogger() {
     // Called by JAIN SIP via reflection.
@@ -108,6 +113,7 @@ public class DhruvaServerLogger implements ServerLogger {
   private void sendEvent(SIPMessage message, boolean sender) {
     boolean isInternallyGenerated = false;
     boolean isMidDialogReqest = false;
+    boolean isRetransmitted = false;
     DhruvaAppRecord appRecord = null;
     EventingService eventingService = null;
     MESSAGE_TYPE messageType = MESSAGE_TYPE.RESPONSE;
@@ -117,6 +123,21 @@ public class DhruvaServerLogger implements ServerLogger {
       SIPRequest sipRequest = (SIPRequest) message;
       messageType = MESSAGE_TYPE.REQUEST;
       isMidDialogReqest = SipUtils.isMidDialogRequest(sipRequest);
+
+      if (directionType.equals(DIRECTION.IN)) {
+        // request coming in so server transaction.
+        SIPTransaction transaction = sipStack.findTransaction(message, true);
+        if (transaction != null && !sipRequest.getMethod().equals(ACK)) {
+          isRetransmitted = true;
+        }
+      }
+    } else {
+      // for response
+      if (directionType.equals(DIRECTION.IN)) {
+        // response coming in, it is client transaction
+        SIPResponse sipResponse = (SIPResponse) message;
+        isRetransmitted = sipResponse.isRetransmission();
+      }
     }
 
     if (Objects.nonNull(message.getApplicationData())) {
@@ -124,6 +145,11 @@ public class DhruvaServerLogger implements ServerLogger {
       if (Objects.nonNull(msgApplicationData.getEventMetaData())) {
         EventMetaData eventMetaData = msgApplicationData.getEventMetaData();
         isInternallyGenerated = eventMetaData.isInternallyGenerated();
+        if (directionType.equals(DIRECTION.OUT)) {
+          isRetransmitted = !eventMetaData.isFirstReqRes();
+          // Not first Request or Response anymore. this is used to identify the retransmission.
+          eventMetaData.setFirstReqRes(false);
+        }
         appRecord = eventMetaData.getAppRecord();
         eventingService = eventMetaData.getEventingService();
       }
@@ -135,6 +161,7 @@ public class DhruvaServerLogger implements ServerLogger {
         directionType,
         isInternallyGenerated,
         isMidDialogReqest,
+        isRetransmitted,
         appRecord,
         eventingService);
   }
@@ -207,8 +234,8 @@ public class DhruvaServerLogger implements ServerLogger {
   public void setSipStack(SipStack sipStack) {
     Preconditions.checkArgument(
         sipStack instanceof SIPTransactionStack, "sipStack must be a SIPTransactionStack");
-
-    this.stackLogger = ((SIPTransactionStack) sipStack).getStackLogger();
+    this.sipStack = (SIPTransactionStack) sipStack;
+    this.stackLogger = this.sipStack.getStackLogger();
   }
 
   @Override

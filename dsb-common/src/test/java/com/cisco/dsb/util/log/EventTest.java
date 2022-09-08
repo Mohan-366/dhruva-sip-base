@@ -53,6 +53,7 @@ public class EventTest {
         MESSAGE_TYPE.REQUEST,
         false,
         false,
+        false,
         null,
         null);
 
@@ -93,6 +94,7 @@ public class EventTest {
         sipMessage,
         DIRECTION.IN,
         MESSAGE_TYPE.REQUEST,
+        false,
         false,
         false,
         null,
