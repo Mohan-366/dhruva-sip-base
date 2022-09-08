@@ -69,6 +69,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     this.optionsPingController = abstractTrunk.optionsPingController;
     this.loadBalancerMetric = abstractTrunk.loadBalancerMetric;
     this.enableCircuitBreaker = abstractTrunk.enableCircuitBreaker;
+    this.dsbCircuitBreaker = abstractTrunk.dsbCircuitBreaker;
   }
 
   public AbstractTrunk(String name, Ingress ingress, Egress egress, boolean enableCircuitBreaker) {
@@ -146,27 +147,25 @@ public abstract class AbstractTrunk implements LoadBalancable {
           "IP address cannot be determined. IP Address normalization cannot be performed.");
       return;
     }
-    headerList.stream()
-        .forEach(
-            headerString -> {
-              Header header = message.getHeader(headerString);
-              if (header == null) {
-                return;
-              }
-              String headerName = header.getName();
-              String headerValue = header.toString().split(headerName + ": ")[1];
-              String ipToReplace = getIPToReplace(headerValue);
-              if (ipToReplace == null) {
-                return;
-              }
-              headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
-              try {
-                message.setHeader(headerFactory.createHeader(headerName, headerValue));
-              } catch (ParseException e) {
-                logger.error(
-                    "Error while replacingIPHeader normalization in {}: {}", headerName, e);
-              }
-            });
+    headerList.forEach(
+        headerString -> {
+          Header header = message.getHeader(headerString);
+          if (header == null) {
+            return;
+          }
+          String headerName = header.getName();
+          String headerValue = header.toString().split(headerName + ": ")[1];
+          String ipToReplace = getIPToReplace(headerValue);
+          if (ipToReplace == null) {
+            return;
+          }
+          headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
+          try {
+            message.setHeader(headerFactory.createHeader(headerName, headerValue));
+          } catch (ParseException e) {
+            logger.error("Error while replacingIPHeader normalization in {}: {}", headerName, e);
+          }
+        });
   }
 
   protected Mono<ProxySIPResponse> sendToProxy(
@@ -183,10 +182,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
     return Mono.defer(() -> getEndPoint(cookie, finalUserId))
         .doOnNext(endPoint -> normalization.egressPostNormalize().accept(cookie, endPoint))
-        .flatMap(
-            endPoint -> {
-              return sendToProxy(cookie, endPoint);
-            })
+        .flatMap(endPoint -> sendToProxy(cookie, endPoint))
         .<ProxySIPResponse>handle(
             (proxySIPResponse, sink) -> {
               // process Response, based on that send error signal to induce retry
@@ -217,15 +213,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
               }
             })
         .onErrorMap(
-            err -> (DsbCircuitBreakerUtil.isCircuitBreakerException(err)),
-            (err) -> {
-              DhruvaRuntimeException dre =
-                  new DhruvaRuntimeException(
-                      ErrorCode.TRUNK_RETRY_NEXT,
-                      "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(),
-                      err);
-              return dre;
-            })
+            DsbCircuitBreakerUtil::isCircuitBreakerException,
+            (err) ->
+                new DhruvaRuntimeException(
+                    ErrorCode.TRUNK_RETRY_NEXT,
+                    "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(),
+                    err))
         // retry only it matches TRUNK_RETRY ERROR CODE
         .retryWhen(this.retryTrunkOnException)
         .onErrorResume(
@@ -312,7 +305,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     }
 
     LoadBalancer sgeLB = cookie.getSgeLoadBalancer();
-    ServerGroupElement serverGroupElement = null;
+    ServerGroupElement serverGroupElement;
     // dynamic sg from SRV/A_Record, create first time or when no SGE from current SG and there is
     // next SG
 
@@ -389,7 +382,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
                     .add(ProxyState.OUT_PROXY_DNS_RESOLUTION, null);
                 LoadBalancer sgeLBTemp = LoadBalancer.of(dsg);
                 cookie.setSgeLoadBalancer(sgeLBTemp);
-                return getEndPointFromSge(dsg, (ServerGroupElement) sgeLBTemp.getCurrentElement());
+                ServerGroupElement activeSge = getActiveEndpoint(sgeLBTemp);
+                if (activeSge == null)
+                  throw new DhruvaRuntimeException(
+                      ErrorCode.FETCH_ENDPOINT_ERROR, "None of the SGEs are up ");
+                return getEndPointFromSge(dsg, activeSge);
               });
     }
     // sge already exists, use it to return next element
@@ -431,13 +428,13 @@ public abstract class AbstractTrunk implements LoadBalancable {
               serverGroupElement -> {
                 if (serverGroupElement.getIpAddress() == null
                     || serverGroupElement.getTransport() == null) return;
-                StringBuilder key =
-                    new StringBuilder(serverGroupElement.getIpAddress())
-                        .append(":")
-                        .append(serverGroupElement.getPort())
-                        .append(":")
-                        .append(serverGroupElement.getTransport());
-                this.getLoadBalancerMetric().put(key.toString(), 0l);
+                String key =
+                    serverGroupElement.getIpAddress()
+                        + ":"
+                        + serverGroupElement.getPort()
+                        + ":"
+                        + serverGroupElement.getTransport();
+                this.getLoadBalancerMetric().put(key, 0L);
               });
     }
   }
@@ -450,13 +447,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
     String elementKey;
     if (serverGroupElement.getUniqueString() == null) {
-      StringBuilder key =
-          new StringBuilder(serverGroupElement.getIpAddress())
-              .append(":")
-              .append(serverGroupElement.getPort())
-              .append(":")
-              .append(serverGroupElement.getTransport());
-      elementKey = key.toString();
+      elementKey =
+          serverGroupElement.getIpAddress()
+              + ":"
+              + serverGroupElement.getPort()
+              + ":"
+              + serverGroupElement.getTransport();
     } else {
       elementKey = serverGroupElement.getUniqueString();
     }
@@ -514,7 +510,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
    * returns the predicate required in CircuitBreaker to distinguish
    * success and failure responses
    */
-  private Predicate getCircuitBreakerRecordResult(TrunkCookie cookie) {
+  private Predicate<Object> getCircuitBreakerRecordResult(TrunkCookie cookie) {
     return response ->
         response instanceof ProxySIPResponse
             && (((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
@@ -580,5 +576,12 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .setPort(((AddressImpl) contact.getAddress()).getPort())
         .setTransport(transport)
         .build();
+  }
+
+  private ServerGroupElement getActiveEndpoint(LoadBalancer sgeLB) {
+    while (sgeLB.getCurrentElement() != null && !isActive((Pingable) sgeLB.getCurrentElement())) {
+      sgeLB.getNextElement();
+    }
+    return (ServerGroupElement) sgeLB.getCurrentElement();
   }
 }

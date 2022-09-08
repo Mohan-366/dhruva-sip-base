@@ -1,14 +1,16 @@
 package com.cisco.dsb.common.servergroup;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
+import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.MatchedDNSARecord;
+import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.dsb.common.transport.Transport;
@@ -88,5 +90,59 @@ public class DnsServerGroupUtilTest {
                 throwable instanceof DhruvaException
                     && throwable.getMessage().equals("Null / Empty hops"))
         .verify();
+  }
+
+  @Test(description = "Test cache miss and hit")
+  public void testCacheMissAndHit() throws InterruptedException {
+    DnsServerGroupUtil dnsServerGroupUtil = new DnsServerGroupUtil(sipServerLocatorService);
+    ServerGroup sg =
+        ServerGroup.builder()
+            .setName("sg1")
+            .setNetworkName("net1")
+            .setHostName("test.akg.com")
+            .setTransport(Transport.UDP)
+            .build();
+    List<Hop> hops =
+        List.of(
+            new Hop(
+                "test.akg.com",
+                "1.1.1.1",
+                Transport.UDP,
+                5060,
+                100,
+                100,
+                DNSRecordSource.INJECTED));
+    LocateSIPServersResponse locateSIPServersResponse = mock(LocateSIPServersResponse.class);
+    when(locateSIPServersResponse.getHops()).thenReturn(hops);
+
+    List<MatchedDNSARecord> dnsaRecords =
+        List.of(new MatchedDNSARecord(new DNSARecord("test.akg.com", 2, "1.1.1."), null));
+    when(locateSIPServersResponse.getDnsARecords()).thenReturn(dnsaRecords);
+    CompletableFuture<LocateSIPServersResponse> responseCF =
+        CompletableFuture.completedFuture(locateSIPServersResponse);
+    when(sipServerLocatorService.locateDestinationAsync(any(), any())).thenReturn(responseCF);
+
+    List<ServerGroupElement> sge = List.of(ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(5060)
+            .setTransport(Transport.UDP)
+            .build());
+    ServerGroup expectedResolvedSG = sg.toBuilder().setElements(sge).build();
+    // this call is cache miss
+    StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
+            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
+                    .verifyComplete();
+
+    // this call is cache hit as ttl is 5seconds and sg is cached
+    StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
+            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
+            .verifyComplete();
+
+    Thread.sleep(2100);
+    // this call is cache expiry
+    StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
+            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
+            .verifyComplete();
+    verify(sipServerLocatorService, times(2)).locateDestinationAsync(any(), any());
   }
 }

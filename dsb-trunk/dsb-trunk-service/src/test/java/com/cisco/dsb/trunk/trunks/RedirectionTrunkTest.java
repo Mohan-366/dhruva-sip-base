@@ -217,7 +217,7 @@ public class RedirectionTrunkTest {
         .verifyComplete();
 
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
-    verify(optionsPingController, times(2)).getStatus(any(ServerGroupElement.class));
+    verify(optionsPingController, times(3)).getStatus(any(ServerGroupElement.class));
   }
 
   @Test()
@@ -368,6 +368,6 @@ public class RedirectionTrunkTest {
         .verifyComplete();
 
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-    verify(optionsPingController, times(3)).getStatus(any(ServerGroupElement.class));
+    verify(optionsPingController, times(5)).getStatus(any(ServerGroupElement.class));
   }
 }

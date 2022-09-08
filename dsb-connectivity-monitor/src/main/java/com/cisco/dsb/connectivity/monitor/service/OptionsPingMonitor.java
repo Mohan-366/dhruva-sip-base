@@ -7,11 +7,10 @@ import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
-import com.cisco.dsb.common.servergroup.ServerGroup;
-import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
+import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -24,17 +23,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import lombok.Setter;
-import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
@@ -44,6 +43,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -55,16 +55,18 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   @Autowired ProxyPacketProcessor proxyPacketProcessor;
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
-
+  @Autowired DnsServerGroupUtil dnsServerGroupUtil;
   protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Boolean> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
-  protected ConcurrentHashMap<String, Set<String>> downServerGroupElementsCounter =
-      new ConcurrentHashMap<>();
   private Map<String, ServerGroup> localSGMap;
   @Setter private int maxFetchTime = 1500;
   @Setter private int fetchTime = 500;
   @Setter private int fetchIncrementTime = 250;
+  private final Scheduler upElementsScheduler =
+      Schedulers.newBoundedElastic(100, 100, "BE-Up-Elements");
+  private final Scheduler downElementsScheduler =
+      Schedulers.newBoundedElastic(100, 100, "BE-Down-Elements");
 
   @PostConstruct
   public void initOptionsPing() {
@@ -87,208 +89,138 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   protected void pingPipeLine(ServerGroup serverGroup) {
-    String serverGroupName = serverGroup.getName();
-    String network = serverGroup.getNetworkName();
-    List<ServerGroupElement> list = serverGroup.getElements();
-    OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
-
-    Flux<SIPResponse> upElementsResponses =
-        getUpElementsResponses(serverGroupName, network, list, optionsPingPolicy);
-    Flux<SIPResponse> downElementsResponses =
-        getDownElementsResponses(serverGroupName, network, list, optionsPingPolicy);
-    opFlux.add(Flux.merge(upElementsResponses, downElementsResponses).subscribe());
+    opFlux.add(createUpElementsFlux(serverGroup).subscribe());
+    opFlux.add(createDownElementsFlux(serverGroup).subscribe());
   }
 
-  protected Flux<SIPResponse> getUpElementsResponses(
-      String serverGroupName,
-      String network,
-      List<ServerGroupElement> list,
-      OptionsPingPolicy optionsPingPolicy) {
-    return getUpElements(list)
+  protected Flux<ResponseData> createUpElementsFlux(ServerGroup serverGroup) {
+    if (!serverGroupStatus.containsKey(serverGroup.getName())) {
+      logger.info("Marking ServerGroup {} as UP initially", serverGroup.getName());
+      serverGroupStatus.put(serverGroup.getName(), true);
+      Event.emitSGEvent(serverGroup.getName(), false);
+    }
+    return getElements(serverGroup)
+        .filter(
+            e -> {
+              Boolean status = elementStatus.putIfAbsent(e.toUniqueElementString(), true);
+              return status == null || status;
+            })
         .flatMap(
             element ->
                 sendPingRequestToUpElement(
-                    network, element, optionsPingPolicy, serverGroupName, list.size()))
+                    serverGroup.getNetworkName(), element, serverGroup.getOptionsPingPolicy()))
+        .transformDeferred(responseFlux -> handleStatusUpdate(responseFlux, serverGroup, true))
+        .onErrorResume(
+            (err) -> {
+              logger.warn("Uncaught error while creating UP element flux {},restarting flux", err);
+              return Mono.empty();
+            })
         .repeatWhen(
             completed ->
                 completed.delayElements(
-                    Duration.ofMillis(optionsPingPolicy.getUpTimeInterval()),
-                    Schedulers.newBoundedElastic(20, 50, "BE-Up-Elements")));
+                    Duration.ofMillis(serverGroup.getOptionsPingPolicy().getUpTimeInterval()),
+                    upElementsScheduler));
   }
 
-  protected Flux<SIPResponse> getDownElementsResponses(
-      String serverGroupName,
-      String network,
-      List<ServerGroupElement> list,
-      OptionsPingPolicy optionsPingPolicy) {
-    return getDownElements(list)
-        .flatMap(
-            element ->
-                sendPingRequestToDownElement(network, element, optionsPingPolicy, serverGroupName))
-        .repeatWhen(
-            completed ->
-                completed.delayElements(
-                    Duration.ofMillis(optionsPingPolicy.getDownTimeInterval()),
-                    Schedulers.newBoundedElastic(20, 50, "BE-Down-Elements")));
-  }
-
-  protected Flux<ServerGroupElement> getUpElements(List<ServerGroupElement> list) {
-    return Flux.defer(() -> Flux.fromIterable(list))
-        .filter(
-            e -> {
-              Boolean status = elementStatus.get(e.toUniqueElementString());
-              return status == null || status;
-            });
-  }
-
-  protected Flux<ServerGroupElement> getDownElements(List<ServerGroupElement> list) {
-    return Flux.defer(() -> Flux.fromIterable(list))
+  protected Flux<ResponseData> createDownElementsFlux(ServerGroup serverGroup) {
+    return getElements(serverGroup)
         .filter(
             e -> {
               Boolean status = elementStatus.get(e.toUniqueElementString());
               return status != null && !status;
-            });
+            })
+        .flatMap(
+            element ->
+                sendPingRequestToDownElement(
+                    serverGroup.getNetworkName(), element, serverGroup.getOptionsPingPolicy()))
+        .transform(responseFlux -> handleStatusUpdate(responseFlux, serverGroup, false))
+        .onErrorResume(
+            (err) -> {
+              logger.warn(
+                  "Uncaught error while creating DOWN element flux {},restarting flux", err);
+              return Mono.empty();
+            })
+        .repeatWhen(
+            completed ->
+                completed.delayElements(
+                    Duration.ofMillis(serverGroup.getOptionsPingPolicy().getDownTimeInterval()),
+                    downElementsScheduler));
+  }
+
+  protected Flux<ServerGroupElement> getElements(ServerGroup serverGroup) {
+    Flux<ServerGroupElement> elements;
+    if (serverGroup.getSgType() == SGType.STATIC)
+      elements = Flux.fromIterable(serverGroup.getElements());
+    else
+      elements =
+          Flux.defer(() -> dnsServerGroupUtil.createDNSServerGroup(serverGroup, null))
+              .flatMap(sg -> Flux.fromIterable(sg.getElements()));
+    return elements;
   }
 
   /**
    * Separate methods to ping up elements and retries will be performed only in case of up elements.
    *
-   * @param network
-   * @param element
-   * @param optionsPingPolicy
-   * @return
+   * @param network network to use while sending OPTIONS
+   * @param element element to send OPTIONS to
+   * @param optionsPingPolicy policy to use while retrying with various ping intervals
+   * @return ResponseData with element and either of SIPResponse or Exception.
    */
-  protected Mono<SIPResponse> sendPingRequestToUpElement(
-      String network,
-      ServerGroupElement element,
-      OptionsPingPolicy optionsPingPolicy,
-      String serverGroupName,
-      int sgeSize) {
+  protected Mono<ResponseData> sendPingRequestToUpElement(
+      String network, ServerGroupElement element, OptionsPingPolicy optionsPingPolicy) {
 
     int downInterval = optionsPingPolicy.getDownTimeInterval();
     int pingTimeout = optionsPingPolicy.getPingTimeOut();
 
     logger.debug("Sending ping to UP element: {}", element);
-    String key = element.toUniqueElementString();
-    Boolean status = elementStatus.get(key);
     return Mono.defer(
             () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
-        .timeout(Duration.ofMillis(pingTimeout))
+        .timeout(Duration.ofMillis(pingTimeout), upElementsScheduler)
         .doOnError(
             throwable ->
                 logger.error(
-                    "Error happened for UP element: {}. Element will be retried: {}",
+                    "Error occurred for UP element: {}. Element will be retried: {}",
                     element,
                     throwable.getMessage()))
         .retryWhen(
             Retry.fixedDelay(getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
-        .onErrorResume(
-            throwable -> {
-              logger.error(
-                  "All Ping attempts failed for UP element: {}. Marking status as DOWN. Error: {} ",
-                  element,
-                  throwable.getMessage());
-              Event.emitSGElementDownEvent(
-                  null, "All Ping attempts failed for element, marking as DOWN", element, network);
-              elementStatus.put(key, false);
-              checkAndMakeServerGroupDown(
-                  serverGroupName, element.toUniqueElementString(), sgeSize);
-              return Mono.empty();
-            })
-        .doOnNext(
-            n -> {
-              if (optionsPingPolicy.getFailureResponseCodes().stream()
-                  .anyMatch(val -> val == n.getStatusCode())) {
-                elementStatus.put(key, false);
-                logger.info(
-                    "{} received for UP element: {}. Marking it as DOWN.",
-                    n.getStatusCode(),
-                    element);
-                Event.emitSGElementDownEvent(
-                    n.getStatusCode(), "Error response received for element", element, network);
-                elementStatus.put(key, false);
-                checkAndMakeServerGroupDown(
-                    serverGroupName, element.toUniqueElementString(), sgeSize);
-              } else if (status == null) {
-                logger.info("Adding status as UP for element: {}", element);
-                elementStatus.put(key, true);
-              }
-            });
-  }
-
-  private void checkAndMakeServerGroupDown(String serverGroupName, String elementKey, int sgeSize) {
-    Set<String> sgeHashSet;
-    synchronized (this) {
-      sgeHashSet =
-          downServerGroupElementsCounter.getOrDefault(
-              serverGroupName, ConcurrentHashMap.newKeySet());
-      sgeHashSet.add(elementKey);
-      downServerGroupElementsCounter.put(serverGroupName, sgeHashSet);
-    }
-    // this means all elements are down.
-    if (sgeHashSet.size() == sgeSize) {
-      serverGroupStatus.put(serverGroupName, false);
-      Event.emitSGEvent(serverGroupName, true);
-    }
-    logger.info("Total DOWN Elements for {}: {}", serverGroupName, sgeHashSet);
+        .map(sipResponse -> new ResponseData(sipResponse, element))
+        .onErrorResume(throwable -> Mono.just(new ResponseData(new Exception(throwable), element)));
   }
 
   /**
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
    *
-   * @param network
-   * @param element
-   * @param optionsPingPolicy
-   * @return
+   * @param network network to use while sending OPTIONS
+   * @param element element to send OPTIONS to
+   * @param optionsPingPolicy policy to use while retrying with various ping intervals
+   * @return ResponseData with element and either of SIPResponse or Exception.
    */
-  protected Mono<SIPResponse> sendPingRequestToDownElement(
-      String network,
-      ServerGroupElement element,
-      OptionsPingPolicy optionsPingPolicy,
-      String serverGroupName) {
+  protected Mono<ResponseData> sendPingRequestToDownElement(
+      String network, ServerGroupElement element, OptionsPingPolicy optionsPingPolicy) {
     int pingTimeout = optionsPingPolicy.getPingTimeOut();
     logger.debug("Sending ping to DOWN element: {}", element);
-    String key = element.toUniqueElementString();
     return Mono.defer(
             () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
-        .timeout(Duration.ofMillis(pingTimeout))
+        .timeout(Duration.ofMillis(pingTimeout), downElementsScheduler)
+        .map(sipResponse -> new ResponseData(sipResponse, element))
         .onErrorResume(
             throwable -> {
               logger.debug(
                   "Error happened for element: {}. Error: {} Keeping status as DOWN.",
                   element,
                   throwable.getMessage());
-              return Mono.empty();
-            })
-        .doOnNext(
-            n -> {
-              if (optionsPingPolicy.getFailureResponseCodes().stream()
-                  .anyMatch(val -> val == n.getStatusCode())) {
-                logger.info(
-                    "{} received for element: {}. Keeping status as DOWN.",
-                    n.getStatusCode(),
-                    element);
-              } else {
-                logger.info("Marking status from DOWN to UP for element: {}", element);
-                Event.emitSGElementUpEvent(element, network);
-                elementStatus.put(key, true);
-                makeServerGroupUp(serverGroupName, element.toUniqueElementString());
-              }
+              return Mono.just(new ResponseData(new Exception(throwable), element));
             });
   }
 
-  private void makeServerGroupUp(String serverGroupName, String elementKey) {
-    Boolean sgStatus = serverGroupStatus.get(serverGroupName);
-    if (sgStatus != null && !sgStatus) {
-      serverGroupStatus.put(serverGroupName, true);
-      Event.emitSGEvent(serverGroupName, false);
-    }
-    Set<String> sgeHashSet = downServerGroupElementsCounter.get(serverGroupName);
-    if (CollectionUtils.isNotEmpty(sgeHashSet)) {
-      sgeHashSet.remove(elementKey);
-      logger.info("Total DOWN Elements for {}: {}", serverGroupName, sgeHashSet);
-    }
+  private Flux<ResponseData> handleStatusUpdate(
+      Flux<ResponseData> flux, ServerGroup serverGroup, boolean upFlux) {
+    AtomicBoolean sgUp = new AtomicBoolean(false);
+    return flux.doOnNext(responseData -> handleSGEUpdate(responseData, serverGroup, sgUp))
+        .doOnComplete(() -> handleSGUpdate(serverGroup, sgUp, upFlux))
+        .doOnSubscribe(subscription -> sgUp.compareAndSet(true, false));
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
@@ -322,8 +254,67 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     }
   }
 
+  private void handleSGEUpdate(
+      ResponseData responseData, ServerGroup serverGroup, AtomicBoolean sgStatus) {
+    Exception responseException = responseData.getException();
+    ServerGroupElement element = responseData.getElement();
+    String key = element.toUniqueElementString();
+    // RejectedExecutionexception can occur when scheduler is unavailable. This exception should not
+    // mark the element as DOWN
+    // since OPTIONS was not sent for the given element
+    if (responseException != null
+        && !(responseException.getCause() instanceof RejectedExecutionException)) {
+      logger.error(
+          "All Ping attempts failed for element: {}. Marking status as DOWN. Error: {} ",
+          element,
+          responseException.getMessage());
+      Event.emitSGElementDownEvent(
+          null, "Error response received for element", element, serverGroup.getNetworkName());
+      elementStatus.replace(key, true, false);
+      return;
+    }
+    // check response and mark element as UP/DOWN based on policy
+    int responseCode = responseData.getSipResponse().getStatusCode();
+    boolean failed =
+        serverGroup.getOptionsPingPolicy().getFailureResponseCodes().contains(responseCode);
+    boolean currentStatus = elementStatus.getOrDefault(key, true);
+    if (currentStatus && failed) {
+      // element transitioned from UP to DOWN
+      elementStatus.put(key, false);
+      logger.info("{} received for UP element: {}. Marking it as DOWN.", responseCode, element);
+      Event.emitSGElementDownEvent(
+          responseCode,
+          "Error response received for element",
+          element,
+          serverGroup.getNetworkName());
+    } else if (!currentStatus && !failed) {
+      elementStatus.put(key, true);
+      logger.info("{} received for DOWN element: {}. Marking it as UP.", responseCode, element);
+      Event.emitSGElementUpEvent(element, serverGroup.getNetworkName());
+    }
+    if (!failed) sgStatus.compareAndSet(false, true);
+  }
+
+  private void handleSGUpdate(ServerGroup serverGroup, AtomicBoolean sgUp, boolean upFlux) {
+    boolean previousStatus = serverGroupStatus.getOrDefault(serverGroup.getName(), true);
+    boolean currentStatus = sgUp.get();
+    // mark sg up if currentStatus is up and previousStatus is down
+    if (currentStatus && !previousStatus) {
+      this.serverGroupStatus.put(serverGroup.getName(), true);
+      logger.info("Marking Servergroup {} as UP from DOWN", serverGroup.getName());
+      Event.emitSGEvent(serverGroup.getName(), false);
+    }
+    // marking sg down if currentStatus is down and prev is up and if it's upFlux only
+    else if (!currentStatus && previousStatus && upFlux) {
+      this.serverGroupStatus.put(serverGroup.getName(), false);
+      logger.info("Marking ServerGroup {} as DOWN from UP", serverGroup.getName());
+      Event.emitSGEvent(serverGroup.getName(), true);
+    }
+  }
+
   private boolean isServerGroupPingable(@NotNull ServerGroup serverGroup) {
-    return (serverGroup.isPingOn() && (serverGroup.getElements() != null));
+    return (serverGroup.isPingOn()
+        && (serverGroup.getSgType() != SGType.STATIC || serverGroup.getElements() != null));
   }
 
   @Override
@@ -345,41 +336,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected void disposeExistingFlux() {
     logger.debug("Disposing existing fluxes");
     opFlux.forEach(Disposable::dispose);
-  }
-
-  /**
-   * This method will update the state of all the maps maintaining sg and elements status after
-   * config refresh. So in case if elements were removed they will be removed from here too. i.e.
-   * elementStatus, serverGroupStatus, downServerGroupElementsCounter
-   */
-  protected void cleanUpMaps() {
-    Map<String, ServerGroup> sgMap =
-        (localSGMap != null) ? localSGMap : commonConfigurationProperties.getServerGroups();
-    List<String> sgNameList = new ArrayList<>();
-    List<String> sgeNameList = new ArrayList<>();
-    for (Map.Entry<String, ServerGroup> entry : sgMap.entrySet()) {
-      String sgName = entry.getValue().getName();
-      ServerGroup sg = entry.getValue();
-      if (!isServerGroupPingable(sg)) {
-        continue;
-      }
-      sgNameList.add(sgName);
-      sg.getElements().forEach(element -> sgeNameList.add(element.toUniqueElementString()));
-    }
-
-    elementStatus.entrySet().removeIf(elementEntry -> !sgeNameList.contains(elementEntry.getKey()));
-    serverGroupStatus.entrySet().removeIf(sgEntry -> !sgNameList.contains(sgEntry.getKey()));
-    downServerGroupElementsCounter
-        .entrySet()
-        .removeIf(sgEntry -> !sgNameList.contains(sgEntry.getKey()));
-
-    for (Map.Entry<String, Set<String>> entry : downServerGroupElementsCounter.entrySet()) {
-      Set<String> sgeNameSet = entry.getValue();
-      sgeNameSet.removeIf(sgeName -> !sgeNameList.contains(sgeName));
-    }
-    logger.info("Updated serverGroupStatus: {}", serverGroupStatus);
-    logger.info("Updated elementStatus: {}", elementStatus);
-    logger.info("Updated downServerGroupElementsCounter: {}", downServerGroupElementsCounter);
   }
 
   protected void getUpdatedMaps() {
@@ -413,7 +369,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       getUpdatedMaps();
       disposeExistingFlux();
       opFlux.clear();
-      cleanUpMaps();
       startMonitoring(commonConfigurationProperties.getServerGroups());
     }
   }

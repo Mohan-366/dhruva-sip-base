@@ -7,18 +7,20 @@ import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
 import com.cisco.wx2.dto.User;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
+@CustomLog
 public class DnsServerGroupUtil {
   private SipServerLocatorService locatorService;
+  private Map<ServerGroup, CachedServerGroup> serverGroupCache = new ConcurrentHashMap<>();
 
   @Autowired
   public DnsServerGroupUtil(SipServerLocatorService locatorService) {
@@ -27,6 +29,13 @@ public class DnsServerGroupUtil {
 
   public Mono<ServerGroup> createDNSServerGroup(ServerGroup serverGroup, String userId) {
 
+    ServerGroup csg = getSGFromCache(serverGroup);
+    if (csg != null) {
+      logger.debug("SG found in DNS Cache {}", csg);
+      return Mono.just(csg);
+    }
+
+    logger.debug("Invalid cache, looking up... {}", serverGroup);
     String hostname = serverGroup.getHostName();
     int port = serverGroup.getPort();
     User userInject = null;
@@ -52,7 +61,8 @@ public class DnsServerGroupUtil {
     CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse =
         locatorService.locateDestinationAsync(userInject, dnsDestination);
 
-    return serverGroupMono(locateSIPServersResponse, serverGroup);
+    return serverGroupMono(locateSIPServersResponse, serverGroup)
+        .doOnNext(sg -> updateSGCache(sg, locateSIPServersResponse.getNow(null)));
   }
 
   private Mono<ServerGroup> serverGroupMono(
@@ -84,5 +94,54 @@ public class DnsServerGroupUtil {
                         .build())
             .collect(Collectors.toCollection(ArrayList::new));
     return serverGroup.toBuilder().setElements(elementList).build();
+  }
+
+  /**
+   * Returns ServerGroup from cache if it's present and ttl has not expired. Returns Null if either
+   * of criteria fail.
+   *
+   * @param serverGroup This is used just for object comparison. The returned object is a new object
+   *     built using all the properties of this object and has resolved elements
+   * @return new ServerGroup with resolved elements
+   */
+  private ServerGroup getSGFromCache(ServerGroup serverGroup) {
+    if (serverGroupCache.containsKey(serverGroup)) {
+      CachedServerGroup csg = serverGroupCache.get(serverGroup);
+      if (csg.expiry - System.currentTimeMillis() > 0) {
+        return csg.serverGroup;
+      }
+      logger.debug("SG present in cache but ttl expired {}", serverGroup);
+      return null;
+    }
+    logger.debug("SG not present in cache {}", serverGroup);
+    return null;
+  }
+
+  private void updateSGCache(
+      ServerGroup serverGroup, LocateSIPServersResponse locateSIPServersResponse) {
+    long expiry =
+        locateSIPServersResponse.getDnsARecords().stream()
+                .mapToLong(dns -> dns.getRecord().getTtl() * 1000L)
+                .min()
+                .orElse(0L)
+            + System.currentTimeMillis();
+    CachedServerGroup csg = serverGroupCache.get(serverGroup);
+    if (csg == null) {
+      csg = new CachedServerGroup(serverGroup, expiry);
+    } else {
+      csg.serverGroup = serverGroup;
+      csg.expiry = expiry;
+    }
+    serverGroupCache.put(serverGroup, csg);
+  }
+
+  private class CachedServerGroup {
+    ServerGroup serverGroup;
+    long expiry;
+
+    public CachedServerGroup(ServerGroup serverGroup, long expiry) {
+      this.serverGroup = serverGroup;
+      this.expiry = expiry;
+    }
   }
 }

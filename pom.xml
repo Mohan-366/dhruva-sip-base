@@ -216,14 +216,12 @@
                             <goal>testCompile</goal>
                         </goals>
                         <configuration>
-                            <source>1.9</source>
-                            <target>1.9</target>
+                            <release>11</release>
                         </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <source>1.9</source>
-                    <target>1.9</target>
+                    <release>11</release>
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
                 </configuration>
             </plugin>
