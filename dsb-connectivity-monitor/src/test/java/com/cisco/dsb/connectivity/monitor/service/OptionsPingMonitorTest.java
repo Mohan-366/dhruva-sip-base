@@ -14,6 +14,7 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
+import com.cisco.dsb.connectivity.monitor.dto.Status;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import gov.nist.javax.sip.SipProviderImpl;
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletionException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import org.mockito.*;
-import org.mockito.verification.VerificationMode;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -45,7 +45,7 @@ public class OptionsPingMonitorTest {
   Map<String, ServerGroup> map;
   ServerGroupElement sge1, sge2, sge3, sge4, sge5, sge6;
 
-  Map<String, Boolean> expectedElementStatusInt = new HashMap<>();
+  Map<String, Status> expectedElementStatusInt = new HashMap<>();
 
   List<ServerGroup> serverGroups = new ArrayList<>();
   OptionsPingPolicy opPolicy = OptionsPingPolicy.builder().build();
@@ -137,7 +137,7 @@ public class OptionsPingMonitorTest {
         switch (select) {
           case 1:
             {
-              expectedElementStatusInt.put(sge.toUniqueElementString(), true);
+              expectedElementStatusInt.put(sge.toUniqueElementString(), new Status(true, 0));
 
               Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
                   .when(optionsPingMonitor)
@@ -146,7 +146,7 @@ public class OptionsPingMonitorTest {
             }
           case 2:
             {
-              expectedElementStatusInt.put(sge.toUniqueElementString(), false);
+              expectedElementStatusInt.put(sge.toUniqueElementString(), new Status(false, 0));
 
               Mockito.doReturn(
                       CompletableFuture.completedFuture(ResponseHelper.getSipResponseFailOver()))
@@ -156,7 +156,7 @@ public class OptionsPingMonitorTest {
             }
           case 3:
             {
-              expectedElementStatusInt.put(sge.toUniqueElementString(), false);
+              expectedElementStatusInt.put(sge.toUniqueElementString(), new Status(false, 0));
 
               Mockito.doThrow(
                       new CompletionException(
@@ -293,6 +293,7 @@ public class OptionsPingMonitorTest {
     // clear all status maps
     optionsPingMonitor.elementStatus.clear();
     optionsPingMonitor.serverGroupStatus.clear();
+    reset(optionsPingMonitor);
     reset(dnsServerGroupUtil);
   }
 
@@ -362,15 +363,15 @@ public class OptionsPingMonitorTest {
         .thenCancel()
         .verify();
 
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()));
-    optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), true);
-    optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), false);
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
+    optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), new Status(true, 0));
+    optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), new Status(false, 0));
 
-    optionsPingMonitor.elementStatus.put(sge3.toUniqueElementString(), false);
-    optionsPingMonitor.elementStatus.put(sge4.toUniqueElementString(), true);
+    optionsPingMonitor.elementStatus.put(sge3.toUniqueElementString(), new Status(false, 0));
+    optionsPingMonitor.elementStatus.put(sge4.toUniqueElementString(), new Status(true, 0));
 
     SIPResponse sipResponse2 = new SIPResponse();
     sipResponse2.setStatusCode(503);
@@ -387,10 +388,10 @@ public class OptionsPingMonitorTest {
         .expectNext(responseData2, responseData3)
         .thenCancel()
         .verify();
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()));
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
   }
 
   @Test(description = "test UP element with failOver ->  OptionPing")
@@ -410,10 +411,10 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getUpTimeInterval()))
         .thenCancel()
         .verify();
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()));
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
   }
 
@@ -432,10 +433,10 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getUpTimeInterval()))
         .thenCancel()
         .verify();
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()));
-    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()));
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
   }
 
@@ -452,10 +453,10 @@ public class OptionsPingMonitorTest {
     // set SG to DOWN
     optionsPingMonitor.serverGroupStatus.put(sg.getName(), false);
     // set SGEs to DOWN and UP
-    optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), false);
-    optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), false);
-    optionsPingMonitor.elementStatus.put(sge3.toUniqueElementString(), true);
-    optionsPingMonitor.elementStatus.put(sge4.toUniqueElementString(), true);
+    optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), new Status(false, 0));
+    optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), new Status(false, 0));
+    optionsPingMonitor.elementStatus.put(sge3.toUniqueElementString(), new Status(true, 0));
+    optionsPingMonitor.elementStatus.put(sge4.toUniqueElementString(), new Status(true, 0));
 
     StepVerifier.create(optionsPingMonitor.createDownElementsFlux(sg).log())
         .expectNextCount(2)
@@ -463,10 +464,10 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getDownTimeInterval()))
         .thenCancel()
         .verify();
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()));
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()));
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
   }
 
@@ -781,10 +782,50 @@ public class OptionsPingMonitorTest {
         .verifyErrorMatches(throwable -> throwable.equals(dnsException));
 
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(dsg))
-        .thenAwait(Duration.ofMillis(dsg.getOptionsPingPolicy().getUpTimeInterval()*2L))
+        .thenAwait(Duration.ofMillis(dsg.getOptionsPingPolicy().getUpTimeInterval() * 2L))
         .thenCancel()
         .verify();
 
-    verify(dnsServerGroupUtil,atLeast(3)).createDNSServerGroup(eq(dsg), eq(null));
+    verify(dnsServerGroupUtil, atLeast(3)).createDNSServerGroup(eq(dsg), eq(null));
+  }
+
+  @Test(description = "If an element is part of multiple serverGroups, ping only once")
+  public void testDuplicate() throws ParseException, InterruptedException, SipException {
+    OptionsPingPolicy optionsPingPolicy =
+        OptionsPingPolicy.builder()
+            .setName("opPolicy1")
+            .setFailureResponseCodes(List.of(502))
+            .setUpTimeInterval(5000)
+            .setDownTimeInterval(2000)
+            .setPingTimeOut(150)
+            .setMaxForwards(5)
+            .build();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setElements(Arrays.asList(sge1, sge2, sge3))
+            .setHostName("test1.akg.com")
+            .setName("SG1")
+            .setNetworkName("net1")
+            .setOptionsPingPolicy(optionsPingPolicy)
+            .build();
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setName("SG2")
+            .setHostName("test2.akg.com")
+            .setNetworkName("net1")
+            .setElements(Arrays.asList(sge4, sge5, sge2))
+            .setOptionsPingPolicy(optionsPingPolicy)
+            .build();
+    SIPResponse upResponse = new SIPResponse();
+    upResponse.setStatusCode(200);
+    CompletableFuture<SIPResponse> upResponseCF = CompletableFuture.completedFuture(upResponse);
+    when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
+        .thenReturn(upResponseCF);
+
+    optionsPingMonitor.pingPipeLine(sg1);
+    optionsPingMonitor.pingPipeLine(sg2);
+    Thread.sleep(3000);
+    optionsPingMonitor.opFlux.forEach(Disposable::dispose);
+    verify(optionsPingMonitor, times(5)).createAndSendRequest(any(), any(), any());
   }
 }

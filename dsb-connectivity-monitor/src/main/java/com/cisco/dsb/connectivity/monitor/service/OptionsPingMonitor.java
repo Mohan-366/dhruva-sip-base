@@ -11,6 +11,7 @@ import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
+import com.cisco.dsb.connectivity.monitor.dto.Status;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
@@ -57,7 +59,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired DnsServerGroupUtil dnsServerGroupUtil;
   protected List<Disposable> opFlux = new ArrayList<>();
-  protected ConcurrentMap<String, Boolean> elementStatus = new ConcurrentHashMap<>();
+  protected ConcurrentMap<String, Status> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   private Map<String, ServerGroup> localSGMap;
   @Setter private int maxFetchTime = 1500;
@@ -83,28 +85,25 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         continue;
       }
       logger.info("Starting OPTIONS pings for elements of ServerGroup: {}", serverGroup);
-      serverGroupStatus.putIfAbsent(serverGroup.getName(), true);
+      serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
       pingPipeLine(serverGroup);
     }
   }
 
-  protected void pingPipeLine(ServerGroup serverGroup) {
+  public void pingPipeLine(ServerGroup serverGroup) {
     opFlux.add(createUpElementsFlux(serverGroup).subscribe());
     opFlux.add(createDownElementsFlux(serverGroup).subscribe());
   }
 
   protected Flux<ResponseData> createUpElementsFlux(ServerGroup serverGroup) {
-    if (!serverGroupStatus.containsKey(serverGroup.getName())) {
+    if (!serverGroupStatus.containsKey(serverGroup.getHostName())) {
       logger.info("Marking ServerGroup {} as UP initially", serverGroup.getName());
-      serverGroupStatus.put(serverGroup.getName(), true);
+      serverGroupStatus.put(serverGroup.getHostName(), true);
       Event.emitSGEvent(serverGroup.getName(), false);
     }
     return getElements(serverGroup)
         .filter(
-            e -> {
-              Boolean status = elementStatus.putIfAbsent(e.toUniqueElementString(), true);
-              return status == null || status;
-            })
+            upFilter.and(isExpiredStatus(serverGroup.getOptionsPingPolicy().getUpTimeInterval())))
         .flatMap(
             element ->
                 sendPingRequestToUpElement(
@@ -125,10 +124,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   protected Flux<ResponseData> createDownElementsFlux(ServerGroup serverGroup) {
     return getElements(serverGroup)
         .filter(
-            e -> {
-              Boolean status = elementStatus.get(e.toUniqueElementString());
-              return status != null && !status;
-            })
+            upFilter
+                .negate()
+                .and(isExpiredStatus(serverGroup.getOptionsPingPolicy().getDownTimeInterval())))
         .flatMap(
             element ->
                 sendPingRequestToDownElement(
@@ -218,9 +216,21 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   private Flux<ResponseData> handleStatusUpdate(
       Flux<ResponseData> flux, ServerGroup serverGroup, boolean upFlux) {
     AtomicBoolean sgUp = new AtomicBoolean(false);
-    return flux.doOnNext(responseData -> handleSGEUpdate(responseData, serverGroup, sgUp))
-        .doOnComplete(() -> handleSGUpdate(serverGroup, sgUp, upFlux))
-        .doOnSubscribe(subscription -> sgUp.compareAndSet(true, false));
+    AtomicBoolean triedAtleastOne = new AtomicBoolean(false);
+    return flux.doOnNext(
+            responseData -> {
+              triedAtleastOne.set(true);
+              handleSGEUpdate(responseData, serverGroup, sgUp);
+            })
+        .doOnComplete(
+            () -> {
+              if (triedAtleastOne.get()) handleSGUpdate(serverGroup, sgUp, upFlux);
+            })
+        .doOnSubscribe(
+            subscription -> {
+              triedAtleastOne.set(false);
+              sgUp.set(false);
+            });
   }
 
   protected CompletableFuture<SIPResponse> createAndSendRequest(
@@ -259,6 +269,8 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     Exception responseException = responseData.getException();
     ServerGroupElement element = responseData.getElement();
     String key = element.toUniqueElementString();
+    Status prevStatus =
+        elementStatus.getOrDefault(key, new Status(true, System.currentTimeMillis()));
     // RejectedExecutionexception can occur when scheduler is unavailable. This exception should not
     // mark the element as DOWN
     // since OPTIONS was not sent for the given element
@@ -270,25 +282,24 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
           responseException.getMessage());
       Event.emitSGElementDownEvent(
           null, "Error response received for element", element, serverGroup.getNetworkName());
-      elementStatus.replace(key, true, false);
+      elementStatus.put(key, prevStatus.setUp(false));
       return;
     }
     // check response and mark element as UP/DOWN based on policy
     int responseCode = responseData.getSipResponse().getStatusCode();
     boolean failed =
         serverGroup.getOptionsPingPolicy().getFailureResponseCodes().contains(responseCode);
-    boolean currentStatus = elementStatus.getOrDefault(key, true);
-    if (currentStatus && failed) {
+    if (prevStatus.isUp() && failed) {
       // element transitioned from UP to DOWN
-      elementStatus.put(key, false);
+      elementStatus.put(key, prevStatus.setUp(false));
       logger.info("{} received for UP element: {}. Marking it as DOWN.", responseCode, element);
       Event.emitSGElementDownEvent(
           responseCode,
           "Error response received for element",
           element,
           serverGroup.getNetworkName());
-    } else if (!currentStatus && !failed) {
-      elementStatus.put(key, true);
+    } else if (!prevStatus.isUp() && !failed) {
+      elementStatus.put(key, prevStatus.setUp(true));
       logger.info("{} received for DOWN element: {}. Marking it as UP.", responseCode, element);
       Event.emitSGElementUpEvent(element, serverGroup.getNetworkName());
     }
@@ -296,17 +307,17 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   }
 
   private void handleSGUpdate(ServerGroup serverGroup, AtomicBoolean sgUp, boolean upFlux) {
-    boolean previousStatus = serverGroupStatus.getOrDefault(serverGroup.getName(), true);
+    boolean previousStatus = serverGroupStatus.getOrDefault(serverGroup.getHostName(), true);
     boolean currentStatus = sgUp.get();
     // mark sg up if currentStatus is up and previousStatus is down
     if (currentStatus && !previousStatus) {
-      this.serverGroupStatus.put(serverGroup.getName(), true);
+      this.serverGroupStatus.put(serverGroup.getHostName(), true);
       logger.info("Marking Servergroup {} as UP from DOWN", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), false);
     }
     // marking sg down if currentStatus is down and prev is up and if it's upFlux only
     else if (!currentStatus && previousStatus && upFlux) {
-      this.serverGroupStatus.put(serverGroup.getName(), false);
+      this.serverGroupStatus.put(serverGroup.getHostName(), false);
       logger.info("Marking ServerGroup {} as DOWN from UP", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), true);
     }
@@ -371,5 +382,23 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       opFlux.clear();
       startMonitoring(commonConfigurationProperties.getServerGroups());
     }
+  }
+
+  private Predicate<ServerGroupElement> upFilter =
+      sge -> {
+        Status status =
+            elementStatus.putIfAbsent(sge.toUniqueElementString(), new Status(true, 0L));
+        if (status == null) logger.debug("Marking SGE {} as UP initially", sge);
+        return status == null || status.isUp();
+      };
+
+  private Predicate<ServerGroupElement> isExpiredStatus(long validity) {
+    return sge -> {
+      Status status = elementStatus.get(sge.toUniqueElementString());
+      if (status == null) return true;
+      boolean expired = status.updateIfExpired(validity);
+      logger.debug("Status expired(={}) for {}", expired, sge.toUniqueElementString());
+      return expired;
+    };
   }
 }
