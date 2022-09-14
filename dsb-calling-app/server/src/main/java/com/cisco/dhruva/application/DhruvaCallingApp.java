@@ -7,6 +7,7 @@ import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
+import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
 import com.cisco.dsb.common.util.log.event.*;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.ProxyState;
@@ -28,6 +29,7 @@ public class DhruvaCallingApp {
   private Filter filter;
   private ProxyAppConfig proxyAppConfig;
   private EventingService eventingService;
+  private CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
   private CallingAppConfigurationProperty callingAppConfigurationProperty;
 
   @Autowired
@@ -35,11 +37,14 @@ public class DhruvaCallingApp {
       ProxyService proxyService,
       Filter filter,
       EventingService eventingService,
+      CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator,
       CallingAppConfigurationProperty callingAppConfigurationProperty) {
     this.proxyService = proxyService;
     this.filter = filter;
     this.eventingService = eventingService;
+    this.callingAppRateLimiterConfigurator = callingAppRateLimiterConfigurator;
     this.callingAppConfigurationProperty = callingAppConfigurationProperty;
+
     init();
   }
 
@@ -72,6 +77,7 @@ public class DhruvaCallingApp {
       System.exit(-1);
     }
     proxyService.register(proxyAppConfig);
+    callingAppRateLimiterConfigurator.configure();
 
     // register events
     ImmutableList<Class<? extends DhruvaEvent>> interestedEvents =

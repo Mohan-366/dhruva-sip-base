@@ -2,6 +2,8 @@ package com.cisco.dsb.proxy.bootstrap.proxyserver;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiterValve;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
@@ -56,6 +58,8 @@ public class SipServer implements Server {
   public void startListening(
       InetAddress address,
       int port,
+      boolean isEnableRateLimiting,
+      DsbRateLimiter dsbRateLimiter,
       SipListener handler,
       DsbTrustManager trustManager,
       KeyManager keyManager,
@@ -71,7 +75,7 @@ public class SipServer implements Server {
                 this.commonConfigurationProperties,
                 sipFactory,
                 sipFactory.getPathName(),
-                getStackProperties(),
+                getStackProperties(isEnableRateLimiting),
                 address.getHostAddress(),
                 port,
                 transport.toString(),
@@ -84,6 +88,12 @@ public class SipServer implements Server {
           SipStackImpl sipStackImpl = (SipStackImpl) sipStack;
           ((DsbJainSipMessageProcessorFactory) sipStackImpl.messageProcessorFactory)
               .initFromApplication(commonConfigurationProperties, executorService, metricService);
+          sipStackImpl.sipMessageValves.forEach(
+              sipMessageValve -> {
+                if (sipMessageValve instanceof DsbRateLimiterValve) {
+                  ((DsbRateLimiterValve) sipMessageValve).initFromApplication(dsbRateLimiter);
+                }
+              });
         }
         serverStartFuture.complete(sipStack);
         break;
@@ -110,7 +120,7 @@ public class SipServer implements Server {
     }
   }
 
-  private Properties getStackProperties() {
+  private Properties getStackProperties(boolean isEnableRateLimiting) {
 
     Properties stackProps =
         ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
@@ -153,6 +163,11 @@ public class SipServer implements Server {
 
     stackProps.setProperty("gov.nist.javax.sip.ALWAYS_ADD_RPORT", "false");
 
+    // Is rate Limit enabled for the corresponding listen point
+    if (isEnableRateLimiting) {
+      String valve = DsbRateLimiterValve.class.getCanonicalName();
+      stackProps.setProperty("gov.nist.javax.sip.SIP_MESSAGE_VALVE", valve);
+    }
     return stackProps;
   }
 }

@@ -36,6 +36,7 @@ public class CommonConfigurationProperties {
   public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;
   public static final Boolean DEFAULT_ENABLE_CERT_SERVICE = false;
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
+  public static final boolean DEFAULT_ENABLE_RATE_LIMITING = false;
 
   @Getter @Setter private boolean enableCertService = false;
   @Getter @Setter private boolean useRedisAsCache = false;

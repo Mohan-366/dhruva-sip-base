@@ -39,6 +39,9 @@ public class SIPListenPoint {
   @Builder.Default
   private boolean enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
 
+  @Builder.Default
+  private boolean enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
+
   private String hostInterface;
 
   public SIPListenPoint() {
@@ -53,6 +56,7 @@ public class SIPListenPoint {
     this.attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
     this.tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
     this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
+    this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
   }
 
   public void setHostInterface(String hostInterface) {
@@ -96,7 +100,9 @@ public class SIPListenPoint {
             .append(" recordRouteEnabled = ")
             .append(recordRoute)
             .append(" attachExternalIP = ")
-            .append(attachExternalIP);
+            .append(attachExternalIP)
+            .append(" enableRateLimiter = ")
+            .append(enableRateLimiter);
     // For TLS
     if (transport.getValue() == Transport.TLS.getValue()) {
       return sipListenPointString

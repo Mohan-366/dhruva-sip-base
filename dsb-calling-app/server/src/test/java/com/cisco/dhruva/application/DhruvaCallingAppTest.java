@@ -7,6 +7,7 @@ import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
+import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -32,6 +33,7 @@ import org.testng.annotations.Test;
 public class DhruvaCallingAppTest {
   @Mock ProxyService proxyService;
   @Mock Filter filter;
+  @Mock CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
   @InjectMocks DhruvaCallingApp dhruvaCallingApp;
   @Mock ProxySIPRequest proxySIPRequest;
   @Mock ProxySIPResponse proxySIPResponse;
@@ -46,7 +48,7 @@ public class DhruvaCallingAppTest {
 
   @BeforeTest
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
   }
 
   @AfterMethod

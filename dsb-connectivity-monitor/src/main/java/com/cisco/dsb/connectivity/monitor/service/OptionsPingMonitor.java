@@ -349,6 +349,11 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     opFlux.forEach(Disposable::dispose);
   }
 
+  /*
+   * Checking for updated values after a certain time interval and retrying if it is not available
+   * is a hack added to overcome a bug in the kubernetes client which takes some time (few milli seconds)
+   * to update the Bean under refreshScope after doing get on that object when a config refresh happens .
+   */
   protected void getUpdatedMaps() {
     int originalFetchTime = fetchTime;
     boolean isUpdated = false;

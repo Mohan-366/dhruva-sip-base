@@ -1,9 +1,16 @@
 package com.cisco.dhruva.application;
 
 import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
+import com.cisco.dsb.common.ratelimiter.PolicyNetworkAssociation;
+import com.cisco.dsb.common.ratelimiter.RateLimitPolicy;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotBlank;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -11,6 +18,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
+@CustomLog
 @Component
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "app")
@@ -26,6 +34,9 @@ public class CallingAppConfigurationProperty {
   @NotBlank @Getter @Setter
   private Maintenance maintenance = Maintenance.MaintenanceBuilder().build();
 
+  @Getter private List<RateLimitPolicy> rateLimitPolicyList = new ArrayList<>();
+  @Getter private Map<String, PolicyNetworkAssociation> rateLimiterNetworkMap = new HashMap<>();
+
   @Getter @Setter Map<String, ErrorMappingPolicy> errorMappingPolicy = new HashMap<>();
   @Getter private Map<String, CallTypeConfig> callTypesMap = new HashMap<>();
 
@@ -38,6 +49,16 @@ public class CallingAppConfigurationProperty {
     if (Objects.nonNull(this.errorMappingPolicy) && !this.errorMappingPolicy.isEmpty()) {
       this.updateCallTypes();
     }
+  }
+
+  public void setRateLimitPolicy(List<RateLimitPolicy> rateLimitPolicyList) {
+    logger.info("Configuring Rate Limit Policies");
+    this.rateLimitPolicyList = rateLimitPolicyList;
+  }
+
+  public void setRateLimiter(Map<String, PolicyNetworkAssociation> rateLimiterMap) {
+    logger.info("Configuring rate-limits for different networks");
+    this.rateLimiterNetworkMap = rateLimiterMap;
   }
 
   @PostConstruct

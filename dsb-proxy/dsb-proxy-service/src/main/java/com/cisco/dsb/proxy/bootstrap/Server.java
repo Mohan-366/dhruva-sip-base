@@ -1,5 +1,6 @@
 package com.cisco.dsb.proxy.bootstrap;
 
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
@@ -11,6 +12,8 @@ public interface Server {
   public void startListening(
       InetAddress address,
       int port,
+      boolean isEnableRateLimiting,
+      DsbRateLimiter dsbRateLimiter,
       SipListener handler,
       DsbTrustManager dsbTrustManager,
       KeyManager keyManager,

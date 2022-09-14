@@ -7,6 +7,27 @@ app:
   pstn-ingress: "CcpFusionUS"
   maintanence:
     enabled: false
+
+  rateLimitPolicy:
+    - name: &rateLimitPolicyPstn "rateLimitPolicyPstn"
+      allowList: ['1.1.1.1', '2.2.2.2']
+      type: network
+      rateLimit:
+        permits: 200
+        interval: 60s
+    - name: &rateLimitPolicyGlobal "rateLimitPolicyGlobal"
+      allowList: ["3.3.3.3"]
+      denyList: ["4.4.4.4"]
+      autoBuild: true
+      type: global
+      rateLimit:
+        permits: 1000
+        interval: 60s
+
+  rateLimiter:
+    rateLimitPolicyPstn:
+      policyName: *rateLimitPolicyPstn
+      networks: [*netsp]
 common:
   customMonitorPingInitialDelayInSec: 5
   customMonitorPingPeriodInSec: 30
@@ -15,6 +36,7 @@ common:
       port: 5065
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      enableRateLimiter: true
     - name: *netb2b
       port: 5062
       transport: UDP
@@ -106,6 +128,7 @@ common:
       upTimeInterval: 30000
       downTimeInterval: 5000
       pingTimeOut: 500
+
 trunk:
   PSTN:
     CcpFusionUS:

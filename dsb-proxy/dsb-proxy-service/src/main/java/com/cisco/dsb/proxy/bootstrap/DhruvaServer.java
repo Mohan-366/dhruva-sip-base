@@ -2,6 +2,7 @@ package com.cisco.dsb.proxy.bootstrap;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
@@ -16,6 +17,8 @@ public interface DhruvaServer {
       Transport transportType,
       InetAddress address,
       int port,
+      boolean isEnableRateLimiting,
+      DsbRateLimiter dsbRateLimiter,
       DsbTrustManager trustManager,
       KeyManager keyManager,
       DhruvaExecutorService executorService,

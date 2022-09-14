@@ -5,6 +5,7 @@ app:
   b2b-egress: "Antares"
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
+
   maintenance:
     enabled: false
     description: "DSB is in maintenance"
@@ -23,12 +24,34 @@ app:
       name: dialInPSTN
       errorMappingPolicy: *antaresErrorPolicy
 
+  rateLimitPolicy:
+    - name: &rateLimitPolicyPstn "rateLimitPolicyPstn"
+      allowList: ['10.78.98.54', '2.2.2.2']
+      type: network
+      rateLimit:
+        permits: 1000
+        interval: 60s
+    - name: &rateLimitPolicyGlobal "rateLimitPolicyGlobal"
+      allowList: ["3.3.3.3"]
+      denyList: ["4.4.4.4"]
+      autoBuild: true
+      type: global
+      rateLimit:
+        permits: 1000
+        interval: 60s
+
+  rateLimiter:
+    rateLimitPolicyPstn:
+      policyName: *rateLimitPolicyPstn
+      networks: [*netsp]
+
 common:
   listenPoints:
     - name: *netsp
       port: 5060
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      enableRateLimiter: true
     - name: *netb2b
       port: 5070
       transport: UDP
@@ -129,6 +152,8 @@ common:
       downTimeInterval: 8000
       pingTimeOut: 5000
       maxForwards: 50
+
+
 trunk:
   PSTN:
     CcpFusionUS:

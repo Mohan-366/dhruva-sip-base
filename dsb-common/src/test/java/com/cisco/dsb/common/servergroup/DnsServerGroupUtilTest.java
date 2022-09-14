@@ -122,27 +122,29 @@ public class DnsServerGroupUtilTest {
         CompletableFuture.completedFuture(locateSIPServersResponse);
     when(sipServerLocatorService.locateDestinationAsync(any(), any())).thenReturn(responseCF);
 
-    List<ServerGroupElement> sge = List.of(ServerGroupElement.builder()
-            .setIpAddress("1.1.1.1")
-            .setPort(5060)
-            .setTransport(Transport.UDP)
-            .build());
+    List<ServerGroupElement> sge =
+        List.of(
+            ServerGroupElement.builder()
+                .setIpAddress("1.1.1.1")
+                .setPort(5060)
+                .setTransport(Transport.UDP)
+                .build());
     ServerGroup expectedResolvedSG = sg.toBuilder().setElements(sge).build();
     // this call is cache miss
     StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
-            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
-                    .verifyComplete();
+        .assertNext(rsg -> assertEquals(rsg.getElements(), expectedResolvedSG.getElements()))
+        .verifyComplete();
 
     // this call is cache hit as ttl is 5seconds and sg is cached
     StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
-            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
-            .verifyComplete();
+        .assertNext(rsg -> assertEquals(rsg.getElements(), expectedResolvedSG.getElements()))
+        .verifyComplete();
 
     Thread.sleep(2100);
     // this call is cache expiry
     StepVerifier.create(dnsServerGroupUtil.createDNSServerGroup(sg, null))
-            .assertNext(rsg-> assertEquals(rsg.getElements(),expectedResolvedSG.getElements()))
-            .verifyComplete();
+        .assertNext(rsg -> assertEquals(rsg.getElements(), expectedResolvedSG.getElements()))
+        .verifyComplete();
     verify(sipServerLocatorService, times(2)).locateDestinationAsync(any(), any());
   }
 }

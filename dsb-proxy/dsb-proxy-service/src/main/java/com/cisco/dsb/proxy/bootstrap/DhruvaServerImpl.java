@@ -2,6 +2,7 @@ package com.cisco.dsb.proxy.bootstrap;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
@@ -24,6 +25,8 @@ public class DhruvaServerImpl implements DhruvaServer {
       Transport transportType,
       InetAddress address,
       int port,
+      boolean isEnableRateLimiting,
+      DsbRateLimiter dsbRateLimiter,
       DsbTrustManager dsbTrustManager,
       KeyManager keyManager,
       DhruvaExecutorService executorService,
@@ -44,7 +47,15 @@ public class DhruvaServerImpl implements DhruvaServer {
               executorService,
               metricService,
               commonConfigurationProperties);
-      server.startListening(address, port, handler, dsbTrustManager, keyManager, serverStartFuture);
+      server.startListening(
+          address,
+          port,
+          isEnableRateLimiting,
+          dsbRateLimiter,
+          handler,
+          dsbTrustManager,
+          keyManager,
+          serverStartFuture);
     } catch (Exception e) {
       serverStartFuture.completeExceptionally(e);
     }

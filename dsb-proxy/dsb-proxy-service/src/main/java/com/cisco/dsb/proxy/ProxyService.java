@@ -11,6 +11,7 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
@@ -80,6 +81,8 @@ public class ProxyService {
 
   @Nullable @Autowired KeyManager keyManager;
 
+  @Autowired DsbRateLimiter dsbRateLimiter;
+
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
   // Map of network and provider
   private Map<SipProvider, String> sipProvidertoNetworkMap = new ConcurrentHashMap<>();
@@ -95,6 +98,10 @@ public class ProxyService {
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
 
       logger.info("Trying to start proxy server on {} ", sipListenPoint);
+      logger.info(
+          "Rate-limiter enabled for {} : {}",
+          sipListenPoint.getName(),
+          sipListenPoint.isEnableRateLimiter());
       DhruvaNetwork networkConfig =
           DhruvaNetwork.createNetwork(sipListenPoint.getName(), sipListenPoint);
       Transport transport = sipListenPoint.getTransport();
@@ -104,6 +111,8 @@ public class ProxyService {
               transport,
               InetAddress.getByName(sipListenPoint.getHostIPAddress()),
               sipListenPoint.getPort(),
+              sipListenPoint.isEnableRateLimiter(),
+              dsbRateLimiter,
               (transport == Transport.TLS)
                   ? (getTrustManager(sipListenPoint.getTlsAuthType()))
                   : null,
