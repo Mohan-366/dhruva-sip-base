@@ -13,11 +13,7 @@ public class ConsumerFactory {
     return consumerFactory;
   }
 
-  public EventConsumer getLoggerConsumer(DhruvaEvent event, boolean allowUnmasked) {
-    return new LoggerConsumer(event, allowUnmasked);
+  public EventConsumer getLoggerConsumer(boolean allowUnmasked) {
+    return new LoggerConsumer(allowUnmasked);
   }
-
-  /*public EventConsumer getMatsConsumer(DhruvaEvent event) {
-    return new MatsConsumer(event);
-  }*/
 }

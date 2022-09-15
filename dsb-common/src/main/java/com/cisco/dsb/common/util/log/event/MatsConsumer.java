@@ -5,12 +5,8 @@ import lombok.CustomLog;
 @CustomLog
 public class MatsConsumer extends EventConsumer {
 
-  public MatsConsumer(DhruvaEvent event) {
-    super(event);
-  }
-
   @Override
-  public void handleEvent() {
+  public void handleEvent(DhruvaEvent event) {
     // does not do anything
   }
 }

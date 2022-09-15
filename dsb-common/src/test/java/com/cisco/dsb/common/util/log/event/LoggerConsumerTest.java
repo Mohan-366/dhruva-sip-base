@@ -24,7 +24,7 @@ public class LoggerConsumerTest {
             .eventType(Event.EventType.SIPMESSAGE)
             .eventInfoMap(messageInfoMap)
             .build();
-    LoggerConsumer consumer = new LoggerConsumer(loggingEvent, false);
+    LoggerConsumer consumer = new LoggerConsumer(false);
     LoggerConsumer spyConsumer = spy(consumer);
 
     SIPRequest request = new SIPRequest();
@@ -34,12 +34,12 @@ public class LoggerConsumerTest {
     request.setRequestURI(uri);
     loggingEvent.setSipMsgPayload(request);
 
-    spyConsumer.sendMaskedEvent();
+    spyConsumer.sendMaskedEvent(loggingEvent);
 
     Assert.assertEquals(loggingEvent.getEventSubType(), Event.EventSubType.PIIMASKED);
     Assert.assertNull(loggingEvent.getEventInfoMap().get("appRecord"));
     ArgumentCaptor<String> actualMsg = ArgumentCaptor.forClass(String.class);
-    verify(spyConsumer).sendMsg(actualMsg.capture());
+    verify(spyConsumer).sendMsg(eq(loggingEvent), actualMsg.capture());
     Assert.assertTrue(actualMsg.getValue().contains("OBFUSCATED:\"sip:xxxxx@XXXXXXXX\""));
   }
 
@@ -54,7 +54,7 @@ public class LoggerConsumerTest {
             .eventType(Event.EventType.SIPMESSAGE)
             .eventInfoMap(messageInfoMap)
             .build();
-    LoggerConsumer consumer = new LoggerConsumer(loggingEvent, true);
+    LoggerConsumer consumer = new LoggerConsumer(true);
     LoggerConsumer spyConsumer = spy(consumer);
 
     SIPRequest request = new SIPRequest();
@@ -64,19 +64,19 @@ public class LoggerConsumerTest {
     request.setRequestURI(uri);
     loggingEvent.setSipMsgPayload(request);
 
-    spyConsumer.sendUnmaskedEvent();
+    spyConsumer.sendUnmaskedEvent(loggingEvent);
 
     Assert.assertEquals(loggingEvent.getEventSubType(), Event.EventSubType.PIIUNMASKED);
     Assert.assertEquals(loggingEvent.getEventInfoMap().get("appRecord"), passportData);
     ArgumentCaptor<String> actualMsg = ArgumentCaptor.forClass(String.class);
-    verify(spyConsumer).sendMsg(actualMsg.capture());
+    verify(spyConsumer).sendMsg(eq(loggingEvent), actualMsg.capture());
     Assert.assertFalse(actualMsg.getValue().contains("OBFUSCATED:\"sip:xxxxx@XXXXXXXX\""));
   }
 
   @Test
   public void testUnMaskedLoggingEventWhenNotAllowed() throws ParseException {
     LoggingEvent loggingEvent = mock(LoggingEvent.class);
-    LoggerConsumer consumer = new LoggerConsumer(loggingEvent, false);
+    LoggerConsumer consumer = new LoggerConsumer(false);
     LoggerConsumer spyConsumer = spy(consumer);
 
     SIPRequest request = new SIPRequest();
@@ -86,10 +86,10 @@ public class LoggerConsumerTest {
     request.setRequestURI(uri);
     loggingEvent.setSipMsgPayload(request);
 
-    spyConsumer.sendUnmaskedEvent();
+    spyConsumer.sendUnmaskedEvent(loggingEvent);
 
     Assert.assertNull(loggingEvent.getEventSubType());
-    verify(spyConsumer, times(0)).sendMsg(anyString());
+    verify(spyConsumer, times(0)).sendMsg(any(DhruvaEvent.class), anyString());
   }
 
   @Test
@@ -100,13 +100,13 @@ public class LoggerConsumerTest {
             .eventType(Event.EventType.SIPMESSAGE)
             .eventInfoMap(messageInfoMap)
             .build();
-    LoggerConsumer consumer = new LoggerConsumer(loggingEvent, true);
+    LoggerConsumer consumer = new LoggerConsumer(true);
 
     LoggerConsumer spyConsumer = spy(consumer);
-    spyConsumer.sendUnmaskedEvent();
+    spyConsumer.sendUnmaskedEvent(loggingEvent);
     Assert.assertNull(loggingEvent.getEventInfoMap().get("appRecord"));
 
-    spyConsumer.sendMaskedEvent();
+    spyConsumer.sendMaskedEvent(loggingEvent);
     Assert.assertNull(loggingEvent.getEventInfoMap().get("appRecord"));
   }
 
@@ -119,20 +119,20 @@ public class LoggerConsumerTest {
             .eventInfoMap(messageInfoMap)
             .msgPayload("Test String msg")
             .build();
-    LoggerConsumer consumer = new LoggerConsumer(loggingEvent, true);
+    LoggerConsumer consumer = new LoggerConsumer(true);
 
     LoggerConsumer spyConsumer = spy(consumer);
-    spyConsumer.sendUnmaskedEvent();
+    spyConsumer.sendUnmaskedEvent(loggingEvent);
 
     Assert.assertNull(loggingEvent.getEventSubType());
     ArgumentCaptor<String> actualMsg = ArgumentCaptor.forClass(String.class);
-    verify(spyConsumer, times(1)).sendMsg(actualMsg.capture());
+    verify(spyConsumer, times(1)).sendMsg(eq(loggingEvent), actualMsg.capture());
     Assert.assertEquals(actualMsg.getValue(), "Test String msg");
 
-    spyConsumer.sendMaskedEvent();
+    spyConsumer.sendMaskedEvent(loggingEvent);
 
     Assert.assertNull(loggingEvent.getEventSubType());
-    verify(spyConsumer, times(2)).sendMsg(actualMsg.capture());
+    verify(spyConsumer, times(2)).sendMsg(eq(loggingEvent), actualMsg.capture());
     Assert.assertEquals(actualMsg.getValue(), "Test String msg");
   }
 }

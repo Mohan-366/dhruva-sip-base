@@ -7,14 +7,13 @@ import lombok.CustomLog;
 @CustomLog
 public class LoggerConsumer extends EventConsumer {
 
-  private boolean allowUnmasked;
+  private final boolean allowUnmasked;
 
-  public LoggerConsumer(DhruvaEvent event, boolean allowUnmasked) {
-    super(event);
+  public LoggerConsumer(boolean allowUnmasked) {
     this.allowUnmasked = allowUnmasked;
   }
 
-  public void sendMaskedEvent() {
+  public void sendMaskedEvent(DhruvaEvent event) {
     LoggingEvent loggingEvent = (LoggingEvent) event;
     String msg = null;
 
@@ -31,10 +30,10 @@ public class LoggerConsumer extends EventConsumer {
     } else if (loggingEvent.getMsgPayload() != null) {
       msg = loggingEvent.getMsgPayload();
     }
-    sendMsg(msg);
+    sendMsg(event, msg);
   }
 
-  public void sendUnmaskedEvent() {
+  public void sendUnmaskedEvent(DhruvaEvent event) {
     LoggingEvent loggingEvent = (LoggingEvent) event;
     String msg = null;
 
@@ -47,11 +46,11 @@ public class LoggerConsumer extends EventConsumer {
       } else if (loggingEvent.getMsgPayload() != null) {
         msg = loggingEvent.getMsgPayload();
       }
-      sendMsg(msg);
+      sendMsg(event, msg);
     }
   }
 
-  public void sendMsg(String msg) {
+  public void sendMsg(DhruvaEvent event, String msg) {
     LoggingEvent loggingEvent = (LoggingEvent) event;
     if (loggingEvent.getErrorType() == null) {
       logger.emitEvent(
@@ -72,8 +71,8 @@ public class LoggerConsumer extends EventConsumer {
   }
 
   @Override
-  public void handleEvent() {
-    sendUnmaskedEvent();
-    sendMaskedEvent();
+  public void handleEvent(DhruvaEvent event) {
+    sendUnmaskedEvent(event);
+    sendMaskedEvent(event);
   }
 }

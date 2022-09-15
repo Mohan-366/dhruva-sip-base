@@ -1,50 +1,49 @@
 package com.cisco.dsb.common.util.log.event;
 
 import java.util.List;
+import java.util.function.Supplier;
 import lombok.CustomLog;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
 @CustomLog
 public class EventingService {
 
-  private boolean allowUnmaskedEvents;
+  private final boolean allowUnmaskedEvents;
   private List<Class<? extends DhruvaEvent>> interestedEvents;
+  private final Sinks.Many<DhruvaEvent> sink;
+  private final Flux<DhruvaEvent> flux;
 
   public EventingService(boolean allowUnmaskedEvents) {
     this.allowUnmaskedEvents = allowUnmaskedEvents;
+    this.sink = Sinks.many().multicast().onBackpressureBuffer();
+    this.flux = this.sink.asFlux();
+    registerSubscription();
   }
 
   public void register(List<Class<? extends DhruvaEvent>> interestedEvents) {
     this.interestedEvents = interestedEvents;
   }
 
-  public Flux<DhruvaEvent> getLoggingEventFlux(List<DhruvaEvent> events) {
-    return Flux.fromIterable(events)
-        .filter(event -> event.getClass() == LoggingEvent.class)
-        .doOnNext(
+  private void registerSubscription() {
+    this.flux
+        .filter(
+            event ->
+                event.getClass() == LoggingEvent.class
+                    && interestedEvents != null
+                    && interestedEvents.contains(LoggingEvent.class))
+        .subscribe(
             event -> {
-              if (interestedEvents != null && interestedEvents.contains(LoggingEvent.class)) {
-                logger.debug("Start publishing logging events");
-                ConsumerFactory.getConsumerFactory()
-                    .getLoggerConsumer(event, allowUnmaskedEvents)
-                    .handleEvent();
-              }
+              logger.debug("Start publishing logging events");
+              consumerFactory().get().getLoggerConsumer(allowUnmaskedEvents).handleEvent(event);
             });
   }
 
-  /*public Flux<DhruvaEvent> getMatsEventFlux(List<DhruvaEvent> events) {
-    return Flux.fromIterable(events)
-            .filter(event -> event.getClass() == MatsEvent.class)
-            .doOnNext(event -> {
-                if (interestedEvents != null && interestedEvents.contains(MatsEvent.class)) {
-                    logger.debug("Start publishing mats events");
-                    ConsumerFactory.getConsumerFactory().getMatsConsumer(event).handleEvent();
-                }
-            });
-  }*/
+  private Supplier<ConsumerFactory> consumerFactory() {
+    return ConsumerFactory::getConsumerFactory;
+  }
 
   public void publishEvents(List<DhruvaEvent> events) {
-    getLoggingEventFlux(events).subscribe();
-    /*getMatsEventFlux(events).subscribe();*/
+    events.forEach(this.sink::tryEmitNext);
   }
 }
