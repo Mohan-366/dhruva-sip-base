@@ -111,13 +111,14 @@ public class DhruvaServerLogger implements ServerLogger {
   }
 
   private void sendEvent(SIPMessage message, boolean sender) {
-    boolean isInternallyGenerated = false;
+    // default values
     boolean isMidDialogReqest = false;
     boolean isRetransmitted = false;
     DhruvaAppRecord appRecord = null;
     EventingService eventingService = null;
     MESSAGE_TYPE messageType = MESSAGE_TYPE.RESPONSE;
     DIRECTION directionType = sender ? DIRECTION.OUT : DIRECTION.IN;
+    boolean isInternallyGenerated = directionType.equals(DIRECTION.OUT);
 
     if (message instanceof SIPRequest) {
       SIPRequest sipRequest = (SIPRequest) message;

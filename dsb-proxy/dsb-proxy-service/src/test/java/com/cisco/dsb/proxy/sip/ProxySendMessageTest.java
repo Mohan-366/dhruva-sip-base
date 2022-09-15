@@ -19,6 +19,7 @@ import java.text.ParseException;
 import javax.sip.*;
 import javax.sip.address.Hop;
 import javax.sip.address.Router;
+import javax.sip.message.Response;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import reactor.test.StepVerifier;
@@ -85,23 +86,26 @@ public class ProxySendMessageTest {
   }
 
   @Test
-  void testSendResponse2() throws SipException, DhruvaException {
+  void testSendResponse2() throws SipException, DhruvaException, ParseException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
-    doNothing().when(sipServerTransactionImpl).sendResponse(any());
-    ProxySendMessage.sendResponse(sipServerTransactionImpl, new SIPResponse(), true, null);
+    SIPResponse sipResponse = new SIPResponse();
+    sipResponse.setStatusCode(Response.OK);
+    doNothing().when(sipServerTransactionImpl).sendResponse(sipResponse);
+    ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());
   }
 
   @Test
-  void testSendResponse3() throws SipException, DhruvaException {
+  void testSendResponse3() throws SipException, DhruvaException, ParseException {
     SIPServerTransactionImpl sipServerTransactionImpl = mock(SIPServerTransactionImpl.class);
     when(sipServerTransactionImpl.getSipProvider()).thenReturn(null);
     doNothing().when(sipServerTransactionImpl).sendResponse(any());
 
     SIPResponse sipResponse = new SIPResponse();
     sipResponse.addHeader(new RemotePartyID());
+    sipResponse.setStatusCode(Response.OK);
     ProxySendMessage.sendResponse(sipServerTransactionImpl, sipResponse, true, null);
     verify(sipServerTransactionImpl).getSipProvider();
     verify(sipServerTransactionImpl).sendResponse(any());

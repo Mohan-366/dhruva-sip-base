@@ -545,6 +545,8 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
               response, provider, trans, new ExecutionContext());
       proxySIPResponse.setProxyTransaction(this);
       proxySIPResponse.setProxyInterface(((ProxyController) controller));
+      Optional.ofNullable(this.getServerTransaction())
+          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
       // invoke the final response method above
       controller.onFinalResponse(proxyClientTrans.getCookie(), proxySIPResponse);
 

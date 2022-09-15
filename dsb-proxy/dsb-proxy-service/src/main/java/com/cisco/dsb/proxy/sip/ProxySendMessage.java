@@ -46,18 +46,7 @@ public class ProxySendMessage {
     return Mono.<Void>fromRunnable(
             () -> {
               try {
-                Response response =
-                    JainSipHelper.getMessageFactory().createResponse(responseID, request);
-                SIPResponse sipResponse = (SIPResponse) response;
-                sipResponse.setApplicationData(
-                    MsgApplicationData.builder()
-                        .eventMetaData(EventMetaData.builder().isInternallyGenerated(true).build())
-                        .build());
-                if (serverTransaction != null) serverTransaction.sendResponse(response);
-                else sipProvider.sendResponse(response);
-
-                handleResponseLMA(sipProvider, sipResponse, true, false, null);
-                logger.info("Successfully sent async response for  {}", responseID);
+                sendResponse(responseID, callType, sipProvider, serverTransaction, request);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }
@@ -81,21 +70,11 @@ public class ProxySendMessage {
       ServerTransaction serverTransaction,
       SIPRequest request)
       throws DhruvaException {
-
     try {
       Response response = JainSipHelper.getMessageFactory().createResponse(responseID, request);
-      SIPResponse sipResponse = (SIPResponse) response;
-      sipResponse.setApplicationData(
-          MsgApplicationData.builder()
-              .eventMetaData(EventMetaData.builder().isInternallyGenerated(true).build())
-              .build());
-
-      if (serverTransaction != null) serverTransaction.sendResponse(response);
-      else sipProvider.sendResponse(response);
-      logger.info("Successfully sent response for  {}", responseID);
-
-      // LMA
-      handleResponseLMA(sipProvider, sipResponse, true, false, callType);
+      sendResponse(response, serverTransaction, sipProvider, true, callType);
+    } catch (DhruvaException e) {
+      throw e;
     } catch (Exception e) {
       throw new DhruvaException(e);
     }
@@ -123,12 +102,16 @@ public class ProxySendMessage {
               .eventMetaData(EventMetaData.builder().isInternallyGenerated(internal).build())
               .build());
 
-      if (serverTransaction != null) serverTransaction.sendResponse(response);
-      else sipProvider.sendResponse(response);
-
+      if (serverTransaction != null) {
+        serverTransaction.sendResponse(response);
+      } else {
+        sipProvider.sendResponse(response);
+      }
+      logger.info("Successfully sent response for  {}", response.getStatusCode());
       handleResponseLMA(sipProvider, sipResponse, internal, false, callType);
     } catch (Exception e) {
-      throw new DhruvaException(e);
+      throw new DhruvaException(
+          "Exception occurred while trying to send response:" + e.getCause(), e);
     }
   }
 
@@ -145,28 +128,12 @@ public class ProxySendMessage {
       boolean isInternallyGeneratedResponse,
       String callType)
       throws DhruvaException {
-    try {
-      // get provider to derive the transport
-      SipProvider sipProvider =
-          (serverTransaction instanceof SIPServerTransactionImpl)
-              ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
-              : null;
-      response.setApplicationData(
-          MsgApplicationData.builder()
-              .eventMetaData(
-                  EventMetaData.builder()
-                      .isInternallyGenerated(isInternallyGeneratedResponse)
-                      .build())
-              .build());
-
-      serverTransaction.sendResponse(response);
-
-      handleResponseLMA(sipProvider, response, isInternallyGeneratedResponse, false, callType);
-
-    } catch (Exception e) {
-      logger.error("Exception occurred while trying to send  response", e);
-      throw new DhruvaException(e);
-    }
+    // get provider to derive the transport
+    SipProvider sipProvider =
+        (serverTransaction instanceof SIPServerTransactionImpl)
+            ? ((SIPServerTransactionImpl) serverTransaction).getSipProvider()
+            : null;
+    sendResponse(response, serverTransaction, sipProvider, isInternallyGeneratedResponse, callType);
   }
 
   // This case happens only when proxy generates a new request.
@@ -180,14 +147,14 @@ public class ProxySendMessage {
       throws DhruvaException {
     try {
       SIPRequest sipRequest = (SIPRequest) request;
-      sipRequest.setApplicationData(
-          MsgApplicationData.builder()
-              .eventMetaData(EventMetaData.builder().isInternallyGenerated(true).build())
-              .build());
-      if (clientTransaction != null) clientTransaction.sendRequest();
-      else sipProvider.sendRequest(request);
+      setEventMetaData(sipRequest, true, null);
+      if (clientTransaction != null) {
+        clientTransaction.sendRequest();
+      } else {
+        sipProvider.sendRequest(request);
+      }
 
-      handleRequestLMA(sipRequest, sipProvider, callType, null);
+      handleRequestLMA(sipRequest, sipProvider, callType, true);
 
     } catch (Exception e) {
       throw new DhruvaException(e);
@@ -217,19 +184,16 @@ public class ProxySendMessage {
 
               if (transaction != null) {
                 SIPRequest request = (SIPRequest) transaction.getRequest();
-                setEventMetaData(proxySIPRequest, request);
+                setEventMetaData(request, false, proxySIPRequest.getAppRecord());
                 transaction.sendRequest();
               } else {
                 SIPRequest request = proxySIPRequest.getRequest();
-                setEventMetaData(proxySIPRequest, request);
+                setEventMetaData(request, false, proxySIPRequest.getAppRecord());
                 provider.sendRequest(request);
               }
 
               handleRequestLMA(
-                  proxySIPRequest.getRequest(),
-                  provider,
-                  proxySIPRequest.getCallTypeName(),
-                  proxySIPRequest.getAppRecord());
+                  proxySIPRequest.getRequest(), provider, proxySIPRequest.getCallTypeName(), false);
 
               return proxySIPRequest;
             })
@@ -237,19 +201,20 @@ public class ProxySendMessage {
     // TODO DSB, need to change this to fromExecutorService for metrics.
   }
 
-  private static void setEventMetaData(ProxySIPRequest proxySIPRequest, SIPRequest request) {
+  private static void setEventMetaData(
+      SIPRequest request, boolean isInternallyGenerated, DhruvaAppRecord appRecord) {
     request.setApplicationData(
         MsgApplicationData.builder()
             .eventMetaData(
                 EventMetaData.builder()
-                    .appRecord(proxySIPRequest.getAppRecord())
-                    .isInternallyGenerated(true)
+                    .appRecord(appRecord)
+                    .isInternallyGenerated(isInternallyGenerated)
                     .build())
             .build());
   }
 
   public static void handleRequestLMA(
-      SIPRequest request, SipProvider provider, String callType, DhruvaAppRecord appRecord) {
+      SIPRequest request, SipProvider provider, String callType, boolean isInternallyGenerated) {
     Transport transportType = LMAUtil.getTransportType(provider);
 
     if (metricServiceBean != null) {
@@ -261,7 +226,7 @@ public class ProxySendMessage {
           transportType,
           Event.DIRECTION.OUT,
           SipUtils.isMidDialogRequest(request),
-          true, // not generated
+          isInternallyGenerated,
           0L,
           String.valueOf(request.getRequestURI()),
           callType);

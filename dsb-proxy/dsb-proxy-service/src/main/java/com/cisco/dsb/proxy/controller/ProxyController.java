@@ -675,14 +675,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           try {
             // Reply to received CANCEL request with 200 OK --> to Client
             logger.info("Sending 200 (OK) response for received CANCEL");
-            Response sipResponse =
-                JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
+
             ProxySendMessage.sendResponse(
-                sipResponse,
-                serverTransaction,
+                Response.OK,
+                proxySIPRequest.getCallTypeName(),
                 sipProvider,
-                true,
-                proxySIPRequest.getCallTypeName());
+                serverTransaction,
+                sipRequest);
 
             // Sending CANCEL to server
             ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
