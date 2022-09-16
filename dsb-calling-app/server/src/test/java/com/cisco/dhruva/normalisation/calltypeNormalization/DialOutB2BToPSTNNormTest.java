@@ -2,6 +2,7 @@ package com.cisco.dhruva.normalisation.calltypeNormalization;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BToPSTNNorm;
@@ -37,7 +38,6 @@ public class DialOutB2BToPSTNNormTest {
   @Mock TrunkCookie cookie;
   @Mock EndPoint endpoint;
   LoadBalancer loadBalancer;
-  @Mock ServerGroup serverGroup;
   @Mock DhruvaNetwork dhruvaNetwork;
   @Mock SIPListenPoint sipListenPoint;
   @Mock CallingAppConfigurationProperty configurationProperty;
@@ -64,11 +64,9 @@ public class DialOutB2BToPSTNNormTest {
         .setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_OUT_TAG);
     when(proxySIPRequest.getRequest()).thenReturn(request);
     dialOutB2BToPSTNNorm.ingressNormalize().accept(proxySIPRequest);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN));
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN));
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE));
   }
 
   @Test
@@ -109,8 +107,8 @@ public class DialOutB2BToPSTNNormTest {
     // testing preNormalize
     dialOutB2BToPSTNNorm.egressPreNormalize().accept(proxySIPRequest);
 
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.DTG), null);
-    assertEquals(request.getTo().getParameter(SipParamConstants.DTG), null);
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.DTG));
+    assertNull(request.getTo().getParameter(SipParamConstants.DTG));
     assertEquals(((SipUri) request.getFrom().getAddress().getURI()).getHost(), "10.10.10.10");
     assertEquals(
         request.getHeader(SipConstants.P_ASSERTED_IDENTITY).toString().trim(),
@@ -121,8 +119,8 @@ public class DialOutB2BToPSTNNormTest {
     assertEquals(
         request.getHeader(SipConstants.DIVERSION).toString().trim(),
         "Diversion: <sip:+10982345764@10.10.10.10:5061>");
-    assertEquals(request.getHeader("X-BroadWorks-DNC"), null);
-    assertEquals(request.getHeader("X-BroadWorks-Correlation-Info"), null);
+    assertNull(request.getHeader("X-BroadWorks-DNC"));
+    assertNull(request.getHeader("X-BroadWorks-Correlation-Info"));
   }
 
   @Test
@@ -161,5 +159,16 @@ public class DialOutB2BToPSTNNormTest {
     assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
     assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
     assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "1.2.3.4");
+  }
+
+  @Test
+  public void testMidCallPostNormalize() throws ParseException {
+    request =
+        (SIPRequest) RequestHelper.createRequest("ACK", "10.10.10.10", 5060, "20.20.20.20", 5062);
+    request.setToTag("12345");
+    ((SipUri) request.getRequestURI()).setHost("30.30.30.30");
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    dialOutB2BToPSTNNorm.egressMidCallPostNormalize().accept(proxySIPRequest);
+    assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "30.30.30.30");
   }
 }

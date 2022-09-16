@@ -183,4 +183,63 @@ public class RequestHelper {
   public static Request getDOInvite(String requestUri) throws ParseException {
     return JainSipHelper.getMessageFactory().createRequest(getPlainInvite(requestUri, ""));
   }
+
+  private static String randomAlphaNumeric(int count) {
+    StringBuilder builder = new StringBuilder();
+    final String ALPHA_NUMERIC_STRING =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmopqrstuvwxyz0123456789";
+    while (count-- != 0) {
+      int character = (int) (Math.random() * ALPHA_NUMERIC_STRING.length());
+      builder.append(character);
+    }
+    return builder.toString();
+  }
+
+  public static Request createRequest(
+      String requestMethod, String localIP, int localPort, String remoteIP, int remotePort)
+      throws ParseException {
+    Request msg = null;
+    msg =
+        JainSipHelper.getMessageFactory()
+            .createRequest(
+                getSipRequestAsString(requestMethod, localIP, localPort, remoteIP, remotePort));
+    return msg;
+  }
+
+  public static String getSipRequestAsString(
+      String requestMethod, String localIP, int localPort, String remoteIP, int remotePort) {
+    String str =
+        requestMethod.toUpperCase()
+            + " sip:service@webex.cisco.com SIP/2.0\n"
+            + "Via: SIP/2.0/UDP "
+            + remoteIP
+            + ":"
+            + remotePort
+            + ";branch=z9hG4bK-"
+            + System.nanoTime()
+            + "\n"
+            + "From: sipp <sip:sipp@"
+            + remoteIP
+            + ">;tag=19468SIPpTag001\n"
+            + "To: service <sip:service@"
+            + localIP
+            + ">\n"
+            + "Call-ID: "
+            + randomAlphaNumeric(20)
+            + "\n"
+            + "CSeq: 1 "
+            + requestMethod.toUpperCase()
+            + "\n"
+            + "Contact: <sip:sipp@"
+            + remoteIP
+            + ":"
+            + remotePort
+            + ">\n"
+            + "Max-Forwards: 70\n"
+            + "Subject: Performance Test\n"
+            + "Content-Type: application/sdp\n"
+            + "Content-Length: 0"
+            + "\r\n\r\n";
+    return str;
+  }
 }

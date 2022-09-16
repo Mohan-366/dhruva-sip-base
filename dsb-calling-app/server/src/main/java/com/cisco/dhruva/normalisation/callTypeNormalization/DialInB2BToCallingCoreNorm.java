@@ -1,6 +1,7 @@
 package com.cisco.dhruva.normalisation.callTypeNormalization;
 
 import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.normalize;
+import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.replaceIPInHeader;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.HeaderToNormalize;
@@ -10,6 +11,7 @@ import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
 import com.cisco.dsb.trunk.util.SipParamConstants;
+import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,8 +102,22 @@ public class DialInB2BToCallingCoreNorm extends Normalization {
         normalize(request, endPoint, headersToReplaceWithRemoteIP);
       };
 
+  private Consumer<ProxySIPRequest> egressMidCallPostNormConsumer =
+      proxySIPRequest -> {
+        if (logger.isDebugEnabled()) {
+          headersToReplaceWithRemoteIP.forEach(
+              headerForIPReplacement ->
+                  logger.debug(
+                      "Request Post-normalization for mid-call: headersToReplaceWithRemoteIP: {}",
+                      headerForIPReplacement.header));
+        }
+        SipUri rUri = ((SipUri) proxySIPRequest.getRequest().getRequestURI());
+        replaceIPInHeader(
+            proxySIPRequest.getRequest(), headersToReplaceWithRemoteIP, rUri.getHost());
+      };
+
   @Override
-  public Consumer ingressNormalize() {
+  public Consumer<ProxySIPRequest> ingressNormalize() {
     return ingressNormConsumer;
   }
 
@@ -116,7 +132,12 @@ public class DialInB2BToCallingCoreNorm extends Normalization {
   }
 
   @Override
-  public Consumer setNormForFutureResponse() {
+  public Consumer<ProxySIPRequest> egressMidCallPostNormalize() {
+    return egressMidCallPostNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> setNormForFutureResponse() {
     return getResponseNormConsumerSetter();
   }
 }

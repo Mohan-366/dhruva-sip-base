@@ -45,7 +45,7 @@ public class DialInPSTNToB2BNorm extends Normalization {
   List<HeaderToNormalize> headersToReplaceWithRemoteIPInResponse =
       Collections.singletonList(new HeaderToNormalize(SipConstants.FROM, false));
 
-  private Consumer<ProxySIPRequest> ingressNormConsumer = proxySIPRequest -> {};
+  private Consumer<ProxySIPRequest> ingressNormConsumer = ProxySIPRequest -> {};
 
   private Consumer<ProxySIPRequest> egressPreNormConsumer =
       proxySIPRequest -> {
@@ -66,7 +66,9 @@ public class DialInPSTNToB2BNorm extends Normalization {
         normalize(cookie.getClonedRequest().getRequest(), endPoint);
       };
 
-  private Consumer<ProxySIPResponse> responseNorm =
+  private Consumer<ProxySIPRequest> egressMidCallPostNormConsumer = proxySIPRequest -> {};
+
+  public Consumer<ProxySIPResponse> responseNorm =
       proxySIPResponse -> {
         if (logger.isDebugEnabled()) {
           headersToReplaceWithRemoteIPInResponse.forEach(
@@ -91,7 +93,7 @@ public class DialInPSTNToB2BNorm extends Normalization {
       };
 
   @Override
-  public Consumer ingressNormalize() {
+  public Consumer<ProxySIPRequest> ingressNormalize() {
     return ingressNormConsumer;
   }
 
@@ -106,7 +108,12 @@ public class DialInPSTNToB2BNorm extends Normalization {
   }
 
   @Override
-  public Consumer setNormForFutureResponse() {
+  public Consumer<ProxySIPRequest> egressMidCallPostNormalize() {
+    return egressMidCallPostNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> setNormForFutureResponse() {
     setResponseNorm(responseNorm);
     return getResponseNormConsumerSetter();
   }

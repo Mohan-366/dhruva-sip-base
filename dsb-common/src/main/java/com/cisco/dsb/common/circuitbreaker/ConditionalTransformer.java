@@ -14,7 +14,7 @@ public class ConditionalTransformer<T> implements UnaryOperator<Publisher<T>> {
   public static <T> UnaryOperator<T> of(
       DsbCircuitBreaker dsbCircuitBreaker,
       EndPoint endPoint,
-      Predicate cbRecordResult,
+      Predicate<Object> cbRecordResult,
       CircuitBreakConfig cbConfig) {
     if (dsbCircuitBreaker == null) {
       return new ConditionalTransformer();

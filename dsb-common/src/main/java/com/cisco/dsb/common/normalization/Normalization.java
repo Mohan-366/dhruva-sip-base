@@ -13,5 +13,7 @@ public interface Normalization {
 
   public BiConsumer egressPostNormalize();
 
+  public Consumer egressMidCallPostNormalize();
+
   public Consumer setNormForFutureResponse();
 }

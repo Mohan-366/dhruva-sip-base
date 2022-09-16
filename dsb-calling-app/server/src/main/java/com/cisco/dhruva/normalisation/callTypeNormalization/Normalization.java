@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 public abstract class Normalization implements com.cisco.dsb.common.normalization.Normalization {
 
-  protected Consumer<ProxySIPResponse> responseNorm = proxySIPResponse -> {};
+  public Consumer<ProxySIPResponse> responseNorm = proxySIPResponse -> {};
   protected Consumer<ProxySIPRequest> responseNormConsumerSetter =
       (proxySIPRequest -> {
         ((ProxyCookieImpl) proxySIPRequest.getCookie()).setResponseNormConsumer(getResponseNorm());

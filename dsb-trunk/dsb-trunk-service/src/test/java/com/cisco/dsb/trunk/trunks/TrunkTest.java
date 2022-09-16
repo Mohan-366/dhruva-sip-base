@@ -31,10 +31,12 @@ import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.proxy.sip.ProxyInterface;
 import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.TrunkTestUtil;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
 import com.cisco.dsb.trunk.util.NormalizationHelper;
+import com.cisco.dsb.trunk.util.RequestHelper;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
@@ -81,6 +83,8 @@ public class TrunkTest {
   @Mock protected SipServerLocatorService locatorService;
   @Mock protected LocateSIPServersResponse locateSIPServersResponse;
   @Mock protected CommonConfigurationProperties commonConfigurationProperties;
+  @Mock ProxyInterface proxyInterface;
+
   @InjectMocks protected DsbCircuitBreaker dsbCircuitBreaker;
   protected RoutePolicy sgRoutePolicy;
   private TrunkTestUtil trunkTestUtil;
@@ -88,7 +92,7 @@ public class TrunkTest {
   MetricService metricService;
   ApplicationContext context;
   SpringApplicationContext springApplicationContext = new SpringApplicationContext();
-  Normalization normalization = new NormalizationHelper();
+  NormalizationHelper normalization = new NormalizationHelper();
 
   @BeforeTest
   public void init() {
@@ -1184,6 +1188,59 @@ public class TrunkTest {
       return matcher.group();
     } else {
       return "0.0.0.0";
+    }
+  }
+
+  @Test(description = "Test mid-call request sent to proxy after normalization")
+  public void testMidCallProxyRequest() throws ParseException {
+    SampleTrunk trunk = new SampleTrunk();
+    when(proxySIPRequest.isMidCall()).thenReturn(true);
+    when(proxySIPRequest.getProxyInterface()).thenReturn(proxyInterface);
+    SIPRequest request =
+        (SIPRequest) RequestHelper.createRequest("ACK", "10.10.10.10", 5060, "20.20.20.20", 5062);
+    request.setToTag("12345");
+    ((SipUri) request.getRequestURI()).setHost("30.30.30.30");
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    CompletableFuture<ProxySIPResponse> response = new CompletableFuture<>();
+    response.complete(successProxySIPResponse);
+    when(proxyInterface.proxyRequest(any())).thenReturn(response);
+    String ip = "1.1.1.1";
+    // Some normalization
+    Consumer<ProxySIPRequest> egressMidCallPostNormConsumer =
+        proxySIPRequest -> {
+          System.out.println("In mid call Post Norm for Sample Trunk");
+          try {
+            ((SipUri) proxySIPRequest.getRequest().getTo().getAddress().getURI()).setHost(ip);
+          } catch (ParseException e) {
+            System.out.println(e);
+          }
+        };
+    normalization.setEgressMidCallPostNormConsumer(egressMidCallPostNormConsumer);
+    // Request should be properly sent to the proxy post normalization
+    StepVerifier.create(trunk.processEgress(proxySIPRequest, normalization))
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
+    // Application of normalization validated here
+    Assert.assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), ip);
+  }
+
+  public class SampleTrunk extends AbstractTrunk {
+
+    @Override
+    public ProxySIPRequest processIngress(
+        ProxySIPRequest proxySIPRequest, Normalization normalization) {
+      return null;
+    }
+
+    @Override
+    public Mono<ProxySIPResponse> processEgress(
+        ProxySIPRequest proxySIPRequest, Normalization normalization) {
+      return sendToProxy(proxySIPRequest, normalization);
+    }
+
+    @Override
+    protected boolean enableRedirection() {
+      return false;
     }
   }
 }

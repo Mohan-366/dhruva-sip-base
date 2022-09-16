@@ -13,7 +13,6 @@ import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.util.EndPoint;
-import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
@@ -27,17 +26,11 @@ import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.ContactList;
-import gov.nist.javax.sip.header.HeaderFactoryImpl;
-import gov.nist.javax.sip.message.SIPMessage;
-import java.text.ParseException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.sip.header.Header;
 import javax.sip.message.Response;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -122,57 +115,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   protected abstract boolean enableRedirection();
 
-  // This code has to be removed
-  // If we use normalize class, it will be cyclic dependency
-  /// Hence copied for time being
-  // TODO
-  private static final String IPADDRESS_PATTERN =
-      "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
-
-  private static HeaderFactoryImpl headerFactory = new HeaderFactoryImpl();
-
-  private static String getIPToReplace(String headerString) {
-    Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
-    Matcher matcher = pattern.matcher(headerString);
-    if (matcher.find()) {
-      return matcher.group();
-    } else {
-      return null;
-    }
-  }
-
-  private void replaceIPInHeader(SIPMessage message, List<String> headerList, String ipAddress) {
-    if (ipAddress == null) {
-      logger.error(
-          "IP address cannot be determined. IP Address normalization cannot be performed.");
-      return;
-    }
-    headerList.forEach(
-        headerString -> {
-          Header header = message.getHeader(headerString);
-          if (header == null) {
-            return;
-          }
-          String headerName = header.getName();
-          String headerValue = header.toString().split(headerName + ": ")[1];
-          String ipToReplace = getIPToReplace(headerValue);
-          if (ipToReplace == null) {
-            return;
-          }
-          headerValue = headerValue.replaceFirst(ipToReplace, ipAddress);
-          try {
-            message.setHeader(headerFactory.createHeader(headerName, headerValue));
-          } catch (ParseException e) {
-            logger.error("Error while replacingIPHeader normalization in {}: {}", headerName, e);
-          }
-        });
-  }
-
   protected Mono<ProxySIPResponse> sendToProxy(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
     // mid call requests must be simply be sent to proxy by-passing LB logic
     if (proxySIPRequest.isMidCall()) {
-      return sendMidCallRequestToProxy(proxySIPRequest);
+      return sendMidCallRequestToProxy(proxySIPRequest, normalization);
     }
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest);
     String userId = null;
@@ -485,7 +432,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   @Getter
   @Setter
-  public class TrunkCookie {
+  public static class TrunkCookie {
     ProxySIPRequest clonedRequest;
     ProxySIPResponse bestResponse;
     LoadBalancer sgeLoadBalancer;
@@ -531,17 +478,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 getEgress().getRoutePolicy().getCircuitBreakConfig()));
   }
 
-  private Mono<ProxySIPResponse> sendMidCallRequestToProxy(ProxySIPRequest proxySIPRequest) {
-    logger.info(
-        "Sending to proxy for midDiallog request {}", proxySIPRequest.getRequest().getRequestURI());
-
-    // For mid-dialog requests, post normalization is not applied. Hence this workaround.Need to
-    // clean up
-    List<String> headersToReplaceWithRemoteIP = Arrays.asList(SipConstants.TO);
-    SipUri rUri = ((SipUri) proxySIPRequest.getRequest().getRequestURI());
-    replaceIPInHeader(proxySIPRequest.getRequest(), headersToReplaceWithRemoteIP, rUri.getHost());
-    return (Mono.defer(
-        () -> Mono.fromFuture(proxySIPRequest.getProxyInterface().proxyRequest(proxySIPRequest))));
+  private Mono<ProxySIPResponse> sendMidCallRequestToProxy(
+      ProxySIPRequest proxySIPRequest, Normalization normalization) {
+    normalization.egressMidCallPostNormalize().accept(proxySIPRequest);
+    logger.debug("Sending midDialog request to proxy");
+    return Mono.fromFuture(proxySIPRequest.getProxyInterface().proxyRequest(proxySIPRequest));
   }
 
   private EndPoint getActiveRedirectionEndpoint(TrunkCookie cookie) {

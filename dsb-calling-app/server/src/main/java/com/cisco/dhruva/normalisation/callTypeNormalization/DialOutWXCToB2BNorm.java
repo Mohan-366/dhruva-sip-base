@@ -65,6 +65,8 @@ public class DialOutWXCToB2BNorm extends Normalization {
         normalize(cookie.getClonedRequest().getRequest(), endPoint);
       };
 
+  private Consumer<ProxySIPRequest> egressMidCallPostNormConsumer = proxySIPRequest -> {};
+
   private Consumer<ProxySIPResponse> responseNorm =
       proxySIPResponse -> {
         if (logger.isDebugEnabled()) {
@@ -90,7 +92,7 @@ public class DialOutWXCToB2BNorm extends Normalization {
       };
 
   @Override
-  public Consumer ingressNormalize() {
+  public Consumer<ProxySIPRequest> ingressNormalize() {
     return ingressNormConsumer;
   }
 
@@ -105,7 +107,13 @@ public class DialOutWXCToB2BNorm extends Normalization {
   }
 
   @Override
-  public Consumer setNormForFutureResponse() {
+  public Consumer<ProxySIPRequest> egressMidCallPostNormalize() {
+    // nothing to do here
+    return egressMidCallPostNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> setNormForFutureResponse() {
     setResponseNorm(responseNorm);
     return getResponseNormConsumerSetter();
   }

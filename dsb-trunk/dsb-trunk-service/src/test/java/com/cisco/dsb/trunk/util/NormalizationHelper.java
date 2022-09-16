@@ -12,12 +12,14 @@ public class NormalizationHelper implements Normalization {
 
   private Consumer<ProxySIPRequest> preNormConsumer = proxySIPRequest -> {};
 
+  private Consumer<ProxySIPRequest> responseNormConsumer = proxySIPRequest -> {};
+
   private BiConsumer<TrunkCookie, EndPoint> postNormConsumer = (trunkCookie, endPoint) -> {};
 
-  private Consumer<ProxySIPRequest> responseNormConsumer = (proxySIPRequest) -> {};
+  private Consumer<ProxySIPRequest> egressMidCallPostNormConsumer = proxySIPRequest -> {};
 
   @Override
-  public Consumer ingressNormalize() {
+  public Consumer<ProxySIPRequest> ingressNormalize() {
     return ingressNormConsumer;
   }
 
@@ -32,7 +34,16 @@ public class NormalizationHelper implements Normalization {
   }
 
   @Override
-  public Consumer setNormForFutureResponse() {
+  public Consumer<ProxySIPRequest> egressMidCallPostNormalize() {
+    return egressMidCallPostNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> setNormForFutureResponse() {
     return responseNormConsumer;
+  }
+
+  public void setEgressMidCallPostNormConsumer(Consumer<ProxySIPRequest> consumer) {
+    this.egressMidCallPostNormConsumer = consumer;
   }
 }

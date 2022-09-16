@@ -156,7 +156,7 @@ public class NormalizeUtil {
     };
   }
 
-  private static void replaceIPInHeader(
+  public static void replaceIPInHeader(
       SIPMessage message, List<HeaderToNormalize> headerList, String ipAddress) {
     if (ipAddress == null) {
       logger.error(

@@ -2,7 +2,8 @@ package com.cisco.dhruva.normalisation.calltypeNormalization;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BToCallingCoreNorm;
@@ -68,11 +69,9 @@ public class DialInB2BToCallingCoreNormTest {
     ((SipUri) request.getRequestURI())
         .setParameter(SipParamConstants.CALLTYPE, SipParamConstants.DIAL_IN_TAG);
     dialInB2BToCallingCoreNorm.ingressNormalize().accept(proxySIPRequest);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN), null);
-    assertEquals(
-        ((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN), null);
-    assertEquals(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE), null);
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_OPN));
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.X_CISCO_DPN));
+    assertNull(((SipUri) request.getRequestURI()).getParameter(SipParamConstants.CALLTYPE));
   }
 
   @Test
@@ -128,7 +127,7 @@ public class DialInB2BToCallingCoreNormTest {
         request.getHeader(SipConstants.P_PREFERRED_IDENTITY).toString().trim(),
         "P-Preferred-Identity: <sip:+10982345764@10.10.10.10:5061>");
     ListIterator<SIPHeader> diversionHeadersReceived = request.getHeaders(SipConstants.DIVERSION);
-    assertTrue(diversionHeadersReceived != null);
+    assertNotNull(diversionHeadersReceived);
     int count = 0;
     while (diversionHeadersReceived.hasNext()) {
       assertEquals(
@@ -136,12 +135,12 @@ public class DialInB2BToCallingCoreNormTest {
           "Diversion: <sip:+10982345764@10.10.10.10:5061>");
       count++;
     }
-    assertTrue(count == 4);
+    assertEquals(count, 4);
     assertEquals(
         request.getHeader(SipConstants.DIVERSION).toString().trim(),
         "Diversion: <sip:+10982345764@10.10.10.10:5061>");
-    assertEquals(request.getHeader(SipConstants.SERVER), null);
-    assertEquals(request.getHeader(SipConstants.USER_AGENT), null);
+    assertNull(request.getHeader(SipConstants.SERVER));
+    assertNull(request.getHeader(SipConstants.USER_AGENT));
   }
 
   @Test
@@ -184,5 +183,16 @@ public class DialInB2BToCallingCoreNormTest {
     assertEquals(((SipUri) request.getRequestURI()).getHost(), "1.2.3.4");
     assertEquals(((SipUri) request.getRequestURI()).getPort(), 5060);
     assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "1.2.3.4");
+  }
+
+  @Test
+  public void testMidCallPostNormalize() throws ParseException {
+    request =
+        (SIPRequest) RequestHelper.createRequest("ACK", "10.10.10.10", 5060, "20.20.20.20", 5062);
+    request.setToTag("12345");
+    ((SipUri) request.getRequestURI()).setHost("30.30.30.30");
+    when(proxySIPRequest.getRequest()).thenReturn(request);
+    dialInB2BToCallingCoreNorm.egressMidCallPostNormalize().accept(proxySIPRequest);
+    assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), "30.30.30.30");
   }
 }

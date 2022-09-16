@@ -61,6 +61,10 @@
             <version>3.9</version>
             <scope>test</scope>
         </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+      </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -26,7 +26,7 @@ public class DsbCircuitBreaker implements RemovalListener {
 
   @SneakyThrows
   public CircuitBreaker getOrCreateCircuitBreaker(
-      EndPoint endPoint, Predicate recordResult, CircuitBreakConfig circuitBreakConfig) {
+      EndPoint endPoint, Predicate<Object> recordResult, CircuitBreakConfig circuitBreakConfig) {
     String key = endPoint.getHost() + endPoint.getPort() + endPoint.getProtocol();
     return cache.get(
         key,
@@ -37,7 +37,7 @@ public class DsbCircuitBreaker implements RemovalListener {
   }
 
   private CircuitBreaker createCircuitBreaker(
-      String key, Predicate recordResult, CircuitBreakConfig config) {
+      String key, Predicate<Object> recordResult, CircuitBreakConfig config) {
 
     CircuitBreakerConfig circuitBreakerConfig =
         CircuitBreakerConfig.custom()
@@ -55,12 +55,7 @@ public class DsbCircuitBreaker implements RemovalListener {
   }
 
   private void logCircuitBreakerEvents(CircuitBreaker circuitBreaker) {
-    circuitBreaker
-        .getEventPublisher()
-        .onEvent(
-            event -> {
-              logger.info(event.toString());
-            });
+    circuitBreaker.getEventPublisher().onEvent(event -> logger.info(event.toString()));
   }
 
   public Optional<DsbCircuitBreakerState> getCircuitBreakerState(EndPoint endpoint) {

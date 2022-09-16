@@ -1,6 +1,7 @@
 package com.cisco.dhruva.normalisation.callTypeNormalization;
 
 import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.normalize;
+import static com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.replaceIPInHeader;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dhruva.normalisation.callTypeNormalization.NormalizeUtil.HeaderToNormalize;
@@ -10,6 +11,7 @@ import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
 import com.cisco.dsb.trunk.util.SipParamConstants;
+import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,11 +70,6 @@ public class DialOutB2BToPSTNNorm extends Normalization {
 
   private Consumer<ProxySIPRequest> egressPreNormConsumer =
       proxySIPRequest -> {
-        // apply pre Route normalisation specific to PSTN Trunk- None as of now
-        // remove DTG params.
-        // Remove dtg parameter in To header.We should not leak internal routing details.
-        // Calling Dial out header format To:
-        // <sip:+18776684488@10.252.103.171:5060;user=phone;dtg=DhruBwFxSIUS>
         DhruvaNetwork outgoingNetwork = DhruvaNetwork.getNetwork(outgoingNetworkString).get();
         logger.debug(
             "DialOutB2BToPSTN egress-pre-normalization headersToRemove: {}", headersToRemove);
@@ -113,8 +110,22 @@ public class DialOutB2BToPSTNNorm extends Normalization {
         normalize(request, endPoint, headersToReplaceWithRemoteIP);
       };
 
+  private Consumer<ProxySIPRequest> egressMidCallPostNormConsumer =
+      proxySIPRequest -> {
+        if (logger.isDebugEnabled()) {
+          headersToReplaceWithRemoteIP.forEach(
+              headerForIPReplacement ->
+                  logger.debug(
+                      "Request Post-normalization for mid-call: headersToReplaceWithRemoteIP: {}",
+                      headerForIPReplacement.header));
+        }
+        SipUri rUri = ((SipUri) proxySIPRequest.getRequest().getRequestURI());
+        replaceIPInHeader(
+            proxySIPRequest.getRequest(), headersToReplaceWithRemoteIP, rUri.getHost());
+      };
+
   @Override
-  public Consumer ingressNormalize() {
+  public Consumer<ProxySIPRequest> ingressNormalize() {
     return ingressNormConsumer;
   }
 
@@ -129,7 +140,12 @@ public class DialOutB2BToPSTNNorm extends Normalization {
   }
 
   @Override
-  public Consumer setNormForFutureResponse() {
+  public Consumer<ProxySIPRequest> egressMidCallPostNormalize() {
+    return egressMidCallPostNormConsumer;
+  }
+
+  @Override
+  public Consumer<ProxySIPRequest> setNormForFutureResponse() {
     return getResponseNormConsumerSetter();
   }
 }
