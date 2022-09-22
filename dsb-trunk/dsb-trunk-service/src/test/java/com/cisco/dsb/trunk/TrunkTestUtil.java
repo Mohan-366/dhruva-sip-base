@@ -79,11 +79,9 @@ public class TrunkTestUtil {
             .build();
     egrees.setLbType(LBType.WEIGHT);
     egrees.setRoutePolicyFromConfig(rp);
-    serverGroups.stream()
+    serverGroups
         .forEach(
-            sg -> {
-              serverGroupMap.put(sg.getHostName(), sg);
-            });
+            sg -> serverGroupMap.put(sg.getHostName(), sg));
     abstractTrunk.setEgress(egrees);
     abstractTrunk.setDnsServerGroupUtil(dnsServerGroupUtil);
     abstractTrunk.setDsbCircuitBreaker(dsbCircuitBreaker);
@@ -108,7 +106,7 @@ public class TrunkTestUtil {
     return hops;
   }
 
-  public ContactList getContactList(int count, String type)
+  public ContactList getContactList(int count, String type, String hostname)
       throws ParseException, InvalidArgumentException {
     ContactList contactList = new ContactList();
     float[] qValues = {0.9f, 0.8f, 0.4f};
@@ -123,7 +121,7 @@ public class TrunkTestUtil {
           break;
         case "a":
         default:
-          uri.setHost(faker.internet().domainName());
+          uri.setHost(hostname!=null?hostname:faker.internet().domainName());
           break;
       }
       uri.setPort(faker.number().numberBetween(5060, 5070));
@@ -139,6 +137,7 @@ public class TrunkTestUtil {
   public List<ServerGroup> getNSServerGroups(RoutePolicy sgRoutePolicy) {
     ServerGroup sg1 =
         ServerGroup.builder()
+            .setName("ns1")
             .setHostName("ns1.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)
@@ -150,6 +149,7 @@ public class TrunkTestUtil {
 
     ServerGroup sg2 =
         ServerGroup.builder()
+            .setName("ns2")
             .setHostName("ns2.akg.com")
             .setSgType(SGType.A_RECORD)
             .setPort(5060)

@@ -34,19 +34,25 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   @Builder.Default private Transport transport = Transport.UDP;
   private int port;
 
+  @Builder.Default
+  private boolean enableRedirectionOptions = false; // TODO: default should be true or false?
+
   @Override
   public boolean equals(Object a) {
     if (this == a) return true;
     if (a instanceof ServerGroup) {
       ServerGroup sg = (ServerGroup) a;
-      return new EqualsBuilder().append(sg.name, this.name).isEquals();
+      return new EqualsBuilder()
+          .append(sg.name, this.name)
+          .append(sg.hostName, this.hostName)
+          .isEquals();
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder().append(name).toHashCode();
+    return new HashCodeBuilder().append(name).append(hostName).toHashCode();
   }
 
   public void setRoutePolicy(String routePolicy) {
@@ -106,7 +112,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
    * @return
    *     <p>A negative integer if this object has a higher q-value, a positive integer if this
    *     object has a lower q-value, or <code>0</code> if this object has the same q-value.
-   * @throws ClassCastException
+   * @throws ClassCastException thrown if obj is not of type ServerGroup
    */
   @Override
   public int compareTo(Object obj) throws ClassCastException {
@@ -125,18 +131,15 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
     if (!this.equals(obj) || (this.compareTo(obj) != 0)) {
       return false;
     }
-
-    if (this.networkName.equals(obj.networkName)
-        && this.pingOn == obj.pingOn
-        && this.transport.equals(obj.transport)
-        && this.lbType.equals(obj.lbType)
-        && this.sgType.equals(obj.sgType)
-        && ((this.routePolicy == null && obj.routePolicy == null)
-            || this.routePolicy.equals(obj.routePolicy))
-        && ((this.optionsPingPolicy == null && obj.optionsPingPolicy == null)
-            || this.optionsPingPolicy.equals(obj.optionsPingPolicy))) {
-      return true;
-    } else return false;
+    return new EqualsBuilder()
+        .append(this.networkName, obj.networkName)
+        .append(this.pingOn, obj.pingOn)
+        .append(this.transport, obj.transport)
+        .append(this.lbType, obj.lbType)
+        .append(this.sgType, obj.sgType)
+        .append(this.routePolicy, obj.routePolicy)
+        .append(this.optionsPingPolicy, obj.optionsPingPolicy)
+        .isEquals();
   }
 
   @Override

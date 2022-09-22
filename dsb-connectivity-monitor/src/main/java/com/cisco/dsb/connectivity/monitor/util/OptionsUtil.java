@@ -42,8 +42,8 @@ public class OptionsUtil {
 
     ToHeader toHeader =
         JainSipHelper.createToHeader("pingTo", "pingTo", element.getIpAddress(), null);
-    StringBuffer sb = new StringBuffer(80);
-    sb.append("sip:" + element.getIpAddress() + ":" + element.getPort());
+    StringBuilder sb = new StringBuilder(80);
+    sb.append("sip:").append(element.getIpAddress()).append(":").append(element.getPort());
     SipURI requestUri = JainSipHelper.createSipURI(sb.toString());
     sb.setLength(0);
 
@@ -117,11 +117,11 @@ public class OptionsUtil {
     } else if (oldMap == null || newMap == null || oldMap.size() != newMap.size()) {
       return true;
     } else {
-      Boolean result = false;
+      boolean result = false;
       for (Map.Entry<String, ServerGroup> sg : newMap.entrySet()) {
         ServerGroup serverGroupNew = sg.getValue();
         ServerGroup serverGroupOld = oldMap.get(sg.getKey());
-        if (serverGroupNew.equals(serverGroupOld)) {
+        if (serverGroupNew.getName().equals(serverGroupOld.getName())) {
           if (!serverGroupNew.isCompleteObjectEqual(serverGroupOld)) {
             return true;
           } else {
@@ -131,12 +131,7 @@ public class OptionsUtil {
                 result =
                     (serverGroupOld.getElements().stream()
                         .allMatch(
-                            sgeOld -> {
-                              if (sgeOld.compareTo(sgeNew) != 0) {
-                                return true;
-                              }
-                              return false;
-                            }));
+                            sgeOld -> sgeOld.compareTo(sgeNew) != 0));
                 if (result) {
                   return true;
                 }
@@ -144,11 +139,8 @@ public class OptionsUtil {
             }
           }
         }
-        if (result) {
-          return true;
-        }
       }
-      return result;
+      return false;
     }
   }
 }

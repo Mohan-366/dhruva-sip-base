@@ -14,7 +14,10 @@ public class ServerGroupTest {
 
   @Test
   public void testEqualsSG() {
-    EqualsVerifier.simple().forClass(ServerGroup.class).withOnlyTheseFields("name").verify();
+    EqualsVerifier.simple()
+        .forClass(ServerGroup.class)
+        .withOnlyTheseFields("name", "hostName")
+        .verify();
   }
 
   @Test

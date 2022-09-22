@@ -175,7 +175,7 @@ public class TrunkTest {
   }
 
   @Test(description = "single SG with A record")
-  public void testSingleARecord() throws ParseException {
+  public void testSingleARecord() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
 
     ServerGroup sg1 =
@@ -193,9 +193,8 @@ public class TrunkTest {
     ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
     List<Hop> getHops = trunkTestUtil.getHops(2, sg1, false);
     getHops.forEach(
-        hop -> {
-          expectedValues.put(hop.getHost() + ":" + hop.getPort() + ":" + hop.getTransport(), 1l);
-        });
+        hop ->
+            expectedValues.put(hop.getHost() + ":" + hop.getPort() + ":" + hop.getTransport(), 1L));
 
     // define proxySIPRequest, locatorService Behavior
     doAnswer(
@@ -225,13 +224,13 @@ public class TrunkTest {
 
     // verification
 
-    Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
+    Assert.assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
   }
 
   @Test(description = "single static sg")
-  public void testSingleStatic() throws ParseException {
+  public void testSingleStatic() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     TrunkConfigurationProperties trunkConfigurationProperties = new TrunkConfigurationProperties();
     ServerGroup sg1 =
@@ -252,9 +251,7 @@ public class TrunkTest {
 
     ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
     serverGroupElements.forEach(
-        serverGroupElement -> {
-          expectedValues.put(serverGroupElement.toUniqueElementString(), 1l);
-        });
+        serverGroupElement -> expectedValues.put(serverGroupElement.toUniqueElementString(), 1L));
 
     ProxySIPResponse bestResponse = mock(ProxySIPResponse.class);
     AtomicInteger state =
@@ -283,7 +280,7 @@ public class TrunkTest {
         .expectNext(bestResponse)
         .verifyComplete();
 
-    Assert.assertTrue(expectedValues.equals(antaresTrunk.getLoadBalancerMetric()));
+    Assert.assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
     // verification
     verify(proxySIPRequest, times(4)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
@@ -360,7 +357,7 @@ public class TrunkTest {
   }
 
   @Test(description = "combination of static and dynamic")
-  public void testStaticAndDynamic() throws ParseException {
+  public void testStaticAndDynamic() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
@@ -434,7 +431,7 @@ public class TrunkTest {
   }
 
   @Test(description = "multiple static sg")
-  public void testMultipleStatic() throws ParseException {
+  public void testMultipleStatic() {
 
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
@@ -551,7 +548,7 @@ public class TrunkTest {
   }
 
   @Test(description = "multiple dynamic sg")
-  public void testMultipleDynamic() throws ParseException {
+  public void testMultipleDynamic() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
@@ -706,20 +703,6 @@ public class TrunkTest {
         .when(rUri)
         .getParameter(SipParamConstants.CALLTYPE);
 
-    Consumer<ProxySIPRequest> requestConsumer = request -> {};
-    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer =
-        (trunkCookie, endPoint) -> {
-          SipUri rUri = ((SipUri) trunkCookie.getClonedRequest().getRequest().getRequestURI());
-          try {
-            rUri.setHost(
-                ((ServerGroup) trunkCookie.getSgLoadBalancer().getCurrentElement()).getHostName());
-          } catch (ParseException e) {
-            throw new DhruvaRuntimeException(
-                ErrorCode.APP_REQ_PROC,
-                "Unable to change Host portion of rUri",
-                e); // should this be Trunk.RETRY??
-          }
-        };
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
@@ -777,6 +760,7 @@ public class TrunkTest {
                       try {
                         Thread.sleep(10000);
                       } catch (InterruptedException e) {
+                        System.out.println("Caught Interrupted Exception");
                       }
                       return successProxySIPResponse;
                     });
@@ -816,7 +800,7 @@ public class TrunkTest {
   }
 
   @Test
-  public void testEgressPSTN() throws ParseException {
+  public void testEgressPSTN() {
     PSTNTrunk pstnTrunk = new PSTNTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
@@ -875,7 +859,7 @@ public class TrunkTest {
   }
 
   @Test
-  public void testEgressCalling() throws ParseException {
+  public void testEgressCalling() {
     CallingTrunk callingTrunk = new CallingTrunk();
     ServerGroup sg1 =
         ServerGroup.builder()
@@ -973,7 +957,9 @@ public class TrunkTest {
 
     when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
     trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, dsbCircuitBreaker);
-
+    OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
+    antaresTrunk.setOptionsPingController(optionsPingController);
+    when(optionsPingController.getStatus(any())).thenReturn(true);
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
     doAnswer(
@@ -993,7 +979,7 @@ public class TrunkTest {
                 when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
                 when(locateSIPServersResponse.getHops())
                     .thenReturn(
-                        Arrays.asList(
+                        List.of(
                             new Hop(
                                 sg2.getHostName(),
                                 "1.1.1.1",

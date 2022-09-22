@@ -64,12 +64,12 @@ public class LoadBalancerTest {
     ServerGroup serverGroup =
         ServerGroup.builder().setElements(sgelements).setLbType(lbType).build();
     LoadBalancer loadBalancer = LoadBalancer.of(serverGroup);
+    if (serverGroup.getLbType() == LBType.MS_ID) loadBalancer.setKey("testMSID");
     ArrayList<ServerGroupElement> treeSetInit = new ArrayList(loadBalancer.getElementsToTry());
     List<ServerGroupElement> selectedElements = new ArrayList<>();
-    ServerGroupElement selectedElement = (ServerGroupElement) loadBalancer.getCurrentElement();
-    while (selectedElement != null) {
+    ServerGroupElement selectedElement;
+    while ((selectedElement = (ServerGroupElement) loadBalancer.getNextElement()) != null) {
       selectedElements.add(selectedElement);
-      selectedElement = (ServerGroupElement) loadBalancer.getNextElement();
     }
     switch (lbType) {
       case WEIGHT:
@@ -104,10 +104,9 @@ public class LoadBalancerTest {
     LoadBalancer loadBalancer = LoadBalancer.of(loadBalancable);
     ArrayList<ServerGroup> treeSetInit = new ArrayList(loadBalancer.getElementsToTry());
     List<ServerGroup> selectedElements = new ArrayList<>();
-    ServerGroup selectedElement = (ServerGroup) loadBalancer.getCurrentElement();
-    while (selectedElement != null) {
+    ServerGroup selectedElement;
+    while ((selectedElement = (ServerGroup) loadBalancer.getNextElement()) != null) {
       selectedElements.add(selectedElement);
-      selectedElement = (ServerGroup) loadBalancer.getNextElement();
     }
     switch (lbType) {
       case ONCE:
@@ -135,7 +134,7 @@ public class LoadBalancerTest {
     // distribution for 1000 calls is ~ { 625+-=~4%, 312+-~5% , 63+=~10% } (error allowance in %)
     int test = 0;
     while (test < 1000) {
-      switch (LoadBalancer.of(serverGroup).getCurrentElement().getWeight()) {
+      switch (LoadBalancer.of(serverGroup).getNextElement().getWeight()) {
         case 50:
           count[0]++;
           break;
@@ -165,7 +164,7 @@ public class LoadBalancerTest {
     LoadBalancer loadBalancer = LoadBalancer.of(serverGroup);
     loadBalancer.setKey(random.nextLong() + "");
 
-    int firstElement = loadBalancer.getCurrentElement().getPriority();
+    int firstElement = loadBalancer.getNextElement().getPriority();
     int lastElement = firstElement;
     for (int i = 0; i < 4; i++) {
       lastElement = loadBalancer.getNextElement().getPriority();
@@ -217,6 +216,7 @@ public class LoadBalancerTest {
       int qValue = qValues[random.nextInt(3)];
       int weight = weights[random.nextInt(3)];
       ServerGroup sg = new ServerGroup();
+      sg.setName(name);
       sg.setHostName(name);
       sg.setPriority(qValue);
       sg.setWeight(weight);

@@ -19,7 +19,8 @@ public final class LoadBalancer {
 
   /**
    * Use LBFactory to create loadbalancer, as it takes care of setting appropriate Key for given
-   * LBType. Or use setKey() to set the Key
+   * LBType. Or use setKey() to set the Key. Use getNextElement() to get next element based on LB
+   * algo. Note that initial LB won't have any element selected i.e getCurrentElement() will be null
    *
    * @param loadBalancable - Object that needs to be loadbalanced
    * @return LoadBalancer
@@ -28,8 +29,6 @@ public final class LoadBalancer {
     LoadBalancer loadBalancer = new LoadBalancer();
     loadBalancer.selectElement = loadBalancable.getLbType().getSelectElement();
     loadBalancer.initialiseTreeSet(loadBalancable.getElements());
-    // this initialises the LB with selectedElement
-    loadBalancer.getNextElement();
     return loadBalancer;
   }
 
@@ -74,4 +73,9 @@ public final class LoadBalancer {
   public TreeSet<? extends LBElement> getElementsToTry() {
     return this.elementsToTry;
   }
+
+  public boolean isEmpty() {
+    return this.elementsToTry.isEmpty();
+  }
+
 }
