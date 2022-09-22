@@ -409,6 +409,48 @@ public class MetricServiceTest {
     Assert.assertFalse(capturedMetricPoint.getTags().containsKey("failureReason"));
   }
 
+  public void sendSGEMetricTest() {
+
+    String sgName = "SG1";
+    String sgeName = "127.0.0.1:5060:UDP";
+
+    Boolean status = false;
+
+    metricService.sendSGElementMetric(sgName, sgeName, status);
+
+    ArgumentCaptor<Metric> metricArgCaptor = ArgumentCaptor.forClass(Metric.class);
+    Mockito.verify(metricClientMock).sendMetric(metricArgCaptor.capture());
+
+    Metric capturedMetric = metricArgCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgName"));
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgeName"));
+
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
+  }
+
+  public void sendSGMetricTest() {
+
+    String sgName = "SG1";
+    Boolean status = true;
+
+    metricService.sendSGMetric(sgName, status);
+
+    ArgumentCaptor<Metric> metricArgCaptor = ArgumentCaptor.forClass(Metric.class);
+    Mockito.verify(metricClientMock).sendMetric(metricArgCaptor.capture());
+
+    Metric capturedMetric = metricArgCaptor.getValue();
+    Assert.assertNotNull(capturedMetric);
+
+    InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
+
+    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgName"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
+  }
+
   public void sendTrunkMetricTest() {
 
     String trunk = "antares";

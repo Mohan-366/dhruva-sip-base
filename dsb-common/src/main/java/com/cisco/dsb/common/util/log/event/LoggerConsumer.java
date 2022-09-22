@@ -42,11 +42,8 @@ public class LoggerConsumer extends EventConsumer {
         // this sub-type is set only when sip msg is there (i.e) for SIPMESSAGE events only
         loggingEvent.setEventSubType(Event.EventSubType.PIIUNMASKED);
         msg = loggingEvent.getSipMsgPayload().toString();
-
-      } else if (loggingEvent.getMsgPayload() != null) {
-        msg = loggingEvent.getMsgPayload();
+        sendMsg(event, msg);
       }
-      sendMsg(event, msg);
     }
   }
 

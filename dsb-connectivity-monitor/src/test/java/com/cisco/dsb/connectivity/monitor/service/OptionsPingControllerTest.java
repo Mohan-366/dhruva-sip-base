@@ -5,6 +5,7 @@ import static org.testng.Assert.*;
 import com.cisco.dsb.common.servergroup.Pingable;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.connectivity.monitor.dto.Status;
 import java.util.Arrays;
@@ -19,7 +20,8 @@ import org.testng.annotations.Test;
 
 public class OptionsPingControllerTest {
 
-  @Spy OptionsPingMonitor optionsPingMonitor;
+  @Spy @InjectMocks OptionsPingMonitor optionsPingMonitor;
+  @Mock MetricService metricService;
 
   Map<String, ServerGroup> map;
   ServerGroupElement sge1;

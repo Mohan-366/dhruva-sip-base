@@ -169,7 +169,8 @@ public class Event {
     //    consumer1.accept(sipMsg);
   }
 
-  public static void emitSGElementUpEvent(ServerGroupElement sge, String networkName) {
+  public static void emitSGElementUpEvent(
+      String sgName, ServerGroupElement sge, String networkName) {
     Map<String, String> eventInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
@@ -179,7 +180,57 @@ public class Event {
                 String.valueOf(sge.getPort()),
                 "network",
                 networkName));
-    String msg = "ServerGroup Element UP: " + sge;
+    String msg =
+        "ServerGroup Element UP: "
+            .concat(String.valueOf(sge))
+            .concat(" belongs to ServerGroup: ")
+            .concat(sgName);
+
+    if (eventingService != null) {
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.SERVERGROUP_ELEMENT_EVENT)
+              .eventInfoMap(eventInfoMap)
+              .msgPayload(msg)
+              .build();
+      // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
+  }
+
+  public static void emitSGElementDownEvent(
+      String sgName,
+      Integer errorCode,
+      String errorReason,
+      ServerGroupElement sge,
+      String networkName) {
+    Map<String, String> eventInfoMap =
+        Maps.newHashMap(
+            ImmutableMap.of(
+                "errorType",
+                ErrorType.ServerGroupElementDown.name(),
+                "errorReason",
+                errorReason,
+                Event.REMOTEIP,
+                sge.getIpAddress(),
+                Event.REMOTEPORT,
+                String.valueOf(sge.getPort()),
+                "network",
+                networkName));
+    if (errorCode != null) {
+      eventInfoMap.put("errorCode", String.valueOf(errorCode));
+    }
+    eventInfoMap.put("transport", sge.getTransport().name());
+
+    String msg =
+        "ServerGroup Element DOWN: "
+            .concat(sge.toUniqueElementString())
+            .concat(" : ")
+            .concat(String.valueOf(sge))
+            .concat(" belongs to ServerGroup: ")
+            .concat(sgName);
 
     if (eventingService != null) {
       LoggingEvent event =
@@ -207,47 +258,10 @@ public class Event {
       eventInfoMap.put("status", "up");
       msg = "ServerGroup UP: " + serverGroupName;
     }
-
     if (eventingService != null) {
       LoggingEvent event =
           new LoggingEvent.LoggingEventBuilder()
               .eventType(EventType.SERVERGROUP_EVENT)
-              .eventInfoMap(eventInfoMap)
-              .msgPayload(msg)
-              .build();
-      // generate other necessary events
-      List<DhruvaEvent> events = new ArrayList<>();
-      events.add(event);
-      eventingService.publishEvents(events);
-    }
-  }
-
-  public static void emitSGElementDownEvent(
-      Integer errorCode, String errorReason, ServerGroupElement sge, String networkName) {
-    Map<String, String> eventInfoMap =
-        Maps.newHashMap(
-            ImmutableMap.of(
-                "errorType",
-                ErrorType.ServerGroupElementDown.name(),
-                "errorReason",
-                errorReason,
-                Event.REMOTEIP,
-                sge.getIpAddress(),
-                Event.REMOTEPORT,
-                String.valueOf(sge.getPort()),
-                "network",
-                networkName));
-    if (errorCode != null) {
-      eventInfoMap.put("errorCode", String.valueOf(errorCode));
-    }
-    eventInfoMap.put("transport", sge.getTransport().name());
-
-    String msg = "ServerGroup Element DOWN: " + sge.toUniqueElementString() + " : " + sge;
-
-    if (eventingService != null) {
-      LoggingEvent event =
-          new LoggingEvent.LoggingEventBuilder()
-              .eventType(EventType.SERVERGROUP_ELEMENT_EVENT)
               .eventInfoMap(eventInfoMap)
               .msgPayload(msg)
               .build();

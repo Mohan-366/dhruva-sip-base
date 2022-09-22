@@ -8,6 +8,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.servergroup.*;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
@@ -58,6 +59,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   @Autowired OptionsPingTransaction optionsPingTransaction;
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired DnsServerGroupUtil dnsServerGroupUtil;
+  @Autowired public MetricService metricsService;
   protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Status> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
@@ -100,6 +102,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       logger.info("Marking ServerGroup {} as UP initially", serverGroup.getName());
       serverGroupStatus.put(serverGroup.getHostName(), true);
       Event.emitSGEvent(serverGroup.getName(), false);
+      metricsService.sendSGMetric(serverGroup.getName(), true);
     }
     return getElements(serverGroup)
         .filter(
@@ -281,7 +284,12 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
           element,
           responseException.getMessage());
       Event.emitSGElementDownEvent(
-          null, "Error response received for element", element, serverGroup.getNetworkName());
+          serverGroup.getName(),
+          null,
+          "Error response received for element",
+          element,
+          serverGroup.getNetworkName());
+      metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
       elementStatus.put(key, prevStatus.setUp(false));
       return;
     }
@@ -294,14 +302,17 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       elementStatus.put(key, prevStatus.setUp(false));
       logger.info("{} received for UP element: {}. Marking it as DOWN.", responseCode, element);
       Event.emitSGElementDownEvent(
+          serverGroup.getName(),
           responseCode,
           "Error response received for element",
           element,
           serverGroup.getNetworkName());
+      metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
     } else if (!prevStatus.isUp() && !failed) {
       elementStatus.put(key, prevStatus.setUp(true));
       logger.info("{} received for DOWN element: {}. Marking it as UP.", responseCode, element);
-      Event.emitSGElementUpEvent(element, serverGroup.getNetworkName());
+      Event.emitSGElementUpEvent(serverGroup.getName(), element, serverGroup.getNetworkName());
+      metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), true);
     }
     if (!failed) sgStatus.compareAndSet(false, true);
   }
@@ -314,12 +325,14 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       this.serverGroupStatus.put(serverGroup.getHostName(), true);
       logger.info("Marking Servergroup {} as UP from DOWN", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), false);
+      metricsService.sendSGMetric(serverGroup.getName(), true);
     }
     // marking sg down if currentStatus is down and prev is up and if it's upFlux only
     else if (!currentStatus && previousStatus && upFlux) {
       this.serverGroupStatus.put(serverGroup.getHostName(), false);
       logger.info("Marking ServerGroup {} as DOWN from UP", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), true);
+      metricsService.sendSGMetric(serverGroup.getName(), false);
     }
   }
 

@@ -436,6 +436,24 @@ public class MetricService {
     sendMetric(metric);
   }
 
+  public void sendSGMetric(String sgName, Boolean status) {
+    Metric metric =
+        Metrics.newMetric().measurement("sgMetric").field("status", status).tag("sgName", sgName);
+
+    sendMetric(metric);
+  }
+
+  public void sendSGElementMetric(String sgName, String sgeName, Boolean status) {
+    Metric metric =
+        Metrics.newMetric()
+            .measurement("sgeMetric")
+            .field("status", status)
+            .tag("sgeName", sgeName)
+            .tag("sgName", sgName);
+
+    sendMetric(metric);
+  }
+
   public void sendTrunkMetric(String trunk, int response, String callId) {
     Metric metric =
         Metrics.newMetric()

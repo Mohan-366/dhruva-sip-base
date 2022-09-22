@@ -1,6 +1,7 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
 import static org.mockito.Mockito.*;
+import static org.testng.Assert.assertEquals;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dns.DnsErrorCode;
@@ -10,6 +11,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.servergroup.*;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
@@ -50,11 +52,14 @@ public class OptionsPingMonitorTest {
   List<ServerGroup> serverGroups = new ArrayList<>();
   OptionsPingPolicy opPolicy = OptionsPingPolicy.builder().build();
 
+  @Mock MetricService metricService;
+
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor;
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor2;
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor3;
 
+  @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor4;
   @Mock OptionsPingTransaction optionsPingTransaction;
   @Mock DnsServerGroupUtil dnsServerGroupUtil;
 
@@ -185,8 +190,8 @@ public class OptionsPingMonitorTest {
 
   @BeforeClass
   public void init() throws DhruvaException, ParseException {
-    MockitoAnnotations.initMocks(this);
-
+    MockitoAnnotations.openMocks(this);
+    metricService = mock(MetricService.class);
     sge1 =
         ServerGroupElement.builder()
             .setIpAddress("10.78.98.54")
@@ -305,16 +310,96 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor2.startMonitoring(map);
     Thread.sleep(1500);
     Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
+    optionsPingMonitor2.disposeExistingFlux();
   }
 
   @Test
   public void serverGroupStatusWithDownElements() throws InterruptedException {
+    MockitoAnnotations.openMocks(this);
     ServerGroup sg = this.createSGWithUpOrDownElements(false, optionsPingMonitor3);
     Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
     optionsPingMonitor3.startMonitoring(map);
     Thread.sleep(1000);
     Assert.assertFalse(optionsPingMonitor3.serverGroupStatus.get(sg.getName()));
+    optionsPingMonitor3.disposeExistingFlux();
+  }
+
+  @Test(description = "To test UP/DOWN metrics are sent whenever element goes up/down")
+  public void testUpDownMetrics() throws InterruptedException {
+    metricService = mock(MetricService.class);
+    MockitoAnnotations.openMocks(this);
+    OptionsPingPolicy optionsPingPolicy =
+        OptionsPingPolicy.builder()
+            .setName("opPolicy1")
+            .setFailureResponseCodes(List.of(503))
+            .setUpTimeInterval(200)
+            .setDownTimeInterval(200)
+            .setPingTimeOut(150)
+            .build();
+    ServerGroupElement sge =
+        ServerGroupElement.builder()
+            .setIpAddress("127.0.0.10")
+            .setPort(10)
+            .setPriority(10)
+            .setWeight(10)
+            .setTransport(Transport.TCP)
+            .build();
+    ServerGroup sg =
+        ServerGroup.builder()
+            .setNetworkName("testSG")
+            .setName("testSG")
+            .setHostName("testSG")
+            .setElements(List.of(sge))
+            .setPingOn(true)
+            .setOptionsPingPolicy(optionsPingPolicy)
+            .build();
+
+    // Initially sending 200OK [SG is up]
+    Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
+        .when(optionsPingMonitor4)
+        .createAndSendRequest("testSG", sge, optionsPingPolicy);
+    Map<String, ServerGroup> map = new HashMap<>();
+    map.put(sg.getName(), sg);
+    optionsPingMonitor4.startMonitoring(map);
+
+    // Marking sge as down by sending 503, should send down metric
+    Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponseFailOver()))
+        .when(optionsPingMonitor4)
+        .createAndSendRequest("testSG", sge, optionsPingPolicy);
+    Thread.sleep(600);
+    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<String> argumentCaptor1 = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<Boolean> argumentCaptor2 = ArgumentCaptor.forClass(Boolean.class);
+
+    verify(metricService)
+        .sendSGElementMetric(
+            argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
+    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor1.getValue(), "127.0.0.10:10:TCP");
+    Assert.assertEquals(argumentCaptor2.getValue(), false);
+    verify(metricService).sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
+    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor2.getValue(), false);
+
+
+// Marking sge as up by sending 200, should send UP metric
+    Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
+        .when(optionsPingMonitor4)
+        .createAndSendRequest("testSG", sge, optionsPingPolicy);
+    Thread.sleep(500);
+
+    verify(metricService, times(2))
+        .sendSGElementMetric(
+            argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
+    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor2.getValue(), true);
+    verify(metricService, times(2))
+        .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
+    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor2.getValue(), true);
+
+    optionsPingMonitor4.disposeExistingFlux();
   }
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
@@ -327,7 +412,7 @@ public class OptionsPingMonitorTest {
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
-    Assert.assertEquals(optionsPingMonitor.elementStatus, expectedElementStatusInt);
+    assertEquals(optionsPingMonitor.elementStatus, expectedElementStatusInt);
   }
 
   @Test(description = "ServerGroupElements without any transitions")
@@ -392,6 +477,7 @@ public class OptionsPingMonitorTest {
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test(description = "test UP element with failOver ->  OptionPing")
@@ -401,7 +487,6 @@ public class OptionsPingMonitorTest {
     downResponse.setStatusCode(503);
     CompletableFuture<SIPResponse> response2 = new CompletableFuture<>();
     response2.complete(downResponse);
-
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
         .thenReturn(response2);
 
@@ -416,6 +501,7 @@ public class OptionsPingMonitorTest {
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test(description = "test UP element with timeOut")
@@ -438,11 +524,13 @@ public class OptionsPingMonitorTest {
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test(
       description = "test sendPingRequestToDownElement  with UP element" + "change status to true")
   public void testDownIntervalPositive() throws SipException, ParseException {
+    MockitoAnnotations.openMocks(this);
     ServerGroup sg = map.get("sg1");
     SIPResponse upResponse = new SIPResponse();
     upResponse.setStatusCode(200);
@@ -464,11 +552,13 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getDownTimeInterval()))
         .thenCancel()
         .verify();
+
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test
@@ -533,7 +623,8 @@ public class OptionsPingMonitorTest {
     ArgumentCaptor<SIPRequest> sipRequestCaptor = ArgumentCaptor.forClass(SIPRequest.class);
     verify(optionsPingTransaction, times(1))
         .proxySendOutBoundRequest(sipRequestCaptor.capture(), any(), any());
-    Assert.assertEquals(sipRequestCaptor.getValue().getMaxForwards().getMaxForwards(), maxForwards);
+    assertEquals(sipRequestCaptor.getValue().getMaxForwards().getMaxForwards(), maxForwards);
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   /*@Test
@@ -595,7 +686,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.opFlux.add(d2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertFalse(d.isDisposed()));
     optionsPingMonitor.disposeExistingFlux();
-    Assert.assertEquals(optionsPingMonitor.opFlux.size(), 2);
+    assertEquals(optionsPingMonitor.opFlux.size(), 2);
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(d.isDisposed()));
   }
 

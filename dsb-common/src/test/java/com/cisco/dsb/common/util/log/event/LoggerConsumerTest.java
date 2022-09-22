@@ -119,6 +119,7 @@ public class LoggerConsumerTest {
             .eventInfoMap(messageInfoMap)
             .msgPayload("Test String msg")
             .build();
+
     LoggerConsumer consumer = new LoggerConsumer(true);
 
     LoggerConsumer spyConsumer = spy(consumer);
@@ -126,13 +127,49 @@ public class LoggerConsumerTest {
 
     Assert.assertNull(loggingEvent.getEventSubType());
     ArgumentCaptor<String> actualMsg = ArgumentCaptor.forClass(String.class);
-    verify(spyConsumer, times(1)).sendMsg(eq(loggingEvent), actualMsg.capture());
-    Assert.assertEquals(actualMsg.getValue(), "Test String msg");
+    verify(spyConsumer, times(0)).sendMsg(eq(loggingEvent), actualMsg.capture());
 
     spyConsumer.sendMaskedEvent(loggingEvent);
 
     Assert.assertNull(loggingEvent.getEventSubType());
-    verify(spyConsumer, times(2)).sendMsg(eq(loggingEvent), actualMsg.capture());
+    verify(spyConsumer, times(1)).sendMsg(eq(loggingEvent), actualMsg.capture());
     Assert.assertEquals(actualMsg.getValue(), "Test String msg");
+  }
+
+  @Test
+  public void testMaskedAndUnmaskedForSGEvent() {
+    Map<String, String> messageInfoMap = new HashMap<>();
+    LoggingEvent loggingEventSG =
+        new LoggingEvent.LoggingEventBuilder()
+            .eventType(Event.EventType.SERVERGROUP_EVENT)
+            .eventInfoMap(messageInfoMap)
+            .msgPayload("SG is up")
+            .build();
+
+    LoggingEvent loggingEventSGE =
+        new LoggingEvent.LoggingEventBuilder()
+            .eventType(Event.EventType.SERVERGROUP_ELEMENT_EVENT)
+            .eventInfoMap(messageInfoMap)
+            .msgPayload("SGE is up")
+            .build();
+
+    LoggerConsumer consumer = new LoggerConsumer(true);
+
+    LoggerConsumer spyConsumer = spy(consumer);
+    spyConsumer.sendUnmaskedEvent(loggingEventSG);
+    spyConsumer.sendUnmaskedEvent(loggingEventSGE);
+    ArgumentCaptor<String> actualMsg = ArgumentCaptor.forClass(String.class);
+
+    verify(spyConsumer, times(0)).sendMsg(eq(loggingEventSG), actualMsg.capture());
+    verify(spyConsumer, times(0)).sendMsg(eq(loggingEventSGE), actualMsg.capture());
+
+    spyConsumer.sendMaskedEvent(loggingEventSG);
+    spyConsumer.sendMaskedEvent(loggingEventSGE);
+
+    verify(spyConsumer, times(1)).sendMsg(eq(loggingEventSG), actualMsg.capture());
+    Assert.assertEquals(actualMsg.getValue(), "SG is up");
+
+    verify(spyConsumer, times(1)).sendMsg(eq(loggingEventSGE), actualMsg.capture());
+    Assert.assertEquals(actualMsg.getValue(), "SGE is up");
   }
 }
