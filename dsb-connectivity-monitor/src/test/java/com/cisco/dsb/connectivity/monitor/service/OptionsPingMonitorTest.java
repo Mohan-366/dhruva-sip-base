@@ -56,6 +56,7 @@ public class OptionsPingMonitorTest {
 
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor;
+
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor2;
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor3;
 
@@ -299,6 +300,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.elementStatus.clear();
     optionsPingMonitor.serverGroupStatus.clear();
     reset(optionsPingMonitor);
+    reset(metricService);
     reset(dnsServerGroupUtil);
   }
 
@@ -329,6 +331,7 @@ public class OptionsPingMonitorTest {
   public void testUpDownMetrics() throws InterruptedException {
     metricService = mock(MetricService.class);
     MockitoAnnotations.openMocks(this);
+
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder()
             .setName("opPolicy1")
@@ -343,7 +346,7 @@ public class OptionsPingMonitorTest {
             .setPort(10)
             .setPriority(10)
             .setWeight(10)
-            .setTransport(Transport.TCP)
+            .setTransport(Transport.UDP)
             .build();
     ServerGroup sg =
         ServerGroup.builder()
@@ -376,7 +379,7 @@ public class OptionsPingMonitorTest {
         .sendSGElementMetric(
             argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
-    Assert.assertEquals(argumentCaptor1.getValue(), "127.0.0.10:10:TCP");
+    Assert.assertEquals(argumentCaptor1.getValue(), "127.0.0.10:10:UDP");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
     verify(metricService).sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
@@ -404,15 +407,15 @@ public class OptionsPingMonitorTest {
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
   void testOptionsPingMultipleElements() throws InterruptedException {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     this.createMultipleServerGroupElements();
-
     optionsPingMonitor.startMonitoring(initmap);
 
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
     assertEquals(optionsPingMonitor.elementStatus, expectedElementStatusInt);
+    optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test(description = "ServerGroupElements without any transitions")
