@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.ratelimiter;
 
-import gov.nist.javax.sip.message.SIPMessage;
+import javax.sip.message.Message;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +12,7 @@ public class MessageMetaData {
   private String userID;
   private String localIP;
   private String remoteIP;
-  private SIPMessage message;
+  private Message message;
   private String callId;
+  boolean isRequest;
 }

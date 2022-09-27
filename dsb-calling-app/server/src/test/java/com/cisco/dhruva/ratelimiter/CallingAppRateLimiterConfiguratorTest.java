@@ -22,6 +22,7 @@ import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit;
 import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.Type;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.wx2.ratelimit.policy.Policy;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
@@ -43,7 +45,8 @@ import org.testng.annotations.Test;
 public class CallingAppRateLimiterConfiguratorTest {
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Mock CallingAppConfigurationProperty callingAppConfigurationProperty;
-  private DsbRateLimiter dsbRateLimiter;
+  @Mock MetricService metricService;
+  @InjectMocks DsbRateLimiter dsbRateLimiter;
   private Map<String, Policy> expectedPoliciesMap = new HashMap<>();
   private RateLimitPolicy rateLimitPolicyNetwork;
   private RateLimitPolicy rateLimitPolicyGlobal;
@@ -63,7 +66,6 @@ public class CallingAppRateLimiterConfiguratorTest {
   @BeforeClass
   public void setup() throws DhruvaException {
     MockitoAnnotations.openMocks(this);
-    dsbRateLimiter = new DsbRateLimiter();
     rateLimitPstn = RateLimit.builder().setInterval("1s").setPermits(10).build();
     rateLimitGlobal = RateLimit.builder().setInterval("1s").setPermits(100).build();
     rateLimitPolicyNetwork =

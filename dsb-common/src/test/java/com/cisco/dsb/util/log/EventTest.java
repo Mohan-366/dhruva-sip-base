@@ -1,6 +1,11 @@
 package com.cisco.dsb.util.log;
 
+import static org.testng.Assert.assertEquals;
+
+import com.cisco.dsb.common.dto.RateLimitInfo;
+import com.cisco.dsb.common.dto.RateLimitInfo.Action;
 import com.cisco.dsb.common.util.LMAUtil;
+import com.cisco.dsb.common.util.RequestHelper;
 import com.cisco.dsb.common.util.log.event.DhruvaEvent;
 import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
@@ -67,10 +72,10 @@ public class EventTest {
             dhruvaEvent -> {
               if (dhruvaEvent instanceof LoggingEvent) {
                 System.out.println(((LoggingEvent) dhruvaEvent).getEventInfoMap());
-                Assert.assertEquals(
+                assertEquals(
                     ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localSessionId"),
                     localSessionId);
-                Assert.assertEquals(
+                assertEquals(
                     ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteSessionId"),
                     remoteSessionId);
               }
@@ -105,15 +110,55 @@ public class EventTest {
     ArgumentCaptor<ArrayList<DhruvaEvent>> argument = ArgumentCaptor.forClass(listClass);
 
     Mockito.verify(eventingService, Mockito.times(1)).publishEvents(argument.capture());
+    argument.getValue()
+        .forEach(
+            dhruvaEvent -> {
+              if (dhruvaEvent instanceof LoggingEvent) {
+                System.out.println(((LoggingEvent) dhruvaEvent).getEventInfoMap());
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localSessionId"), null);
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteSessionId"), null);
+              }
+            });
+  }
+
+  @Test
+  public void testRateLimiterEvent() throws ParseException {
+    MockitoAnnotations.openMocks(this);
+    Event.setEventingService(eventingService);
+    SIPMessage sipMessage = (SIPMessage) RequestHelper.getInviteRequest();
+    RateLimitInfo rateLimitInfo =
+        RateLimitInfo.builder()
+            .localIP("1.1.1.1")
+            .remoteIP("2.2.2.2")
+            .action(Action.RATE_LIMIT)
+            .policyName("p1")
+            .isRequest(true)
+            .build();
+    Class<ArrayList<DhruvaEvent>> listClass =
+        (Class<ArrayList<DhruvaEvent>>) (Class) ArrayList.class;
+    ArgumentCaptor<ArrayList<DhruvaEvent>> argument = ArgumentCaptor.forClass(listClass);
+    Event.emitRateLimiterEvent(rateLimitInfo, sipMessage);
+    Mockito.verify(eventingService, Mockito.times(1)).publishEvents(argument.capture());
     argument.getValue().stream()
         .forEach(
             dhruvaEvent -> {
               if (dhruvaEvent instanceof LoggingEvent) {
                 System.out.println(((LoggingEvent) dhruvaEvent).getEventInfoMap());
-                Assert.assertEquals(
-                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localSessionId"), null);
-                Assert.assertEquals(
-                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteSessionId"), null);
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteIp"), "2.2.2.2");
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localIp"), "1.1.1.1");
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("policyName"), "p1");
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("sipMessageType"),
+                    "REQUEST");
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("action"),
+                    Action.RATE_LIMIT.name());
+                assertEquals(((LoggingEvent) dhruvaEvent).getSipMsgPayload(), sipMessage);
               }
             });
   }

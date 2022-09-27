@@ -8,13 +8,17 @@ import com.cisco.wx2.ratelimit.policy.Policy;
 import com.cisco.wx2.ratelimit.provider.BasicRateLimitContext;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
+import javax.sip.message.Message;
 import lombok.CustomLog;
+import lombok.Getter;
 
 @CustomLog
 public class DsbRateLimitContext extends BasicRateLimitContext {
 
-  private String remoteIP;
-  private String localIP;
+  @Getter private String remoteIP;
+  @Getter boolean isRequest;
+  @Getter private String localIP;
+  @Getter private Message message;
   private DsbRateLimiter dsbRateLimiter;
 
   public DsbRateLimitContext(MessageMetaData messageMetaData, DsbRateLimiter dsbRateLimiter)
@@ -24,9 +28,11 @@ public class DsbRateLimitContext extends BasicRateLimitContext {
         dsbRateLimiter.getPermitCache(),
         dsbRateLimiter.getCounterCache(),
         false);
+    this.dsbRateLimiter = dsbRateLimiter;
     this.remoteIP = messageMetaData.getRemoteIP();
     this.localIP = messageMetaData.getLocalIP();
-    this.dsbRateLimiter = dsbRateLimiter;
+    this.isRequest = messageMetaData.isRequest();
+    this.message = messageMetaData.getMessage();
   }
 
   @Override

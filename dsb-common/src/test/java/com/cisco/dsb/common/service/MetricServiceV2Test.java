@@ -1,7 +1,10 @@
 package com.cisco.dsb.common.service;
 
 import static org.mockito.Mockito.*;
+import static org.testng.Assert.assertEquals;
 
+import com.cisco.dsb.common.dto.RateLimitInfo;
+import com.cisco.dsb.common.dto.RateLimitInfo.Action;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
@@ -14,6 +17,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.Supplier;
 import org.mockito.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -79,13 +83,59 @@ public class MetricServiceV2Test {
     metricService.setCpsCounterMap(cpsCounterMapTest);
 
     Set<Metric> cpsSupplierOp = metricService.cpsMetricSupplier().get();
-    Assert.assertEquals(cpsSupplierOp.size(), 2);
+    assertEquals(cpsSupplierOp.size(), 2);
 
     cpsSupplierOp.forEach(
         eachMetric -> {
           Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("callType"));
           Assert.assertTrue(((InfluxPoint) eachMetric.get()).getFields().containsKey("count"));
         });
+  }
+
+  @Test
+  public void testRateLimitInfoMetricSupplier() {
+    RateLimitInfo rateLimitInfo1 = RateLimitInfo.builder()
+        .remoteIP("1.1.1.1")
+        .isRequest(true)
+        .policyName("policy1")
+        .localIP("2.2.2.2")
+        .action(Action.DENY)
+        .build();
+    RateLimitInfo rateLimitInfo2 = RateLimitInfo.builder()
+        .remoteIP("3.3.3.3")
+        .isRequest(true)
+        .policyName("policy2")
+        .localIP("4.4.4.4")
+        .action(Action.RATE_LIMIT)
+        .build();
+
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+
+    Supplier<Set<Metric>> supplierRateLimiter =
+        metricService.rateLimitInfoMetricSupplier("ratelimiter");
+    Set<Metric> metrics = supplierRateLimiter.get();
+    assertEquals(metrics.size(), 2);
+    AtomicInteger atomicInteger = new AtomicInteger(0);
+    metrics
+        .forEach(
+        metric -> {
+          if(((InfluxPoint) metric.get()).getTags().get("remoteIP").equals("1.1.1.1")) {
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("localIP"), "2.2.2.2");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("policyName"), "policy1");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("action"), "DENY");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("isRequest"), "true");
+            atomicInteger.getAndIncrement();
+          } else {
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("remoteIP"), "3.3.3.3");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("localIP"), "4.4.4.4");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("policyName"), "policy2");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("action"), "RATE_LIMIT");
+            assertEquals(((InfluxPoint) metric.get()).getTags().get("isRequest"), "true");
+            atomicInteger.getAndIncrement();
+          }
+        });
+    assertEquals(atomicInteger.getPlain(), 2); // to ensure both the metrics were validated.
   }
 
   @Test(
@@ -100,7 +150,7 @@ public class MetricServiceV2Test {
 
     Set<Metric> cpsSupplierOp = metricService.cpsMetricSupplier().get();
     /* supplier will not consider creating a metric point for "DialInB2BTest" as the count is zero */
-    Assert.assertEquals(cpsSupplierOp.size(), 1);
+    assertEquals(cpsSupplierOp.size(), 1);
 
     cpsSupplierOp.forEach(
         eachMetric -> {
@@ -119,7 +169,7 @@ public class MetricServiceV2Test {
 
     Set<Metric> cpsSupplierOp = metricService.cpsMetricSupplier().get();
     /* supplier will not consider creating any metric point as the counter is empty */
-    Assert.assertEquals(cpsSupplierOp.size(), 0);
+    assertEquals(cpsSupplierOp.size(), 0);
   }
 
   @Test(description = "tests to cover getters and setters of CPS counter map")
@@ -140,7 +190,7 @@ public class MetricServiceV2Test {
     metricService.setCpsTrunkCounterMap(trunkcpsCounterMapTest);
 
     Set<Metric> cpsSupplierOp = metricService.cpsTrunkMetricSupplier("trunkcps").get();
-    Assert.assertEquals(cpsSupplierOp.size(), 0);
+    assertEquals(cpsSupplierOp.size(), 0);
   }
 
   @Test(description = "tests to cover getters and setters of trunk CPS counter map")
@@ -177,7 +227,7 @@ public class MetricServiceV2Test {
     trunkcpsCounterMapTest.put("PSTN", atomicIntegerPSTN);
     metricService.setCpsTrunkCounterMap(trunkcpsCounterMapTest);
     Set<Metric> cpsSupplierOp = metricService.cpsTrunkMetricSupplier("trunkcps").get();
-    Assert.assertEquals(cpsSupplierOp.size(), 2);
+    assertEquals(cpsSupplierOp.size(), 2);
 
     cpsSupplierOp.forEach(
         eachMetric -> {
@@ -188,7 +238,7 @@ public class MetricServiceV2Test {
             if (((InfluxPoint) eachMetric.get()).getTags().get("trunk").equals("PSTN")) {
               Assert.assertTrue(
                   ((InfluxPoint) eachMetric.get()).getFields().containsKey("outboundCount"));
-              Assert.assertEquals(
+              assertEquals(
                   ((InfluxPoint) eachMetric.get()).getFields().get("outboundCount"), 20);
 
             } else {
@@ -199,7 +249,7 @@ public class MetricServiceV2Test {
           {
             Assert.assertTrue(
                 ((InfluxPoint) eachMetric.get()).getFields().containsKey("inboundCount"));
-            Assert.assertEquals(
+            assertEquals(
                 ((InfluxPoint) eachMetric.get()).getFields().get("inboundCount"), 10);
           }
         });
@@ -214,9 +264,9 @@ public class MetricServiceV2Test {
         new ConcurrentHashMap<>();
 
     ConcurrentHashMap<String, Long> trunkAElements = new ConcurrentHashMap<>();
-    trunkAElements.put("elementA", 5l);
-    trunkAElements.put("elementB", 5l);
-    trunkAElements.put("elementC", 1l);
+    trunkAElements.put("elementA", 5L);
+    trunkAElements.put("elementB", 5L);
+    trunkAElements.put("elementC", 1L);
 
     ConcurrentHashMap<String, Long> trunkBElements = new ConcurrentHashMap<>();
     trunkLBCounterMapTest.put("trunkA", trunkAElements);
@@ -227,7 +277,7 @@ public class MetricServiceV2Test {
     metricService.setTrunkLBMap(trunkLBCounterMapTest);
     metricService.setTrunkLBAlgorithm(trunkLBAlgoTest);
     Set<Metric> lbSupplierOp = metricService.sendLBDistribution("trunklbs").get();
-    Assert.assertEquals(lbSupplierOp.size(), 3);
+    assertEquals(lbSupplierOp.size(), 3);
 
     lbSupplierOp.forEach(
         eachMetric -> {
@@ -250,9 +300,9 @@ public class MetricServiceV2Test {
                 .getTags()
                 .get("serverGroupElement")
                 .equals("elementC")) {
-              Assert.assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 1l);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 1L);
             } else
-              Assert.assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 5l);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 5L);
           }
         });
   }

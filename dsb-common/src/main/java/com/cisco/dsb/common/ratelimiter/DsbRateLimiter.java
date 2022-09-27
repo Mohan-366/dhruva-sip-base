@@ -1,6 +1,8 @@
 package com.cisco.dsb.common.ratelimiter;
 
-import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.dto.RateLimitInfo;
+import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.wx2.ratelimit.RateLimitContext;
 import com.cisco.wx2.ratelimit.RateLimiter;
 import com.cisco.wx2.ratelimit.policy.Action;
@@ -23,14 +25,18 @@ import javax.servlet.http.HttpServletRequest;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.logging.log4j.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 @CustomLog
 public class DsbRateLimiter extends RateLimiter {
-  @Autowired CommonConfigurationProperties commonConfigurationProperties;
+  private MetricService metricService;
+
+  @Autowired
+  public DsbRateLimiter(MetricService metricService) {
+    this.metricService = metricService;
+  }
   // This must be set to identify the userID.
   @Getter @Setter
   private Consumer<MessageMetaData> userIdSetter =
@@ -112,11 +118,10 @@ public class DsbRateLimiter extends RateLimiter {
         // policies
         policyName = enforcement.getPolicy().getName();
       }
-      Level level = pass ? Level.DEBUG : Level.ERROR;
-      if (level.equals(Level.DEBUG)) {
+      if (pass) {
         logger.debug(
             "Rate limit enforcement result - pass: {} for key: {}, policy: {}, limit: {}, reset: {}",
-            pass,
+            true,
             context.getId(),
             policyName,
             enforcement.getLimit(),
@@ -124,11 +129,26 @@ public class DsbRateLimiter extends RateLimiter {
       } else {
         logger.error(
             "Rate limit enforcement result - pass: {} for key: {}, policy: {}, limit: {}, reset: {}",
-            pass,
+            false,
             context.getId(),
             policyName,
             enforcement.getLimit(),
             enforcement.getReset());
+        RateLimitInfo rateLimitInfo =
+            RateLimitInfo.builder()
+                .remoteIP(context.getRemoteIP())
+                .localIP(context.getLocalIP())
+                .policyName(policyName)
+                .isRequest(context.isRequest())
+                .action(
+                    enforcement.getCode() == 429
+                        ? RateLimitInfo.Action.DENY
+                        : RateLimitInfo.Action.RATE_LIMIT)
+                .build();
+        metricService.updateRateLimiterInfo(rateLimitInfo);
+        if (enforcement.getCode() == -1) { // The message has been rate-limited. Send Event.
+          Event.emitRateLimiterEvent(rateLimitInfo, context.getMessage());
+        }
       }
       return pass ? null : enforcement;
     } catch (RuntimeException e) {

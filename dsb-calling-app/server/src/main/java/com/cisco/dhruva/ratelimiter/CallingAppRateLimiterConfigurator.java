@@ -28,9 +28,11 @@ import com.cisco.wx2.ratelimit.policy.UserMatcher.Mode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -199,8 +201,8 @@ public class CallingAppRateLimiterConfigurator
   }
 
   protected void createAllowIPListFromConfig(
-      RateLimitPolicy rateLimitPolicy, List<String> allowIPList) {
-    List<String> sgAllowIPList = new ArrayList<>();
+      RateLimitPolicy rateLimitPolicy, Set<String> allowIPList) {
+    Set<String> sgAllowIPList = new HashSet<>();
     PolicyNetworkAssociation policyNetworkAssociation =
         rateLimiterNetworkMap.get(rateLimitPolicy.getName());
     Map<String, ServerGroup> serverGroupMap = commonConfigurationProperties.getServerGroups();
@@ -227,7 +229,7 @@ public class CallingAppRateLimiterConfigurator
     }
     if (CollectionUtils.isNotEmpty(sgAllowIPList)) {
       if (allowIPList == null) {
-        allowIPList = new ArrayList<>();
+        allowIPList = new HashSet<>();
       }
       allowIPList.addAll(sgAllowIPList);
     }
@@ -236,7 +238,7 @@ public class CallingAppRateLimiterConfigurator
   protected void createAllowRangeList(
       RateLimitPolicy rateLimitPolicy, AllowAndDenyList allowAndDenyList) {
     if (rateLimitPolicy.getAllowList() != null) {
-      List<String> allowIPList = new ArrayList<>(Arrays.asList(rateLimitPolicy.getAllowList()));
+      Set<String> allowIPList = new HashSet<>(Arrays.asList(rateLimitPolicy.getAllowList()));
       separateRangeIPFromIPList(allowIPList, allowAndDenyList, true);
     }
   }
@@ -244,16 +246,15 @@ public class CallingAppRateLimiterConfigurator
   protected void createDenyRangeList(
       RateLimitPolicy rateLimitPolicy, AllowAndDenyList allowAndDenyList) {
     if (rateLimitPolicy.getDenyList() != null) {
-      List<String> denyIPList = new ArrayList<>(Arrays.asList(rateLimitPolicy.getDenyList()));
+      Set<String> denyIPList = new HashSet<>(Arrays.asList(rateLimitPolicy.getDenyList()));
       separateRangeIPFromIPList(denyIPList, allowAndDenyList, false);
     }
   }
 
   private void separateRangeIPFromIPList(
-      @NonNull List<String> ipList, @NonNull AllowAndDenyList allowAndDenyList, Boolean isAllow) {
-    List<String> ipRangeList = new ArrayList<>();
-    for (int i = 0; i < ipList.size(); i++) {
-      String ip = ipList.get(i);
+      @NonNull Set<String> ipList, @NonNull AllowAndDenyList allowAndDenyList, Boolean isAllow) {
+    Set<String> ipRangeList = new HashSet<>();
+    for (String ip : ipList) {
       if (ip.contains("/")) {
         ipRangeList.add(ip);
         ipList.remove(ip);

@@ -4,8 +4,8 @@ import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.ALL;
 import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.POLICY_VALUE_DELIMITER;
 
 import io.fabric8.kubernetes.client.utils.IpAddressMatcher;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,7 +53,7 @@ public class DsbRateLimiterUtil {
       return false;
     }
     AllowAndDenyList allowDenyForPolicy = allowDenyListsMap.get(policyName);
-    List<String> ipList;
+    Set<String> ipList;
     if (isForAllow) {
       ipList = allowDenyForPolicy.getAllowIPList();
     } else {
@@ -64,7 +64,7 @@ public class DsbRateLimiterUtil {
       logger.info("{} in ipList.", remoteIP);
       return true;
     }
-    List<String> ipRangeList;
+    Set<String> ipRangeList;
     if (isForAllow) {
       ipRangeList = allowDenyForPolicy.getAllowIPRangeList();
     } else {

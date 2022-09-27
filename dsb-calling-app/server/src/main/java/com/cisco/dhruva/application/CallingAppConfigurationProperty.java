@@ -30,6 +30,8 @@ public class CallingAppConfigurationProperty {
   @NotBlank @Getter @Setter private String b2bEgress;
   @NotBlank @Getter @Setter private String callingEgress;
   @NotBlank @Getter @Setter private String pstnIngress;
+  // metric emitting interval config
+  @Getter @Setter private int rateLimiterMetricPerInterval = 120;
 
   @NotBlank @Getter @Setter
   private Maintenance maintenance = Maintenance.MaintenanceBuilder().build();

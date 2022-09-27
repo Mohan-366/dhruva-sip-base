@@ -30,6 +30,7 @@ public class DsbRateLimiterValve implements SIPMessageValve {
             .localIP(messageChannel.getHost())
             .remoteIP(messageChannel.getPeerAddress())
             .callId(sipRequest.getCallId().getCallId())
+            .isRequest(true)
             .build();
     Action.Enforcement enforcement = isPassFromRateLimitFilter(messageMetaData);
     boolean allow = true;
@@ -55,6 +56,7 @@ public class DsbRateLimiterValve implements SIPMessageValve {
             .localIP(messageChannel.getHost())
             .remoteIP(messageChannel.getPeerAddress())
             .callId(response.getHeader(CALL_ID).toString())
+            .isRequest(false)
             .build();
     return isPassFromRateLimitFilter(messageMetaData) == null;
   }

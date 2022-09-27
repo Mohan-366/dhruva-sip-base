@@ -8,6 +8,7 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
+import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.log.event.*;
 import com.cisco.dsb.proxy.ProxyService;
 import com.cisco.dsb.proxy.ProxyState;
@@ -15,6 +16,7 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.collect.ImmutableList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.sip.message.Response;
@@ -31,6 +33,7 @@ public class DhruvaCallingApp {
   private EventingService eventingService;
   private CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
   private CallingAppConfigurationProperty callingAppConfigurationProperty;
+  private MetricService metricService;
 
   @Autowired
   DhruvaCallingApp(
@@ -38,12 +41,14 @@ public class DhruvaCallingApp {
       Filter filter,
       EventingService eventingService,
       CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator,
-      CallingAppConfigurationProperty callingAppConfigurationProperty) {
+      CallingAppConfigurationProperty callingAppConfigurationProperty,
+      MetricService metricService) {
     this.proxyService = proxyService;
     this.filter = filter;
     this.eventingService = eventingService;
     this.callingAppRateLimiterConfigurator = callingAppRateLimiterConfigurator;
     this.callingAppConfigurationProperty = callingAppConfigurationProperty;
+    this.metricService = metricService;
 
     init();
   }
@@ -78,6 +83,9 @@ public class DhruvaCallingApp {
     }
     proxyService.register(proxyAppConfig);
     callingAppRateLimiterConfigurator.configure();
+    logger.debug("Initializing RateLimiter metric collection");
+    metricService.emitRateLimiterMetricPerInterval(
+        callingAppConfigurationProperty.getRateLimiterMetricPerInterval(), TimeUnit.SECONDS);
 
     // register events
     ImmutableList<Class<? extends DhruvaEvent>> interestedEvents =

@@ -4,6 +4,7 @@
 
 package com.cisco.dsb.common.util.log.event;
 
+import com.cisco.dsb.common.dto.RateLimitInfo;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
@@ -31,6 +32,7 @@ public class Event {
 
   private static final String ISMIDDIALOG = "isMidDialog";
   private static final String ISINTERNALLYGENERATED = "isInternallyGenerated";
+  private static final String SIP_MESSAGE_TYPE = "sipMessageType";
 
   private static final String ISRETRANSMITTED = "isRetransmitted";
   public static String DIRECTION_KEY = "direction";
@@ -43,7 +45,8 @@ public class Event {
     CONNECTION,
     SIPMESSAGE,
     SERVERGROUP_ELEMENT_EVENT,
-    SERVERGROUP_EVENT
+    SERVERGROUP_EVENT,
+    RATE_LIMITER
   }
 
   public enum MESSAGE_TYPE {
@@ -102,7 +105,7 @@ public class Event {
     Map<String, String> messageInfoMap =
         Maps.newHashMap(
             ImmutableMap.of(
-                "sipMessageType",
+                SIP_MESSAGE_TYPE,
                 sipMessageType.name(),
                 "cseqMethod",
                 String.valueOf(message.getHeader(CSeq.NAME)),
@@ -306,6 +309,29 @@ public class Event {
               .msgPayload(ex.getMessage())
               .build();
       // generate other necessary events
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
+  }
+
+  public static void emitRateLimiterEvent(RateLimitInfo rateLimitInfo, Message message) {
+    if (eventingService != null) {
+      Map<String, String> eventInfo = new HashMap<>();
+      eventInfo.put(Event.REMOTEIP, rateLimitInfo.getRemoteIP());
+      eventInfo.put(Event.LOCALIP, rateLimitInfo.getLocalIP());
+      eventInfo.put("policyName", rateLimitInfo.getPolicyName());
+      eventInfo.put("action", rateLimitInfo.getAction().name());
+      eventInfo.put(
+          Event.SIP_MESSAGE_TYPE,
+          rateLimitInfo.isRequest() ? MESSAGE_TYPE.REQUEST.name() : MESSAGE_TYPE.RESPONSE.name());
+
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.RATE_LIMITER)
+              .eventInfoMap(eventInfo)
+              .sipMsgPayload(message)
+              .build();
       List<DhruvaEvent> events = new ArrayList<>();
       events.add(event);
       eventingService.publishEvents(events);

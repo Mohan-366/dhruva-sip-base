@@ -3,13 +3,16 @@ package com.cisco.dsb.common.ratelimiter;
 import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.POLICY_VALUE_DELIMITER;
 import static org.testng.Assert.*;
 
+import com.cisco.dsb.common.service.MetricService;
 import gov.nist.javax.sip.message.SIPMessage;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
@@ -19,21 +22,20 @@ import org.testng.annotations.Test;
 public class DsbRateLimitContextTest {
   private DsbRateLimitContext dsbRateLimitContext;
   @Mock SIPMessage sipMessage;
-  DsbRateLimiter dsbRateLimiter;
+  @Mock MetricService metricService;
+  @InjectMocks DsbRateLimiter dsbRateLimiter;
 
   AllowAndDenyList allowAndDenyList;
   String policyName = "policy";
-  List<String> denyList = Arrays.asList("2.2.2.2", "3.3.3.3", "4.4.4.4");
-  List<String> allowList = Arrays.asList("5.5.5.5", "6.6.6.6", "7.7.7.7");
-  List<String> denyRangeList = Arrays.asList("8.8.8.8/24", "9.9.9.0/24");
-  List<String> allowRangeList = Arrays.asList("10.10.10.0/24", "11.11.11.11/24");
+  Set<String> denyList = new HashSet<>(Arrays.asList("2.2.2.2", "3.3.3.3", "4.4.4.4"));
+  Set<String> allowList = new HashSet<>(Arrays.asList("5.5.5.5", "6.6.6.6", "7.7.7.7"));
+  Set<String> denyRangeList = new HashSet<>(Arrays.asList("8.8.8.8/24", "9.9.9.0/24"));
+  Set<String> allowRangeList = new HashSet<>(Arrays.asList("10.10.10.0/24", "11.11.11.11/24"));
   MessageMetaData messageMetaData;
 
   @BeforeClass
   public void setup() {
     MockitoAnnotations.openMocks(this);
-
-    dsbRateLimiter = new DsbRateLimiter();
     dsbRateLimiter.init();
   }
 

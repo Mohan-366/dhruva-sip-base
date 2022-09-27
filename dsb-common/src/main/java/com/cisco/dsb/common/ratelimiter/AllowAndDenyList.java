@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.ratelimiter;
 
-import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,10 +13,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @Builder(setterPrefix = "set")
 public class AllowAndDenyList {
-  private List<String> allowIPList;
-  private List<String> denyIPList;
-  private List<String> allowIPRangeList;
-  private List<String> denyIPRangeList;
+  private Set<String> allowIPList;
+  private Set<String> denyIPList;
+  private Set<String> allowIPRangeList;
+  private Set<String> denyIPRangeList;
 
   public boolean isNotEmpty() {
     return allowIPList != null

@@ -9,6 +9,7 @@ import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.REQUEST;
 import static com.cisco.dsb.common.util.log.event.Event.MESSAGE_TYPE.RESPONSE;
 
 import com.cisco.dsb.common.dto.ConnectionInfo;
+import com.cisco.dsb.common.dto.RateLimitInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
@@ -61,9 +62,14 @@ public class MetricService {
   private static final String TRUNK_FIELD = "trunkName";
   private static final String SERVERGROUP_TAG = "trunkServerGroup";
   private static final String SERVERGROUP_STATUS_FIELD = "status";
+  private static final String REMOTE_IP = "remoteIP";
+  private static final String LOCAL_IP = "localIP";
+  private static final String RL_POLICY_NAME = "policyName";
+  private static final String IS_REQUEST = "isRequest";
+  private static final String COUNT = "count";
+  private static final String ACTION = "action";
 
   private final ScheduledExecutorService scheduledExecutor;
-  private DhruvaExecutorService dhruvaExecutorService;
   MetricClient metricClient;
   private final Executor executorService;
 
@@ -79,6 +85,8 @@ public class MetricService {
 
   @Getter @Setter private Map<String, ConnectionInfo> connectionInfoMap;
 
+  @Getter @Setter private Map<RateLimitInfo, Integer> rateLimiterMap;
+
   @Getter private final Cache<String, Long> timers;
   @Getter private final HashMap<String, StopWatch> stopWatchTimers = new HashMap<>();
   private static final long SCAVENGE_EVERY_X_HOURS = 12L;
@@ -90,10 +98,9 @@ public class MetricService {
       DhruvaExecutorService dhruvaExecutorService,
       @Qualifier("asyncMetricsExecutor") Executor executorService) {
     this.metricClient = metricClient;
-    this.dhruvaExecutorService = dhruvaExecutorService;
     dhruvaExecutorService.startScheduledExecutorService(ExecutorType.METRIC_SERVICE);
     scheduledExecutor =
-        this.dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
+        dhruvaExecutorService.getScheduledExecutorThreadPool(ExecutorType.METRIC_SERVICE);
     this.executorService = executorService;
 
     timers =
@@ -115,8 +122,8 @@ public class MetricService {
     this.serverGroupStatusMap = new HashMap<>();
     this.trunkLBMap = new ConcurrentHashMap<>();
     this.trunkLBAlgorithm = new HashMap<>();
-
     this.connectionInfoMap = new HashMap<>();
+    this.rateLimiterMap = new ConcurrentHashMap<>();
   }
 
   public void registerPeriodicMetric(
@@ -128,6 +135,12 @@ public class MetricService {
   public void insertConnectionInfo(String id, ConnectionInfo connectionInfo) {
     if (this.connectionInfoMap != null) {
       this.connectionInfoMap.computeIfAbsent(id, value -> connectionInfo);
+    }
+  }
+
+  public void updateRateLimiterInfo(RateLimitInfo rateLimitInfo) {
+    if (this.rateLimiterMap != null) {
+      this.rateLimiterMap.merge(rateLimitInfo, 1, Integer::sum);
     }
   }
   /**
@@ -164,6 +177,17 @@ public class MetricService {
         "connection", this.connectionInfoMetricSupplier(), interval, timeUnit);
   }
 
+  /**
+   * Currently used to emit establised connection info for UDP transports
+   *
+   * @param interval
+   * @param timeUnit
+   */
+  public void emitRateLimiterMetricPerInterval(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric(
+        "ratelimiter", this.rateLimitInfoMetricSupplier("ratelimiter"), interval, timeUnit);
+  }
+
   private Supplier<Set<Metric>> connectionInfoMetricSupplier() {
     {
       Supplier<Set<Metric>> connectionInfoSupplier =
@@ -171,7 +195,7 @@ public class MetricService {
             Set<Metric> connectionInfoMetricSet = new HashSet<>();
             for (Map.Entry<String, ConnectionInfo> entry : connectionInfoMap.entrySet()) {
               if (entry.getValue() != null) {
-                ConnectionInfo connectionInfo = (ConnectionInfo) entry.getValue();
+                ConnectionInfo connectionInfo = entry.getValue();
                 Metric connectionMetric =
                     this.createConnectionMetric(
                         connectionInfo.getDirection(),
@@ -241,25 +265,43 @@ public class MetricService {
   }
 
   public Supplier<Set<Metric>> sendLBDistribution(String measurement) {
-    Supplier<Set<Metric>> lbTrunkSupplier =
-        () -> {
-          Set<Metric> trunkLBSetMetricDistribution = new HashSet<>();
-          trunkLBMap.forEach(
-              (trunkName, lbCount) -> {
-                Map<String, Long> lbValues = trunkLBMap.get(trunkName);
-                if (lbValues.isEmpty()) return;
-                for (Map.Entry<String, Long> entry : lbValues.entrySet()) {
-                  Metric lbMetricTrunk = Metrics.newMetric().measurement(measurement);
-                  lbMetricTrunk.tag(TRUNK_TAG, trunkName);
-                  lbMetricTrunk.tag(TRUNK_ALGO_TAG, trunkLBAlgorithm.get(trunkName));
-                  lbMetricTrunk.tag(SERVERGROUP_ELEMENT_TAG, entry.getKey());
-                  lbMetricTrunk.field(LBCOUNT_FIELD, entry.getValue());
-                  trunkLBSetMetricDistribution.add(lbMetricTrunk);
-                }
-              });
-          return trunkLBSetMetricDistribution;
-        };
-    return lbTrunkSupplier;
+    return () -> {
+      Set<Metric> trunkLBSetMetricDistribution = new HashSet<>();
+      trunkLBMap.forEach(
+          (trunkName, lbCount) -> {
+            Map<String, Long> lbValues = trunkLBMap.get(trunkName);
+            if (lbValues.isEmpty()) return;
+            for (Map.Entry<String, Long> entry : lbValues.entrySet()) {
+              Metric lbMetricTrunk = Metrics.newMetric().measurement(measurement);
+              lbMetricTrunk.tag(TRUNK_TAG, trunkName);
+              lbMetricTrunk.tag(TRUNK_ALGO_TAG, trunkLBAlgorithm.get(trunkName));
+              lbMetricTrunk.tag(SERVERGROUP_ELEMENT_TAG, entry.getKey());
+              lbMetricTrunk.field(LBCOUNT_FIELD, entry.getValue());
+              trunkLBSetMetricDistribution.add(lbMetricTrunk);
+            }
+          });
+      return trunkLBSetMetricDistribution;
+    };
+  }
+
+  public Supplier<Set<Metric>> rateLimitInfoMetricSupplier(String measurement) {
+    return () -> {
+      Set<Metric> rateLimiterMetricSet = new HashSet<>();
+      rateLimiterMap.forEach(
+          (rateLimitInfo, count) -> {
+            Metric rateLimiterMetric = Metrics.newMetric().measurement(measurement);
+            rateLimiterMetric
+                .tag(REMOTE_IP, rateLimitInfo.getRemoteIP())
+                .tag(LOCAL_IP, rateLimitInfo.getLocalIP())
+                .tag(RL_POLICY_NAME, rateLimitInfo.getPolicyName())
+                .tag(ACTION, rateLimitInfo.getAction().name())
+                .tag(IS_REQUEST, rateLimitInfo.isRequest())
+                .field(COUNT, count);
+            rateLimiterMetricSet.add(rateLimiterMetric);
+          });
+      rateLimiterMap.clear();
+      return rateLimiterMetricSet;
+    };
   }
 
   public void emitTrunkStatusSupplier(String measurement) {
@@ -522,8 +564,10 @@ public class MetricService {
   public void time(
       String metric, long duration, TimeUnit timeUnit, @Nullable SipMetricsContext context) {
     String callId = null;
+    String callType = null;
     if (context != null) {
       callId = context.getCallId();
+      callType = context.getCallType();
     }
     update(
         metric,
@@ -532,7 +576,7 @@ public class MetricService {
         timeUnit,
         context != null ? context.isSuccessful() : null,
         callId,
-        context.getCallType());
+        callType);
   }
 
   public void update(
