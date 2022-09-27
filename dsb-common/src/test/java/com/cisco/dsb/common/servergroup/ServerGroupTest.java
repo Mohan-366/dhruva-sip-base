@@ -39,6 +39,7 @@ public class ServerGroupTest {
 
   @Test
   public void testEqualsOptionsPingPolicy() {
-    EqualsVerifier.simple().forClass(OptionsPingPolicy.class).withOnlyTheseFields("name").verify();
+    EqualsVerifier.simple().forClass(OptionsPingPolicy.class).withOnlyTheseFields("name", "failureResponseCodes",
+        "upTimeInterval", "downTimeInterval", "pingTimeOut", "maxForwards").verify();
   }
 }

@@ -515,7 +515,6 @@ public class OptionsPingMonitorTest {
 
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
         .thenReturn(response2);
-
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(sg).log())
         .expectNextCount(4)
         .thenAwait(Duration.ofMillis(sg.getOptionsPingPolicy().getUpTimeInterval()))
@@ -555,7 +554,6 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getDownTimeInterval()))
         .thenCancel()
         .verify();
-
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
     Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
@@ -841,6 +839,73 @@ public class OptionsPingMonitorTest {
     map2.put("s3", sg3);
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
+  }
+
+  @Test
+  public void testMapCompareForOptionsPingPolicyInSG() {
+    Map<String, ServerGroup> map1 = new HashMap<>();
+    Map<String, ServerGroup> map2 = new HashMap<>();
+    List<Integer> faiureCodes1 = new ArrayList<>(Arrays.asList(408, 502));
+    List<Integer> faiureCodes2 = new ArrayList<>(Arrays.asList(408, 502));
+    OptionsPingPolicy op1 = OptionsPingPolicy
+        .builder()
+        .setUpTimeInterval(30000)
+        .setDownTimeInterval(5000)
+        .setFailureResponseCodes(faiureCodes1).build();
+    OptionsPingPolicy op2 = OptionsPingPolicy
+        .builder()
+        .setUpTimeInterval(30000)
+        .setDownTimeInterval(5000)
+        .setFailureResponseCodes(faiureCodes2).build();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setName("s1")
+            .setHostName("s1")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .setOptionsPingPolicy(op1)
+            .build();
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setName("s1")
+            .setHostName("s1")
+            .setNetworkName("n1")
+            .setPriority(10)
+            .setWeight(100)
+            .setOptionsPingPolicy(op2)
+            .build();
+    ServerGroupElement sge1 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    ServerGroupElement sge2 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(1000)
+            .setTransport(Transport.TCP)
+            .setPriority(10)
+            .setWeight(100)
+            .build();
+    sg1.setElements(Arrays.asList(sge1, sge2));
+    sg2.setElements(Arrays.asList(sge1, sge2));
+    map1.put(sg1.getName(), sg1);
+    map2.put(sg2.getName(), sg2);
+    Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502, 503))); // change failover codes
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502))); // reset failover codes
+    op2.setUpTimeInterval(35000); // change up interval time
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    op2.setUpTimeInterval(30000); // reset up interval time
+    op2.setPingTimeOut(1000); // change up pingTimeOut
+    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+
+
   }
 
   @Test(expectedExceptions = {DhruvaRuntimeException.class})

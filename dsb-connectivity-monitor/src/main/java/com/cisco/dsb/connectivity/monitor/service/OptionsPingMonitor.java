@@ -92,6 +92,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     }
   }
 
+
   public void pingPipeLine(ServerGroup serverGroup) {
     opFlux.add(createUpElementsFlux(serverGroup).subscribe());
     opFlux.add(createDownElementsFlux(serverGroup).subscribe());
@@ -348,7 +349,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         .anyMatch(
             key -> {
               // Refresh OPTIONS pings only when serverGroup config has some changes.
-              return key.contains("serverGroups");
+              return (key.contains("serverGroups") || key.contains("optionsPingPolicy"));
             })) {
       logger.info("ServerGroups environment config changed with keys :{}", event.getKeys());
       RefreshHandle refreshHandle = new RefreshHandle();

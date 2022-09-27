@@ -30,13 +30,26 @@ public class OptionsPingPolicy {
     if (this == a) return true;
     if (a instanceof OptionsPingPolicy) {
       OptionsPingPolicy b = ((OptionsPingPolicy) a);
-      return new EqualsBuilder().append(name, b.name).isEquals();
+      return new EqualsBuilder()
+          .append(name, b.name)
+          .append(upTimeInterval, b.upTimeInterval)
+          .append(downTimeInterval, b.downTimeInterval)
+          .append(pingTimeOut, b.pingTimeOut)
+          .append(maxForwards, b.maxForwards)
+          .append(failureResponseCodes, b.failureResponseCodes)
+          .isEquals();
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder().append(name).toHashCode();
+    return new HashCodeBuilder()
+        .append(name)
+        .append(upTimeInterval)
+        .append(downTimeInterval)
+        .append(pingTimeOut)
+        .append(maxForwards)
+        .append(failureResponseCodes).toHashCode();
   }
 }
