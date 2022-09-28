@@ -1,7 +1,5 @@
 package com.cisco.dsb.trunk.trunks;
 
-// import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_DPN;
-// import static com.cisco.dsb.trunk.util.SipParamConstants.X_CISCO_OPN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;

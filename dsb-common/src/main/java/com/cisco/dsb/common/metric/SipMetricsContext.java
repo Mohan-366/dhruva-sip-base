@@ -25,7 +25,8 @@ public class SipMetricsContext implements AutoCloseable {
     proxyNewRequestSendSuccess,
     proxyNewRequestSendFailure,
     proxyNewRequestRetryNextElement,
-    proxyNewRequestFinalResponseProcessed
+    proxyNewRequestFinalResponseProcessed,
+    proxyRequestCancelReceived
   }
 
   public State state;

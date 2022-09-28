@@ -107,7 +107,7 @@ public class ProxySendMessage {
       } else {
         sipProvider.sendResponse(response);
       }
-      logger.info("Successfully sent response for  {}", response.getStatusCode());
+      logger.info("Successfully sent response {}", response.getStatusCode());
       handleResponseLMA(sipProvider, sipResponse, internal, false, callType);
     } catch (Exception e) {
       throw new DhruvaException(

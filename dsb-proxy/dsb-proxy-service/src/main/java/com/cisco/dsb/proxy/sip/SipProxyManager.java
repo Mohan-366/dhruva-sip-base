@@ -579,7 +579,9 @@ public class SipProxyManager {
          * */
 
         // Capture the start time for new incoming request for latency metrics
-        if (!SipUtils.isMidDialogRequest(sipRequest)) {
+        if (!SipUtils.isMidDialogRequest(sipRequest)
+            || !Objects.equals(sipRequest.getMethod(), Request.OPTIONS)
+            || !Objects.equals(sipRequest.getMethod(), Request.CANCEL)) {
           new SipMetricsContext(
               metricService,
               State.proxyNewRequestReceived,

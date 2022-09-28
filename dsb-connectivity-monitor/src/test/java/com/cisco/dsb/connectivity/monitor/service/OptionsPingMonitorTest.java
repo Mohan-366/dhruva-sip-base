@@ -385,8 +385,7 @@ public class OptionsPingMonitorTest {
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
 
-
-// Marking sge as up by sending 200, should send UP metric
+    // Marking sge as up by sending 200, should send UP metric
     Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponse()))
         .when(optionsPingMonitor4)
         .createAndSendRequest("testSG", sge, optionsPingPolicy);

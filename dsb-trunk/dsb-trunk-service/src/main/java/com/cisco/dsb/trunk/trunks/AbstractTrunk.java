@@ -30,12 +30,15 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.sip.message.Response;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SynchronousSink;
 import reactor.util.retry.Retry;
 
 /** Abstract class for all kinds of trunks */
@@ -115,49 +118,114 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   protected abstract boolean enableRedirection();
 
+  /**
+   * Handles the proxySIPResponse received from the endpoint Based on the response code , checks if
+   * it matches failOver code. If so , next element will be tried In case of 3xx, updates the cookie
+   * for redirection handling Finally sends the best response stored in the cookie for this request
+   *
+   * @param cookie stateful info stored for a given sip request
+   * @return BiConsumer function accepting ProxySIPResponse and reactor sink.
+   */
+  private BiConsumer<ProxySIPResponse, SynchronousSink<ProxySIPResponse>> handleProxyResponse(
+      TrunkCookie cookie) {
+    return (proxySIPResponse, sink) -> {
+      // process Response, based on that send error signal to induce retry
+      // if best response received or no more elements to try, onNext(bestResponse)
+      logger.debug("Received Response {}", proxySIPResponse.getStatusCode());
+      ProxySIPRequest proxySIPRequest = cookie.getOriginalRequest();
+
+      if (shouldFailover(proxySIPResponse, cookie)) {
+        logger.info(
+            "Received responseCode({}) is part of failOverCode, trying next element",
+            proxySIPResponse.getStatusCode());
+        // Measure latency
+        proxySIPRequest.handleProxyEvent(
+            getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
+        sink.error(new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT, "Trying next element"));
+
+      } else if (proxySIPResponse.getResponseClass() == 3 && enableRedirection()) {
+        ContactList redirectionList = proxySIPResponse.getResponse().getContactHeaders();
+        cookie.getRedirectionSet().add(redirectionList);
+        logger.info("Following redirection");
+        proxySIPRequest.handleProxyEvent(
+            getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
+        sink.error(new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT, "Following redirection"));
+      } else {
+        sink.next(cookie.getBestResponse());
+      }
+    };
+  }
+
+  private Function<Throwable, Mono<ProxySIPResponse>> sendBestResponseOnException(
+      TrunkCookie cookie) {
+    return err ->
+        Mono.defer(
+            () -> {
+              ProxySIPResponse bestResponse = cookie.getBestResponse();
+              if (bestResponse == null) {
+                if (err instanceof DhruvaRuntimeException) {
+                  return Mono.error(err);
+                } else if (err instanceof TimeoutException) {
+                  logger.error(
+                      "Received overall timeout Exception, timeout:{}",
+                      egress.getOverallResponseTimeout());
+                  return Mono.empty();
+                } else {
+                  return Mono.error(
+                      new DhruvaRuntimeException(
+                          ErrorCode.APP_REQ_PROC, "no best response found", err));
+                }
+              }
+              return Mono.just(bestResponse);
+            });
+  }
+
+  /**
+   * Fetches the endpoint or downstream element for this sip request Handles mid-call requests
+   * separately and is not part of pipeline Applies post normalization rules Finally sends the
+   * request to the endpoint derived Handles the response received in aysnc fashion
+   *
+   * @param proxySIPRequest sip request that needs to be sent out
+   * @param normalization normalization rules to applied for this trunk
+   * @return ProxySipResponse or Mono.error
+   */
   protected Mono<ProxySIPResponse> sendToProxy(
       ProxySIPRequest proxySIPRequest, Normalization normalization) {
     // mid call requests must be simply be sent to proxy by-passing LB logic
     if (proxySIPRequest.isMidCall()) {
       return sendMidCallRequestToProxy(proxySIPRequest, normalization);
     }
+
     String userId = null;
     if (((SipUri) proxySIPRequest.getRequest().getRequestURI())
         .hasParameter(SipParamConstants.TEST_CALL)) userId = SipParamConstants.INJECTED_DNS_UUID;
+
     TrunkCookie cookie = new TrunkCookie(this, proxySIPRequest, userId);
 
     return Mono.defer(() -> getEndPoint(cookie))
         .doOnNext(endPoint -> normalization.egressPostNormalize().accept(cookie, endPoint))
         .flatMap(endPoint -> sendToProxy(cookie, endPoint))
+        .timeout(Duration.ofSeconds(egress.getOverallResponseTimeout()))
         .<ProxySIPResponse>handle(
             (proxySIPResponse, sink) -> {
-              // process Response, based on that send error signal to induce retry
-              // if best response received or no more elements to try, onNext(bestResponse)
-              logger.debug("Received Response {}", proxySIPResponse.getStatusCode());
-
-              if (shouldFailover(proxySIPResponse, cookie)) {
-                logger.info(
-                    "Received responseCode({}) is part of failOverCode, trying next element",
-                    proxySIPResponse.getStatusCode());
-                // Measure latency
-                proxySIPRequest.handleProxyEvent(
-                    getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
-                sink.error(
-                    new DhruvaRuntimeException(ErrorCode.TRUNK_RETRY_NEXT, "Trying next element"));
-
-              } else if (proxySIPResponse.getResponseClass() == 3 && enableRedirection()) {
-                ContactList redirectionList = proxySIPResponse.getResponse().getContactHeaders();
-                cookie.getRedirectionSet().add(redirectionList);
-                logger.info("Following redirection");
-                proxySIPRequest.handleProxyEvent(
-                    getMetricService(), SipMetricsContext.State.proxyNewRequestRetryNextElement);
-                sink.error(
-                    new DhruvaRuntimeException(
-                        ErrorCode.TRUNK_RETRY_NEXT, "Following redirection"));
-              } else {
-                sink.next(cookie.getBestResponse());
-              }
+              handleProxyResponse(cookie).accept(proxySIPResponse, sink);
             })
+        .transform(proxySIPResponseMono -> handleProxyException(proxySIPResponseMono, cookie));
+  }
+
+  /**
+   * Checks if error maps to circuit breaker exception. If so , will set error code to
+   * TRUNK_RETRY_NEXT invokes retryWhen to again go over the pipeline.Checks if error code matches
+   * TRUNK_RETRY_NEXT If there is a match, invokes the pipeline again, this time a new endpoint or
+   * next endpoint will be tried
+   *
+   * @param proxySIPResponseMono sip response received for a given request
+   * @param cookie stateful info stored for a given sip request
+   * @return ProxySipResponse or Mono.error
+   */
+  private Mono<ProxySIPResponse> handleProxyException(
+      Mono<ProxySIPResponse> proxySIPResponseMono, TrunkCookie cookie) {
+    return proxySIPResponseMono
         .onErrorMap(
             DsbCircuitBreakerUtil::isCircuitBreakerException,
             (err) ->
@@ -167,35 +235,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
                     err))
         // retry only it matches TRUNK_RETRY ERROR CODE
         .retryWhen(this.retryTrunkOnException)
-        .onErrorResume(
-            err ->
-                Mono.defer(
-                    () -> {
-                      ProxySIPResponse bestResponse = cookie.getBestResponse();
-                      if (bestResponse == null) {
-                        if (err instanceof DhruvaRuntimeException) {
-                          return Mono.error(err);
-                        } else {
-                          return Mono.error(
-                              new DhruvaRuntimeException(
-                                  ErrorCode.APP_REQ_PROC, "no best response found", err));
-                        }
-                      }
-                      return Mono.just(bestResponse);
-                    }))
-        .timeout(Duration.ofSeconds(egress.getOverallResponseTimeout()))
-        .onErrorResume(
-            TimeoutException.class,
-            err -> {
-              logger.error(
-                  "Received overall timeout Exception, timeout:{}",
-                  egress.getOverallResponseTimeout());
-              ProxySIPResponse bestResponse = cookie.getBestResponse();
-              if (bestResponse == null) {
-                return Mono.empty();
-              }
-              return Mono.just(bestResponse);
-            });
+        .onErrorResume(sendBestResponseOnException(cookie));
   }
 
   private boolean shouldFailover(ProxySIPResponse proxySIPResponse, TrunkCookie cookie) {
@@ -237,6 +277,18 @@ public abstract class AbstractTrunk implements LoadBalancable {
     return false;
   }
 
+  /**
+   * clones the original request.The cloned request will be sent via network Handles static, dynamic
+   * Server Group and redirection. Checks the options ping status for the remote element before it
+   * decides to pick one. Operates on load balancer set in cookie which is stateful and is used for
+   * all retries to subsequent elements Supports load balancing across elements with server group
+   * and across server groups as well. Uses dnsServerGroupUtil to setup the pipeline for async DNS
+   * resolutions
+   *
+   * @param cookie stateful info stored for a given sip request(lb, original request, redirection
+   *     set)
+   * @return Endpoint object having IP:PORT of remote element where request needs to be sent
+   */
   private Mono<EndPoint> getEndPoint(TrunkCookie cookie) {
     // try all the contacts present in redirection set
     cookie.setClonedRequest(((ProxySIPRequest) cookie.getOriginalRequest().clone()));

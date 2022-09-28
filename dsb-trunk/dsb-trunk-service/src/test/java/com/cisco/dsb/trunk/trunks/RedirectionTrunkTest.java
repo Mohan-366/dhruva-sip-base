@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.sip.InvalidArgumentException;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Response;
-
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -242,15 +241,15 @@ public class RedirectionTrunkTest {
               DnsDestination dnsDestination = invocationOnMock.getArgument(1);
               if (dnsDestination.getAddress().equals("ns1.akg.com"))
                 when(locateSIPServersResponse.getHops())
-                        .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
+                    .thenReturn(trunkTestUtil.getHops(1, nsServerGroups.get(0), false));
               else
                 when(locateSIPServersResponse.getHops())
-                        .thenReturn(trunkTestUtil.getHops(3, nsServerGroups.get(1), true));
+                    .thenReturn(trunkTestUtil.getHops(3, nsServerGroups.get(1), true));
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
               return CompletableFuture.completedFuture(locateSIPServersResponse);
             })
-            .when(locatorService)
-            .locateDestinationAsync(eq(null), any(DnsDestination.class));
+        .when(locatorService)
+        .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
     SIPResponse redirectSR = mock(SIPResponse.class);
@@ -267,22 +266,19 @@ public class RedirectionTrunkTest {
               if (c_s == 0) {
                 // initial redirect from NS
                 return CompletableFuture.completedFuture(redirectPSR);
-              }
-              else if(c_s == 1)
-                return CompletableFuture.completedFuture(failedProxySIPResponse);
+              } else if (c_s == 1) return CompletableFuture.completedFuture(failedProxySIPResponse);
               else {
                 // success response from 2nd element from redirection set
                 return CompletableFuture.completedFuture(successProxySIPResponse);
               }
             })
-            .when(clonedPSR)
-            .proxy(any(EndPoint.class));
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
 
     StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
-                    .expectNext(successProxySIPResponse)
-                            .verifyComplete();
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
-
   }
 
   @Test()
@@ -452,25 +448,32 @@ public class RedirectionTrunkTest {
     AntaresTrunk trunk = new AntaresTrunk();
     DnsServerGroupUtil dnsServerGroupUtil = Mockito.mock(DnsServerGroupUtil.class);
     List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
-    ServerGroupElement resolvedNS = ServerGroupElement.builder().setIpAddress("1.1.1.1")
-                    .setPort(6060)
+    ServerGroupElement resolvedNS =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
+            .setPort(6060)
             .setTransport(Transport.UDP)
-                            .build();
-    ServerGroupElement resolvedAS = ServerGroupElement.builder().setIpAddress("2.2.2.2")
-                    .setPort(7000)
+            .build();
+    ServerGroupElement resolvedAS =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
+            .setPort(7000)
             .setTransport(Transport.UDP)
-                            .build();
+            .build();
     trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
     trunk.setDnsServerGroupUtil(dnsServerGroupUtil);
-    //resolve dns
-    doAnswer(invocationOnMock -> {
-      ServerGroup serverGroup = invocationOnMock.getArgument(0);
-      if(serverGroup.equals(nsServerGroups.get(0)) || serverGroup.equals(nsServerGroups.get(1)))
-        serverGroup.setElements(List.of(resolvedNS));
-      else
-        serverGroup.setElements(List.of(resolvedAS));
-      return Mono.just(serverGroup);
-    }).when(dnsServerGroupUtil).createDNSServerGroup(any(),any());
+    // resolve dns
+    doAnswer(
+            invocationOnMock -> {
+              ServerGroup serverGroup = invocationOnMock.getArgument(0);
+              if (serverGroup.equals(nsServerGroups.get(0))
+                  || serverGroup.equals(nsServerGroups.get(1)))
+                serverGroup.setElements(List.of(resolvedNS));
+              else serverGroup.setElements(List.of(resolvedAS));
+              return Mono.just(serverGroup);
+            })
+        .when(dnsServerGroupUtil)
+        .createDNSServerGroup(any(), any());
     // prepare contact header
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
     SIPResponse redirectSR = mock(SIPResponse.class);
@@ -479,22 +482,21 @@ public class RedirectionTrunkTest {
     when(redirectPSR.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR.getResponse()).thenReturn(redirectSR);
     when(redirectSR.getContactHeaders()).thenReturn(contactList);
-    //mock response
+    // mock response
     doAnswer(
             invocationOnMock -> {
               EndPoint endPoint = invocationOnMock.getArgument(0);
-              if(endPoint.getHost().equals("1.1.1.1"))
+              if (endPoint.getHost().equals("1.1.1.1"))
                 return CompletableFuture.completedFuture(redirectPSR);
-              else
-                return CompletableFuture.completedFuture(successProxySIPResponse);
+              else return CompletableFuture.completedFuture(successProxySIPResponse);
             })
-            .when(clonedPSR)
-            .proxy(any(EndPoint.class));
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
 
     StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
-            .expectNext(successProxySIPResponse)
-            .verifyComplete();
-    verify(dnsServerGroupUtil,times(2)).createDNSServerGroup(any(ServerGroup.class),eq(null));
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
+    verify(dnsServerGroupUtil, times(2)).createDNSServerGroup(any(ServerGroup.class), eq(null));
   }
 
   @Test(description = "Testing DNS exception while resolving Contact")
@@ -505,15 +507,21 @@ public class RedirectionTrunkTest {
     DnsServerGroupUtil dnsServerGroupUtil = Mockito.mock(DnsServerGroupUtil.class);
     OptionsPingControllerImpl optionsPingController = Mockito.mock(OptionsPingControllerImpl.class);
     List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
-    ServerGroupElement resolvedNS1 = ServerGroupElement.builder().setIpAddress("1.1.1.1")
+    ServerGroupElement resolvedNS1 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
             .setPort(6060)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedNS2 = ServerGroupElement.builder().setIpAddress("3.3.3.3")
+    ServerGroupElement resolvedNS2 =
+        ServerGroupElement.builder()
+            .setIpAddress("3.3.3.3")
             .setPort(6060)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedAS = ServerGroupElement.builder().setIpAddress("2.2.2.2")
+    ServerGroupElement resolvedAS =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
             .setPort(7000)
             .setTransport(Transport.UDP)
             .build();
@@ -522,55 +530,52 @@ public class RedirectionTrunkTest {
     trunk.setOptionsPingController(optionsPingController);
     when(optionsPingController.getStatus(any())).thenReturn(true);
     doNothing().when(optionsPingController).startPing(any());
-    //resolve dns
-    doAnswer(invocationOnMock -> {
-      ServerGroup serverGroup = invocationOnMock.getArgument(0);
-      if(nsServerGroups.get(0).getHostName().equals(serverGroup.getHostName())){
-        serverGroup.setElements(List.of(resolvedNS1));
-        return Mono.just(serverGroup);
-      }
-      else if( nsServerGroups.get(1).getHostName().equals(serverGroup.getHostName())){
-        serverGroup.setElements(List.of(resolvedNS2));
-        return Mono.just(serverGroup);
-      }
-      else if(serverGroup.getHostName().equals("notfound.akg.com"))
-        return Mono.error(new DhruvaException("Null / Empty hops"));
-      serverGroup.setElements(List.of(resolvedAS));
-      return Mono.just(serverGroup);
-    }).when(dnsServerGroupUtil).createDNSServerGroup(any(),any());
+    // resolve dns
+    doAnswer(
+            invocationOnMock -> {
+              ServerGroup serverGroup = invocationOnMock.getArgument(0);
+              if (nsServerGroups.get(0).getHostName().equals(serverGroup.getHostName())) {
+                serverGroup.setElements(List.of(resolvedNS1));
+                return Mono.just(serverGroup);
+              } else if (nsServerGroups.get(1).getHostName().equals(serverGroup.getHostName())) {
+                serverGroup.setElements(List.of(resolvedNS2));
+                return Mono.just(serverGroup);
+              } else if (serverGroup.getHostName().equals("notfound.akg.com"))
+                return Mono.error(new DhruvaException("Null / Empty hops"));
+              serverGroup.setElements(List.of(resolvedAS));
+              return Mono.just(serverGroup);
+            })
+        .when(dnsServerGroupUtil)
+        .createDNSServerGroup(any(), any());
     // prepare contact header
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
     SIPResponse redirectSR = mock(SIPResponse.class);
     ContactList contactListNotFound = trunkTestUtil.getContactList(1, "a", "notfound.akg.com");
-    ContactList contactListFound = trunkTestUtil.getContactList(1,"a","found.akg.com");
+    ContactList contactListFound = trunkTestUtil.getContactList(1, "a", "found.akg.com");
     when(redirectPSR.getResponseClass()).thenReturn(3);
     when(redirectPSR.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR.getResponse()).thenReturn(redirectSR);
 
-    //mock response
+    // mock response
     doAnswer(
             invocationOnMock -> {
               EndPoint endPoint = invocationOnMock.getArgument(0);
-              if(endPoint.getHost().equals("1.1.1.1")){
+              if (endPoint.getHost().equals("1.1.1.1")) {
                 when(redirectSR.getContactHeaders()).thenReturn(contactListNotFound);
                 return CompletableFuture.completedFuture(redirectPSR);
-              }
-
-              else if(endPoint.getHost().equals("3.3.3.3")) {
+              } else if (endPoint.getHost().equals("3.3.3.3")) {
                 when(redirectSR.getContactHeaders()).thenReturn(contactListFound);
                 return CompletableFuture.completedFuture(redirectPSR);
-              }
-              else
-                return CompletableFuture.completedFuture(successProxySIPResponse);
+              } else return CompletableFuture.completedFuture(successProxySIPResponse);
             })
-            .when(clonedPSR)
-            .proxy(any(EndPoint.class));
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
 
     StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
-            .expectNext(successProxySIPResponse)
-                    .verifyComplete();
-    verify(dnsServerGroupUtil,times(4)).createDNSServerGroup(any(ServerGroup.class),eq(null));
-    verify(optionsPingController,times(0)).startPing(any());
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
+    verify(dnsServerGroupUtil, times(4)).createDNSServerGroup(any(ServerGroup.class), eq(null));
+    verify(optionsPingController, times(0)).startPing(any());
   }
 
   @Test(description = "enable OPTIONS for redirection")
@@ -583,19 +588,27 @@ public class RedirectionTrunkTest {
     DnsServerGroupUtil dnsServerGroupUtil = Mockito.mock(DnsServerGroupUtil.class);
     OptionsPingControllerImpl optionsPingController = Mockito.mock(OptionsPingControllerImpl.class);
     List<ServerGroup> nsServerGroups = trunkTestUtil.getNSServerGroups(sgRoutePolicy);
-    ServerGroupElement resolvedNS1 = ServerGroupElement.builder().setIpAddress("1.1.1.1")
+    ServerGroupElement resolvedNS1 =
+        ServerGroupElement.builder()
+            .setIpAddress("1.1.1.1")
             .setPort(6060)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedNS2 = ServerGroupElement.builder().setIpAddress("4.4.4.4")
+    ServerGroupElement resolvedNS2 =
+        ServerGroupElement.builder()
+            .setIpAddress("4.4.4.4")
             .setPort(6060)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedAS1 = ServerGroupElement.builder().setIpAddress("2.2.2.2")
+    ServerGroupElement resolvedAS1 =
+        ServerGroupElement.builder()
+            .setIpAddress("2.2.2.2")
             .setPort(7000)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedAS2 = ServerGroupElement.builder().setIpAddress("3.3.3.3")
+    ServerGroupElement resolvedAS2 =
+        ServerGroupElement.builder()
+            .setIpAddress("3.3.3.3")
             .setPort(7000)
             .setTransport(Transport.UDP)
             .build();
@@ -605,43 +618,49 @@ public class RedirectionTrunkTest {
     nsServerGroups.get(0).setEnableRedirectionOptions(true);
     nsServerGroups.get(1).setEnableRedirectionOptions(true);
 
-    //resolve DNS
-    doAnswer(invocationOnMock -> {
-      ServerGroup serverGroup = invocationOnMock.getArgument(0);
-      String sgName = serverGroup.getName();
-      switch (sgName){
-        case "ns1":
-          serverGroup.setElements(List.of(resolvedNS1));
-          break;
-        case "ns2":
-          serverGroup.setElements(List.of(resolvedNS2));
-          break;
-        case "ns1_contact":
-          serverGroup.setElements(List.of(resolvedAS1));
-          break;
-        case "ns2_contact":
-          serverGroup.setElements(List.of(resolvedAS2));
-          break;
-      }
-      return Mono.just(serverGroup);
-    }).when(dnsServerGroupUtil).createDNSServerGroup(any(),any());
+    // resolve DNS
+    doAnswer(
+            invocationOnMock -> {
+              ServerGroup serverGroup = invocationOnMock.getArgument(0);
+              String sgName = serverGroup.getName();
+              switch (sgName) {
+                case "ns1":
+                  serverGroup.setElements(List.of(resolvedNS1));
+                  break;
+                case "ns2":
+                  serverGroup.setElements(List.of(resolvedNS2));
+                  break;
+                case "ns1_contact":
+                  serverGroup.setElements(List.of(resolvedAS1));
+                  break;
+                case "ns2_contact":
+                  serverGroup.setElements(List.of(resolvedAS2));
+                  break;
+              }
+              return Mono.just(serverGroup);
+            })
+        .when(dnsServerGroupUtil)
+        .createDNSServerGroup(any(), any());
 
-    //marking AS1 as down and AS2 as UP
+    // marking AS1 as down and AS2 as UP
     doNothing().when(optionsPingController).startPing(any());
 
     // NS1 and NS2 as up
-    doAnswer(invocationOnMock -> {
-      Pingable pingable = invocationOnMock.getArgument(0);
-      if(pingable instanceof ServerGroup){
-        ServerGroup serverGroup = ((ServerGroup) pingable);
-        return !serverGroup.getName().equals("ns1_contact");
-      }
-      if(pingable instanceof ServerGroupElement){
-        ServerGroupElement element = ((ServerGroupElement) pingable);
-        return !element.equals(resolvedAS1);
-      }
-      return false;
-    }).when(optionsPingController).getStatus(any());
+    doAnswer(
+            invocationOnMock -> {
+              Pingable pingable = invocationOnMock.getArgument(0);
+              if (pingable instanceof ServerGroup) {
+                ServerGroup serverGroup = ((ServerGroup) pingable);
+                return !serverGroup.getName().equals("ns1_contact");
+              }
+              if (pingable instanceof ServerGroupElement) {
+                ServerGroupElement element = ((ServerGroupElement) pingable);
+                return !element.equals(resolvedAS1);
+              }
+              return false;
+            })
+        .when(optionsPingController)
+        .getStatus(any());
 
     // prepare contact header
     ProxySIPResponse redirectPSR = mock(ProxySIPResponse.class);
@@ -652,12 +671,12 @@ public class RedirectionTrunkTest {
     when(redirectPSR.getStatusCode()).thenReturn(Response.MOVED_TEMPORARILY);
     when(redirectPSR.getResponse()).thenReturn(redirectSR);
 
-    //mock response
+    // mock response
     doAnswer(
             invocationOnMock -> {
               EndPoint endPoint = invocationOnMock.getArgument(0);
               String host = endPoint.getHost();
-              switch (host){
+              switch (host) {
                 case "1.1.1.1":
                   when(redirectSR.getContactHeaders()).thenReturn(as1);
                   return CompletableFuture.completedFuture(redirectPSR);
@@ -671,14 +690,14 @@ public class RedirectionTrunkTest {
                   return CompletableFuture.completedFuture(successProxySIPResponse);
               }
             })
-            .when(clonedPSR)
-            .proxy(any(EndPoint.class));
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
 
-    //verify
+    // verify
     StepVerifier.create(trunk.processEgress(proxySIPRequest, new NormalizationHelper()))
-            .expectNext(successProxySIPResponse)
-            .verifyComplete();
+        .expectNext(successProxySIPResponse)
+        .verifyComplete();
 
-    verify(optionsPingController,times(2)).startPing(any(ServerGroup.class));
+    verify(optionsPingController, times(2)).startPing(any(ServerGroup.class));
   }
 }

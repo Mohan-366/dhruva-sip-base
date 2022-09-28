@@ -706,6 +706,9 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 ErrorCode.SEND_RESPONSE_ERR,
                 "Error sending 200 (OK) response for CANCEL request",
                 e);
+          } finally {
+            proxySIPRequest.handleProxyEvent(
+                metricService, SipMetricsContext.State.proxyRequestCancelReceived);
           }
           return null;
 

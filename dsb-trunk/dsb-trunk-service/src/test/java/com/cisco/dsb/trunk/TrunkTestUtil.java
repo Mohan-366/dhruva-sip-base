@@ -79,9 +79,7 @@ public class TrunkTestUtil {
             .build();
     egrees.setLbType(LBType.WEIGHT);
     egrees.setRoutePolicyFromConfig(rp);
-    serverGroups
-        .forEach(
-            sg -> serverGroupMap.put(sg.getHostName(), sg));
+    serverGroups.forEach(sg -> serverGroupMap.put(sg.getHostName(), sg));
     abstractTrunk.setEgress(egrees);
     abstractTrunk.setDnsServerGroupUtil(dnsServerGroupUtil);
     abstractTrunk.setDsbCircuitBreaker(dsbCircuitBreaker);
@@ -121,7 +119,7 @@ public class TrunkTestUtil {
           break;
         case "a":
         default:
-          uri.setHost(hostname!=null?hostname:faker.internet().domainName());
+          uri.setHost(hostname != null ? hostname : faker.internet().domainName());
           break;
       }
       uri.setPort(faker.number().numberBetween(5060, 5070));

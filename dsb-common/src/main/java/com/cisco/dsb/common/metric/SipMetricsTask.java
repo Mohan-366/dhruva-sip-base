@@ -69,20 +69,21 @@ public class SipMetricsTask implements Runnable {
   private void handleState() {
     switch (metricsContext.state) {
       case proxyNewRequestReceived:
-        logger.info("incoming new request timer start {}", metricsContext.getCallId());
+        logger.debug("incoming new request timer start {}", metricsContext.getCallId());
         metricsService.startStopWatch(metricsContext.getCallId(), incomingRequest);
         break;
       case proxyNewRequestSendSuccess:
       case proxyNewRequestSendFailure:
       case proxyNewRequestRetryNextElement:
-        logger.info(
+        logger.debug(
             "split the request timer {} for event {}",
             metricsContext.getCallId(),
             metricsContext.state);
         metricsService.splitStopWatch(metricsContext.getCallId(), incomingRequest);
         break;
       case proxyNewRequestFinalResponseProcessed:
-        logger.info(
+      case proxyRequestCancelReceived:
+        logger.debug(
             "incoming new request processing latency time end {}", metricsContext.getCallId());
         timeStopWatch(incomingRequest);
         break;

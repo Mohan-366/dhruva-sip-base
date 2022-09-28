@@ -130,8 +130,7 @@ public class OptionsUtil {
               for (ServerGroupElement sgeNew : serverGroupNew.getElements()) {
                 result =
                     (serverGroupOld.getElements().stream()
-                        .allMatch(
-                            sgeOld -> sgeOld.compareTo(sgeNew) != 0));
+                        .allMatch(sgeOld -> sgeOld.compareTo(sgeNew) != 0));
                 if (result) {
                   return true;
                 }

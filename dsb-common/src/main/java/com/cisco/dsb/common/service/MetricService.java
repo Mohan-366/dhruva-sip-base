@@ -753,7 +753,7 @@ public class MetricService {
         try {
           return timeUnit.convert(stopWatch.getSplitNanoTime(), TimeUnit.NANOSECONDS);
         } catch (IllegalStateException e) {
-          logger.info("exception while we get split time {}", e.getMessage());
+          logger.info("exception while we get split time {} for callID {}", e.getMessage(), callId);
           return noValidDuration;
         }
       }
@@ -767,7 +767,12 @@ public class MetricService {
       String key = joiner.join(callId, metric);
       StopWatch stopWatch = stopWatchTimers.get(key);
       if (stopWatch != null) {
-        stopWatch.stop();
+        try {
+          stopWatch.stop();
+        } catch (IllegalStateException e) {
+          logger.info("exception while we get stop time {} for callID {}", e.getMessage(), callId);
+          return noValidDuration;
+        }
         long retVal = stopWatch.getTime(TimeUnit.MILLISECONDS);
         stopWatchTimers.remove(key);
         return retVal;

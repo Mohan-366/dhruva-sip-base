@@ -77,5 +77,4 @@ public final class LoadBalancer {
   public boolean isEmpty() {
     return this.elementsToTry.isEmpty();
   }
-
 }

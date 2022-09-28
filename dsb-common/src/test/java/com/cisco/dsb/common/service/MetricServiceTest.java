@@ -1,6 +1,7 @@
 package com.cisco.dsb.common.service;
 
 import static com.cisco.dsb.common.service.MetricService.joiner;
+import static org.awaitility.Awaitility.with;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -22,10 +23,7 @@ import gov.nist.core.Host;
 import gov.nist.core.HostPort;
 import gov.nist.javax.sip.stack.ConnectionOrientedMessageChannel;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import org.apache.commons.lang3.time.StopWatch;
 import org.mockito.*;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -491,19 +489,41 @@ public class MetricServiceTest {
     Assert.assertFalse(metricsContext.isSuccessful());
   }
 
+  @Test(timeOut = 2000, description = "tests latency metric in different call states")
   public void latencyMetricTest() throws InterruptedException {
 
     SipMetricsContext contextAtStart =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestReceived, callId, true);
 
-    Thread.sleep(10);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(() -> metricService.getStopWatchTimers().get(callId + "." + "call.latency") != null);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").isStarted());
 
     SipMetricsContext contextInBetween =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestSendSuccess, callId, true);
 
-    Thread.sleep(20);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime()
+                    > 0);
 
     SipMetricsContext contextAtEnd =
         new SipMetricsContext(
@@ -512,27 +532,70 @@ public class MetricServiceTest {
             callId,
             true);
 
-    Thread.sleep(20);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(() -> metricService.getStopWatchTimers().get(callId + "." + "call.latency") == null);
 
     SipMetricsContext contextAtStart2 =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestReceived, callId, true);
-
-    Thread.sleep(10);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").isStarted());
 
     SipMetricsContext contextInBetween2 =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestSendFailure, callId, true);
 
-    Thread.sleep(10);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime()
+                    > 0);
+
+    long t1 = metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime();
 
     SipMetricsContext contextRetry2 =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestRetryNextElement, callId, true);
 
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime()
+                    > t1);
+
+    long t2 = metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime();
+
     SipMetricsContext contextInBetween22 =
         new SipMetricsContext(
             metricService, SipMetricsContext.State.proxyNewRequestSendSuccess, callId, true);
+
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(
+            () ->
+                metricService.getStopWatchTimers().get(callId + "." + "call.latency").getSplitTime()
+                    > t2);
 
     SipMetricsContext contextAtEnd2 =
         new SipMetricsContext(
@@ -541,8 +604,12 @@ public class MetricServiceTest {
             callId,
             CALLTYPE_TEST,
             true);
-
-    Thread.sleep(20);
+    with()
+        .pollInSameThread()
+        .await()
+        .atMost(100, TimeUnit.MILLISECONDS)
+        .pollInterval(10, TimeUnit.MILLISECONDS)
+        .until(() -> metricService.getStopWatchTimers().get(callId + "." + "call.latency") == null);
 
     // verify metrics is emitted for latency
     Mockito.verify(metricClientMock, times(2)).sendMetric(metricArgumentCaptor.capture());
