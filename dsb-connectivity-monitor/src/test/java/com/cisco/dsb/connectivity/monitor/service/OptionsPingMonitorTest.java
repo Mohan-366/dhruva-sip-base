@@ -72,7 +72,7 @@ public class OptionsPingMonitorTest {
     } else {
       portCounter = 200;
     }
-    List<Integer> failoverCodes = Arrays.asList(503);
+    List<Integer> failoverCodes = List.of(503);
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder()
             .setName("opPolicy1")
@@ -100,16 +100,14 @@ public class OptionsPingMonitorTest {
       }
       portCounter++;
     }
-    ServerGroup sg =
-        ServerGroup.builder()
-            .setNetworkName("netSG")
-            .setName("mySG")
-            .setHostName("mySG")
-            .setElements(sgeList)
-            .setPingOn(true)
-            .setOptionsPingPolicy(optionsPingPolicy)
-            .build();
-    return sg;
+    return ServerGroup.builder()
+        .setNetworkName("netSG")
+        .setName("mySG")
+        .setHostName("mySG")
+        .setElements(sgeList)
+        .setPingOn(true)
+        .setOptionsPingPolicy(optionsPingPolicy)
+        .build();
   }
 
   public void createMultipleServerGroupElements() {
@@ -564,7 +562,7 @@ public class OptionsPingMonitorTest {
   @Test
   public void testDownIntervalException() {
 
-    List<Integer> failoverCodes = Arrays.asList(503);
+    List<Integer> failoverCodes = List.of(503);
     OptionsPingMonitor optionsPingMonitor = Mockito.spy(OptionsPingMonitor.class);
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder().setFailureResponseCodes(failoverCodes).build();
@@ -846,16 +844,18 @@ public class OptionsPingMonitorTest {
     Map<String, ServerGroup> map2 = new HashMap<>();
     List<Integer> faiureCodes1 = new ArrayList<>(Arrays.asList(408, 502));
     List<Integer> faiureCodes2 = new ArrayList<>(Arrays.asList(408, 502));
-    OptionsPingPolicy op1 = OptionsPingPolicy
-        .builder()
-        .setUpTimeInterval(30000)
-        .setDownTimeInterval(5000)
-        .setFailureResponseCodes(faiureCodes1).build();
-    OptionsPingPolicy op2 = OptionsPingPolicy
-        .builder()
-        .setUpTimeInterval(30000)
-        .setDownTimeInterval(5000)
-        .setFailureResponseCodes(faiureCodes2).build();
+    OptionsPingPolicy op1 =
+        OptionsPingPolicy.builder()
+            .setUpTimeInterval(30000)
+            .setDownTimeInterval(5000)
+            .setFailureResponseCodes(faiureCodes1)
+            .build();
+    OptionsPingPolicy op2 =
+        OptionsPingPolicy.builder()
+            .setUpTimeInterval(30000)
+            .setDownTimeInterval(5000)
+            .setFailureResponseCodes(faiureCodes2)
+            .build();
     ServerGroup sg1 =
         ServerGroup.builder()
             .setName("s1")
@@ -895,7 +895,8 @@ public class OptionsPingMonitorTest {
     map1.put(sg1.getName(), sg1);
     map2.put(sg2.getName(), sg2);
     Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
-    op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502, 503))); // change failover codes
+    op2.setFailureResponseCodes(
+        new ArrayList<>(Arrays.asList(408, 502, 503))); // change failover codes
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502))); // reset failover codes
     op2.setUpTimeInterval(35000); // change up interval time
@@ -903,8 +904,6 @@ public class OptionsPingMonitorTest {
     op2.setUpTimeInterval(30000); // reset up interval time
     op2.setPingTimeOut(1000); // change up pingTimeOut
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
-
-
   }
 
   @Test(expectedExceptions = {DhruvaRuntimeException.class})

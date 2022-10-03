@@ -92,7 +92,6 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
     }
   }
 
-
   public void pingPipeLine(ServerGroup serverGroup) {
     opFlux.add(createUpElementsFlux(serverGroup).subscribe());
     opFlux.add(createDownElementsFlux(serverGroup).subscribe());

@@ -1,7 +1,5 @@
 package com.cisco.dhruva.user;
 
-import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
-
 import com.cisco.dhruva.application.MessageHandler;
 import com.cisco.dhruva.input.TestInput.Type;
 import com.cisco.dhruva.input.TestInput.UasConfig;
@@ -16,10 +14,14 @@ import lombok.SneakyThrows;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipPhone;
 import org.cafesip.sipunit.SipStack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UAS implements UA, Runnable {
-  private UasConfig uasConfig;
 
+  public static final Logger TEST_LOGGER = LoggerFactory.getLogger(UAS.class);
+
+  private UasConfig uasConfig;
   @Getter private SipStack sipStack;
   private CountDownLatch completionLatch;
   private List<TestMessage> testMessages = new ArrayList<>();
@@ -38,11 +40,7 @@ public class UAS implements UA, Runnable {
     String myUri = uasConfig.getMyUri();
     String stackIp = sipStack.getSipProvider().getListeningPoints()[0].getIPAddress();
     if (myUri == null || myUri.isEmpty()) {
-      myUri =
-          "sip:uas@"
-              + sipStack.getSipProvider().getListeningPoints()[0].getIPAddress()
-              + ":"
-              + uasConfig.getPort();
+      myUri = "sip:uas@" + stackIp + ":" + uasConfig.getPort();
     }
     SipPhone uas = sipStack.createSipPhone(myUri);
     SipCall callA = uas.createSipCall();
@@ -66,7 +64,7 @@ public class UAS implements UA, Runnable {
                     MessageHandler.actOnMessage(message, callA, this);
                   }
                 } catch (Exception e) {
-                  TEST_LOGGER.error("UAS Exception occurred {}", e);
+                  TEST_LOGGER.error("UAS Exception occurred: ", e);
                 }
               });
     }
@@ -88,6 +86,6 @@ public class UAS implements UA, Runnable {
 
   @Override
   public String toString() {
-    return " UAS {" + "uasConfig-port=" + uasConfig.getPort() + '}';
+    return "{ip=" + uasConfig.getIp() + ";port=" + uasConfig.getPort() + "}";
   }
 }

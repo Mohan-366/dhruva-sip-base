@@ -1,6 +1,7 @@
 package com.cisco.dsb.util.log;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import com.cisco.dsb.common.dto.RateLimitInfo;
 import com.cisco.dsb.common.dto.RateLimitInfo.Action;
@@ -24,7 +25,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class EventTest {
@@ -110,15 +110,14 @@ public class EventTest {
     ArgumentCaptor<ArrayList<DhruvaEvent>> argument = ArgumentCaptor.forClass(listClass);
 
     Mockito.verify(eventingService, Mockito.times(1)).publishEvents(argument.capture());
-    argument.getValue()
+    argument
+        .getValue()
         .forEach(
             dhruvaEvent -> {
               if (dhruvaEvent instanceof LoggingEvent) {
                 System.out.println(((LoggingEvent) dhruvaEvent).getEventInfoMap());
-                assertEquals(
-                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localSessionId"), null);
-                assertEquals(
-                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteSessionId"), null);
+                assertNull(((LoggingEvent) dhruvaEvent).getEventInfoMap().get("localSessionId"));
+                assertNull(((LoggingEvent) dhruvaEvent).getEventInfoMap().get("remoteSessionId"));
               }
             });
   }

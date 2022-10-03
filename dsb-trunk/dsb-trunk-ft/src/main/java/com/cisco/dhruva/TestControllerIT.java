@@ -1,7 +1,5 @@
 package com.cisco.dhruva;
 
-import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
-
 import com.cisco.dhruva.application.TestCaseRunner;
 import com.cisco.dhruva.input.TestInput;
 import com.cisco.dhruva.input.TestInput.TestCaseConfig;
@@ -10,22 +8,32 @@ import com.cisco.dhruva.validator.Validator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.ITest;
 import org.testng.SkipException;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
-@Listeners({TestListener.class})
-public class TestControllerIT {
+@Listeners({IntegrationTestListener.class, TestListener.class})
+public class TestControllerIT implements ITest {
+
+  public static final Logger TEST_LOGGER = LoggerFactory.getLogger(TestControllerIT.class);
   private TestInput testCases;
+  private ThreadLocal<String> testName = new ThreadLocal<>();
 
   @BeforeClass
   public void setUp() throws ParseException, IOException {
     readTestCasesJsonFile();
+  }
+
+  @BeforeMethod
+  public void BeforeMethod(Method method, Object[] testData) {
+    TestCaseConfig testCaseConfig = (TestCaseConfig) testData[0];
+    testName.set(method.getName() + "_" + testCaseConfig.getId());
   }
 
   @DataProvider(name = "testInput")
@@ -39,7 +47,6 @@ public class TestControllerIT {
     if (testCaseConfig.isSkipTest()) {
       throw new SkipException("Skipping test: " + testCaseConfig.getDescription());
     }
-    TEST_LOGGER.info("Executing FT: {}" + "", testCaseConfig.getDescription());
     TestCaseRunner testCaseRunner = new TestCaseRunner(testCaseConfig);
     testCaseRunner.prepareAndRunTest();
 
@@ -56,6 +63,11 @@ public class TestControllerIT {
     Object object = parser.parse(new FileReader(testFilePath));
     JSONObject jsonObject = (JSONObject) object;
     testCases = mapper.readValue(jsonObject.toJSONString(), TestInput.class);
-    TEST_LOGGER.info("Input JSON: \n" + jsonObject.toJSONString());
+    TEST_LOGGER.debug("Input JSON: \n" + jsonObject.toJSONString());
+  }
+
+  @Override
+  public String getTestName() {
+    return testName.get();
   }
 }

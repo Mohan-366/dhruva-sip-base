@@ -186,9 +186,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:uas@127.0.0.1:7001"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:uas@127.0.0.1:7001"
                   }
                 }
               }
@@ -312,9 +312,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:uas@127.0.0.1:7001,sip:uas@127.0.0.1:7002"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:uas@127.0.0.1:7001,sip:uas@127.0.0.1:7002"
                   }
                 }
               }
@@ -732,5 +732,6 @@
           ]
         }
       ]
-    }]
+    }
+  ]
 }

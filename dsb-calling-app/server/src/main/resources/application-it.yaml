@@ -53,11 +53,11 @@ common:
       lbType: weight
       elements:
         - ipAddress: "127.0.0.1"
-          port: 4101
+          port: 8001
           priority: 5
           weight: 100
         - ipAddress: "127.0.0.1"
-          port: 4102
+          port: 8002
           priority: 10
           weight: 100
       routePolicy: policy1
@@ -69,7 +69,7 @@ common:
       lbType: weight
       elements:
         - ipAddress: "127.0.0.1"
-          port: 4200
+          port: 8000
           priority: 10
           weight: 100
       routePolicy: policy1
@@ -91,8 +91,11 @@ common:
       hostName: "test.beech.com"
       networkName: *netb2b
       lbType: weight
-      sgType: A_RECORD
-      port: 6000
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 6000
+          priority: 10
+          weight: 100
       routePolicy: policy1
       optionsPingPolicy: opPolicy1
     NS1:
@@ -100,8 +103,11 @@ common:
       hostName: "test1.ns.cisco.com"
       networkName: *netcc
       lbType: weight
-      sgType: A_RECORD
-      port: 7000
+      elements:
+        - ipAddress: "127.0.0.1"
+          port: 7000
+          priority: 10
+          weight: 100
       routePolicy: policy1
       optionsPingPolicy: opPolicy1
   routePolicy:

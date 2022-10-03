@@ -52,7 +52,6 @@
             "type": "request",
             "name": "ACK",
             "direction": "sends"
-
           }
         ]
       },
@@ -505,10 +504,10 @@
                 "responseParameters": {
                   "responseCode": 180,
                   "reasonPhrase": "Ringing",
-                  "headerReplacements" :[{
+                  "headerReplacements" :{
                     "headerName": "record-route",
                     "address": "sip:p1.example.com"
-                  }]
+                  }
                 }
               }
             },
@@ -523,7 +522,6 @@
                   "reasonPhrase": "OK"
                 }
               }
-
             },
             {
               "description": "normal request",
@@ -534,5 +532,6 @@
           ]
         }
       ]
-    }]
+    }
+  ]
 }

@@ -1,0 +1,813 @@
+{
+  "testCaseConfig": [
+    {
+      "description": "DialInPstn - Tests the call-flow from 'PSTN -> Dhruva -> Antares'",
+      "skipTest": false,
+      "id": "1",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5065,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:pstn-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 4200,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:antares-it-guest@cisco.com;x-cisco-test",
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+                },
+                "headerReplacements": {
+                  "To": "sip:antares-it-guest@127.0.0.1",
+                  "Contact": "sip:pstn-it-guest@127.0.0.1"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing",
+              "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+              "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+              "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+              "Diversion": "<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK",
+              "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+              "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+              "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+              "Diversion": "<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:antares-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6000,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:antares-it-guest@127.0.0.1:6000;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099",
+                "route": "<sip:127.0.0.1:6000;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_sp@127.0.0.1:5062;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5062",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing",
+                  "headerAdditions": {
+                    "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                    "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                    "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                    "X-BroadWorks-DNC": "network-address=\"sip:+15085431199@10.21.0.214;user=phone\";user-id=\"ciy6vwddyv@31134724.cisco-bcld.com\";net-ind=InterNetwork",
+                    "X-BroadWorks-Correlation-Info": "279bcde4-62aa-453a-a0d6-8dadd338fb82",
+                    "Diversion": "<sip:+10982345764@1.1.1.1:5061>,<sip:+10982345764@2.2.2.2:5061>,<sip:+10982345764@3.3.3.3:5061>"
+                  },
+                  "headerReplacements": {
+                    "Contact": "sip:antares-it-guest@127.0.0.1:6000"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK",
+                  "headerAdditions": {
+                    "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                    "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                    "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                    "X-BroadWorks-DNC": "network-address=\"sip:+15085431199@10.21.0.214;user=phone\";user-id=\"ciy6vwddyv@31134724.cisco-bcld.com\";net-ind=InterNetwork",
+                    "X-BroadWorks-Correlation-Info": "279bcde4-62aa-453a-a0d6-8dadd338fb82",
+                    "Diversion": "<sip:+10982345764@1.1.1.1:5061>,<sip:+10982345764@2.2.2.2:5061>,<sip:+10982345764@3.3.3.3:5061>"
+                  },
+                  "headerReplacements": {
+                    "Contact": "sip:antares-it-guest@127.0.0.1:6000"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:antares-it-guest@127.0.0.1:6000;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "DialInB2B - Tests the call-flow from 'Antares -> Dhruva -> NS/AS'",
+      "skipTest": false,
+      "id": "2",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5062,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 4200,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@test.beech.com;x-cisco-test;calltype=DialIn;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099",
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+                },
+                "headerReplacements": {
+                  "To": "sip:wxc-it-guest@127.0.0.1",
+                  "Contact": "sip:antares-it-guest@127.0.0.1"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7000,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7000;x-cisco-test",
+                "route": "<sip:127.0.0.1:7000;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_antares@127.0.0.1:5080;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5080",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            },
+            {
+              "description": "redirect response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 302,
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "To": "sip:wxc-it-guest@127.0.0.1",
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:wxc-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 7001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:wxc-it-guest@127.0.0.1:7001;x-cisco-test",
+                "route": "<sip:127.0.0.1:7001;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_antares@127.0.0.1:5080;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5080",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives",
+              "validation": {
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "DialOutWxC - Tests the call-flow from 'WxCalling core (AS) -> Dhruva -> Antares'",
+      "skipTest": false,
+      "id": "3",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5080,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:wxc-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 4200,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:antares-it-guest@test.beech.com;x-cisco-test;dtg=CcpFusionIN",
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+                },
+                "headerReplacements": {
+                  "To": "sip:antares-it-guest@127.0.0.1",
+                  "Contact": "sip:wxc-it-guest@127.0.0.1"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing",
+              "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+              "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+              "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+              "Diversion": "<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK",
+              "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+              "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+              "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+              "Diversion": "<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>,<sip:+10982345764@127.0.0.1:5061>"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:antares-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 6000,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:antares-it-guest@127.0.0.1:6000;x-cisco-test;dtg=CcpFusionIN;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
+                "route": "<sip:127.0.0.1:6000;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_cc@127.0.0.1:5062;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5062",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing",
+                  "headerAdditions": {
+                    "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                    "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                    "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                    "Diversion": "<sip:+10982345764@1.1.1.1:5061>,<sip:+10982345764@2.2.2.2:5061>,<sip:+10982345764@3.3.3.3:5061>"
+                  },
+                  "headerReplacements": {
+                    "Contact": "sip:antares-it-guest@127.0.0.1:6000"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK",
+                  "headerAdditions": {
+                    "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                    "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                    "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                    "Diversion": "<sip:+10982345764@1.1.1.1:5061>,<sip:+10982345764@2.2.2.2:5061>,<sip:+10982345764@3.3.3.3:5061>"
+                  },
+                  "headerReplacements": {
+                    "Contact": "sip:antares-it-guest@127.0.0.1:6000"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:antares-it-guest@127.0.0.1:6000;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "DialOutB2B - Tests the call-flow from 'Antares -> Dhruva -> PSTN’. Also includes SG & SGE failover scenario (i.e) call gets routed to PSTN Pool 1(has only one SGE) which returns an error response code. Dhruva now tries the next PSTN Pool 2(has 2 SGEs), wherein the 1st chosen SGE also returns an error response and the 2nd SGE accepts the call",
+      "skipTest": false,
+      "id": "4",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5062,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 4200,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:pstn-it-guest@test.beech.com;x-cisco-test;dtg=CcpFusionUS;calltype=DialOut;x-cisco-dpn=eccse10099;x-cisco-opn=iccse10099",
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                  "X-BroadWorks-DNC": "network-address=\"sip:+15085431199@10.21.0.214;user=phone\";user-id=\"ciy6vwddyv@31134724.cisco-bcld.com\";net-ind=InterNetwork",
+                  "X-BroadWorks-Correlation-Info": "279bcde4-62aa-453a-a0d6-8dadd338fb82",
+                  "Diversion": "<sip:+10982345764@1.1.1.1:5061>"
+                },
+                "headerReplacements": {
+                  "To": "sip:pstn-it-guest@127.0.0.1;dtg=CcpFusionUS",
+                  "Contact": "sip:antares-it-guest@127.0.0.1"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@10.10.10.10:5061;x-cisco-number=+19702870206>",
+                  "P-Preferred-Identity": "<sip:+10982345764@10.10.10.10:5061>",
+                  "RPID-Privacy": "<sip:+10982345764@10.10.10.10:5061>",
+                  "X-BroadWorks-DNC": "network-address=\"sip:+15085431199@10.21.0.214;user=phone\";user-id=\"ciy6vwddyv@31134724.cisco-bcld.com\";net-ind=InterNetwork",
+                  "X-BroadWorks-Correlation-Info": "279bcde4-62aa-453a-a0d6-8dadd338fb82",
+                  "Diversion": "<sip:+10982345764@1.1.1.1:5061>"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:pstn-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 8000,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:pstn-it-guest@127.0.0.1:8000;x-cisco-test",
+                "To": "<sip:pstn-it-guest@127.0.0.1>",
+                "route": "<sip:127.0.0.1:8000;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_antares@127.0.0.1:5065;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5065",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+                "Diversion": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            },
+            {
+              "description": "error response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 502,
+                  "reasonPhrase": "Bad gateway",
+                  "headerReplacements": {
+                    "contact": "sip:pstn-it-guest@127.0.0.1:8000"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:pstn-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 8001,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:pstn-it-guest@127.0.0.1:8001;x-cisco-test",
+                "To": "<sip:pstn-it-guest@127.0.0.1>",
+                "route": "<sip:127.0.0.1:8001;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_antares@127.0.0.1:5065;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5065",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+                "Diversion": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            },
+            {
+              "description": "error response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 502,
+                  "reasonPhrase": "Bad gateway",
+                  "headerReplacements": {
+                    "Contact": "sip:pstn-it-guest@127.0.0.1:8001"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "myUri": "sip:pstn-it-guest@127.0.0.1",
+          "ip": "127.0.0.1",
+          "port": 8002,
+          "transport": "udp",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:pstn-it-guest@127.0.0.1:8002;x-cisco-test",
+                "To": "<sip:pstn-it-guest@127.0.0.1>",
+                "route": "<sip:127.0.0.1:8002;transport=udp;lr>",
+                "record-route": "<sip:rr$n=net_antares@127.0.0.1:5065;transport=udp;lr>",
+                "via": "SIP/2.0/UDP 127.0.0.1:5065",
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+                "Diversion": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 100,
+                  "reasonPhrase": "Trying"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing",
+                  "headerReplacements": {
+                    "Contact": "sip:pstn-it-guest@127.0.0.1:8002"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK",
+                  "headerReplacements": {
+                    "Contact": "sip:pstn-it-guest@127.0.0.1:8002"
+                  }
+                }
+              }
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives",
+              "validation": {
+                "P-Asserted-Identity": "\"host@pstn.com\" <sip:+10982345764@127.0.0.1:5061;x-cisco-number=+19702870206>",
+                "P-Preferred-Identity": "<sip:+10982345764@127.0.0.1:5061>",
+                "RPID-Privacy": "<sip:+10982345764@127.0.0.1:5061>",
+                "Diversion": "<sip:+10982345764@127.0.0.1:5061>"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

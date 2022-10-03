@@ -114,9 +114,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001"
                   }
                 }
               }
@@ -326,9 +326,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001"
                   }
                 }
               }
@@ -663,9 +663,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
                   }
                 }
               }
@@ -869,9 +869,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
                   }
                 }
               }
@@ -1067,9 +1067,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
                   }
                 }
               }
@@ -1202,9 +1202,9 @@
               "parameters": {
                 "responseParameters": {
                   "responseCode": 302,
-                  "reasonPhrase": "Redirect",
-                  "headerAdditions": {
-                    "contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
+                  "reasonPhrase": "Moved Temporarily",
+                  "headerReplacements": {
+                    "Contact": "sip:wxc-it-guest@127.0.0.1:7001;transport=UDP;lr,sip:wxc-it-guest@127.0.0.1:7002;transport=UDP;lr"
                   }
                 }
               }

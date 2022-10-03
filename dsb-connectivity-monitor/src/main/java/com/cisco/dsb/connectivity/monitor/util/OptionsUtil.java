@@ -117,7 +117,7 @@ public class OptionsUtil {
     } else if (oldMap == null || newMap == null || oldMap.size() != newMap.size()) {
       return true;
     } else {
-      boolean result = false;
+      boolean result;
       for (Map.Entry<String, ServerGroup> sg : newMap.entrySet()) {
         ServerGroup serverGroupNew = sg.getValue();
         ServerGroup serverGroupOld = oldMap.get(sg.getKey());

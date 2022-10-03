@@ -1020,10 +1020,7 @@ public class TrunkTest {
     }
     Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
     response.subscribe(
-        next -> {},
-        err -> {
-          Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left");
-        });
+        next -> {}, err -> Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left"));
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
@@ -1053,7 +1050,7 @@ public class TrunkTest {
     sg1.setRoutePolicyFromConfig(routePolicy);
 
     when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
-    trunkTestUtil.initTrunk(Arrays.asList(sg1), antaresTrunk, dsbCircuitBreaker);
+    trunkTestUtil.initTrunk(List.of(sg1), antaresTrunk, dsbCircuitBreaker);
 
     AtomicInteger state =
         new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
@@ -1071,7 +1068,7 @@ public class TrunkTest {
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
               when(locateSIPServersResponse.getHops())
                   .thenReturn(
-                      Arrays.asList(
+                      List.of(
                           new Hop(
                               sg1.getHostName(),
                               "2.1.1.1",
@@ -1113,10 +1110,7 @@ public class TrunkTest {
     }
     Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
     response.subscribe(
-        next -> {},
-        err -> {
-          Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left");
-        });
+        next -> {}, err -> Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left"));
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }

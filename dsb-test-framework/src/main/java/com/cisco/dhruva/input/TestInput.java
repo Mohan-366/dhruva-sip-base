@@ -37,19 +37,19 @@ public class TestInput {
     tcp,
     tls,
     udp
-  };
+  }
 
   public enum ElementStatus {
     up,
     down
-  };
+  }
 
   public enum Type {
     request,
     response,
     action,
     wait
-  };
+  }
 
   public enum Direction {
     sends,
@@ -148,7 +148,7 @@ public class TestInput {
 
     @JsonProperty("headerReplacements")
     @Getter
-    Header headerReplacements[];
+    Map<String, String> headerReplacements;
 
     @Getter String responseCode;
 

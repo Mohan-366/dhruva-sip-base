@@ -1,7 +1,5 @@
 package com.cisco.dhruva.application;
 
-import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
-
 import com.cisco.dhruva.input.TestInput.ProxyCommunication;
 import com.cisco.dhruva.input.TestInput.TestCaseConfig;
 import com.cisco.dhruva.input.TestInput.UasConfig;
@@ -14,9 +12,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 
 public class TestCaseRunner {
+
+  public static final Logger TEST_LOGGER = LoggerFactory.getLogger(TestCaseRunner.class);
 
   private TestCaseConfig testCaseConfig;
   @Getter CountDownLatch completionLatch;
@@ -29,7 +31,10 @@ public class TestCaseRunner {
 
   public void prepareAndRunTest() throws Exception {
     Instant start = Instant.now();
-    TEST_LOGGER.info("Starting testcase: {}", testCaseConfig.getId());
+    TEST_LOGGER.info(
+        "Starting testcase - id: {}, description: {}",
+        testCaseConfig.getId(),
+        testCaseConfig.getDescription());
     ProxyCommunication clientCommunication =
         this.testCaseConfig.getDsb().getClientCommunicationInfo();
 
@@ -51,10 +56,10 @@ public class TestCaseRunner {
     Thread.sleep(5000);
     Thread ut = new Thread(uac);
     ut.start();
+    TEST_LOGGER.info("Started UAC: {}", uac);
     completionLatch.await(1, TimeUnit.MINUTES);
     if (completionLatch.getCount() != 0) {
-      TEST_LOGGER.info("Some issue with the call flow. Failing the test");
-      Assert.fail();
+      Assert.fail("Some issue with the call flow. Failing the test");
     }
     Instant finish = Instant.now();
     long timeElapsed = Duration.between(start, finish).toMillis();

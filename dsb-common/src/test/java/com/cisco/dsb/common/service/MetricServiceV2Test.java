@@ -94,20 +94,22 @@ public class MetricServiceV2Test {
 
   @Test
   public void testRateLimitInfoMetricSupplier() {
-    RateLimitInfo rateLimitInfo1 = RateLimitInfo.builder()
-        .remoteIP("1.1.1.1")
-        .isRequest(true)
-        .policyName("policy1")
-        .localIP("2.2.2.2")
-        .action(Action.DENY)
-        .build();
-    RateLimitInfo rateLimitInfo2 = RateLimitInfo.builder()
-        .remoteIP("3.3.3.3")
-        .isRequest(true)
-        .policyName("policy2")
-        .localIP("4.4.4.4")
-        .action(Action.RATE_LIMIT)
-        .build();
+    RateLimitInfo rateLimitInfo1 =
+        RateLimitInfo.builder()
+            .remoteIP("1.1.1.1")
+            .isRequest(true)
+            .policyName("policy1")
+            .localIP("2.2.2.2")
+            .action(Action.DENY)
+            .build();
+    RateLimitInfo rateLimitInfo2 =
+        RateLimitInfo.builder()
+            .remoteIP("3.3.3.3")
+            .isRequest(true)
+            .policyName("policy2")
+            .localIP("4.4.4.4")
+            .action(Action.RATE_LIMIT)
+            .build();
 
     metricService.updateRateLimiterInfo(rateLimitInfo1);
     metricService.updateRateLimiterInfo(rateLimitInfo2);
@@ -117,10 +119,9 @@ public class MetricServiceV2Test {
     Set<Metric> metrics = supplierRateLimiter.get();
     assertEquals(metrics.size(), 2);
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    metrics
-        .forEach(
+    metrics.forEach(
         metric -> {
-          if(((InfluxPoint) metric.get()).getTags().get("remoteIP").equals("1.1.1.1")) {
+          if (((InfluxPoint) metric.get()).getTags().get("remoteIP").equals("1.1.1.1")) {
             assertEquals(((InfluxPoint) metric.get()).getTags().get("localIP"), "2.2.2.2");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("policyName"), "policy1");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("action"), "DENY");
@@ -238,8 +239,7 @@ public class MetricServiceV2Test {
             if (((InfluxPoint) eachMetric.get()).getTags().get("trunk").equals("PSTN")) {
               Assert.assertTrue(
                   ((InfluxPoint) eachMetric.get()).getFields().containsKey("outboundCount"));
-              assertEquals(
-                  ((InfluxPoint) eachMetric.get()).getFields().get("outboundCount"), 20);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("outboundCount"), 20);
 
             } else {
               Assert.assertFalse(
@@ -249,8 +249,7 @@ public class MetricServiceV2Test {
           {
             Assert.assertTrue(
                 ((InfluxPoint) eachMetric.get()).getFields().containsKey("inboundCount"));
-            assertEquals(
-                ((InfluxPoint) eachMetric.get()).getFields().get("inboundCount"), 10);
+            assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("inboundCount"), 10);
           }
         });
   }
@@ -301,8 +300,7 @@ public class MetricServiceV2Test {
                 .get("serverGroupElement")
                 .equals("elementC")) {
               assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 1L);
-            } else
-              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 5L);
+            } else assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("lbcount"), 5L);
           }
         });
   }

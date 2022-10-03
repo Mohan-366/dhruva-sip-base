@@ -63,7 +63,7 @@ public class DialInIT extends DhruvaIT {
     as2Stack.dispose();
   }
 
-  @Test(description = "Tests the call-flow from 'PSTN -> Dhruva -> Antares'")
+  @Test(description = "Tests the call-flow from 'PSTN -> Dhruva -> Antares'", enabled = false)
   public void testDialInPstn() throws InvalidArgumentException, ParseException, IOException {
     injectDNS();
     pstn =
@@ -252,7 +252,8 @@ public class DialInIT extends DhruvaIT {
       description =
           "Tests the call-flow from 'Antares -> Dhruva -> NS/AS'"
               + "Also includes AS failover scenario (i.e) NS would reply to Dhruva with 302 containing AS's info(one or more) along with their q-values"
-              + "If the chosen AS responds with an error response, then the next AS will be tried which responds successfully")
+              + "If the chosen AS responds with an error response, then the next AS will be tried which responds successfully",
+      enabled = false)
   public void testDailInB2B() throws InvalidArgumentException, ParseException, IOException {
     injectDNS();
     antares =

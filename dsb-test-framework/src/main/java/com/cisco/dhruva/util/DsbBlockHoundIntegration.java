@@ -1,17 +1,18 @@
 package com.cisco.dhruva.util;
 
-import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
-
 import com.google.auto.service.AutoService;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.integration.BlockHoundIntegration;
 
 @AutoService(BlockHoundIntegration.class)
 public class DsbBlockHoundIntegration implements BlockHoundIntegration {
 
+  public static final Logger TEST_LOGGER = LoggerFactory.getLogger(DsbBlockHoundIntegration.class);
   private static final Set<String> registeredThreads = new HashSet<>();
 
   static {

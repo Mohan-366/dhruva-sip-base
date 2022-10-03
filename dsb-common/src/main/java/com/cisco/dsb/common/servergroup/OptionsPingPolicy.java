@@ -50,6 +50,7 @@ public class OptionsPingPolicy {
         .append(downTimeInterval)
         .append(pingTimeOut)
         .append(maxForwards)
-        .append(failureResponseCodes).toHashCode();
+        .append(failureResponseCodes)
+        .toHashCode();
   }
 }

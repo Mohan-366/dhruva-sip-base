@@ -1,6 +1,7 @@
 package com.cisco.dhruva.callingIntegration.tests;
 
-import static org.cafesip.sipunit.SipAssert.*;
+import static org.cafesip.sipunit.SipAssert.assertHeaderContains;
+import static org.cafesip.sipunit.SipAssert.assertLastOperationSuccess;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
@@ -24,10 +25,16 @@ import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
-import org.cafesip.sipunit.*;
+import org.cafesip.sipunit.SipPhone;
+import org.cafesip.sipunit.SipRequest;
+import org.cafesip.sipunit.SipStack;
+import org.cafesip.sipunit.SipTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.*;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class DialOutIT extends DhruvaIT {
 
@@ -60,7 +67,9 @@ public class DialOutIT extends DhruvaIT {
     pstnUsPoolASg2Stack.dispose();
   }
 
-  @Test(description = "Tests the call-flow from 'WxCalling core (AS) -> Dhruva -> Antares'")
+  @Test(
+      description = "Tests the call-flow from 'WxCalling core (AS) -> Dhruva -> Antares'",
+      enabled = false)
   public void testDialOutWxC() throws InvalidArgumentException, ParseException, IOException {
     injectDNS();
     wxc =
@@ -242,7 +251,8 @@ public class DialOutIT extends DhruvaIT {
       description =
           "Tests the call-flow from 'Antares -> Dhruva -> PSTN'"
               + "Also includes SG & SGE failover scenario (i.e) call gets routed to PSTN Pool 1(has only one SGE) which returns an error response code."
-              + "Dhruva now tries the next PSTN Pool 2(has 2 SGEs), wherein the 1st chosen SGE also returns an error response and the 2nd SGE accepts the call")
+              + "Dhruva now tries the next PSTN Pool 2(has 2 SGEs), wherein the 1st chosen SGE also returns an error response and the 2nd SGE accepts the call",
+      enabled = false)
   public void testDailOutB2B() throws InvalidArgumentException, ParseException {
     antares =
         antaresStack.createSipPhone(
@@ -576,7 +586,7 @@ public class DialOutIT extends DhruvaIT {
     assertEquals(ppidLocal, response.getHeader(PPID_HEADER));
     assertEquals(rpidLocal, response.getHeader(RPID_HEADER));
     ListIterator<SIPHeader> diversionHeadersReceived = (response.getHeaders(DIVERSION));
-    assertTrue(diversionHeadersReceived != null);
+    Assert.assertNotNull(diversionHeadersReceived);
     int count = 0;
     while (diversionHeadersReceived.hasNext()) {
       assertEquals(

@@ -1,7 +1,5 @@
 package com.cisco.dhruva.user;
 
-import static com.cisco.dhruva.util.TestLog.TEST_LOGGER;
-
 import com.cisco.dhruva.application.MessageHandler;
 import com.cisco.dhruva.input.TestInput.ProxyCommunication;
 import com.cisco.dhruva.input.TestInput.Type;
@@ -17,8 +15,12 @@ import lombok.SneakyThrows;
 import org.cafesip.sipunit.SipCall;
 import org.cafesip.sipunit.SipPhone;
 import org.cafesip.sipunit.SipStack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UAC implements UA, Runnable {
+
+  public static final Logger TEST_LOGGER = LoggerFactory.getLogger(UAC.class);
 
   private UacConfig uacConfig;
   @Getter private SipStack sipStack;
@@ -45,8 +47,6 @@ public class UAC implements UA, Runnable {
     if (myUri == null || myUri.isEmpty()) {
       myUri = "sip:uac@" + stackIp + ":" + uacConfig.getPort();
     }
-    System.out.println(
-        "UAC: IP:" + sipStack.getSipProvider().getListeningPoints()[0].getIPAddress());
     SipPhone uac = sipStack.createSipPhone(myUri);
     SipCall callUac = uac.createSipCall();
     Arrays.stream(this.uacConfig.getMessages())
@@ -61,7 +61,7 @@ public class UAC implements UA, Runnable {
                   MessageHandler.actOnMessage(message, callUac, this);
                 }
               } catch (Exception e) {
-                TEST_LOGGER.error("UAC Exception occurred {}", e);
+                TEST_LOGGER.error("UAC Exception occurred: ", e);
               }
             });
     TEST_LOGGER.info("UAC: Latching down");
@@ -80,5 +80,10 @@ public class UAC implements UA, Runnable {
   @Override
   public List<TestMessage> getTestMessages() {
     return this.testMessages;
+  }
+
+  @Override
+  public String toString() {
+    return "{ip=" + uacConfig.getIp() + ";port=" + uacConfig.getPort() + "}";
   }
 }
