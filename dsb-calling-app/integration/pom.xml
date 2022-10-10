@@ -87,6 +87,9 @@
                     <environmentVariables>
                         <dhruvaPublicUrl>${dhruvaPublicUrl}</dhruvaPublicUrl>
                     </environmentVariables>
+                    <excludes>
+                        <exclude>**/HttpApiIT.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 

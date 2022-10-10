@@ -283,13 +283,13 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
           "All Ping attempts failed for element: {}. Marking status as DOWN. Error: {} ",
           element,
           responseException.getMessage());
-      if(prevStatus.isUp()) {
+      if (prevStatus.isUp()) {
         Event.emitSGElementDownEvent(
-                serverGroup.getName(),
-                null,
-                "Error response received for element",
-                element,
-                serverGroup.getNetworkName());
+            serverGroup.getName(),
+            null,
+            "Error response received for element",
+            element,
+            serverGroup.getNetworkName());
         metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
         elementStatus.put(key, prevStatus.setUp(false));
       }

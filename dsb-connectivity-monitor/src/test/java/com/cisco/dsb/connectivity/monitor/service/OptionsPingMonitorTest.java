@@ -400,27 +400,25 @@ public class OptionsPingMonitorTest {
     Assert.assertEquals(argumentCaptor2.getValue(), true);
 
     Exception exception =
-            new CompletionException(
-                    new DhruvaRuntimeException(ErrorCode.REQUEST_NO_PROVIDER, "Runtime failed"));
+        new CompletionException(
+            new DhruvaRuntimeException(ErrorCode.REQUEST_NO_PROVIDER, "Runtime failed"));
     // Marking sge as down by sending RunTimeException, should send DOWN metric
     Mockito.doThrow(exception)
-            .when(optionsPingMonitor4)
-            .createAndSendRequest("testSG", sge, optionsPingPolicy);
+        .when(optionsPingMonitor4)
+        .createAndSendRequest("testSG", sge, optionsPingPolicy);
     Thread.sleep(500);
 
     verify(metricService, times(3))
-            .sendSGElementMetric(
-                    argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
+        .sendSGElementMetric(
+            argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
     verify(metricService, times(3))
-            .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
+        .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
     optionsPingMonitor4.disposeExistingFlux();
   }
-
-
 
   @Test(description = "test with multiple elements " + "for up, down and timeout elements")
   void testOptionsPingMultipleElements() throws InterruptedException {

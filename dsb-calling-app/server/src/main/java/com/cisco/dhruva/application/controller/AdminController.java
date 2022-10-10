@@ -9,8 +9,8 @@ import com.cisco.wx2.dto.DataTransferObject;
 import com.cisco.wx2.dto.GenericResponse;
 import com.cisco.wx2.server.AbstractController;
 import com.cisco.wx2.server.auth.ng.*;
-import com.cisco.wx2.server.auth.ng.annotation.AuthorizeAnonymous;
 import com.cisco.wx2.server.auth.ng.annotation.AuthorizeSuppressWarnings;
+import com.cisco.wx2.server.auth.ng.annotation.AuthorizeWhen;
 import com.cisco.wx2.util.JsonUtil;
 import java.util.concurrent.Callable;
 import lombok.CustomLog;
@@ -32,8 +32,7 @@ public class AdminController extends AbstractController {
     this.dnsInjectionService = dnsInjectionService;
   }
 
-  @AuthorizeAnonymous
-  @AuthorizeSuppressWarnings(ValidationType.ANONYMOUS_AUTH_APPLIED_TO_WRITE_API)
+  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = POST)
   @DsbTimed(name = "api.setOverrideSipRouting")
   public GenericResponse setOverrideSipRouting(
@@ -51,8 +50,7 @@ public class AdminController extends AbstractController {
     return DataTransferObject.genericResponse("SUCCESS");
   }
 
-  @AuthorizeAnonymous
-  @AuthorizeSuppressWarnings(ValidationType.ANONYMOUS_AUTH_APPLIED_TO_WRITE_API)
+  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = DELETE)
   @DsbTimed(name = "deleteOverrideSipRouting")
   public GenericResponse deleteOverrideSipRouting(@PathVariable("userId") String userId) {
@@ -61,7 +59,7 @@ public class AdminController extends AbstractController {
     return DataTransferObject.genericResponse("SUCCESS");
   }
 
-  @AuthorizeAnonymous
+  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = GET)
   @DsbTimed(name = "getOverrideSipRouting")
   public Callable<OverrideSipRouting> getOverrideSipRouting(@PathVariable("userId") String userId) {

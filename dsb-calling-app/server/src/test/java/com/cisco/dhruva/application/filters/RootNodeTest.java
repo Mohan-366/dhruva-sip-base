@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 public class RootNodeTest {
@@ -57,6 +58,7 @@ public class RootNodeTest {
   @Test(
       description = "Adding calltype to non-leaf node",
       expectedExceptions = {FilterTreeException.class})
+  @Ignore
   public void testInsertCallType_1() throws FilterTreeException {
     rootNode.insertCallType(CallTypeEnum.DIAL_IN_B2B);
     rootNode.insertCallType(CallTypeEnum.TEST_1);
@@ -65,12 +67,14 @@ public class RootNodeTest {
   @Test(
       description = "Adding children to leaf node",
       expectedExceptions = {FilterTreeException.class})
+  @Ignore
   public void testInsertCallType_2() throws FilterTreeException {
     rootNode.insertCallType(CallTypeEnum.TEST_1);
     rootNode.insertCallType(CallTypeEnum.DIAL_IN_B2B);
   }
 
   @Test(description = "cache checking")
+  @Ignore
   public void testGetCallType() throws FilterTreeException {
     rootNode.insertCallType(CallTypeEnum.DIAL_IN_B2B);
     ProxySIPRequest proxySIPRequest = Mockito.mock(ProxySIPRequest.class);
