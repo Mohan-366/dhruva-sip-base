@@ -21,6 +21,8 @@ public class LMAUtil {
       boolean isInternallyGenerated,
       boolean isMidDialogRequest,
       boolean isRetransmitted,
+      String inboundNetwork,
+      String outboundNetwork,
       DhruvaAppRecord appRecord,
       EventingService eventingService) {
 
@@ -34,6 +36,8 @@ public class LMAUtil {
         isInternallyGenerated,
         isMidDialogRequest,
         isRetransmitted,
+        inboundNetwork,
+        outboundNetwork,
         appRecord,
         eventingService);
   }

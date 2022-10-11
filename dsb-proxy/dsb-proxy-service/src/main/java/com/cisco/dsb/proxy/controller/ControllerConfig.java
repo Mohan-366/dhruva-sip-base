@@ -614,10 +614,12 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         logger.debug("Did not find the Record Routing Interface!");
         return;
       }
-      // set the outbound network into sipmessage application data if not set
-      MsgApplicationData msgApplicationData = MsgApplicationData.builder().network(network).build();
+
       if (Objects.isNull(msg.getApplicationData())) {
         logger.info("Setting outbound network in sipmessage application data");
+        // set the outbound network into sipmessage application data if not set
+        MsgApplicationData msgApplicationData =
+            MsgApplicationData.builder().outboundNetwork(network).build();
         msg.setApplicationData(msgApplicationData);
       }
 

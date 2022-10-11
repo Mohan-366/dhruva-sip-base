@@ -66,6 +66,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
                             .isInternallyGenerated(true)
                             .eventingService(eventingService)
                             .build())
+                    .outboundNetwork(dhruvaNetwork.getName())
                     .build());
             clientTrans.sendRequest();
           } catch (SipException e) {

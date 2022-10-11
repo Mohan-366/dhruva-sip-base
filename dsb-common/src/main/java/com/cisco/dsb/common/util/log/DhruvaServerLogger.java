@@ -5,6 +5,7 @@ import static javax.sip.message.Request.ACK;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.sip.dto.EventMetaData;
 import com.cisco.dsb.common.sip.dto.MsgApplicationData;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipConstants;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.util.LMAUtil;
@@ -116,9 +117,22 @@ public class DhruvaServerLogger implements ServerLogger {
     boolean isRetransmitted = false;
     DhruvaAppRecord appRecord = null;
     EventingService eventingService = null;
+    String inboundNetwork = null;
+    String outboundNetwork = null;
+
     MESSAGE_TYPE messageType = MESSAGE_TYPE.RESPONSE;
     DIRECTION directionType = sender ? DIRECTION.OUT : DIRECTION.IN;
     boolean isInternallyGenerated = directionType.equals(DIRECTION.OUT);
+
+    if (directionType.equals(DIRECTION.IN)) {
+      inboundNetwork =
+          DhruvaNetwork.getNetworkFromAddress(
+              message.getLocalAddress().getHostAddress(), message.getLocalPort());
+    } else {
+      outboundNetwork =
+          DhruvaNetwork.getNetworkFromAddress(
+              message.getLocalAddress().getHostAddress(), message.getLocalPort());
+    }
 
     if (message instanceof SIPRequest) {
       SIPRequest sipRequest = (SIPRequest) message;
@@ -151,6 +165,12 @@ public class DhruvaServerLogger implements ServerLogger {
           // Not first Request or Response anymore. this is used to identify the retransmission.
           eventMetaData.setFirstReqRes(false);
         }
+        if (Objects.nonNull(msgApplicationData.getInboundNetwork())) {
+          inboundNetwork = msgApplicationData.getInboundNetwork();
+        }
+        if (Objects.nonNull(msgApplicationData.getOutboundNetwork())) {
+          outboundNetwork = msgApplicationData.getOutboundNetwork();
+        }
         appRecord = eventMetaData.getAppRecord();
         eventingService = eventMetaData.getEventingService();
       }
@@ -163,6 +183,8 @@ public class DhruvaServerLogger implements ServerLogger {
         isInternallyGenerated,
         isMidDialogReqest,
         isRetransmitted,
+        inboundNetwork,
+        outboundNetwork,
         appRecord,
         eventingService);
   }

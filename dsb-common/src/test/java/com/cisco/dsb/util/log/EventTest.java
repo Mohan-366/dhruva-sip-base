@@ -5,6 +5,7 @@ import static org.testng.Assert.assertNull;
 
 import com.cisco.dsb.common.dto.RateLimitInfo;
 import com.cisco.dsb.common.dto.RateLimitInfo.Action;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.RequestHelper;
 import com.cisco.dsb.common.util.log.event.DhruvaEvent;
@@ -20,7 +21,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import javax.sip.header.FromHeader;
 import javax.sip.header.Header;
+import javax.sip.header.ToHeader;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -42,6 +45,8 @@ public class EventTest {
     sipMessage.setRemoteAddress(InetAddress.getLocalHost());
     sipMessage.setRemotePort(5060);
     sipMessage.setCallId("1-2-3-4");
+    ToHeader toHeader;
+    FromHeader fromHeader;
 
     String localSessionId = "d5fe04c900804182bd50241916a470a5";
     String remoteSessionId = "00000000000000000000000000000000";
@@ -51,6 +56,11 @@ public class EventTest {
     sipMessage.addHeader(sessionIdHeader);
     sipMessage.setHeader(sessionIdHeader);
 
+    toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
+    sipMessage.setTo(toHeader);
+    sipMessage.setFrom(fromHeader);
+
     Event.emitMessageEvent(
         LMAUtil.populateBindingInfo(sipMessage),
         sipMessage,
@@ -59,6 +69,8 @@ public class EventTest {
         false,
         false,
         false,
+        null,
+        null,
         null,
         null);
 
@@ -93,6 +105,13 @@ public class EventTest {
     sipMessage.setRemoteAddress(InetAddress.getLocalHost());
     sipMessage.setRemotePort(5060);
     sipMessage.setCallId("1-2-3-4");
+    ToHeader toHeader;
+    FromHeader fromHeader;
+
+    toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
+    sipMessage.setTo(toHeader);
+    sipMessage.setFrom(fromHeader);
 
     Event.emitMessageEvent(
         LMAUtil.populateBindingInfo(sipMessage),
@@ -102,6 +121,8 @@ public class EventTest {
         false,
         false,
         false,
+        null,
+        null,
         null,
         null);
 

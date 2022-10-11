@@ -143,7 +143,7 @@ public class NormalizeUtil {
     return sipResponse -> {
       MsgApplicationData msgApplicationData = (MsgApplicationData) sipResponse.getApplicationData();
       Optional<DhruvaNetwork> responseOutgoingNetwork =
-          DhruvaNetwork.getNetwork(msgApplicationData.getNetwork());
+          DhruvaNetwork.getNetwork(msgApplicationData.getOutboundNetwork());
       String remoteIPAddress = sipResponse.getTopmostVia().getHost();
       try {
         String ownIPAddress = responseOutgoingNetwork.get().getListenPoint().getHostIPAddress();

@@ -594,20 +594,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         .flatMap(processIncomingProxyRequestMAddr)
         .handle(
             (proxySIPReq, sink) -> {
-
-              // Fetch the network from provider
-              SipProvider sipProvider = proxySIPRequest.getProvider();
-              Optional<String> networkFromProvider =
-                  DhruvaNetwork.getNetworkFromProvider(sipProvider);
-
-              if (!networkFromProvider.isPresent()) {
+              // At this point we expect the network to be set
+              if (Objects.isNull(proxySIPRequest.getNetwork())) {
                 logger.error("Unable to find network from provider");
                 sink.error(
                     new DhruvaRuntimeException(
                         ErrorCode.NO_INCOMING_NETWORK, "Unable to find network from provider"));
                 return;
-              } else incomingNetwork = networkFromProvider.get();
-              proxySIPRequest.setNetwork(incomingNetwork);
+              } else incomingNetwork = proxySIPRequest.getNetwork();
 
               // Create ProxyTransaction
               // ProxyTransaction internally creates ProxyServerTransaction

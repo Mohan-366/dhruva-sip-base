@@ -121,7 +121,7 @@ public class ControllerConfigTest {
     recordRouteMap.put("test2_network_in", rr_in2);
     controllerConfig.setRecordRoutesMap(recordRouteMap);
     MsgApplicationData msgApplicationData =
-        MsgApplicationData.builder().network("test_network_in").build();
+        MsgApplicationData.builder().outboundNetwork("test_network_in").build();
     doAnswer(
             invocationOnMock -> {
               when(sipResponse.getApplicationData()).thenReturn(msgApplicationData);
@@ -151,7 +151,7 @@ public class ControllerConfigTest {
     // verification when multiple matches for outbound network is found, expected behaviour is to
     // pick topmost match
     MsgApplicationData applicationData = (MsgApplicationData) sipResponse.getApplicationData();
-    assert applicationData.getNetwork().equals("test_network_in");
+    assert applicationData.getOutboundNetwork().equals("test_network_in");
     verify(sipResponse, Mockito.times(1)).setApplicationData(eq(msgApplicationData));
   }
 

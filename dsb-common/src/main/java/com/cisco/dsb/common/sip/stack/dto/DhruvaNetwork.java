@@ -7,6 +7,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.Transport;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +36,7 @@ public class DhruvaNetwork implements Cloneable {
   private static ConcurrentHashMap<String, DhruvaNetwork> networkMap = new ConcurrentHashMap<>();
   private static ConcurrentHashMap<String, SipProvider> networkToProviderMap =
       new ConcurrentHashMap<>();
+  private static HashMap<String, String> addressToNetworkMap = new HashMap<>();
 
   public static synchronized DhruvaNetwork getDefault() {
     if (DEFAULT == null) {
@@ -95,6 +97,14 @@ public class DhruvaNetwork implements Cloneable {
     networkToProviderMap.putIfAbsent(name, sipProvider);
   }
 
+  public static void setAddressToNetworkMap(String address, int port, String name) {
+    addressToNetworkMap.putIfAbsent(address + ":" + port, name);
+  }
+
+  public static String getNetworkFromAddress(String address, int port) {
+    return addressToNetworkMap.get(address + ":" + port);
+  }
+
   public static Optional<SipProvider> getProviderFromNetwork(String networkName) {
     return Optional.ofNullable(networkToProviderMap.get(networkName));
   }
@@ -118,5 +128,16 @@ public class DhruvaNetwork implements Cloneable {
   @Override
   public String toString() {
     return "DhruvaNetwork{" + "sipListenPoint=" + sipListenPoint.getName() + '}';
+  }
+
+  @Override
+  public DhruvaNetwork clone() {
+    try {
+      DhruvaNetwork clone = (DhruvaNetwork) super.clone();
+      // TODO: copy mutable state here, so the clone can't change the internals of the original
+      return clone;
+    } catch (CloneNotSupportedException e) {
+      throw new AssertionError();
+    }
   }
 }

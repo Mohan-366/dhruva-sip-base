@@ -16,5 +16,6 @@ import lombok.Setter;
 public class MsgApplicationData {
 
   private EventMetaData eventMetaData;
-  private String network;
+  private String inboundNetwork;
+  private String outboundNetwork;
 }

@@ -13,7 +13,9 @@ import com.cisco.dsb.common.util.LMAUtil;
 import com.cisco.dsb.common.util.SpringApplicationContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.CSeq;
+import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.*;
@@ -40,6 +42,10 @@ public class Event {
   public static String REMOTEPORT = "remotePort";
   public static String LOCALIP = "localIp";
   public static String LOCALPORT = "localPort";
+  public static String CALLING_NUMBER = "callingNumber";
+  public static String CALLED_NUMBER = "calledNumber";
+  public static String INBOUND_NETWORK = "inboundNetwork";
+  public static String OUTBOUND_NETWORK = "outboundNetwork";
 
   public enum EventType {
     CONNECTION,
@@ -94,6 +100,8 @@ public class Event {
       boolean isInternallyGenerated,
       boolean isMidDialog,
       boolean isRetransmitted,
+      String inboundNetwork,
+      String outboundNetwork,
       DhruvaAppRecord appRecord,
       EventingService eventService) {
 
@@ -125,6 +133,16 @@ public class Event {
     if (cseqHeaderValue != null) {
       messageInfoMap.put("cseqMethod", cseqHeaderValue.encodeBody());
     }
+    // Populate To and From user portion
+    SipUri fromSipUri = (SipUri) ((SIPMessage) message).getFromHeader().getAddress().getURI();
+    String fromUser = fromSipUri.getUser();
+    SipUri toSipUri = (SipUri) ((SIPMessage) message).getToHeader().getAddress().getURI();
+    String toUser = toSipUri.getUser();
+    messageInfoMap.put(Event.CALLED_NUMBER, toUser);
+    messageInfoMap.put(Event.CALLING_NUMBER, fromUser);
+
+    messageInfoMap.put(Event.INBOUND_NETWORK, inboundNetwork);
+    messageInfoMap.put(Event.OUTBOUND_NETWORK, outboundNetwork);
 
     messageInfoMap.put(Event.REMOTEPORT, String.valueOf(messageBindingInfo.getRemotePort()));
     messageInfoMap.put(Event.DIRECTION_KEY, direction.name());
@@ -165,11 +183,6 @@ public class Event {
       events.add(event);
       eventingService.publishEvents(events);
     }
-
-    // DSB TODO
-    //    SipMessageWrapper sipMsg = new SipMessageWrapper(message, direction);
-    //    Consumer<SipMessageWrapper> consumer1 = DiagnosticsUtil::sendCDSEvents;
-    //    consumer1.accept(sipMsg);
   }
 
   public static void emitSGElementUpEvent(

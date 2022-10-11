@@ -180,7 +180,7 @@ public class SipProxyManagerTest {
         .removeFirst(eq(ViaHeader.NAME));
     when(controllerConfig.doRecordRoute()).thenReturn(true);
     MsgApplicationData msgApplicationData =
-        MsgApplicationData.builder().network("not_our_network").build();
+        MsgApplicationData.builder().outboundNetwork("not_our_network").build();
     when(sipResponse.getApplicationData()).thenReturn(msgApplicationData);
     SipProviderImpl sipProvider = mock(SipProviderImpl.class);
     DhruvaNetwork.setSipProvider("test_out_network", sipProvider);
@@ -191,7 +191,7 @@ public class SipProxyManagerTest {
     reset(sipProvider);
 
     // Test: Valid ViaList, RR does contain outbound network and network a valid listenIf
-    msgApplicationData = MsgApplicationData.builder().network("test_out_network").build();
+    msgApplicationData = MsgApplicationData.builder().outboundNetwork("test_out_network").build();
     HeaderFactory headerFactory = new HeaderFactoryImpl();
     Address address = new AddressImpl();
     address.setURI(new SipUri());
@@ -208,9 +208,9 @@ public class SipProxyManagerTest {
             .setHostIPAddress("1.1.1.1")
             .setPort(5060)
             .setTransport(Transport.UDP)
-            .setName(msgApplicationData.getNetwork())
+            .setName(msgApplicationData.getOutboundNetwork())
             .build();
-    DhruvaNetwork.createNetwork(msgApplicationData.getNetwork(), sipListenPoint);
+    DhruvaNetwork.createNetwork(msgApplicationData.getOutboundNetwork(), sipListenPoint);
     // Test Stray Response Normalization
     AtomicInteger normalizationCounter = new AtomicInteger();
     normalizationCounter.set(0);

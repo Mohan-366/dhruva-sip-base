@@ -137,6 +137,10 @@ public class ProxyService {
               }
               sipProvidertoNetworkMap.put(sipProvider, networkConfig.getName());
               DhruvaNetwork.setSipProvider(networkConfig.getName(), sipProvider);
+              DhruvaNetwork.setAddressToNetworkMap(
+                  sipListenPoint.getHostIPAddress(),
+                  sipListenPoint.getPort(),
+                  networkConfig.getName());
               try {
                 logger.info("Server socket created for {}", sipListenPoint.getName());
                 controllerConfig.addListenInterface(

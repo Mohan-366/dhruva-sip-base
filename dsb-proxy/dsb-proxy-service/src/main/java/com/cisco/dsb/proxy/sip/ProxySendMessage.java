@@ -6,6 +6,7 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.dto.EventMetaData;
 import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
+import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.LMAUtil;
@@ -17,6 +18,8 @@ import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransactionImpl;
+import java.util.Objects;
+import java.util.Optional;
 import javax.sip.ClientTransaction;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
@@ -147,7 +150,15 @@ public class ProxySendMessage {
       throws DhruvaException {
     try {
       SIPRequest sipRequest = (SIPRequest) request;
-      setEventMetaData(sipRequest, true, null);
+      String network = null;
+      // Get the associated network
+      if (Objects.nonNull(sipProvider)) {
+        Optional<String> oNetwork = DhruvaNetwork.getNetworkFromProvider(sipProvider);
+        if (oNetwork.isPresent()) {
+          network = oNetwork.get();
+        }
+      }
+      setEventMetaData(sipRequest, true, null, null, network);
       if (clientTransaction != null) {
         clientTransaction.sendRequest();
       } else {
@@ -184,11 +195,21 @@ public class ProxySendMessage {
 
               if (transaction != null) {
                 SIPRequest request = (SIPRequest) transaction.getRequest();
-                setEventMetaData(request, false, proxySIPRequest.getAppRecord());
+                setEventMetaData(
+                    request,
+                    false,
+                    proxySIPRequest.getAppRecord(),
+                    proxySIPRequest.getNetwork(),
+                    proxySIPRequest.getOutgoingNetwork());
                 transaction.sendRequest();
               } else {
                 SIPRequest request = proxySIPRequest.getRequest();
-                setEventMetaData(request, false, proxySIPRequest.getAppRecord());
+                setEventMetaData(
+                    request,
+                    false,
+                    proxySIPRequest.getAppRecord(),
+                    proxySIPRequest.getNetwork(),
+                    proxySIPRequest.getOutgoingNetwork());
                 provider.sendRequest(request);
               }
 
@@ -202,7 +223,11 @@ public class ProxySendMessage {
   }
 
   private static void setEventMetaData(
-      SIPRequest request, boolean isInternallyGenerated, DhruvaAppRecord appRecord) {
+      SIPRequest request,
+      boolean isInternallyGenerated,
+      DhruvaAppRecord appRecord,
+      String inboundNetwork,
+      String outboundNetwork) {
     request.setApplicationData(
         MsgApplicationData.builder()
             .eventMetaData(
@@ -210,6 +235,8 @@ public class ProxySendMessage {
                     .appRecord(appRecord)
                     .isInternallyGenerated(isInternallyGenerated)
                     .build())
+            .inboundNetwork(inboundNetwork)
+            .outboundNetwork(outboundNetwork)
             .build());
   }
 

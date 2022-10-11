@@ -427,12 +427,12 @@ public class SipProxyManager {
       }
       MsgApplicationData msgApplicationData = (MsgApplicationData) response.getApplicationData();
       if (Objects.isNull(msgApplicationData)
-          || StringUtils.isEmpty(msgApplicationData.getNetwork())) {
+          || StringUtils.isEmpty(msgApplicationData.getOutboundNetwork())) {
         logger.error("Unable to find outbound network from RR, dropping the stray response");
         return;
       }
       Optional<SipProvider> sipProvider =
-          DhruvaNetwork.getProviderFromNetwork(msgApplicationData.getNetwork());
+          DhruvaNetwork.getProviderFromNetwork(msgApplicationData.getOutboundNetwork());
       if (!sipProvider.isPresent()) {
         logger.error(
             "Outbound network present in RR does not match any ListenIf, dropping stray response");
@@ -579,9 +579,8 @@ public class SipProxyManager {
          * */
 
         // Capture the start time for new incoming request for latency metrics
-        if (!SipUtils.isMidDialogRequest(sipRequest)
-            || !Objects.equals(sipRequest.getMethod(), Request.OPTIONS)
-            || !Objects.equals(sipRequest.getMethod(), Request.CANCEL)) {
+        if (Objects.equals(sipRequest.getMethod(), Request.INVITE)
+            && !SipUtils.isMidDialogRequest(sipRequest)) {
           new SipMetricsContext(
               metricService,
               State.proxyNewRequestReceived,

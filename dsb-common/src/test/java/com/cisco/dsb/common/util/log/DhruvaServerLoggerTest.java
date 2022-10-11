@@ -4,12 +4,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.sip.header.RequestReceivedHeader;
+import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;
-import javax.sip.header.CSeqHeader;
-import javax.sip.header.CallIdHeader;
-import javax.sip.header.Header;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import javax.sip.header.*;
 import org.testng.annotations.Test;
 
 public class DhruvaServerLoggerTest extends LoggerTestBase {
@@ -62,6 +63,14 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
             + "a=rtcp-mux\n"
             + "a=rtcp-fb:* nack pli\n"
             + "a=label:11";
+    FromHeader fromHeader = null;
+    ToHeader toHeader = null;
+
+    toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
+
+    when(message.getToHeader()).thenReturn(toHeader);
+    when(message.getFromHeader()).thenReturn(fromHeader);
     when(message.encode()).thenReturn(content);
     CallIdHeader callIdHeader = mock(CallIdHeader.class);
     when(callIdHeader.getCallId()).thenReturn("1");
@@ -126,6 +135,14 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
             + "a=rtcp-mux\n"
             + "a=rtcp-fb:* nack pli\n"
             + "a=label:11";
+    FromHeader fromHeader = null;
+    ToHeader toHeader = null;
+
+    toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
+
+    when(message.getToHeader()).thenReturn(toHeader);
+    when(message.getFromHeader()).thenReturn(fromHeader);
     when(message.encode()).thenReturn(content);
     CallIdHeader callIdHeader = mock(CallIdHeader.class);
     when(callIdHeader.getCallId()).thenReturn("1");
@@ -147,7 +164,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
   }
 
   @Test
-  public void testOptionPingDebug() {
+  public void testOptionPingDebug() throws UnknownHostException, ParseException {
     SIPMessage message = mock(SIPRequest.class);
     String content = "OPTIONS sip:l2sipit-527c607c4b264b75b8f9996347cf1874@ss4.webex.com SIP/2.0\n";
     when(message.encode()).thenReturn(content);
@@ -158,6 +175,19 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     when(cSeq.getSeqNumber()).thenReturn(101l);
     when(message.getCSeq()).thenReturn(cSeq);
     when(message.getCSeq().getMethod()).thenReturn("OPTIONS");
+    FromHeader fromHeader = null;
+    ToHeader toHeader = null;
+
+    toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
+    fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
+
+    when(message.getToHeader()).thenReturn(toHeader);
+    when(message.getFromHeader()).thenReturn(fromHeader);
+
+    when(message.getLocalAddress()).thenReturn(InetAddress.getByName("1.1.1.1"));
+    when(message.getRemoteAddress()).thenReturn(InetAddress.getByName("2.2.2.2"));
+    when(message.getLocalPort()).thenReturn(5061);
+    when(message.getRemotePort()).thenReturn(5062);
 
     runLoggingTest(message, true);
   }
