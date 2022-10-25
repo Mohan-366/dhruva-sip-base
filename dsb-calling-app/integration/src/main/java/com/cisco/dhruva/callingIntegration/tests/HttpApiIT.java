@@ -129,7 +129,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
       conn.setRequestMethod("GET");
       getResponse(conn, method);
     } catch (Exception e) {
-      LOGGER.error("Error in get request. {}",e.toString());
+      LOGGER.error("Error in get request. {}", e.toString());
     } finally {
       if (conn != null) conn.disconnect();
     }
@@ -177,7 +177,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
       }
       getResponse(conn, method);
     } catch (Exception e) {
-      LOGGER.error("Error in POST request. {}",e.toString());
+      LOGGER.error("Error in POST request. {}", e.toString());
     } finally {
       if (conn != null) conn.disconnect();
     }
@@ -193,7 +193,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
       conn.setRequestMethod("DELETE");
       getResponse(conn, method);
     } catch (Exception e) {
-      LOGGER.error("Error in delete request. {}",e.toString());
+      LOGGER.error("Error in delete request. {}", e.toString());
     } finally {
       if (conn != null) conn.disconnect();
     }

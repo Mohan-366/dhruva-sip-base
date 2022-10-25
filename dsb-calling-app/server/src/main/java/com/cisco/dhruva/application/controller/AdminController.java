@@ -9,7 +9,6 @@ import com.cisco.wx2.dto.DataTransferObject;
 import com.cisco.wx2.dto.GenericResponse;
 import com.cisco.wx2.server.AbstractController;
 import com.cisco.wx2.server.auth.ng.*;
-import com.cisco.wx2.server.auth.ng.annotation.AuthorizeSuppressWarnings;
 import com.cisco.wx2.server.auth.ng.annotation.AuthorizeWhen;
 import com.cisco.wx2.util.JsonUtil;
 import java.util.concurrent.Callable;
