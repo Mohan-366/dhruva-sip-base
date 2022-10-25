@@ -1,11 +1,10 @@
 package com.cisco.dhruva.callingIntegration;
 
-import com.cisco.wx2.server.config.Wx2Properties;
-import java.net.URI;
+import com.cisco.wx2.test.TestProperties;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 
-public class CallingTestProperties extends Wx2Properties {
+public class CallingTestProperties extends TestProperties {
   private static final String DEFAULT_TEST_LISTEN_ADDRESS = "127.0.0.1";
   private static final Integer DEFAULT_PSTN_US_POOLB_PORT = 4200;
   private static final Integer DEFAULT_PSTN_US_POOLA_SG1_PORT = 4101;
@@ -119,33 +118,29 @@ public class CallingTestProperties extends Wx2Properties {
 
   public String getDhruvaClientId() {
     return env.getProperty(
-        CLIENT_ID,
+        "clientID",
         String.class,
         "Ce5001cd059d994a40baf687224636e57cbd4941d41a506930597f65d0abcfa5d");
   }
 
   public String getDhruvaClientSecret() {
     return env.getProperty(
-        CLIENT_SECRET,
+        "clientSecret",
         String.class,
         "38e5c06921d1c43829626e6a96c61c3541443b2809aba436cf9eec314ed71ce3");
   }
 
   public String getDhruvaMachineAccountUser() {
-    return env.getProperty(MACHINE_ACCOUNT_USER, String.class, "dhruva-int-machine-account-http");
+    return env.getProperty("machineAccountUser", String.class, "dhruva-int-machine-account-http");
   }
 
   public String getDhruvaMachineAccountPassword() {
     return env.getProperty(
-        MACHINE_ACCOUNT_PASSWORD, String.class, "RITM.0270509.4OJfWz4pFmmU.4ddVsn.jzrYEmu");
+        "machineAccountPassword", String.class, "RITM.0270509.4OJfWz4pFmmU.4ddVsn.jzrYEmu");
   }
 
   public String getDhruvaOrgId() {
-    return env.getProperty(ORG_ID, String.class, "a93dde14-65b7-4a59-81dd-28962a8473e3");
-  }
-
-  public URI getOAuthURL() {
-    return URI.create(env.getProperty(OAUTH_ENDPOINT_URL, "https://idbrokerbts.webex.com/idb"));
+    return env.getProperty("orgID", String.class, "a93dde14-65b7-4a59-81dd-28962a8473e3");
   }
 
   public String getDefaultDhruvaHttpEndpoint() {
