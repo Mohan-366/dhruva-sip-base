@@ -112,8 +112,26 @@ public class MetricServiceV2Test {
             .build();
 
     metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo1);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
+    metricService.updateRateLimiterInfo(rateLimitInfo2);
     metricService.updateRateLimiterInfo(rateLimitInfo2);
 
+    assertEquals(metricService.getRateLimiterMap().get(rateLimitInfo1), 8);
+    assertEquals(metricService.getRateLimiterMap().get(rateLimitInfo2), 10);
     Supplier<Set<Metric>> supplierRateLimiter =
         metricService.rateLimitInfoMetricSupplier("ratelimiter");
     Set<Metric> metrics = supplierRateLimiter.get();
@@ -126,6 +144,7 @@ public class MetricServiceV2Test {
             assertEquals(((InfluxPoint) metric.get()).getTags().get("policyName"), "policy1");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("action"), "DENY");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("isRequest"), "true");
+            assertEquals(((InfluxPoint) metric.get()).getField("count"), 8);
             atomicInteger.getAndIncrement();
           } else {
             assertEquals(((InfluxPoint) metric.get()).getTags().get("remoteIP"), "3.3.3.3");
@@ -133,6 +152,7 @@ public class MetricServiceV2Test {
             assertEquals(((InfluxPoint) metric.get()).getTags().get("policyName"), "policy2");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("action"), "RATE_LIMIT");
             assertEquals(((InfluxPoint) metric.get()).getTags().get("isRequest"), "true");
+            assertEquals(((InfluxPoint) metric.get()).getField("count"), 10);
             atomicInteger.getAndIncrement();
           }
         });

@@ -13,6 +13,7 @@ import static org.testng.Assert.assertTrue;
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.ratelimiter.AllowAndDenyList;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimitAttribute;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
@@ -32,6 +33,7 @@ import com.cisco.wx2.ratelimit.policy.UserMatcher.Mode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,10 +48,13 @@ public class CallingAppRateLimiterConfiguratorTest {
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Mock CallingAppConfigurationProperty callingAppConfigurationProperty;
   @Mock MetricService metricService;
+  @Mock DhruvaExecutorService dhruvaExecutorService;
   @InjectMocks DsbRateLimiter dsbRateLimiter;
   private Map<String, Policy> expectedPoliciesMap = new HashMap<>();
   private RateLimitPolicy rateLimitPolicyNetwork;
   private RateLimitPolicy rateLimitPolicyGlobal;
+  private RateLimitPolicy rateLimitPolicyAutoBuild;
+
   private RateLimit rateLimitPstn;
   private RateLimit rateLimitGlobal;
   private CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
@@ -62,6 +67,8 @@ public class CallingAppRateLimiterConfiguratorTest {
   String[] denyListPstn = {"3.3.3.3"};
   String[] allowListGlobal = {"4.4.4.4", "5.5.5.5", "10.10.10.0/24"};
   String[] denyListGlobal = {"8.8.8.8"};
+  String sgIP1 = "6.6.6.6";
+  String sgIP2 = "7.7.7.7";
 
   @BeforeClass
   public void setup() throws DhruvaException {
@@ -86,12 +93,25 @@ public class CallingAppRateLimiterConfiguratorTest {
             .setRateLimit(rateLimitGlobal)
             .setAutoBuild(true)
             .build();
+    rateLimitPolicyAutoBuild =
+        RateLimitPolicy.builder()
+            .setName("rateLimitPolicyAutoBuild")
+            .setType(Type.NETWORK)
+            .setDenyList(denyListPstn)
+            .setRateLimit(rateLimitPstn)
+            .setAutoBuild(true)
+            .build();
     rateLimitPolicyList.add(rateLimitPolicyNetwork);
     rateLimitPolicyList.add(rateLimitPolicyGlobal);
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     PolicyNetworkAssociation policyNetworkAssociationNetwork =
         PolicyNetworkAssociation.builder()
             .setPolicyName(rateLimitPolicyNetwork.getName())
+            .setNetworks(new String[] {"n1"})
+            .build();
+    PolicyNetworkAssociation policyNetworkAssociationNetwork2 =
+        PolicyNetworkAssociation.builder()
+            .setPolicyName(rateLimitPolicyAutoBuild.getName())
             .setNetworks(new String[] {"n1"})
             .build();
     networkName = "n1";
@@ -103,12 +123,13 @@ public class CallingAppRateLimiterConfiguratorTest {
             .build();
     DhruvaNetwork.createNetwork(networkName, lp1);
     rateLimiterNetworkMap.put(rateLimitPolicyNetwork.getName(), policyNetworkAssociationNetwork);
+    rateLimiterNetworkMap.put(rateLimitPolicyAutoBuild.getName(), policyNetworkAssociationNetwork2);
     when(callingAppConfigurationProperty.getRateLimiterNetworkMap())
         .thenReturn(rateLimiterNetworkMap);
     ServerGroupElement serverGroupElement1 =
-        ServerGroupElement.builder().setIpAddress("6.6.6.6").build();
+        ServerGroupElement.builder().setIpAddress(sgIP1).build();
     ServerGroupElement serverGroupElement2 =
-        ServerGroupElement.builder().setIpAddress("7.7.7.7").build();
+        ServerGroupElement.builder().setIpAddress(sgIP2).build();
     ServerGroup serverGroup1 =
         ServerGroup.builder()
             .setName("s1")
@@ -132,7 +153,10 @@ public class CallingAppRateLimiterConfiguratorTest {
 
     callingAppRateLimiterConfigurator =
         new CallingAppRateLimiterConfigurator(
-            callingAppConfigurationProperty, commonConfigurationProperties, dsbRateLimiter);
+            callingAppConfigurationProperty,
+            commonConfigurationProperties,
+            dsbRateLimiter,
+            dhruvaExecutorService);
     addExpectedPolicies();
   }
 
@@ -187,9 +211,11 @@ public class CallingAppRateLimiterConfiguratorTest {
   }
 
   @Test
-  public void testMapsUpdated() {
-    assertFalse(callingAppRateLimiterConfigurator.mapsUpdated());
-
+  public void testRateLimiterConfigUpdated() {
+    int initialFetchTime = 100;
+    int maxFetchTime = 100;
+    assertFalse(
+        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
     List<RateLimitPolicy> rateLimitPolicyListNew = new ArrayList<>();
     Map<String, PolicyNetworkAssociation> rateLimiterNetworkMapNew = new HashMap<>();
     rateLimitPolicyListNew.addAll(rateLimitPolicyList);
@@ -208,16 +234,62 @@ public class CallingAppRateLimiterConfiguratorTest {
             .build());
     when(callingAppConfigurationProperty.getRateLimitPolicyList())
         .thenReturn(rateLimitPolicyListNew);
-    assertTrue(callingAppRateLimiterConfigurator.mapsUpdated());
+    assertTrue(
+        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
 
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     when(callingAppConfigurationProperty.getRateLimiterNetworkMap())
         .thenReturn(rateLimiterNetworkMapNew);
-    assertTrue(callingAppRateLimiterConfigurator.mapsUpdated());
+    assertTrue(
+        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     when(callingAppConfigurationProperty.getRateLimiterNetworkMap())
         .thenReturn(rateLimiterNetworkMap);
-    assertFalse(callingAppRateLimiterConfigurator.mapsUpdated());
+    callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime);
+    assertFalse(
+        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+  }
+
+  @Test
+  public void testRateLimiterConfigUpdated_2() {
+    int initialFetchTime = 100;
+    int maxFetchTime = 100;
+    RateLimitPolicy policy1 =
+        RateLimitPolicy.builder()
+            .setType(Type.NETWORK)
+            .setName("p1")
+            .setRateLimit(RateLimit.builder().setPermits(10).setInterval("60s").build())
+            .setAllowList(new String[] {"1.1.1.1"})
+            .setDenyList(new String[] {"2.2.2.2", "3.3.3.3"})
+            .setAutoBuild(true)
+            .build();
+    RateLimitPolicy policy2 =
+        RateLimitPolicy.builder()
+            .setType(Type.NETWORK)
+            .setName("p1")
+            .setRateLimit(RateLimit.builder().setPermits(10).setInterval("60s").build())
+            .setAllowList(new String[] {"1.1.1.1"})
+            .setDenyList(new String[] {"2.2.2.2", "3.3.3.3"})
+            .setAutoBuild(true)
+            .build();
+    List<RateLimitPolicy> l1 = new ArrayList();
+    List<RateLimitPolicy> l2 = new ArrayList();
+    l1.add(policy1);
+    l2.add(policy2);
+    when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(l1).thenReturn(l2);
+    assertTrue(
+        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+  }
+
+  @Test
+  public void testAutoBuildWithEmptyAllowListInPolicy() {
+    rateLimitPolicyList.add(rateLimitPolicyAutoBuild);
+    callingAppRateLimiterConfigurator.configure();
+    AllowAndDenyList allowAndDenyList =
+        dsbRateLimiter.getAllowDenyListsMap().get(rateLimitPolicyAutoBuild.getName());
+    HashSet<String> sgIPs = new HashSet<>(Arrays.asList(sgIP1, sgIP2));
+    assertEquals(allowAndDenyList.getAllowIPList(), sgIPs);
+    rateLimitPolicyList.remove(rateLimitPolicyAutoBuild);
   }
 
   private void assertPolicyLists(

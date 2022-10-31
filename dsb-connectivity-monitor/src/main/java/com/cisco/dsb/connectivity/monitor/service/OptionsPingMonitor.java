@@ -7,6 +7,8 @@ import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -60,6 +62,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
   @Autowired DnsServerGroupUtil dnsServerGroupUtil;
   @Autowired public MetricService metricsService;
+  @Autowired DhruvaExecutorService dhruvaExecutorService;
   protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Status> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
@@ -74,6 +77,7 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
 
   @PostConstruct
   public void initOptionsPing() {
+    dhruvaExecutorService.startExecutorService(ExecutorType.CONFIG_UPDATE);
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     startMonitoring(commonConfigurationProperties.getServerGroups());
   }
@@ -353,9 +357,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
               return (key.contains("serverGroups") || key.contains("optionsPingPolicy"));
             })) {
       logger.info("ServerGroups environment config changed with keys :{}", event.getKeys());
-      RefreshHandle refreshHandle = new RefreshHandle();
-      Thread postRefresh = new Thread(refreshHandle);
-      postRefresh.start();
+      dhruvaExecutorService
+          .getExecutorThreadPool(ExecutorType.CONFIG_UPDATE)
+          .execute(new RefreshHandle());
     }
   }
 

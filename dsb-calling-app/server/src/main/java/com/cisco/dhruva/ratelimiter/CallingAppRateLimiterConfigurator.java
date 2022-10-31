@@ -11,6 +11,8 @@ import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.UNDERSCORE;
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.ratelimiter.AllowAndDenyList;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimitAttribute;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
@@ -31,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -48,38 +51,40 @@ import org.springframework.stereotype.Component;
 public class CallingAppRateLimiterConfigurator
     implements RateLimiterConfigurator, ApplicationListener<EnvironmentChangeEvent> {
 
+  private DsbRateLimiter dsbRateLimiter;
   private List<RateLimitPolicy> rateLimitPolicyList;
   private Map<String, PolicyNetworkAssociation> rateLimiterNetworkMap;
-  private DsbRateLimiter dsbRateLimiter;
   private CallingAppConfigurationProperty callingAppConfigurationProperty;
   private CommonConfigurationProperties commonConfigurationProperties;
   @Getter @Setter private List<Policy> policies;
   @Getter @Setter Map<String, AllowAndDenyList> allowDenyListsMap = new HashMap<>();
   private final String RATE_LIMITER_CONFIGURATOR_REFRESH_KEY = "rateLimit";
+  private final String SERVERGROUP_REFRESH_KEY = "serverGroups";
+  private DhruvaExecutorService dhruvaExecutorService;
 
   public CallingAppRateLimiterConfigurator(
       CallingAppConfigurationProperty callingAppConfigurationProperty,
       CommonConfigurationProperties commonConfigurationProperties,
-      DsbRateLimiter dsbRateLimiter) {
+      DsbRateLimiter dsbRateLimiter,
+      DhruvaExecutorService dhruvaExecutorService) {
     this.dsbRateLimiter = dsbRateLimiter;
     this.callingAppConfigurationProperty = callingAppConfigurationProperty;
     this.commonConfigurationProperties = commonConfigurationProperties;
     this.rateLimitPolicyList = callingAppConfigurationProperty.getRateLimitPolicyList();
     this.rateLimiterNetworkMap = callingAppConfigurationProperty.getRateLimiterNetworkMap();
+    this.dhruvaExecutorService = dhruvaExecutorService;
+    dhruvaExecutorService.startExecutorService(ExecutorType.CONFIG_UPDATE);
   }
 
   @Override
   public void configure() {
-    // This method is affected by RefreshScope hence need to re-initialize the configs
-    this.rateLimitPolicyList = callingAppConfigurationProperty.getRateLimitPolicyList();
-    this.rateLimiterNetworkMap = callingAppConfigurationProperty.getRateLimiterNetworkMap();
-    if (rateLimitPolicyList == null || rateLimitPolicyList.isEmpty()) {
+    if (CollectionUtils.isEmpty(rateLimitPolicyList)) {
       logger.info("No rate-limit policies configured.");
       return;
     }
-    List<Policy> policies = createPolicies();
-    allowDenyListsMap = createAllowDenyListMap();
+    createAllowDenyListMap();
     setDsbRateLimiterUserIdSetter(configureUserIdSetter());
+    List<Policy> policies = createPolicies();
     dsbRateLimiter.setPolicies(policies);
     dsbRateLimiter.setAllowDenyListsMap(allowDenyListsMap);
   }
@@ -89,18 +94,13 @@ public class CallingAppRateLimiterConfigurator
     if (event.getKeys().stream()
         .anyMatch(
             key -> {
-              // Refresh only when RateLimiter config has some changes.
-              return key.contains(RATE_LIMITER_CONFIGURATOR_REFRESH_KEY);
+              // Refresh when RateLimiter or SG config has changes.
+              return (key.contains(RATE_LIMITER_CONFIGURATOR_REFRESH_KEY) || key.contains((SERVERGROUP_REFRESH_KEY)));
             })) {
       logger.info(
-          "{} environment config changed with keys :{}",
-          RATE_LIMITER_CONFIGURATOR_REFRESH_KEY,
+          "RateLimiter environment config changed with keys :{}",
           event.getKeys());
-      if (!mapsUpdated()) {
-        logger.error("RateLimiter Maps are not updated.");
-        throw new DhruvaRuntimeException("RateLimiter Maps not refreshed!");
-      }
-      configure();
+      dhruvaExecutorService.getExecutorThreadPool(ExecutorType.CONFIG_UPDATE).execute(new RefreshHandle());
     }
   }
 
@@ -125,7 +125,10 @@ public class CallingAppRateLimiterConfigurator
                     .deny()
                     .build());
           }
-          if (rateLimitPolicy.getAllowList() != null) {
+          // here we also check the allowDenyListMap because autoBuild option can add its own allowList
+          if (rateLimitPolicy.getAllowList() != null
+              || (allowDenyListsMap.get(rateLimitPolicy.getName()) != null
+                  && allowDenyListsMap.get(rateLimitPolicy.getName()).getAllowIPList() != null)) {
             policies.add(
                 Policy.builder(ALLOW_IP_LIST_POLICY + UNDERSCORE + rateLimitPolicy.getName())
                     .matcher(
@@ -154,16 +157,19 @@ public class CallingAppRateLimiterConfigurator
   }
 
   @Override
-  public Map<String, AllowAndDenyList> createAllowDenyListMap() {
-    Map<String, AllowAndDenyList> allowDenyListsMap = new HashMap<>();
-    if (rateLimitPolicyList == null) {
-      return null;
+  public void createAllowDenyListMap() {
+    allowDenyListsMap.clear();
+    if (Objects.isNull(rateLimitPolicyList)) {
+      return;
     }
     rateLimitPolicyList.forEach(
         rateLimitPolicy -> {
           AllowAndDenyList allowAndDenyList = new AllowAndDenyList();
           createAllowRangeList(rateLimitPolicy, allowAndDenyList);
           if (rateLimitPolicy.isAutoBuild()) {
+            if (Objects.isNull(allowAndDenyList.getAllowIPList())) {
+              allowAndDenyList.setAllowIPList(new HashSet<>());
+            }
             createAllowIPListFromConfig(rateLimitPolicy, allowAndDenyList.getAllowIPList());
           }
           createDenyRangeList(rateLimitPolicy, allowAndDenyList);
@@ -171,7 +177,6 @@ public class CallingAppRateLimiterConfigurator
             allowDenyListsMap.put(rateLimitPolicy.getName(), allowAndDenyList);
           }
         });
-    return allowDenyListsMap;
   }
 
   protected String getPolicyValue(RateLimitPolicy rateLimitPolicy) {
@@ -201,12 +206,12 @@ public class CallingAppRateLimiterConfigurator
   }
 
   protected void createAllowIPListFromConfig(
-      RateLimitPolicy rateLimitPolicy, Set<String> allowIPList) {
+      RateLimitPolicy rateLimitPolicy, @NonNull Set<String> allowIPList) {
     Set<String> sgAllowIPList = new HashSet<>();
     PolicyNetworkAssociation policyNetworkAssociation =
         rateLimiterNetworkMap.get(rateLimitPolicy.getName());
     Map<String, ServerGroup> serverGroupMap = commonConfigurationProperties.getServerGroups();
-    if (policyNetworkAssociation == null || serverGroupMap == null) {
+    if (Objects.isNull(policyNetworkAssociation) || Objects.isNull(serverGroupMap)) {
       return;
     }
     for (String network : policyNetworkAssociation.getNetworks()) {
@@ -228,9 +233,6 @@ public class CallingAppRateLimiterConfigurator
               });
     }
     if (CollectionUtils.isNotEmpty(sgAllowIPList)) {
-      if (allowIPList == null) {
-        allowIPList = new HashSet<>();
-      }
       allowIPList.addAll(sgAllowIPList);
     }
   }
@@ -248,6 +250,22 @@ public class CallingAppRateLimiterConfigurator
     if (rateLimitPolicy.getDenyList() != null) {
       Set<String> denyIPList = new HashSet<>(Arrays.asList(rateLimitPolicy.getDenyList()));
       separateRangeIPFromIPList(denyIPList, allowAndDenyList, false);
+    }
+  }
+
+  protected class RefreshHandle implements Runnable {
+    @Override
+    public void run() {
+      int initialFetchTime = 500;
+      int maxFetchTime = 1500;
+      if (!rateLimiterConfigUpdated(initialFetchTime, maxFetchTime)) {
+        /*
+         * Whether or not RL config is changed we will attempt to reconfigure it since SGs could have
+         * been updated as RL autoBuild is based on SG configuration.
+         */
+        logger.error("RateLimiter Maps are not updated. Update will happen if SGs are updated.");
+      }
+      configure();
     }
   }
 
@@ -278,28 +296,40 @@ public class CallingAppRateLimiterConfigurator
    * is a hack added to overcome a bug in the kubernetes client which takes some time (few milli seconds)
    * to update the Bean under refreshScope after doing get on that object when a config refresh happens .
    */
-  protected boolean mapsUpdated() {
-    int maxFetchTime = 1500;
-    int fetchTime = 500;
-    int fetchIncrementTime = 250;
+  protected boolean rateLimiterConfigUpdated(int initialFetchTime, int maxFetchTime) {
     boolean isUpdated = false;
-    logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
-    while (fetchTime < maxFetchTime) {
+    long startTime = System.currentTimeMillis();
+    long endTime = startTime + maxFetchTime;
+    logger.info("Change detected in RateLimiter Config. Fetching latest.");
+    int i = 0;
+    while (System.currentTimeMillis() < endTime) {
       try {
-        Thread.sleep(fetchTime);
+        Thread.sleep(initialFetchTime);
       } catch (InterruptedException e) {
         logger.error("Exception occurred for sleep.");
       }
+      logger.info("Retry count: {}", i++);
+      logger.info("New List");
+      logger.info(callingAppConfigurationProperty.getRateLimitPolicyList().toString());
+      logger.info("Old List");
+      if (rateLimitPolicyList != null) logger.info(rateLimitPolicyList.toString());
+      logger.info("New Map");
+      callingAppConfigurationProperty
+          .getRateLimiterNetworkMap()
+          .forEach((key, value) -> logger.info("{}:{}", key, value));
+      logger.info("Old Map");
+      if (rateLimiterNetworkMap != null)
+        rateLimiterNetworkMap.forEach((key, value) -> logger.info("{}:{}", key, value));
       if (!callingAppConfigurationProperty.getRateLimiterNetworkMap().equals(rateLimiterNetworkMap)
           || !callingAppConfigurationProperty
               .getRateLimitPolicyList()
               .equals(rateLimitPolicyList)) {
+        rateLimitPolicyList = callingAppConfigurationProperty.getRateLimitPolicyList();
+        rateLimiterNetworkMap = callingAppConfigurationProperty.getRateLimiterNetworkMap();
         isUpdated = true;
         break;
       }
-      fetchTime += fetchIncrementTime;
     }
-
     return isUpdated;
   }
 }

@@ -127,6 +127,9 @@ public class OptionsUtil {
           } else {
             if (serverGroupNew.getSgType().equals(SGType.STATIC)
                 && serverGroupNew.getElements() != null) {
+              if (serverGroupNew.getElements().size() != serverGroupOld.getElements().size()) {
+                return true;
+              }
               for (ServerGroupElement sgeNew : serverGroupNew.getElements()) {
                 result =
                     (serverGroupOld.getElements().stream()

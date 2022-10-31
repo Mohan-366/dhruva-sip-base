@@ -61,7 +61,7 @@ public class DsbRateLimiterUtil {
     }
 
     if (CollectionUtils.isNotEmpty(ipList) && ipList.contains(remoteIP)) {
-      logger.info("{} in ipList.", remoteIP);
+      logger.debug("{} in {} ipList: {}", remoteIP, isForAllow ? "allow" : "deny", ipList);
       return true;
     }
     Set<String> ipRangeList;

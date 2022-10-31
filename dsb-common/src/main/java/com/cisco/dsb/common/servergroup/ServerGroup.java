@@ -132,6 +132,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
       return false;
     }
     return new EqualsBuilder()
+        .append(this.name, obj.name)
         .append(this.networkName, obj.networkName)
         .append(this.pingOn, obj.pingOn)
         .append(this.transport, obj.transport)

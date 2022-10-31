@@ -2,6 +2,7 @@ package com.cisco.dsb.common.ratelimiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,6 +14,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 @Builder(setterPrefix = "set")
+@EqualsAndHashCode
 public class RateLimitPolicy {
 
   private String name;
@@ -37,6 +39,7 @@ public class RateLimitPolicy {
   @NoArgsConstructor
   @AllArgsConstructor
   @Builder(setterPrefix = "set")
+  @EqualsAndHashCode
   public static class RateLimit {
     Integer permits;
     String interval;

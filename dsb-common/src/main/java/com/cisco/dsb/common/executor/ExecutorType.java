@@ -9,7 +9,8 @@ public enum ExecutorType {
   PROXY_SEND_MESSAGE,
   PROXY_PROCESSOR,
   KEEP_ALIVE_SERVICE,
-  OPTIONS_PING;
+  OPTIONS_PING,
+  CONFIG_UPDATE;
 
   ExecutorType() {}
 
