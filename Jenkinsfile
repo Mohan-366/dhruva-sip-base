@@ -1,7 +1,11 @@
 #!groovy
 @Library(['sparkPipeline', 'kubedPipeline', 'ciHelper@master']) _
 
-node('SPARK_BUILDER_JAVA11') {
+pipelineProperties(
+        name: 'dhruva',
+        numToKeep: 20
+)
+node('SPARK_BUILDER') {
 
     try{
         // ***** CREDENTIALS USED IN IT-JENKINS *****
@@ -46,7 +50,7 @@ node('SPARK_BUILDER_JAVA11') {
                  currentBuild.result = 'SUCCESS'
                  sh """
                  env
-                 /usr/share/maven/bin/mvn --settings $settingsFile clean deploy
+                 /usr/share/maven/bin/mvn --settings $settingsFile clean deploy -DauthNG.statisticsOutput
                  """
                  // TODO sh 'java -jar dsb-common/target/dsb-common-1.0-SNAPSHOT.war'
                  step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/dsb-calling-app/server/target/classes/com/cisco,**/dsb-common/target/classes/com/cisco,**/dsb-connectivity-monitor/target/classes/com/cisco,**/dsb-proxy/dsb-proxy-service/target/classes/com/cisco,**/dsb-trunk/dsb-trunk-service/target/classes/com/cisco', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
@@ -57,6 +61,7 @@ node('SPARK_BUILDER_JAVA11') {
              def spotbugs = scanForIssues tool: spotBugs(pattern: '**/spotbugsXml.xml')
              publishIssues issues: [spotbugs]
              failBuildIfUnsuccessfulBuildResult("ERROR: Failed SpotBugs static analysis")
+             zip archive: true, dir: '', glob: '**/spotbugsXml.xml, **/authNgStatistics.json', zipFile: 'securityFiles.zip'
          }
          stage('archive') {
              archiveArtifacts artifacts: 'dsb-calling-app/server/microservice.yml', allowEmptyArchive: true
@@ -64,6 +69,7 @@ node('SPARK_BUILDER_JAVA11') {
              archiveArtifacts artifacts: 'dsb-calling-app/antares-integration/docker/*', allowEmptyArchive: true
              archiveArtifacts artifacts: 'dsb-calling-app/server/target/dsb-calling-app-server-1.0-SNAPSHOT.war', allowEmptyArchive: true
              archiveArtifacts artifacts: '**/spotbugsXml.xml', allowEmptyArchive: true
+             archiveArtifacts artifacts: '**/securityFiles.zip', allowEmptyArchive: true
          }
 
          if (env.GIT_BRANCH == 'master') {

@@ -31,7 +31,10 @@ public class AdminController extends AbstractController {
     this.dnsInjectionService = dnsInjectionService;
   }
 
-  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
+  @AuthorizeWhen(
+      scopes = Scope.Identity.SCIM,
+      accountType = AccountType.MACHINE,
+      targetOrgId = Auth.Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = POST)
   @DsbTimed(name = "api.setOverrideSipRouting")
   public GenericResponse setOverrideSipRouting(
@@ -49,7 +52,10 @@ public class AdminController extends AbstractController {
     return DataTransferObject.genericResponse("SUCCESS");
   }
 
-  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
+  @AuthorizeWhen(
+      scopes = Scope.Identity.SCIM,
+      accountType = AccountType.MACHINE,
+      targetOrgId = Auth.Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = DELETE)
   @DsbTimed(name = "deleteOverrideSipRouting")
   public GenericResponse deleteOverrideSipRouting(@PathVariable("userId") String userId) {
@@ -58,7 +64,10 @@ public class AdminController extends AbstractController {
     return DataTransferObject.genericResponse("SUCCESS");
   }
 
-  @AuthorizeWhen(scopes = Scope.ANY, accountType = AccountType.MACHINE, targetOrgId = Org.NONE)
+  @AuthorizeWhen(
+      scopes = Scope.Identity.SCIM,
+      accountType = AccountType.MACHINE,
+      targetOrgId = Auth.Org.NONE)
   @RequestMapping(value = "SipRoutingOverrides/{userId}", method = GET)
   @DsbTimed(name = "getOverrideSipRouting")
   public Callable<OverrideSipRouting> getOverrideSipRouting(@PathVariable("userId") String userId) {

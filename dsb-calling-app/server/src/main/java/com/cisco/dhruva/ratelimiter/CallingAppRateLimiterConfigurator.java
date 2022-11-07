@@ -10,7 +10,6 @@ import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.UNDERSCORE;
 
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
-import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.ratelimiter.AllowAndDenyList;
@@ -95,12 +94,13 @@ public class CallingAppRateLimiterConfigurator
         .anyMatch(
             key -> {
               // Refresh when RateLimiter or SG config has changes.
-              return (key.contains(RATE_LIMITER_CONFIGURATOR_REFRESH_KEY) || key.contains((SERVERGROUP_REFRESH_KEY)));
+              return (key.contains(RATE_LIMITER_CONFIGURATOR_REFRESH_KEY)
+                  || key.contains((SERVERGROUP_REFRESH_KEY)));
             })) {
-      logger.info(
-          "RateLimiter environment config changed with keys :{}",
-          event.getKeys());
-      dhruvaExecutorService.getExecutorThreadPool(ExecutorType.CONFIG_UPDATE).execute(new RefreshHandle());
+      logger.info("RateLimiter environment config changed with keys :{}", event.getKeys());
+      dhruvaExecutorService
+          .getExecutorThreadPool(ExecutorType.CONFIG_UPDATE)
+          .execute(new RefreshHandle());
     }
   }
 
@@ -125,7 +125,8 @@ public class CallingAppRateLimiterConfigurator
                     .deny()
                     .build());
           }
-          // here we also check the allowDenyListMap because autoBuild option can add its own allowList
+          // here we also check the allowDenyListMap because autoBuild option can add its own
+          // allowList
           if (rateLimitPolicy.getAllowList() != null
               || (allowDenyListsMap.get(rateLimitPolicy.getName()) != null
                   && allowDenyListsMap.get(rateLimitPolicy.getName()).getAllowIPList() != null)) {
