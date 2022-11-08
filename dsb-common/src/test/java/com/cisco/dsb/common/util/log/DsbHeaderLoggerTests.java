@@ -68,7 +68,7 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
     when(callIdHeader.getCallId()).thenReturn("1");
     when(message.getCallId()).thenReturn(callIdHeader);
     CSeqHeader cSeq = mock(CSeqHeader.class);
-    when(cSeq.getSeqNumber()).thenReturn(101l);
+    when(cSeq.getSeqNumber()).thenReturn(101L);
     when(message.getCSeq()).thenReturn(cSeq);
 
     Header rrHeader = mock(RequestReceivedHeader.class);
@@ -79,8 +79,8 @@ public class DsbHeaderLoggerTests extends LoggerTestBase {
     when(message.getLocalPort()).thenReturn(5061);
     when(message.getRemotePort()).thenReturn(5062);
     when(message.getCSeq().getMethod()).thenReturn("INVITE");
-    FromHeader fromHeader = null;
-    ToHeader toHeader = null;
+    FromHeader fromHeader;
+    ToHeader toHeader;
 
     toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
     fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);

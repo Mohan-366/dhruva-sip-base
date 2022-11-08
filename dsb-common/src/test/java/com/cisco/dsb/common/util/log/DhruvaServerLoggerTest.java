@@ -63,8 +63,8 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
             + "a=rtcp-mux\n"
             + "a=rtcp-fb:* nack pli\n"
             + "a=label:11";
-    FromHeader fromHeader = null;
-    ToHeader toHeader = null;
+    FromHeader fromHeader;
+    ToHeader toHeader;
 
     toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
     fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
@@ -76,7 +76,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     when(callIdHeader.getCallId()).thenReturn("1");
     when(message.getCallId()).thenReturn(callIdHeader);
     CSeqHeader cSeq = mock(CSeqHeader.class);
-    when(cSeq.getSeqNumber()).thenReturn(101l);
+    when(cSeq.getSeqNumber()).thenReturn(101L);
     when(message.getCSeq()).thenReturn(cSeq);
     when(message.getCSeq().getMethod()).thenReturn("INVITE");
 
@@ -135,8 +135,8 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
             + "a=rtcp-mux\n"
             + "a=rtcp-fb:* nack pli\n"
             + "a=label:11";
-    FromHeader fromHeader = null;
-    ToHeader toHeader = null;
+    FromHeader fromHeader;
+    ToHeader toHeader;
 
     toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
     fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);
@@ -148,7 +148,7 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     when(callIdHeader.getCallId()).thenReturn("1");
     when(message.getCallId()).thenReturn(callIdHeader);
     CSeqHeader cSeq = mock(CSeqHeader.class);
-    when(cSeq.getSeqNumber()).thenReturn(101l);
+    when(cSeq.getSeqNumber()).thenReturn(101L);
     when(message.getCSeq()).thenReturn(cSeq);
     when(message.getCSeq().getMethod()).thenReturn("INVITE");
 
@@ -172,11 +172,11 @@ public class DhruvaServerLoggerTest extends LoggerTestBase {
     when(callIdHeader.getCallId()).thenReturn("1");
     when(message.getCallId()).thenReturn(callIdHeader);
     CSeqHeader cSeq = mock(CSeqHeader.class);
-    when(cSeq.getSeqNumber()).thenReturn(101l);
+    when(cSeq.getSeqNumber()).thenReturn(101L);
     when(message.getCSeq()).thenReturn(cSeq);
     when(message.getCSeq().getMethod()).thenReturn("OPTIONS");
-    FromHeader fromHeader = null;
-    ToHeader toHeader = null;
+    FromHeader fromHeader;
+    ToHeader toHeader;
 
     toHeader = JainSipHelper.createToHeader("cisco", "cisco", "10.1.1.1", null);
     fromHeader = JainSipHelper.createFromHeader("webex", "webex", "2.2.2.2", null);

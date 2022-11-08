@@ -123,7 +123,7 @@ public class ProxyService {
             if (throwable == null) {
               proxyStackMap.putIfAbsent(sipListenPoint.getName(), sipStack);
               // We can always derive sip stack from a given provider
-              SipProvider sipProvider = null;
+              SipProvider sipProvider;
               Optional<SipProvider> optionalSipProvider = getSipProvider(sipStack, sipListenPoint);
               if (optionalSipProvider.isPresent()) {
                 sipProvider = optionalSipProvider.get();

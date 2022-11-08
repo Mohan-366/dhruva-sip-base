@@ -86,7 +86,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
     int HttpResult = conn.getResponseCode();
     if (HttpResult == HttpURLConnection.HTTP_OK) {
       BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-      String output = null;
+      String output;
       while ((output = in.readLine()) != null) {
         response.append(output + "\n");
       }
@@ -105,7 +105,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
                 .contains(
                     "SUCCESS")); // POST and DELETE won't show any records but their response should
       // be success
-      LOGGER.info("Response from {} request:- {}", method, response.toString());
+      LOGGER.info("Response from {} request:- {}", method, response);
       in.close();
     } else {
       assertEquals("Http Response code check", 401, HttpResult); // Negative test case

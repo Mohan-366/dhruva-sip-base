@@ -6,10 +6,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
+import javax.validation.Valid;
 
 public class OverrideSipRouting {
-  private List<InjectedDNSARecord> dnsARecords;
-  private List<InjectedDNSSRVRecord> dnsSRVRecords;
+
+  private List<@Valid InjectedDNSARecord> dnsARecords;
+  private List<@Valid InjectedDNSSRVRecord> dnsSRVRecords;
 
   @JsonCreator
   public OverrideSipRouting(

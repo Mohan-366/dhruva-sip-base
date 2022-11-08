@@ -269,10 +269,10 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
   /** normalizes the protocol value to either UDP, TCP */
   public static int normalizedProtocol(int protocol) {
     if ((protocol != ControllerConfig.TCP) && (protocol != ControllerConfig.TLS)) {
-      return (int) ControllerConfig.UDP;
+      return ControllerConfig.UDP;
     }
 
-    return (int) protocol;
+    return protocol;
   }
 
   @Override
@@ -437,7 +437,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     if (uri.isSipURI()) {
       SipURI url = (SipURI) uri;
 
-      String host = null;
+      String host;
       int port = url.getPort();
 
       Transport transport = Transport.UDP;
@@ -571,7 +571,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
 
   private void setRRHelper(@NonNull SIPMessage msg, @NonNull SipURI currentRRURL)
       throws ParseException {
-    String currentRRURLHost = null;
+    String currentRRURLHost;
 
     // get the network corresponding to the host portion in RR. If host contains externalIP,
     // get the localIP to know the network accordingly

@@ -3,7 +3,6 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
@@ -215,14 +214,12 @@ public class SipProxyManagerTest {
     AtomicInteger normalizationCounter = new AtomicInteger();
     normalizationCounter.set(0);
     Consumer<SIPResponse> strayResponseNormalizer =
-        sipResponse1 -> {
-          normalizationCounter.getAndIncrement();
-        };
+        sipResponse1 -> normalizationCounter.getAndIncrement();
     when(proxyAppConfig.getStrayResponseNormalizer()).thenReturn(strayResponseNormalizer);
     proxySIPResponse = sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
     assertNull(proxySIPResponse);
     // this simply checks that stayResponseNormalizer was invoked for stray response
-    assertTrue(normalizationCounter.get() == 1);
+    assertEquals(normalizationCounter.get(), 1);
     verify(sipProvider, Mockito.times(1)).sendResponse(sipResponse);
     // verify previous testcase also here, i.e invalid network in RR
     verify(controllerConfig, Mockito.times(2))
