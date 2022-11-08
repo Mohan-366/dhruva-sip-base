@@ -46,7 +46,6 @@ management:
 
 
 
-
 #setting value of /ping response code as 503 at startup
 #enableLifecycleAutoReport makes responsecode of /ping to 200 the moment service boots up, so its made false
 cisco-spark:
@@ -55,3 +54,6 @@ cisco-spark:
       response:
         code: 503
       enableLifecycleAutoReport: false
+csb:
+  server:
+    enable-cors: false

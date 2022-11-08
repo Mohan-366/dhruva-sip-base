@@ -5,6 +5,7 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiterValve;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
@@ -18,7 +19,6 @@ import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
 import gov.nist.javax.sip.SipStackImpl;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.KeyManager;
@@ -27,7 +27,6 @@ import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
 import lombok.CustomLog;
-import org.apache.commons.lang3.RandomStringUtils;
 
 @CustomLog
 public class SipServer implements Server {
@@ -56,9 +55,7 @@ public class SipServer implements Server {
 
   @Override
   public void startListening(
-      InetAddress address,
-      int port,
-      boolean isEnableRateLimiting,
+      SIPListenPoint listenPoint,
       DsbRateLimiter dsbRateLimiter,
       SipListener handler,
       DsbTrustManager trustManager,
@@ -75,10 +72,8 @@ public class SipServer implements Server {
                 this.commonConfigurationProperties,
                 sipFactory,
                 sipFactory.getPathName(),
-                getStackProperties(isEnableRateLimiting),
-                address.getHostAddress(),
-                port,
-                transport.toString(),
+                getStackProperties(listenPoint),
+                listenPoint,
                 handler,
                 executorService,
                 trustManager,
@@ -106,8 +101,8 @@ public class SipServer implements Server {
         retryCount--;
         logger.info(
             "Retrying to bind on {}:{} after {} seconds. Retries left:{}",
-            address.getHostAddress(),
-            port,
+            listenPoint.getHostIPAddress(),
+            listenPoint.getPort(),
             retryDelay,
             retryCount);
 
@@ -120,10 +115,9 @@ public class SipServer implements Server {
     }
   }
 
-  private Properties getStackProperties(boolean isEnableRateLimiting) {
+  private Properties getStackProperties(SIPListenPoint listenPoint) {
 
-    Properties stackProps =
-        ProxyStackFactory.getDefaultProxyStackProperties(RandomStringUtils.randomAlphanumeric(5));
+    Properties stackProps = ProxyStackFactory.getDefaultProxyStackProperties(listenPoint.getName());
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.SERVER_LOGGER", DhruvaServerLogger.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.LOG_MESSAGE_CONTENT", "true");
@@ -164,7 +158,7 @@ public class SipServer implements Server {
     stackProps.setProperty("gov.nist.javax.sip.ALWAYS_ADD_RPORT", "false");
 
     // Is rate Limit enabled for the corresponding listen point
-    if (isEnableRateLimiting) {
+    if (listenPoint.isEnableRateLimiter()) {
       String valve = DsbRateLimiterValve.class.getCanonicalName();
       stackProps.setProperty("gov.nist.javax.sip.SIP_MESSAGE_VALVE", valve);
     }

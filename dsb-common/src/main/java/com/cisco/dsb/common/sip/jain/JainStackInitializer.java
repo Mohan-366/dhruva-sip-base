@@ -3,6 +3,7 @@ package com.cisco.dsb.common.sip.jain;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.cisco.dsb.common.transport.Transport;
@@ -156,9 +157,7 @@ public class JainStackInitializer {
    * @param sipFactory created using SipFactory.getInstance()
    * @param path path to the stack implementation
    * @param properties sip stack properties
-   * @param ip to bbe associated with the listen point
-   * @param port listening port
-   * @param transport transport on which listen point listens
+   * @param listenPoint listen Point to start sip stack
    * @param listener - application view to a SIP stack
    * @return SipStack
    * @throws PeerUnavailableException if "javax.sip.STACK_NAME property is missing"
@@ -176,9 +175,7 @@ public class JainStackInitializer {
       SipFactory sipFactory,
       String path,
       Properties properties,
-      @Nonnull String ip,
-      @PositiveOrZero int port,
-      @Nonnull String transport,
+      SIPListenPoint listenPoint,
       SipListener listener,
       DhruvaExecutorService executorService,
       TrustManager trustManager,
@@ -194,11 +191,16 @@ public class JainStackInitializer {
           .initFromApplication(commonConfigurationProperties, executorService, metricService);
     }
     NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
-    if (transport.equals(Transport.TLS.name()) && networkLayer instanceof DsbNetworkLayer) {
+    if (listenPoint.getTransport().equals(Transport.TLS)
+        && networkLayer instanceof DsbNetworkLayer) {
       logger.info("Initializing SSLContext in DsbNetworkLayer");
       ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager);
     }
-    ListeningPoint lp = createListeningPointForSipStack(sipStack, ip, port, transport);
+    ListeningPoint lp =
+        sipStack.createListeningPoint(
+            listenPoint.getHostIPAddress(),
+            listenPoint.getPort(),
+            listenPoint.getTransport().name());
     SipProvider sipProvider = createSipProviderForListenPoint(sipStack, lp);
     sipProvider.addSipListener(listener);
     return sipStack;

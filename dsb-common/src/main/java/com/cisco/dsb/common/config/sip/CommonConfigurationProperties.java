@@ -31,6 +31,7 @@ public class CommonConfigurationProperties {
   public static final String DEFAULT_NETWORK_NAME = "TCPNetwork";
   public static final String DEFAULT_HOST_IP = "127.0.0.1";
   public static final Transport DEFAULT_TRANSPORT = Transport.TCP;
+  public static final int DEFAULT_TRANSACTION_TIMEOUT = 32000;
   public static int DEFAULT_PORT = 5060;
   public static final boolean DEFAULT_RECORD_ROUTE_ENABLED = true;
   public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;

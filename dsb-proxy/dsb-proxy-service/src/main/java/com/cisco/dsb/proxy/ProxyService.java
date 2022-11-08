@@ -108,10 +108,7 @@ public class ProxyService {
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
               commonConfigurationProperties,
-              transport,
-              InetAddress.getByName(sipListenPoint.getHostIPAddress()),
-              sipListenPoint.getPort(),
-              sipListenPoint.isEnableRateLimiter(),
+              sipListenPoint,
               dsbRateLimiter,
               (transport == Transport.TLS)
                   ? (getTrustManager(sipListenPoint.getTlsAuthType()))

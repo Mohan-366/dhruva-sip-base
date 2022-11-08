@@ -7,9 +7,11 @@ import static org.mockito.Mockito.when;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
+import com.cisco.dsb.common.transport.Transport;
 import com.google.common.collect.Iterators;
 import gov.nist.javax.sip.ListeningPointImpl;
 import gov.nist.javax.sip.SipProviderImpl;
@@ -138,9 +140,11 @@ public class JainStackInitializerTest {
             mockFactory,
             "gov.nist",
             mockProps,
-            "1.1.1.1",
-            5060,
-            "tcp",
+            SIPListenPoint.SIPListenPointBuilder()
+                .setHostIPAddress("1.1.1.1")
+                .setPort(5060)
+                .setTransport(Transport.TCP)
+                .build(),
             mockListener,
             executorService,
             trustManager,

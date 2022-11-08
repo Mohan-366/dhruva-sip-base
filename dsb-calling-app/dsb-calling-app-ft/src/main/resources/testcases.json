@@ -1212,6 +1212,58 @@
           ]
         }
       ]
+    },
+    {
+      "description": "TestCase - 9: INVITE Transaction Timeout",
+      "skipTest": false,
+      "id": "9",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5070,
+          "transport": "udp"
+        }
+      },
+      "uac": {
+        "myUri": "sip:antares-it-guest@127.0.0.1",
+        "ip": "127.0.0.1",
+        "port": 7060,
+        "transport": "udp",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:wxc-it-guest@127.0.0.1;x-cisco-test;calltype=DialOut;x-cisco-dpn=iccse10099;x-cisco-opn=eccse10099;dtg=CcpFusionUS"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional": true,
+            "validation": {
+              "responseCode": 100,
+              "reasonPhrase": "Trying"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 408,
+              "reasonPhrase": "Request Timeout"
+            }
+          }
+        ]
+      },
+      "uasGroup": []
     }
   ]
 }

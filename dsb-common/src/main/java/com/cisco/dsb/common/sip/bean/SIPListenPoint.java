@@ -5,6 +5,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
+import gov.nist.javax.sip.stack.FixTransactionTimeOut;
 import java.net.*;
 import java.util.Enumeration;
 import lombok.*;
@@ -42,6 +43,9 @@ public class SIPListenPoint {
   @Builder.Default
   private boolean enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
 
+  @Builder.Default
+  private Integer transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
+
   private String hostInterface;
 
   public SIPListenPoint() {
@@ -57,6 +61,7 @@ public class SIPListenPoint {
     this.tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
     this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
     this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
+    this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
   }
 
   public void setHostInterface(String hostInterface) {
@@ -113,6 +118,11 @@ public class SIPListenPoint {
           .toString();
     }
     return sipListenPointString.toString();
+  }
+
+  public void setTransactionTimeout(int timeout) {
+    this.transactionTimeout = timeout;
+    FixTransactionTimeOut.setTransactionTimeout(this.name, this.transactionTimeout);
   }
 
   @Override

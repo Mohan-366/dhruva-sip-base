@@ -11,6 +11,7 @@ common:
       port: 5060
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      transactionTimeout: "3000"
     - name: *netb2b
       port: 5070
       transport: UDP
