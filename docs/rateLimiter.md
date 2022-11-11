@@ -60,7 +60,6 @@ Each policy is mapped to one or more DhruvaNetworks. Only if the local IP of a g
 
 <img width="273" alt="Screenshot 2022-11-07 at 1 02 44 PM" src="https://sqbu-github.cisco.com/storage/user/4057/files/e982eba5-11c3-4580-962e-c6f886bb8778">
 
-
 ## RateLimiter Config
 For any DhruvaNetwork to be eligible for RateLimiting under "network" or "global" type we must set enableRateLimiter to true for them as follows:
 
