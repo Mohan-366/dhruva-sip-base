@@ -22,7 +22,6 @@ public class OptionsPingPolicy {
   private List<Integer> failureResponseCodes;
   @Builder.Default private int upTimeInterval = 30000;
   @Builder.Default private int downTimeInterval = 5000;
-  @Builder.Default private int pingTimeOut = 500;
   @Builder.Default private int maxForwards = 70;
 
   @Override
@@ -34,7 +33,6 @@ public class OptionsPingPolicy {
           .append(name, b.name)
           .append(upTimeInterval, b.upTimeInterval)
           .append(downTimeInterval, b.downTimeInterval)
-          .append(pingTimeOut, b.pingTimeOut)
           .append(maxForwards, b.maxForwards)
           .append(failureResponseCodes, b.failureResponseCodes)
           .isEquals();
@@ -48,7 +46,6 @@ public class OptionsPingPolicy {
         .append(name)
         .append(upTimeInterval)
         .append(downTimeInterval)
-        .append(pingTimeOut)
         .append(maxForwards)
         .append(failureResponseCodes)
         .toHashCode();

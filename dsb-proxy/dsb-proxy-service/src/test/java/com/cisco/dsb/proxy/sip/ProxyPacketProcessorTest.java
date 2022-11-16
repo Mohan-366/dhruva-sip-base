@@ -3,18 +3,19 @@ package com.cisco.dsb.proxy.sip;
 import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
+import com.cisco.dsb.proxy.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPClientTransactionImpl;
+import java.text.ParseException;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
 import javax.sip.TimeoutEvent;
 import javax.sip.TransactionTerminatedEvent;
 import javax.sip.header.CSeqHeader;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class ProxyPacketProcessorTest {
@@ -27,6 +28,12 @@ public class ProxyPacketProcessorTest {
   @BeforeClass
   void init() {
     MockitoAnnotations.initMocks(this);
+  }
+
+  @BeforeMethod
+  void reset() {
+    Mockito.reset(proxyEventListener, optionsPingResponseListener);
+    proxyPacketProcessor.registerOptionsListener(optionsPingResponseListener);
   }
 
   @Test(
@@ -85,12 +92,43 @@ public class ProxyPacketProcessorTest {
   public void testTimeoutEvent() {
     TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
     doNothing().when(proxyEventListener).timeOut(timeoutEvent);
+    when(timeoutEvent.isServerTransaction()).thenReturn(true);
     proxyPacketProcessor.processTimeout(timeoutEvent);
 
     ArgumentCaptor<TimeoutEvent> argumentCaptor = ArgumentCaptor.forClass(TimeoutEvent.class);
     verify(proxyEventListener, times(1)).timeOut(argumentCaptor.capture());
     TimeoutEvent timeoutEventTest = argumentCaptor.getValue();
     Assert.assertEquals(timeoutEvent, timeoutEventTest);
+  }
+
+  @Test(description = "handling timeout for OPTIONS ping")
+  public void testOptionsTimeOut() throws ParseException {
+    TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
+    SIPClientTransactionImpl clientTransaction = mock(SIPClientTransactionImpl.class);
+    doNothing().when(proxyEventListener).timeOut(timeoutEvent);
+    when(timeoutEvent.isServerTransaction()).thenReturn(false);
+    when(timeoutEvent.getClientTransaction()).thenReturn(clientTransaction);
+    when(clientTransaction.getRequest()).thenReturn(RequestHelper.getOptionsRequest());
+    proxyPacketProcessor.registerOptionsListener(optionsPingResponseListener);
+
+    proxyPacketProcessor.processTimeout(timeoutEvent);
+
+    verify(optionsPingResponseListener, times(1)).processTimeout(timeoutEvent);
+    verify(proxyEventListener, times(0)).timeOut(timeoutEvent);
+  }
+
+  @Test(description = "received timeout for OPTIONS with no listener registered")
+  public void testOptionsTimeoutNoListener() throws ParseException {
+    TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
+    SIPClientTransactionImpl clientTransaction = mock(SIPClientTransactionImpl.class);
+    doNothing().when(proxyEventListener).timeOut(timeoutEvent);
+    when(timeoutEvent.isServerTransaction()).thenReturn(false);
+    when(timeoutEvent.getClientTransaction()).thenReturn(clientTransaction);
+    when(clientTransaction.getRequest()).thenReturn(RequestHelper.getOptionsRequest());
+    proxyPacketProcessor.registerOptionsListener(null);
+
+    verify(optionsPingResponseListener, times(0)).processTimeout(timeoutEvent);
+    verify(proxyEventListener, times(0)).timeOut(timeoutEvent);
   }
 
   @Test(

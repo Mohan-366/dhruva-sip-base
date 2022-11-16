@@ -32,6 +32,8 @@ public class CommonConfigurationProperties {
   public static final String DEFAULT_HOST_IP = "127.0.0.1";
   public static final Transport DEFAULT_TRANSPORT = Transport.TCP;
   public static final int DEFAULT_TRANSACTION_TIMEOUT = 32000;
+  public static final int DEFAULT_PING_TIMEOUT_UDP = 5000;
+  public static final int DEFAULT_PING_TIMEOUT_TCP = 500;
   public static int DEFAULT_PORT = 5060;
   public static final boolean DEFAULT_RECORD_ROUTE_ENABLED = true;
   public static final TLSAuthenticationType DEFAULT_TLS_AUTH_TYPE = TLSAuthenticationType.SERVER;
@@ -103,7 +105,7 @@ public class CommonConfigurationProperties {
   @Getter @Setter private String dhruvaUserAgent = "WX2Dhruva";
   @Getter @Setter private List<String> tlsProtocols = Collections.singletonList("TLSv1.2");
 
-  @Getter @Setter
+  @Getter
   private List<SIPListenPoint> listenPoints =
       Collections.singletonList(SIPListenPoint.SIPListenPointBuilder().build());
 
@@ -151,6 +153,11 @@ public class CommonConfigurationProperties {
       trustedSipSources.remove(errorInfo.getDescription());
     }
     return trustedSipSources;
+  }
+
+  public void setListenPoints(List<SIPListenPoint> listenPoints) {
+    this.listenPoints = listenPoints;
+    listenPoints.forEach(SIPListenPoint::init);
   }
 
   public void setRoutePolicy(Map<String, RoutePolicy> routePolicyMap) {

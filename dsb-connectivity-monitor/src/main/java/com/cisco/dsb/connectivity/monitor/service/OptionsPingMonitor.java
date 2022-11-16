@@ -175,12 +175,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
       String network, ServerGroupElement element, OptionsPingPolicy optionsPingPolicy) {
 
     int downInterval = optionsPingPolicy.getDownTimeInterval();
-    int pingTimeout = optionsPingPolicy.getPingTimeOut();
-
     logger.debug("Sending ping to UP element: {}", element);
     return Mono.defer(
             () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
-        .timeout(Duration.ofMillis(pingTimeout), upElementsScheduler)
         .doOnError(
             throwable ->
                 logger.error(
@@ -204,11 +201,9 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    */
   protected Mono<ResponseData> sendPingRequestToDownElement(
       String network, ServerGroupElement element, OptionsPingPolicy optionsPingPolicy) {
-    int pingTimeout = optionsPingPolicy.getPingTimeOut();
     logger.debug("Sending ping to DOWN element: {}", element);
     return Mono.defer(
             () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
-        .timeout(Duration.ofMillis(pingTimeout), downElementsScheduler)
         .map(sipResponse -> new ResponseData(sipResponse, element))
         .onErrorResume(
             throwable -> {

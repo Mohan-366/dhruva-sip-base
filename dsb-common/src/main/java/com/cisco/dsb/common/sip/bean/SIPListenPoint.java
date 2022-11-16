@@ -46,7 +46,14 @@ public class SIPListenPoint {
   @Builder.Default
   private Integer transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
 
+  @Builder.Default
+  private Integer pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
+
   private String hostInterface;
+
+  @Builder.Default
+  @Setter(AccessLevel.NONE)
+  private boolean isPingTimeOutOverride = false;
 
   public SIPListenPoint() {
     this.name = CommonConfigurationProperties.DEFAULT_NETWORK_NAME;
@@ -62,6 +69,8 @@ public class SIPListenPoint {
     this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
     this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
     this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
+    this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
+    this.isPingTimeOutOverride = false;
   }
 
   public void setHostInterface(String hostInterface) {
@@ -120,9 +129,16 @@ public class SIPListenPoint {
     return sipListenPointString.toString();
   }
 
-  public void setTransactionTimeout(int timeout) {
-    this.transactionTimeout = timeout;
-    FixTransactionTimeOut.setTransactionTimeout(this.name, this.transactionTimeout);
+  public void setPingTimeout(int timeout) {
+    isPingTimeOutOverride = true;
+    this.pingTimeout = timeout;
+  }
+
+  public void setTransport(Transport transport) {
+    this.transport = transport;
+    if (!isPingTimeOutOverride && transport.isReliable()) {
+      this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_TCP;
+    }
   }
 
   @Override
@@ -138,5 +154,10 @@ public class SIPListenPoint {
   @Override
   public int hashCode() {
     return new HashCodeBuilder().append(name).toHashCode();
+  }
+
+  public void init() {
+    FixTransactionTimeOut.setPingTimeout(this.name, this.pingTimeout);
+    FixTransactionTimeOut.setTransactionTimeout(this.name, this.transactionTimeout);
   }
 }

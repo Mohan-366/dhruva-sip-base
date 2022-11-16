@@ -49,6 +49,7 @@ common:
       attachExternalIP: true
       tlsAuthType: client
       enableCertService: true
+      pingTimeOut: 500
   routePolicy:
     policy1:
       name: policy1
@@ -65,4 +66,3 @@ common:
         - 503
       upTimeInterval: 30000
       downTimeInterval: 5000
-      pingTimeOut: 500

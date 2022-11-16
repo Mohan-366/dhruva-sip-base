@@ -7,6 +7,7 @@ import gov.nist.javax.sip.IOExceptionEventExt.Reason;
 import gov.nist.javax.sip.SipListenerExt;
 import gov.nist.javax.sip.message.SIPResponse;
 import javax.sip.*;
+import javax.sip.message.Request;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,6 +46,15 @@ public class ProxyPacketProcessor implements SipListenerExt {
   @Override
   public void processTimeout(TimeoutEvent timeoutEvent) {
     logger.error("received timeout event from sip stack");
+    if (!timeoutEvent.isServerTransaction()
+        && timeoutEvent.getClientTransaction().getRequest().getMethod().equals(Request.OPTIONS)) {
+      if (optionsPingResponseListener == null) {
+        logger.error("No listener registered for OPTIONS Ping Response. Dropping it.");
+        return;
+      }
+      optionsPingResponseListener.processTimeout(timeoutEvent);
+      return;
+    }
     proxyEventListener.timeOut(timeoutEvent);
   }
 

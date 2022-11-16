@@ -76,7 +76,6 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
       this.optionsPingPolicy =
           OptionsPingPolicy.builder()
               .setName("defaultOPPolicy")
-              .setPingTimeOut(500)
               .setDownTimeInterval(5000)
               .setUpTimeInterval(30000)
               .setFailureResponseCodes(Arrays.asList(501, 502, 503))

@@ -37,14 +37,17 @@ common:
       transport: UDP
       hostIPAddress: "127.0.0.1"
       enableRateLimiter: true
+      pingTimeOut: 500
     - name: *netb2b
       port: 5062
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      pingTimeOut: 500
     - name: *netcc
       port: 5080
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      pingTimeOut: 500
   serverGroups:
     UsPoolA:
       name: &UsPoolA UsPoolA
@@ -133,7 +136,6 @@ common:
         - 503
       upTimeInterval: 30000
       downTimeInterval: 5000
-      pingTimeOut: 500
 
 trunk:
   PSTN:

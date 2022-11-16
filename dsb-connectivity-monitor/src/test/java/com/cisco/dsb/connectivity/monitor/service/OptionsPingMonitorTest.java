@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import org.mockito.*;
@@ -79,7 +80,6 @@ public class OptionsPingMonitorTest {
             .setFailureResponseCodes(failoverCodes)
             .setUpTimeInterval(500)
             .setDownTimeInterval(200)
-            .setPingTimeOut(150)
             .setMaxForwards(5)
             .build();
     List<ServerGroupElement> sgeList = new ArrayList<>();
@@ -119,7 +119,6 @@ public class OptionsPingMonitorTest {
             .setFailureResponseCodes(failoverCodes)
             .setUpTimeInterval(30000)
             .setDownTimeInterval(500)
-            .setPingTimeOut(500)
             .setMaxForwards(50)
             .build();
     for (int i = 1; i <= 50; i++) {
@@ -274,7 +273,6 @@ public class OptionsPingMonitorTest {
         OptionsPingPolicy.builder()
             .setDownTimeInterval(2000)
             .setFailureResponseCodes(Collections.singletonList(503))
-            .setPingTimeOut(1000)
             .setUpTimeInterval(3000)
             .setName("op1")
             .setMaxForwards(50)
@@ -336,7 +334,6 @@ public class OptionsPingMonitorTest {
             .setFailureResponseCodes(List.of(503))
             .setUpTimeInterval(200)
             .setDownTimeInterval(200)
-            .setPingTimeOut(150)
             .build();
     ServerGroupElement sge =
         ServerGroupElement.builder()
@@ -526,10 +523,24 @@ public class OptionsPingMonitorTest {
   public void testUpIntervalException() throws SipException {
 
     ServerGroup sg = map.get("sg1");
-    CompletableFuture<SIPResponse> response2 = new CompletableFuture<>();
 
-    when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
-        .thenReturn(response2);
+    doAnswer(
+            invocationOnMock -> {
+              CompletableFuture<SIPResponse> timedOutResponse = new CompletableFuture<>();
+              new Timer()
+                  .schedule(
+                      new TimerTask() {
+                        @Override
+                        public void run() {
+                          timedOutResponse.completeExceptionally(
+                              new TimeoutException("No response received for OPTIONS"));
+                        }
+                      },
+                      1000);
+              return timedOutResponse;
+            })
+        .when(optionsPingTransaction)
+        .proxySendOutBoundRequest(any(), any(), any());
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(sg).log())
         .expectNextCount(4)
         .thenAwait(Duration.ofMillis(sg.getOptionsPingPolicy().getUpTimeInterval()))
@@ -829,7 +840,6 @@ public class OptionsPingMonitorTest {
             .setDownTimeInterval(2000)
             .setName("OP_NEW")
             .setUpTimeInterval(60000)
-            .setPingTimeOut(100)
             .build());
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setOptionsPingPolicyConfig(null);
@@ -920,7 +930,7 @@ public class OptionsPingMonitorTest {
     op2.setUpTimeInterval(35000); // change up interval time
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     op2.setUpTimeInterval(30000); // reset up interval time
-    op2.setPingTimeOut(1000); // change up pingTimeOut
+    op2.setDownTimeInterval(1000);
     Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
   }
 
@@ -972,7 +982,6 @@ public class OptionsPingMonitorTest {
             .setFailureResponseCodes(List.of(502))
             .setUpTimeInterval(5000)
             .setDownTimeInterval(2000)
-            .setPingTimeOut(150)
             .setMaxForwards(5)
             .build();
     ServerGroup sg1 =

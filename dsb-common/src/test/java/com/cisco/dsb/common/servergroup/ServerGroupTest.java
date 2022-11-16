@@ -42,12 +42,7 @@ public class ServerGroupTest {
     EqualsVerifier.simple()
         .forClass(OptionsPingPolicy.class)
         .withOnlyTheseFields(
-            "name",
-            "failureResponseCodes",
-            "upTimeInterval",
-            "downTimeInterval",
-            "pingTimeOut",
-            "maxForwards")
+            "name", "failureResponseCodes", "upTimeInterval", "downTimeInterval", "maxForwards")
         .verify();
   }
 }

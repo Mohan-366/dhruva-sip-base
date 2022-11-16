@@ -137,7 +137,6 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
                  - 503
              upTimeInterval: 30000
              downTimeInterval: 5000
-             pingTimeOut: 500
      
 ***NOTE:For all the configuration available please check CommonConfigurationProperty class***
 

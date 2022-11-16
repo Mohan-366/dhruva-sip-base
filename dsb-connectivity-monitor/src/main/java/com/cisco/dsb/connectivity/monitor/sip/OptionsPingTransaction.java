@@ -13,9 +13,8 @@ import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import gov.nist.javax.sip.stack.SIPClientTransactionImpl;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.sip.*;
 import lombok.CustomLog;
 import lombok.NonNull;
@@ -29,12 +28,6 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
   private DhruvaExecutorService dhruvaExecutorService;
   protected ApplicationDataCookie applicationDataCookie;
   private EventingService eventingService;
-
-  private final int timeOutForUDP = 5000;
-
-  public int getTimeOutForUDP() {
-    return timeOutForUDP;
-  }
 
   @Autowired
   public OptionsPingTransaction(
@@ -85,38 +78,7 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     applicationDataCookie = getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture);
     clientTrans.setApplicationData(applicationDataCookie);
 
-    if (sipListenPoint.getTransport().equals(Transport.UDP))
-      timeOutFOrUDP(responseFuture, clientTrans);
-
     return responseFuture;
-  }
-
-  // In case of timeout for UDP [unreliable transport],
-  // JAIN stack keeps sending retransmission until timer F fires [takes 32 seconds]
-  // In the above case, it will take 32 secs for the transaction to get complete
-  // So we are terminating the transaction in 5 seconds[getTimeOutForUDP()] and marking the element
-  // as down
-
-  private void timeOutFOrUDP(
-      CompletableFuture<SIPResponse> responseFuture, ClientTransaction clientTrans) {
-    responseFuture
-        .orTimeout(getTimeOutForUDP(), TimeUnit.MILLISECONDS)
-        .exceptionally(
-            ex -> {
-              {
-                try {
-                  clientTrans.terminate();
-                  logger.error(
-                      "Terminating the UDP transaction for {} due to timeout  transaction details {}",
-                      clientTrans.getRequest().getRequestURI(),
-                      ((SIPClientTransactionImpl) clientTrans).getTransactionId());
-                } catch (ObjectInUseException e) {
-                  logger.error("Exception while terminating Options ping transaction  ", e);
-                  responseFuture.completeExceptionally(e);
-                }
-              }
-              return null;
-            });
   }
 
   @Override
@@ -131,13 +93,22 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     try {
       CompletableFuture<SIPResponse> sipResponseCompletableFuture =
           getValidOptionsResponse(clientTransaction, sipResponse);
-      if (sipResponseCompletableFuture == null) {
-        return;
-      } else {
+      if (sipResponseCompletableFuture != null) {
         sipResponseCompletableFuture.complete((SIPResponse) responseEvent.getResponse());
       }
     } catch (Exception e) {
-      logger.error("Error: {} occured while processing response: {}", e, sipResponse);
+      logger.error("Error: {} occurred while processing response: {}", e, sipResponse);
+    }
+  }
+
+  @Override
+  public void processTimeout(TimeoutEvent timeoutEvent) {
+    ClientTransaction clientTransaction = timeoutEvent.getClientTransaction();
+    CompletableFuture<SIPResponse> sipResponseCompletableFuture =
+        getValidOptionsResponse(clientTransaction, null);
+    if (sipResponseCompletableFuture != null) {
+      sipResponseCompletableFuture.completeExceptionally(
+          new TimeoutException("OPTIONS request timedOut"));
     }
   }
 

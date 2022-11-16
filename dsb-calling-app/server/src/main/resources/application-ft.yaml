@@ -12,14 +12,17 @@ common:
       transport: UDP
       hostIPAddress: "127.0.0.1"
       transactionTimeout: "3000"
+      pingTimeOut: 500
     - name: *netb2b
       port: 5070
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      pingTimeOut: 500
     - name: *netcc
       port: 5080
       transport: UDP
       hostIPAddress: "127.0.0.1"
+      pingTimeOut: 500
   serverGroups:
     UsPoolA:
       name: &UsPoolA UsPoolA
@@ -141,7 +144,6 @@ common:
         - 503
       upTimeInterval: 3000
       downTimeInterval: 3000
-      pingTimeOut: 500
 trunk:
   PSTN:
     CcpFusionUS:

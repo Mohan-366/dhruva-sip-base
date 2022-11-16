@@ -55,7 +55,6 @@ common:
     - name: *netb2b
       port: 5070
       transport: UDP
-
       hostIPAddress: "127.0.0.1"
     - name: *netcc
       port: 5080
@@ -150,8 +149,8 @@ common:
         - 503
       upTimeInterval: 30000
       downTimeInterval: 8000
-      pingTimeOut: 5000
       maxForwards: 50
+
 
 trunk:
   PSTN:

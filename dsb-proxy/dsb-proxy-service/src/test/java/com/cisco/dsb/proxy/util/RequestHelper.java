@@ -183,4 +183,20 @@ public class RequestHelper {
   public static Request getDOInvite(String requestUri) throws ParseException {
     return JainSipHelper.getMessageFactory().createRequest(getPlainInvite(requestUri, ""));
   }
+
+  public static Request getOptionsRequest() throws ParseException {
+    return JainSipHelper.getMessageFactory()
+        .createRequest(
+            "OPTIONS sip:127.0.0.1:6060 SIP/2.0\n"
+                + "To: \"pingTo\" <sip:pingTo@127.0.0.1>\n"
+                + "From: \"dsb\" <sip:dsb@127.0.0.1:5060>;tag=xyz\n"
+                + "Call-ID: ece2d731a8f07656d054d98e9c9b79b0@127.0.0.1\n"
+                + "CSeq: 1 OPTIONS\n"
+                + "Contact: \"dsb\" <sip:dsb@127.0.0.1:5060>\n"
+                + "Max-Forwards: 50\n"
+                + "Via: SIP/2.0/UDP 127.0.0.1:5060;branch=z9hG4bK-353931-65700e76bebafe96808e83004f842668\n"
+                + "Content-Length: 0\n"
+                + "\r\n"
+                + "\r\n");
+  }
 }
