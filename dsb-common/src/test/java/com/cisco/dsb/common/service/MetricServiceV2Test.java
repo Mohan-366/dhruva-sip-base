@@ -324,4 +324,74 @@ public class MetricServiceV2Test {
           }
         });
   }
+
+  @Test(description = "Test to check sgSupplier")
+  public void sgStatusMetricSupplier() {
+    ConcurrentHashMap<String, Boolean> sgMapTest = new ConcurrentHashMap<>();
+    sgMapTest.put("sg1", true);
+    sgMapTest.put("sg2", false);
+    sgMapTest.put("sg3", false);
+
+    metricService.setSgStatusMap(sgMapTest);
+
+    Set<Metric> sgStatusSupplierOp = metricService.sgStatusMetricSupplier().get();
+    assertEquals(sgStatusSupplierOp.size(), 3);
+    sgStatusSupplierOp.forEach(
+        eachMetric -> {
+          Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("sgName"));
+          Assert.assertTrue(((InfluxPoint) eachMetric.get()).getFields().containsKey("status"));
+
+          {
+            if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg1")) {
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), true);
+            } else if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg2")) {
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), false);
+            } else if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg3")) {
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), false);
+            }
+          }
+        });
+  }
+
+  @Test(description = "Test to check sgeSupplier and sgeTosgMapping")
+  public void sgeStatusMetricSupplier() {
+    ConcurrentHashMap<String, Boolean> sgeMapTest = new ConcurrentHashMap<>();
+    sgeMapTest.put("127.0.0.1:5060:UDP", true);
+    sgeMapTest.put("127.0.0.1:5061:UDP", false);
+    sgeMapTest.put("127.0.0.1:5062:UDP", true);
+
+    metricService.setSgeStatusMap(sgeMapTest);
+
+    ConcurrentHashMap<String, String> sgetosgMapTest = new ConcurrentHashMap<>();
+    sgetosgMapTest.put("127.0.0.1:5060:UDP", "sg1");
+    sgetosgMapTest.put("127.0.0.1:5061:UDP", "sg2");
+    // sgetosgMapTest.put("127.0.0.1:5062:UDP", "sg2");
+
+    metricService.setSgeToSgMapping(sgetosgMapTest);
+
+    Set<Metric> sgeStatusSupplierOp = metricService.sgeStatusMetricSupplier().get();
+    assertEquals(sgeStatusSupplierOp.size(), 2);
+    sgeStatusSupplierOp.forEach(
+        eachMetric -> {
+          Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("sgName"));
+          Assert.assertTrue(((InfluxPoint) eachMetric.get()).getTags().containsKey("sgeName"));
+          Assert.assertTrue(((InfluxPoint) eachMetric.get()).getFields().containsKey("status"));
+
+          {
+            if (((InfluxPoint) eachMetric.get())
+                .getTags()
+                .get("sgeName")
+                .equals("127.0.0.1:5060:UDP")) {
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), true);
+              assertEquals(((InfluxPoint) eachMetric.get()).getTags().get("sgName"), "sg1");
+
+            } else if (((InfluxPoint) eachMetric.get())
+                .getTags()
+                .get("sgName")
+                .equals("127.0.0.1:5061:UDP")) {
+              assertEquals(((InfluxPoint) eachMetric.get()).getTags().get("sgName"), "sg2");
+            }
+          }
+        });
+  }
 }

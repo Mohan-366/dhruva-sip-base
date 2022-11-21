@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
@@ -49,6 +50,7 @@ public class OptionsPingMonitorTest {
   ServerGroupElement sge1, sge2, sge3, sge4, sge5, sge6;
 
   Map<String, Status> expectedElementStatusInt = new HashMap<>();
+  Map<String, String> expectedMapping = new HashMap<>();
 
   List<ServerGroup> serverGroups = new ArrayList<>();
   OptionsPingPolicy opPolicy = OptionsPingPolicy.builder().build();
@@ -62,6 +64,7 @@ public class OptionsPingMonitorTest {
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor3;
 
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor4;
+  @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor5;
   @Mock OptionsPingTransaction optionsPingTransaction;
   @Mock DnsServerGroupUtil dnsServerGroupUtil;
 
@@ -123,6 +126,18 @@ public class OptionsPingMonitorTest {
             .build();
     for (int i = 1; i <= 50; i++) {
       List<ServerGroupElement> sgeList = new ArrayList<>();
+      ServerGroup sg =
+          ServerGroup.builder()
+              .setNetworkName("net" + i)
+              .setHostName("SGName" + i)
+              .setName("SGName" + i)
+              .setElements(sgeList)
+              .setPingOn(true)
+              .setOptionsPingPolicy(optionsPingPolicy)
+              .build();
+
+      serverGroups.add(sg);
+      initmap.put(sg.getName(), sg);
       for (int j = 1; j <= 3; j++) {
         ServerGroupElement sge =
             ServerGroupElement.builder()
@@ -134,7 +149,7 @@ public class OptionsPingMonitorTest {
                 .build();
         portCounter++;
         sgeList.add(sge);
-
+        expectedMapping.put(sge.toUniqueElementString(), sg.getHostName());
         int select = new Random().nextInt(3 - 1 + 1) + 1;
 
         switch (select) {
@@ -171,18 +186,6 @@ public class OptionsPingMonitorTest {
             }
         }
       }
-      ServerGroup sg =
-          ServerGroup.builder()
-              .setNetworkName("net" + i)
-              .setHostName("SGName" + i)
-              .setName("SGName" + i)
-              .setElements(sgeList)
-              .setPingOn(true)
-              .setOptionsPingPolicy(optionsPingPolicy)
-              .build();
-
-      serverGroups.add(sg);
-      initmap.put(sg.getName(), sg);
     }
   }
 
@@ -190,6 +193,7 @@ public class OptionsPingMonitorTest {
   public void init() throws DhruvaException, ParseException {
     MockitoAnnotations.openMocks(this);
     metricService = mock(MetricService.class);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
     sge1 =
         ServerGroupElement.builder()
             .setIpAddress("10.78.98.54")
@@ -302,12 +306,16 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void serverGroupStatusWithOneUpElement() throws InterruptedException {
+    MockitoAnnotations.openMocks(this);
     ServerGroup sg = this.createSGWithUpOrDownElements(true, optionsPingMonitor2);
     Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     optionsPingMonitor2.startMonitoring(map);
     Thread.sleep(1500);
     Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
+    Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.equals(metricService.getSgStatusMap()));
     optionsPingMonitor2.disposeExistingFlux();
   }
 
@@ -317,9 +325,13 @@ public class OptionsPingMonitorTest {
     ServerGroup sg = this.createSGWithUpOrDownElements(false, optionsPingMonitor3);
     Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+
     optionsPingMonitor3.startMonitoring(map);
+
     Thread.sleep(1000);
     Assert.assertFalse(optionsPingMonitor3.serverGroupStatus.get(sg.getName()));
+
     optionsPingMonitor3.disposeExistingFlux();
   }
 
@@ -359,8 +371,9 @@ public class OptionsPingMonitorTest {
         .createAndSendRequest("testSG", sge, optionsPingPolicy);
     Map<String, ServerGroup> map = new HashMap<>();
     map.put(sg.getName(), sg);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     optionsPingMonitor4.startMonitoring(map);
-
     // Marking sge as down by sending 503, should send down metric
     Mockito.doReturn(CompletableFuture.completedFuture(ResponseHelper.getSipResponseFailOver()))
         .when(optionsPingMonitor4)
@@ -414,6 +427,7 @@ public class OptionsPingMonitorTest {
         .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
     Assert.assertEquals(argumentCaptor.getValue(), "testSG");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
+
     optionsPingMonitor4.disposeExistingFlux();
   }
 
@@ -421,17 +435,21 @@ public class OptionsPingMonitorTest {
   void testOptionsPingMultipleElements() throws InterruptedException {
     MockitoAnnotations.openMocks(this);
     this.createMultipleServerGroupElements();
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     optionsPingMonitor.startMonitoring(initmap);
 
     // TODO: always have downInterval : 500ms & no. of retries: 1 [after config story]
     Thread.sleep(1000);
 
     assertEquals(optionsPingMonitor.elementStatus, expectedElementStatusInt);
+    Assert.assertEquals(optionsPingMonitor.metricsService.getSgeToSgMapping(), expectedMapping);
     optionsPingMonitor.disposeExistingFlux();
   }
 
   @Test(description = "ServerGroupElements without any transitions")
   void testFluxUpAndDown() throws SipException, ParseException {
+    MockitoAnnotations.openMocks(this);
 
     SIPResponse sipResponse1 = new SIPResponse();
     sipResponse1.setStatusCode(200);
@@ -441,6 +459,8 @@ public class OptionsPingMonitorTest {
 
     Iterator<Map.Entry<String, ServerGroup>> itr = map.entrySet().iterator();
     ServerGroup sg = itr.next().getValue();
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any())).thenReturn(r1);
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(sg))
         .expectNext(
@@ -497,6 +517,8 @@ public class OptionsPingMonitorTest {
 
   @Test(description = "test UP element with failOver ->  OptionPing")
   public void testUpIntervalFailOver() throws ParseException, SipException {
+    MockitoAnnotations.openMocks(this);
+
     ServerGroup sg = map.get("sg1");
     SIPResponse downResponse = new SIPResponse();
     downResponse.setStatusCode(503);
@@ -504,7 +526,8 @@ public class OptionsPingMonitorTest {
     response2.complete(downResponse);
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
         .thenReturn(response2);
-
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(sg).log())
         .expectNextCount(4)
         .thenAwait(Duration.ofMillis(sg.getOptionsPingPolicy().getUpTimeInterval()))
@@ -521,7 +544,8 @@ public class OptionsPingMonitorTest {
 
   @Test(description = "test UP element with timeOut")
   public void testUpIntervalException() throws SipException {
-
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     ServerGroup sg = map.get("sg1");
 
     doAnswer(
@@ -564,6 +588,8 @@ public class OptionsPingMonitorTest {
     upResponse.setStatusCode(200);
     CompletableFuture<SIPResponse> upResponseCF = new CompletableFuture<>();
     upResponseCF.complete(upResponse);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
         .thenReturn(upResponseCF);
     // set SG to DOWN
@@ -588,22 +614,53 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.disposeExistingFlux();
   }
 
+  @Test(description = "test downInterval  with DOWN element" + "no change in status")
+  public void testDownInterval() throws SipException, ParseException {
+    MockitoAnnotations.openMocks(this);
+    ServerGroup sg = map.get("sg1");
+    SIPResponse upResponse = new SIPResponse();
+    upResponse.setStatusCode(503);
+    CompletableFuture<SIPResponse> upResponseCF = new CompletableFuture<>();
+    upResponseCF.completeExceptionally(new TimeoutException("no response received"));
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
+    when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
+        .thenReturn(upResponseCF);
+    optionsPingMonitor.serverGroupStatus.put(sg.getName(), false);
+    optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), new Status(false, 0));
+    StepVerifier.create(optionsPingMonitor.createDownElementsFlux(sg).log())
+        .expectNextCount(0)
+        .thenAwait(Duration.ofMillis(sg.getOptionsPingPolicy().getDownTimeInterval()))
+        .expectNextCount(1)
+        .thenCancel()
+        .verify();
+    Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
+
+    optionsPingMonitor.disposeExistingFlux();
+  }
+
   @Test
   public void testDownIntervalException() {
-
+    MockitoAnnotations.openMocks(this);
     List<Integer> failoverCodes = List.of(503);
-    OptionsPingMonitor optionsPingMonitor = Mockito.spy(OptionsPingMonitor.class);
     OptionsPingPolicy optionsPingPolicy =
         OptionsPingPolicy.builder().setFailureResponseCodes(failoverCodes).build();
+
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
+
     Exception exception =
         new CompletionException(
             new DhruvaRuntimeException(ErrorCode.REQUEST_NO_PROVIDER, "Runtime failed"));
     Mockito.doThrow(exception)
-        .when(optionsPingMonitor)
+        .when(optionsPingMonitor5)
         .createAndSendRequest(anyString(), any(), any());
     ResponseData exceptionResponse = new ResponseData(exception, sge1);
+
     Mono<ResponseData> response =
-        optionsPingMonitor.sendPingRequestToDownElement("net1", sge1, optionsPingPolicy);
+        optionsPingMonitor5.sendPingRequestToDownElement("temp", "net1", sge1, optionsPingPolicy);
+
     StepVerifier.create(response.log()).expectNext(exceptionResponse).verifyComplete();
   }
 
@@ -957,19 +1014,24 @@ public class OptionsPingMonitorTest {
   public void testDnsSGFailure() {
     // createDnsSG returns Mono.error() then ping pipeline should not stop. Should resume after
     // UP/down interval
+    MockitoAnnotations.openMocks(this);
+
     DnsException dnsException =
         new DnsException(DnsErrorCode.ERROR_DNS_HOST_NOT_FOUND.getDescription());
     when(dnsServerGroupUtil.createDNSServerGroup(any(), any()))
         .thenReturn(Mono.error(dnsException));
+
     ServerGroup resolvedDsg = map.get("sg1");
     ServerGroup dsg = resolvedDsg.toBuilder().setElements(null).setSgType(SGType.SRV).build();
     StepVerifier.create(optionsPingMonitor.getElements(dsg))
         .verifyErrorMatches(throwable -> throwable.equals(dnsException));
-
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     StepVerifier.create(optionsPingMonitor.createUpElementsFlux(dsg))
         .thenAwait(Duration.ofMillis(dsg.getOptionsPingPolicy().getUpTimeInterval() * 2L))
         .thenCancel()
         .verify();
+    Assert.assertFalse(optionsPingMonitor.serverGroupStatus.get(dsg.getHostName()));
 
     verify(dnsServerGroupUtil, atLeast(3)).createDNSServerGroup(eq(dsg), eq(null));
   }
@@ -1005,7 +1067,8 @@ public class OptionsPingMonitorTest {
     CompletableFuture<SIPResponse> upResponseCF = CompletableFuture.completedFuture(upResponse);
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any()))
         .thenReturn(upResponseCF);
-
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     optionsPingMonitor.pingPipeLine(sg1);
     optionsPingMonitor.pingPipeLine(sg2);
     Thread.sleep(3000);

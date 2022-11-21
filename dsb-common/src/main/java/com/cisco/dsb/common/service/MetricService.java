@@ -53,6 +53,17 @@ public class MetricService {
   private static final String DOT = ".";
   private static final String UPSTREAM_SERVICE_HEALTH_MEASUREMENT_NAME = "service.upstream.health";
   private static final String TRUNK_LOADBALANCER_MEASUREMENT = "trunkLbs";
+
+  private static final String SG_STATUS_MEASUREMENT = "sgMetric";
+
+  private static final String SGE_STATUS_MEASUREMENT = "sgeMetric";
+
+  private static final String STATUS_FIELD = "status";
+
+  private static final String SG_TAG = "sgName";
+
+  private static final String SGE_TAG = "sgeName";
+
   private static final String TRUNK_TAG = "trunk";
   private static final String TRUNK_ALGO_TAG = "trunkAlgo";
   private static final String SERVERGROUP_ELEMENT_TAG = "serverGroupElement";
@@ -86,6 +97,12 @@ public class MetricService {
   @Getter @Setter private Map<String, ConnectionInfo> connectionInfoMap;
 
   @Getter @Setter private Map<RateLimitInfo, Integer> rateLimiterMap;
+
+  @Getter @Setter private Map<String, Boolean> sgStatusMap = new ConcurrentHashMap<>();
+
+  @Getter @Setter private Map<String, String> sgeToSgMapping = new ConcurrentHashMap<>();
+
+  @Getter @Setter private Map<String, Boolean> sgeStatusMap = new ConcurrentHashMap<>();
 
   @Getter private final Cache<String, Long> timers;
   @Getter private final HashMap<String, StopWatch> stopWatchTimers = new HashMap<>();
@@ -128,6 +145,7 @@ public class MetricService {
 
   public void registerPeriodicMetric(
       String measurement, Supplier<Set<Metric>> metricSupplier, int interval, TimeUnit timeUnit) {
+
     scheduledExecutor.scheduleAtFixedRate(
         getMetricFromSupplier(measurement, metricSupplier), interval, interval, timeUnit);
   }
@@ -186,6 +204,13 @@ public class MetricService {
   public void emitRateLimiterMetricPerInterval(int interval, TimeUnit timeUnit) {
     this.registerPeriodicMetric(
         "ratelimiter", this.rateLimitInfoMetricSupplier("ratelimiter"), interval, timeUnit);
+  }
+
+  public void emitSgStatusPerInterval(int interval, TimeUnit timeUnit) {
+    this.registerPeriodicMetric(
+        SG_STATUS_MEASUREMENT, this.sgStatusMetricSupplier(), interval, timeUnit);
+    this.registerPeriodicMetric(
+        SGE_STATUS_MEASUREMENT, this.sgeStatusMetricSupplier(), interval, timeUnit);
   }
 
   private Supplier<Set<Metric>> connectionInfoMetricSupplier() {
@@ -302,6 +327,47 @@ public class MetricService {
       rateLimiterMap.clear();
       return rateLimiterMetricSet;
     };
+  }
+
+  public Supplier<Set<Metric>> sgStatusMetricSupplier() {
+
+    Supplier<Set<Metric>> sgStatusSupplier =
+        () -> {
+          Set<Metric> sgStatusSet = new HashSet<>();
+          for (Map.Entry<String, Boolean> entry : sgStatusMap.entrySet()) {
+            if (!entry.getKey().isEmpty()) {
+              Metric sgStatusMetric = Metrics.newMetric().measurement(SG_STATUS_MEASUREMENT);
+              sgStatusMetric.tag(SG_TAG, entry.getKey());
+              sgStatusMetric.field(STATUS_FIELD, entry.getValue());
+              sgStatusSet.add(sgStatusMetric);
+            }
+          }
+
+          return sgStatusSet;
+        };
+    return sgStatusSupplier;
+  }
+
+  public Supplier<Set<Metric>> sgeStatusMetricSupplier() {
+
+    Supplier<Set<Metric>> sgeStatusSupplier =
+        () -> {
+          Set<Metric> sgeStatusSet = new HashSet<>();
+
+          for (Map.Entry<String, Boolean> entry : sgeStatusMap.entrySet()) {
+            if (!entry.getKey().isEmpty()
+                && !sgeToSgMapping.isEmpty()
+                && sgeToSgMapping.get(entry.getKey()) != null) {
+              Metric sgeStatusMetric = Metrics.newMetric().measurement(SGE_STATUS_MEASUREMENT);
+              sgeStatusMetric.tag(SG_TAG, sgeToSgMapping.get(entry.getKey()));
+              sgeStatusMetric.tag(SGE_TAG, entry.getKey());
+              sgeStatusMetric.field(STATUS_FIELD, entry.getValue());
+              sgeStatusSet.add(sgeStatusMetric);
+            }
+          }
+          return sgeStatusSet;
+        };
+    return sgeStatusSupplier;
   }
 
   public void emitTrunkStatusSupplier(String measurement) {
@@ -479,20 +545,26 @@ public class MetricService {
   }
 
   public void sendSGMetric(String sgName, Boolean status) {
-    Metric metric =
-        Metrics.newMetric().measurement("sgMetric").field("status", status).tag("sgName", sgName);
 
+    Metric metric =
+        Metrics.newMetric()
+            .measurement(SG_STATUS_MEASUREMENT)
+            .field(STATUS_FIELD, status)
+            .tag(SG_TAG, sgName);
+
+    sgStatusMap.put(sgName, status);
     sendMetric(metric);
   }
 
   public void sendSGElementMetric(String sgName, String sgeName, Boolean status) {
+
     Metric metric =
         Metrics.newMetric()
-            .measurement("sgeMetric")
-            .field("status", status)
-            .tag("sgeName", sgeName)
-            .tag("sgName", sgName);
-
+            .measurement(SGE_STATUS_MEASUREMENT)
+            .field(STATUS_FIELD, status)
+            .tag(SGE_TAG, sgeName)
+            .tag(SG_TAG, sgName);
+    sgeStatusMap.put(sgeName, status);
     sendMetric(metric);
   }
 

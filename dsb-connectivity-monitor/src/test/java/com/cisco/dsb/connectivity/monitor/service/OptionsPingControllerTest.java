@@ -1,5 +1,6 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 import com.cisco.dsb.common.servergroup.Pingable;
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -103,6 +105,7 @@ public class OptionsPingControllerTest {
   void testSGE() {
     OptionsPingControllerImpl optionsPingController = new OptionsPingControllerImpl();
     optionsPingController.setOptionsPingMonitor(optionsPingMonitor);
+
     optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), new Status(true, 0));
     optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), new Status(false, 0));
     optionsPingMonitor.elementStatus.put(sge3.toUniqueElementString(), new Status(true, 0));
@@ -149,6 +152,7 @@ public class OptionsPingControllerTest {
   public void testStartPing() {
     OptionsPingControllerImpl optionsPingController = new OptionsPingControllerImpl();
     optionsPingController.setOptionsPingMonitor(optionsPingMonitor);
+    when(optionsPingMonitor.metricsService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
     optionsPingController.startPing(map.get("net1"));
     Mockito.verify(optionsPingMonitor, Mockito.times(1)).pingPipeLine(map.get("net1"));
   }
