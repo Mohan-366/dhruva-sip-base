@@ -101,9 +101,12 @@ public class DhruvaCallingAppTest {
     Assert.assertNotNull(requestConsumer);
 
     when(filter.filter(proxySIPRequest)).thenThrow(InvalidCallTypeException.class);
-
+    when(proxySIPRequest.getCallId()).thenReturn("::This is callid::");
     requestConsumer.accept(proxySIPRequest);
 
-    verify(proxySIPRequest, times(1)).reject(Response.NOT_FOUND);
+    verify(proxySIPRequest, times(1))
+        .reject(
+            Response.NOT_FOUND,
+            "Rejecting with 404, Unable to find the calltype for request callid: ::This is callid::");
   }
 }

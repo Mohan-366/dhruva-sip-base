@@ -136,7 +136,12 @@ public class SipProxyManager {
         && (requestType.equals(Request.OPTIONS) || requestType.equals(Request.INVITE))) {
       try {
         ProxySendMessage.sendResponse(
-            Response.SERVICE_UNAVAILABLE, "", sipProvider, serverTransaction, (SIPRequest) request);
+            Response.SERVICE_UNAVAILABLE,
+            "",
+            sipProvider,
+            serverTransaction,
+            (SIPRequest) request,
+            "Dhruva in maintainence");
         return true;
       } catch (DhruvaException e) {
         logger.error("Error while sending response when dsb is in suspend state ", e);
@@ -152,7 +157,7 @@ public class SipProxyManager {
         try {
           logger.debug("Sending provisional 100 response for INVITE");
           ProxySendMessage.sendResponse(
-              Response.TRYING, null, sipProvider, serverTransaction, (SIPRequest) request);
+              Response.TRYING, null, sipProvider, serverTransaction, (SIPRequest) request, null);
           logger.info("Successfully sent 100 provisional response for INVITE");
         } catch (Exception e) {
           logger.error("Error sending provisional 100 response", e);
@@ -314,7 +319,8 @@ public class SipProxyManager {
               request.getCallTypeName(),
               request.getProvider(),
               request.getServerTransaction(),
-              sipRequest);
+              sipRequest,
+              "Received request has proxy unsupported URI Scheme");
         } catch (DhruvaException e) {
           throw new DhruvaRuntimeException(
               ErrorCode.SEND_RESPONSE_ERR,
@@ -330,7 +336,8 @@ public class SipProxyManager {
               request.getCallTypeName(),
               request.getProvider(),
               request.getServerTransaction(),
-              sipRequest);
+              sipRequest,
+              "Received request exceeded Max-Forwards limit");
         } catch (DhruvaException e) {
           throw new DhruvaRuntimeException(
               ErrorCode.SEND_RESPONSE_ERR,
@@ -354,7 +361,8 @@ public class SipProxyManager {
                 request.getServerTransaction(),
                 request.getProvider(),
                 true,
-                request.getCallTypeName());
+                request.getCallTypeName(),
+                "Received request has proxy unsupported features in Proxy-Require header");
           } catch (DhruvaException | ParseException e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
@@ -449,7 +457,7 @@ public class SipProxyManager {
         }
       }
       try {
-        ProxySendMessage.sendResponse(response, null, sipProvider.get(), false, null);
+        ProxySendMessage.sendResponse(response, null, sipProvider.get(), false, null, null);
       } catch (DhruvaException exception) {
         logger.error("Unable to send out stray response using sipProvider", exception);
       }
@@ -497,7 +505,9 @@ public class SipProxyManager {
                     logger.error(
                         "Error while sending out mid dialog request based on rURI/Route Header",
                         throwable);
-                    proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                    proxySIPRequest.reject(
+                        Response.SERVER_INTERNAL_ERROR,
+                        "Error while sending out mid dialog request based on rURI/Route Header");
                   }
                 });
 
@@ -598,9 +608,10 @@ public class SipProxyManager {
             transportType,
             DIRECTION.IN,
             SipUtils.isMidDialogRequest(sipRequest),
-            false, // internally generated
+            false,
             0L,
             String.valueOf(sipRequest.getRequestURI()),
+            null,
             null);
 
         logger.info(
@@ -649,7 +660,8 @@ public class SipProxyManager {
             false,
             0L,
             String.valueOf(sipResponse.getReasonPhrase()),
-            callType);
+            callType,
+            null);
 
         logger.info(
             "received incoming response: {} on provider -> port : {}, transport: {}, ip-address: {}, sent-by: {}",

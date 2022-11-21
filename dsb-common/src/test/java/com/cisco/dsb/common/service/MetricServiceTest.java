@@ -92,7 +92,8 @@ public class MetricServiceTest {
         INTERALLY_GENERATED_FALSE,
         0L,
         reqURI,
-        CALLTYPE_TEST);
+        CALLTYPE_TEST,
+        null);
 
     Mockito.verify(metricClientMock, atMost(1)).sendMetric(metricArgumentCaptor.capture());
 
@@ -128,8 +129,8 @@ public class MetricServiceTest {
         INTERALLY_GENERATED_FALSE,
         0L,
         reqURI,
-        null // for sipRequests calltype can be null
-        );
+        null, // for sipRequests calltype can be null
+        null);
 
     Mockito.verify(metricClientMock, atMost(2)).sendMetric(metricArgumentCaptor.capture());
 
@@ -169,9 +170,8 @@ public class MetricServiceTest {
         INTERALLY_GENERATED_TRUE,
         0L,
         "200 OK",
-        CALLTYPE_TEST
-        // ,null
-        );
+        CALLTYPE_TEST,
+        "Some additional details");
 
     Mockito.verify(metricClientMock).sendMetric(metricArgumentCaptor.capture());
 
@@ -192,6 +192,7 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedFields.containsKey("cSeq"));
     Assert.assertTrue(capturedFields.containsKey("responseCode"));
     Assert.assertTrue(capturedFields.containsKey("responseReason"));
+    Assert.assertTrue(capturedFields.containsKey("additionalDetails"));
     Assert.assertFalse(capturedFields.containsKey("processingDelayInMillis"));
     Assert.assertTrue(capturedTags.containsKey("callType"));
     Assert.assertTrue(capturedTags.containsValue(CALLTYPE_TEST));

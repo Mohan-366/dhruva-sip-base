@@ -9,7 +9,7 @@ public interface ProxyInterface {
 
   void proxyResponse(ProxySIPResponse proxySIPResponse);
 
-  void respond(int responseCode, ProxySIPRequest proxySIPRequest);
+  void respond(int responseCode, String additionalDetails, ProxySIPRequest proxySIPRequest);
 
   void sendRequestToApp(boolean send);
 

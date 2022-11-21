@@ -307,7 +307,8 @@ public class ProxyService {
                     callType,
                     sipProvider,
                     serverTransaction,
-                    sipRequest);
+                    sipRequest,
+                    dre.getMessage());
               } catch (DhruvaException ex) {
                 logger.error("Unable to send err response {}", errorCode.getResponseCode());
               }
@@ -325,7 +326,8 @@ public class ProxyService {
                 callType,
                 sipProvider,
                 serverTransaction,
-                sipRequest);
+                sipRequest,
+                err.getMessage());
           } catch (DhruvaException ex) {
             logger.error("Unable to send err response {}", Response.SERVER_INTERNAL_ERROR, ex);
           }

@@ -23,6 +23,7 @@ public class ProxyServerTransaction {
   private ProxyTransaction proxy;
   private ControllerConfig controllerConfig;
   @Getter @Setter private boolean isInternallyGeneratedResponse = false;
+  @Getter @Setter private String additionalDetails;
 
   /** last response sent */
   private SIPResponse response;
@@ -74,7 +75,11 @@ public class ProxyServerTransaction {
               ? this.proxy.getClientTransaction().getProxySIPRequest().getCallTypeName()
               : null;
       ProxySendMessage.sendResponse(
-          serverTransaction, response, this.isInternallyGeneratedResponse(), callTypeName);
+          serverTransaction,
+          response,
+          this.isInternallyGeneratedResponse(),
+          callTypeName,
+          this.getAdditionalDetails());
       // TODO there can be multiple responses associated with single serverTransaction, so this
       // should be a list?
       this.response = response;

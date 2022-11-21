@@ -165,7 +165,8 @@ public class CallTypeTest {
 
     callType.processRequest(proxySIPRequest);
 
-    verify(proxySIPRequest, times(1)).reject(Response.NOT_FOUND);
+    verify(proxySIPRequest, times(1))
+        .reject(Response.NOT_FOUND, "Unable to find ingress(antares) and/or egress(null)");
   }
 
   @Test(description = "handle egress throws exception")
@@ -178,7 +179,10 @@ public class CallTypeTest {
             any(TrunkType.class), any(ProxySIPRequest.class), anyString(), any()))
         .thenReturn(Mono.error(dhruvaRuntimeException));
     callType.processRequest(proxySIPRequest);
-    verify(proxySIPRequest, times(1)).reject(dhruvaRuntimeException.getErrCode().getResponseCode());
+    verify(proxySIPRequest, times(1))
+        .reject(
+            dhruvaRuntimeException.getErrCode().getResponseCode(),
+            "Error while proxying the request");
 
     verify(metricService, times(1))
         .sendTrunkMetric(
@@ -190,7 +194,7 @@ public class CallTypeTest {
         .thenReturn(Mono.error(new NullPointerException()));
     when(proxySIPRequest.getAppRecord()).thenReturn(new DhruvaAppRecord());
     callType.processRequest(proxySIPRequest);
-    verify(proxySIPRequest, times(1)).reject(Response.SERVER_INTERNAL_ERROR);
+    verify(proxySIPRequest, times(1)).reject(Response.SERVER_INTERNAL_ERROR, null);
     verify(metricService, times(1))
         .sendTrunkMetric(callType.getIngressKey(), Response.SERVER_INTERNAL_ERROR, null);
   }

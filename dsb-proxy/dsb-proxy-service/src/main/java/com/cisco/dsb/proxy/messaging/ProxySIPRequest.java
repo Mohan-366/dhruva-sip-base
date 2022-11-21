@@ -78,7 +78,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     return this.proxyInterface.proxyRequest(this, endPoint);
   }
 
-  public void reject(int responseCode) {
+  public void reject(int responseCode, String additionalDetails) {
     if (this.proxyInterface == null) {
       throw new RuntimeException("proxy interface not set, unable to forward the request");
     }
@@ -87,7 +87,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
         responseCode,
         this.getAppRecord() == null ? "None" : this.getAppRecord().toString());
     if (!this.getRequest().getMethod().equals(Request.ACK)) {
-      this.proxyInterface.respond(responseCode, this);
+      this.proxyInterface.respond(responseCode, additionalDetails, this);
     }
   }
 

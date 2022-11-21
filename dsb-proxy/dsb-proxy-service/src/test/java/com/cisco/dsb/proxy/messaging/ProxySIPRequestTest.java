@@ -102,10 +102,10 @@ public class ProxySIPRequestTest {
         new ProxySIPRequest(executionContext, provider, req, serverTransaction);
     proxySIPRequest.setProxyInterface(proxyInterface);
 
-    doNothing().when(proxyInterface).respond(200, proxySIPRequest);
+    doNothing().when(proxyInterface).respond(200, "additionalDetails", proxySIPRequest);
 
-    proxySIPRequest.reject(200);
-    verify(proxyInterface).respond(200, proxySIPRequest);
+    proxySIPRequest.reject(200, "additionalDetails");
+    verify(proxyInterface).respond(200, "additionalDetails", proxySIPRequest);
   }
 
   @Test(
@@ -114,7 +114,7 @@ public class ProxySIPRequestTest {
   public void testReject2() {
     ProxySIPRequest proxySIPRequest =
         new ProxySIPRequest(executionContext, provider, request, serverTransaction);
-    proxySIPRequest.reject(404);
+    proxySIPRequest.reject(404, "additionalDetails");
   }
 
   @Test(
@@ -129,12 +129,12 @@ public class ProxySIPRequestTest {
         new ProxySIPRequest(executionContext, provider, req, serverTransaction);
     proxySIPRequest.setProxyInterface(proxyInterface);
 
-    doNothing().when(proxyInterface).respond(200, proxySIPRequest);
+    doNothing().when(proxyInterface).respond(200, "additionalDetails", proxySIPRequest);
 
-    proxySIPRequest.reject(500);
+    proxySIPRequest.reject(500, "additionalDetails");
 
     // verify respond is not invoked
-    verify(proxyInterface, times(0)).respond(500, proxySIPRequest);
+    verify(proxyInterface, times(0)).respond(500, "additionalDetails", proxySIPRequest);
   }
 
   @Test(description = "test second constructor for ProxySipRequest")

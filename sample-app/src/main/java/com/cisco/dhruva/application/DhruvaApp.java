@@ -33,7 +33,7 @@ public class DhruvaApp {
                   }
                   if (throwable != null) {
                     logger.error("Error while sending out request", throwable);
-                    proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                    proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, throwable.getMessage());
                   }
                 });
       };

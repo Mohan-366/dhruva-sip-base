@@ -58,8 +58,10 @@ public interface CallType {
     this.incrementCPSCounter(proxySIPRequest);
 
     if (ingress == null || egress == null) {
-      Logger.logger.error("Unable to find ingress({}) and/or egress({})", ingress, egress);
-      proxySIPRequest.reject(Response.NOT_FOUND);
+      String errorMessage =
+          String.format("Unable to find ingress(%s) and/or egress(%s)", ingress, egress);
+      Logger.logger.error(errorMessage);
+      proxySIPRequest.reject(Response.NOT_FOUND, errorMessage);
       return;
     }
     Utilities.Checks checks = new Utilities.Checks();
@@ -107,10 +109,11 @@ public interface CallType {
               int errorResponse;
               if (err instanceof DhruvaRuntimeException) {
                 proxySIPRequest.reject(
-                    ((DhruvaRuntimeException) err).getErrCode().getResponseCode());
+                    ((DhruvaRuntimeException) err).getErrCode().getResponseCode(),
+                    err.getMessage());
                 errorResponse = ((DhruvaRuntimeException) err).getErrCode().getResponseCode();
               } else {
-                proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, err.getMessage());
                 errorResponse = Response.SERVER_INTERNAL_ERROR;
               }
               handleTrunkMetric(ingress, errorResponse, proxySIPRequest.getCallId());

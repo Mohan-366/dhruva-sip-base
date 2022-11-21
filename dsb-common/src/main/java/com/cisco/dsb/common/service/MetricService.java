@@ -116,13 +116,13 @@ public class MetricService {
                 })
             .build();
 
-    this.cpsCounterMap = new HashMap<>();
-    this.cpsTrunkCounterMap = new HashMap<>();
-    this.trunkStatusMap = new HashMap<>();
-    this.serverGroupStatusMap = new HashMap<>();
+    this.cpsCounterMap = new ConcurrentHashMap<>();
+    this.cpsTrunkCounterMap = new ConcurrentHashMap<>();
+    this.trunkStatusMap = new ConcurrentHashMap<>();
+    this.serverGroupStatusMap = new ConcurrentHashMap<>();
     this.trunkLBMap = new ConcurrentHashMap<>();
-    this.trunkLBAlgorithm = new HashMap<>();
-    this.connectionInfoMap = new HashMap<>();
+    this.trunkLBAlgorithm = new ConcurrentHashMap<>();
+    this.connectionInfoMap = new ConcurrentHashMap<>();
     this.rateLimiterMap = new ConcurrentHashMap<>();
   }
 
@@ -518,7 +518,8 @@ public class MetricService {
       boolean isInternallyGenerated,
       long dhruvaProcessingDelayInMillis,
       String requestUri,
-      String callType) {
+      String callType,
+      String additionalDetails) {
 
     Metric metric =
         Metrics.newMetric()
@@ -544,6 +545,10 @@ public class MetricService {
     if (direction == OUT && !isInternallyGenerated) {
       metric.field("processingDelayInMillis", dhruvaProcessingDelayInMillis);
     }
+    if (!StringUtils.isEmpty(additionalDetails)) {
+      metric.field("additionalDetails", additionalDetails);
+    }
+
     sendMetric(metric);
   }
 

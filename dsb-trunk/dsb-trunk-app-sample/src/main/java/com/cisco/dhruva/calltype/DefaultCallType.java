@@ -48,8 +48,9 @@ public class DefaultCallType {
                   err);
               if (err instanceof DhruvaRuntimeException)
                 proxySIPRequest.reject(
-                    ((DhruvaRuntimeException) err).getErrCode().getResponseCode());
-              else proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR);
+                    ((DhruvaRuntimeException) err).getErrCode().getResponseCode(),
+                    err.getMessage());
+              else proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, err.getMessage());
             });
   }
 }

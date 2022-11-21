@@ -112,11 +112,11 @@ public class DhruvaCallingApp {
         Utilities.Checks checks = new Utilities.Checks();
         checks.add("call type process request", ie.getMessage());
         proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, checks);
-        logger.error(
-            "Unable to find the calltype for request callid:{}, rejecting with 404",
-            proxySIPRequest.getCallId(),
-            ie);
-        proxySIPRequest.reject(Response.NOT_FOUND);
+        String errorMessage =
+            "Rejecting with 404, Unable to find the calltype for request callid: "
+                + proxySIPRequest.getCallId();
+        logger.error(errorMessage, ie);
+        proxySIPRequest.reject(Response.NOT_FOUND, errorMessage);
       }
     };
   }

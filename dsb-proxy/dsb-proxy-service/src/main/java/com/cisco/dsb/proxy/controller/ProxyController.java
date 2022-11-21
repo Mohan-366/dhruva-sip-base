@@ -152,7 +152,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
   }
 
-  public void respond(int responseCode, @NonNull ProxySIPRequest proxySIPRequest) {
+  public void respond(
+      int responseCode, String additionalDetails, @NonNull ProxySIPRequest proxySIPRequest) {
 
     Response response;
     try {
@@ -165,7 +166,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     }
 
     Optional.ofNullable(((ProxyTransaction) proxyTransaction).getServerTransaction())
-        .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+        .ifPresent(
+            proxySrvTxn -> {
+              proxySrvTxn.setInternallyGeneratedResponse(true);
+              proxySrvTxn.setAdditionalDetails(additionalDetails);
+            });
 
     ((ProxyTransaction) proxyTransaction).respond((SIPResponse) response);
   }
@@ -655,7 +660,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                   serverTransaction,
                   sipProvider,
                   true,
-                  proxySIPRequest.getCallTypeName());
+                  proxySIPRequest.getCallTypeName(),
+                  "Received REGISTER is not supported by Proxy. Sending 405 error response");
             } catch (Exception e) {
               throw new DhruvaRuntimeException(
                   ErrorCode.SEND_RESPONSE_ERR,
@@ -675,7 +681,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 proxySIPRequest.getCallTypeName(),
                 sipProvider,
                 serverTransaction,
-                sipRequest);
+                sipRequest,
+                null);
 
             // Sending CANCEL to server
             ServerTransaction serverTransaction = proxySIPRequest.getServerTransaction();
@@ -721,7 +728,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 serverTransaction,
                 sipProvider,
                 true,
-                proxySIPRequest.getCallTypeName());
+                proxySIPRequest.getCallTypeName(),
+                null);
           } catch (Exception e) {
             throw new DhruvaRuntimeException(
                 ErrorCode.SEND_RESPONSE_ERR,
@@ -862,7 +870,11 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
               new ExecutionContext());
 
       Optional.ofNullable(((ProxyTransaction) this.proxyTransaction).getServerTransaction())
-          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+          .ifPresent(
+              proxySrvTxn -> {
+                proxySrvTxn.setInternallyGeneratedResponse(true);
+                proxySrvTxn.setAdditionalDetails(err.getMessage());
+              });
 
       if (proxyClientTransaction != null) {
         logger.debug("Remove Timer C from the ProxyClientTransaction due to ProxyFailure");

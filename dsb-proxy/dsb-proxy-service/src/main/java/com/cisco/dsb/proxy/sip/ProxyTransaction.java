@@ -546,7 +546,11 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       proxySIPResponse.setProxyTransaction(this);
       proxySIPResponse.setProxyInterface(((ProxyController) controller));
       Optional.ofNullable(this.getServerTransaction())
-          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+          .ifPresent(
+              proxySrvTxn -> {
+                proxySrvTxn.setInternallyGeneratedResponse(true);
+                proxySrvTxn.setAdditionalDetails("Request timed out");
+              });
       // invoke the final response method above
       controller.onFinalResponse(proxyClientTrans.getCookie(), proxySIPResponse);
 
@@ -589,7 +593,12 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       proxySIPResponse.setProxyTransaction(this);
 
       Optional.ofNullable(this.getServerTransaction())
-          .ifPresent(proxySrvTxn -> proxySrvTxn.setInternallyGeneratedResponse(true));
+          .ifPresent(
+              proxySrvTxn -> {
+                proxySrvTxn.setInternallyGeneratedResponse(true);
+                proxySrvTxn.setAdditionalDetails(
+                    "Got an ICMP error, sending 404 Not found Response");
+              });
 
     } catch (DhruvaException | ParseException e) {
       logger.error("Error generating response in ICMP", e);
