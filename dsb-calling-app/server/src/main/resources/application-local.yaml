@@ -26,11 +26,15 @@ app:
 
   rateLimitPolicy:
     - name: &rateLimitPolicyPstn "rateLimitPolicyPstn"
-      allowList: ['10.78.98.54', '2.2.2.2']
+      allowList: ['2.2.2.2/24']
+      denyList: ['3.3.3.3']
       type: network
       rateLimit:
         permits: 1000
         interval: 60s
+        responseOptions:
+          statusCode: 599
+          reasonPhrase: "Fraud Control"
     - name: &rateLimitPolicyGlobal "rateLimitPolicyGlobal"
       allowList: ["3.3.3.3"]
       denyList: ["4.4.4.4"]

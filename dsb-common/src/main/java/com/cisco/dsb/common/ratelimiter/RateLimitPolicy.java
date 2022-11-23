@@ -43,5 +43,17 @@ public class RateLimitPolicy {
   public static class RateLimit {
     Integer permits;
     String interval;
+    ResponseOptions responseOptions;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder(setterPrefix = "set")
+    @EqualsAndHashCode
+    public static class ResponseOptions {
+      Integer statusCode;
+      String reasonPhrase;
+    }
   }
 }

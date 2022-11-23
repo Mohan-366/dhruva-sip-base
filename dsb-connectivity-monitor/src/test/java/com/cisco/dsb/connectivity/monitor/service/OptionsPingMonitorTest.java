@@ -2,6 +2,8 @@ package com.cisco.dsb.connectivity.monitor.service;
 
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dns.DnsErrorCode;
@@ -314,8 +316,8 @@ public class OptionsPingMonitorTest {
     when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     optionsPingMonitor2.startMonitoring(map);
     Thread.sleep(1500);
-    Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
-    Assert.assertTrue(optionsPingMonitor2.serverGroupStatus.equals(metricService.getSgStatusMap()));
+    assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
+    assertTrue(optionsPingMonitor2.serverGroupStatus.equals(metricService.getSgStatusMap()));
     optionsPingMonitor2.disposeExistingFlux();
   }
 
@@ -483,10 +485,10 @@ public class OptionsPingMonitorTest {
         .thenCancel()
         .verify();
 
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     optionsPingMonitor.elementStatus.put(sge1.toUniqueElementString(), new Status(true, 0));
     optionsPingMonitor.elementStatus.put(sge2.toUniqueElementString(), new Status(false, 0));
 
@@ -508,10 +510,10 @@ public class OptionsPingMonitorTest {
         .expectNext(responseData2, responseData3)
         .thenCancel()
         .verify();
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
     Assert.assertFalse(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
     optionsPingMonitor.disposeExistingFlux();
   }
 
@@ -606,11 +608,11 @@ public class OptionsPingMonitorTest {
         .expectNoEvent(Duration.ofMillis(sg.getOptionsPingPolicy().getDownTimeInterval()))
         .thenCancel()
         .verify();
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
-    Assert.assertTrue(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
+    assertTrue(optionsPingMonitor.elementStatus.get(sge1.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge2.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge3.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.elementStatus.get(sge4.toUniqueElementString()).isUp());
+    assertTrue(optionsPingMonitor.serverGroupStatus.get(sg.getName()));
     optionsPingMonitor.disposeExistingFlux();
   }
 
@@ -666,14 +668,13 @@ public class OptionsPingMonitorTest {
 
   @Test
   public void testOptionPingRequestWithException() throws DhruvaException {
-    OptionsPingMonitor optionsPingMonitor = Mockito.spy(OptionsPingMonitor.class);
     SIPListenPoint sipListenPoint = mock(SIPListenPoint.class);
     Mockito.when(sipListenPoint.getName()).thenReturn("net_sp_tcp");
     DhruvaNetwork.createNetwork("net_sp_tcp", sipListenPoint);
     CompletableFuture<SIPResponse> responseCompletableFuture =
         optionsPingMonitor.createAndSendRequest(
             "net_sp_tcp", sge1, OptionsPingPolicy.builder().build());
-    Assert.assertTrue(responseCompletableFuture.isCompletedExceptionally());
+    assertTrue(responseCompletableFuture.isCompletedExceptionally());
   }
 
   @Test
@@ -771,7 +772,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor.opFlux.forEach(d -> Assert.assertFalse(d.isDisposed()));
     optionsPingMonitor.disposeExistingFlux();
     assertEquals(optionsPingMonitor.opFlux.size(), 2);
-    optionsPingMonitor.opFlux.forEach(d -> Assert.assertTrue(d.isDisposed()));
+    optionsPingMonitor.opFlux.forEach(d -> assertTrue(d.isDisposed()));
   }
 
   @Test
@@ -884,13 +885,13 @@ public class OptionsPingMonitorTest {
     map2.put("s3", sg3_2);
     Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setPingOn(true);
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setPingOn(false);
     sg1.setHostName("s2");
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setHostName("s1");
     sg1.setNetworkName("n2");
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setNetworkName("n1");
     sg1.setOptionsPingPolicyFromConfig(
         OptionsPingPolicy.builder()
@@ -898,16 +899,16 @@ public class OptionsPingMonitorTest {
             .setName("OP_NEW")
             .setUpTimeInterval(60000)
             .build());
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setOptionsPingPolicyConfig(null);
     sg1.setElements(Arrays.asList(sge5, sge3));
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge6, sge3));
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge7, sge3));
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge8, sge3));
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
 
     ServerGroup sg3 =
         ServerGroup.builder()
@@ -919,8 +920,8 @@ public class OptionsPingMonitorTest {
             .setLbType(LBType.ONCE)
             .build();
     map2.put("s3", sg3);
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
   }
 
   @Test
@@ -982,22 +983,19 @@ public class OptionsPingMonitorTest {
     Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
     op2.setFailureResponseCodes(
         new ArrayList<>(Arrays.asList(408, 502, 503))); // change failover codes
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502))); // reset failover codes
     op2.setUpTimeInterval(35000); // change up interval time
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
     op2.setUpTimeInterval(30000); // reset up interval time
     op2.setDownTimeInterval(1000);
-    Assert.assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
   }
 
-  @Test(expectedExceptions = {DhruvaRuntimeException.class})
+  @Test
   public void testGetUpdatedMaps() {
-    optionsPingMonitor.setMaxFetchTime(50);
-    optionsPingMonitor.setFetchTime(10);
-    optionsPingMonitor.setFetchIncrementTime(20);
     when(commonConfigurationProperties.getServerGroups()).thenReturn(null);
-    optionsPingMonitor.getUpdatedMaps();
+    assertFalse(optionsPingMonitor.sgMapUpdated());
   }
 
   @Test(description = "Testing ping towards DNS based SG")

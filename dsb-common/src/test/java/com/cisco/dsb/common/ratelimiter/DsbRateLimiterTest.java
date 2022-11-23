@@ -1,23 +1,30 @@
 package com.cisco.dsb.common.ratelimiter;
 
 import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.ALL;
+import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.DEFAULT_RATE_LIMITED_RESPONSE_REASON;
 import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.POLICY_VALUE_DELIMITER;
 import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.PROCESS;
 import static gov.nist.javax.sip.header.SIPHeaderNames.CALL_ID;
 import static java.util.Collections.singletonList;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit.ResponseOptions;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.wx2.ratelimit.policy.Policy;
 import com.cisco.wx2.ratelimit.policy.RateAction;
 import com.cisco.wx2.ratelimit.policy.UserMatcher;
 import com.cisco.wx2.ratelimit.policy.UserMatcher.Mode;
 import gov.nist.javax.sip.header.CallID;
+import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.MessageChannel;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.sip.message.Response;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -103,6 +111,66 @@ public class DsbRateLimiterTest {
     assertTrue(isResponseAllowed);
     isRequestAllowed = dsbRateLimiterValve.processRequest(sipRequest, messageChannel);
     assertFalse(isRequestAllowed);
+  }
+
+  @Test
+  public void testNetworkRateLimitResponseOptions() throws InterruptedException, IOException {
+    String localAddress = "1.1.1.1", remoteAddress = "2.2.2.2";
+
+    Policy rateLimitNetworkPolicy =
+        Policy.builder("rateLimitNetworkPolicy")
+            .matcher(
+                (new UserMatcher(Mode.MATCH_ALL))
+                    .addProperty(
+                        DsbRateLimitAttribute.DHRUVA_NETWORK_RATE_LIMIT.toString(),
+                        "rateLimitNetworkPolicy" + POLICY_VALUE_DELIMITER + localAddress))
+            .action((new RateAction(0, "1s", null)))
+            .build();
+    when(messageChannel.getHost()).thenReturn(localAddress);
+    when(messageChannel.getPeerAddress()).thenReturn(remoteAddress);
+    dsbRateLimiter.addPolicies(singletonList(rateLimitNetworkPolicy));
+    Map<String, ResponseOptions> rateLimitPolicyToResponseMap = new HashMap<>();
+    final ArgumentCaptor<SIPMessage> captor = ArgumentCaptor.forClass(SIPMessage.class);
+
+    dsbRateLimiterValve.processRequest(sipRequest, messageChannel);
+    // No invocation for sending response since responseOptions not configured.
+    verify(messageChannel, times(0)).sendMessage(captor.capture());
+    Integer responseCode = 599;
+    String responseReason = "Rate-limited";
+    rateLimitPolicyToResponseMap.put(
+        rateLimitNetworkPolicy.getName(), new ResponseOptions(responseCode, responseReason));
+
+    dsbRateLimiter.setRatePolicyToResponseOptionsMap(rateLimitPolicyToResponseMap);
+    dsbRateLimiterValve.processRequest(sipRequest, messageChannel);
+    // Response to be sent since responseOptions configured.
+    verify(messageChannel, times(1)).sendMessage(captor.capture());
+    SIPResponse response = (SIPResponse) captor.getValue();
+    assertEquals(response.getStatusCode(), responseCode);
+    assertEquals(response.getReasonPhrase(), responseReason);
+
+    responseCode = 603;
+    responseReason = "Declined";
+    rateLimitPolicyToResponseMap.put(
+        rateLimitNetworkPolicy.getName(), new ResponseOptions(responseCode, responseReason));
+    dsbRateLimiter.setRatePolicyToResponseOptionsMap(rateLimitPolicyToResponseMap);
+    dsbRateLimiterValve.processRequest(sipRequest, messageChannel);
+    // Response to be sent since responseOptions configured.
+    verify(messageChannel, times(2)).sendMessage(captor.capture());
+    response = (SIPResponse) captor.getValue();
+    assertEquals(response.getStatusCode(), responseCode);
+    assertEquals(response.getReasonPhrase(), responseReason);
+
+    responseCode = 500;
+    responseReason = null;
+    rateLimitPolicyToResponseMap.put(
+        rateLimitNetworkPolicy.getName(), new ResponseOptions(responseCode, responseReason));
+    dsbRateLimiter.setRatePolicyToResponseOptionsMap(rateLimitPolicyToResponseMap);
+    dsbRateLimiterValve.processRequest(sipRequest, messageChannel);
+    // Response to be sent since responseOptions configured.
+    verify(messageChannel, times(3)).sendMessage(captor.capture());
+    response = (SIPResponse) captor.getValue();
+    assertEquals(response.getStatusCode(), responseCode);
+    assertEquals(response.getReasonPhrase(), DEFAULT_RATE_LIMITED_RESPONSE_REASON);
   }
 
   @Test
@@ -401,7 +469,6 @@ public class DsbRateLimiterTest {
             .build();
     List<Policy> policies = Arrays.asList(rateLimitNetworkPolicy, denyListPolicy);
     dsbRateLimiter.setPolicies(policies);
-    dsbRateLimiter.setPolicies(null); // should have no effect
     assertEquals(dsbRateLimiter.getPolicies().size(), policies.size());
     dsbRateLimiter.getPolicies().forEach(policy -> assertTrue(policies.contains(policy)));
   }

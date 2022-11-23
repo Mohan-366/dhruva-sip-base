@@ -4,6 +4,7 @@ import static com.cisco.dsb.common.ratelimiter.DsbRateLimiterUtil.checkAllowIP;
 import static com.cisco.dsb.common.ratelimiter.DsbRateLimiterUtil.checkDenyIP;
 import static com.cisco.dsb.common.ratelimiter.DsbRateLimiterUtil.checkRateLimit;
 
+import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit.ResponseOptions;
 import com.cisco.wx2.ratelimit.policy.Policy;
 import com.cisco.wx2.ratelimit.provider.BasicRateLimitContext;
 import java.util.concurrent.ExecutionException;
@@ -11,6 +12,7 @@ import java.util.regex.Pattern;
 import javax.sip.message.Message;
 import lombok.CustomLog;
 import lombok.Getter;
+import lombok.Setter;
 
 @CustomLog
 public class DsbRateLimitContext extends BasicRateLimitContext {
@@ -20,6 +22,8 @@ public class DsbRateLimitContext extends BasicRateLimitContext {
   @Getter private String localIP;
   @Getter private Message message;
   private DsbRateLimiter dsbRateLimiter;
+  @Getter @Setter private ResponseOptions responseOptions;
+  @Getter @Setter private boolean isPass = true;
 
   public DsbRateLimitContext(MessageMetaData messageMetaData, DsbRateLimiter dsbRateLimiter)
       throws ExecutionException {

@@ -7,8 +7,6 @@ import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
-import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -32,12 +30,10 @@ import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
-import org.springframework.context.ApplicationListener;
+import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -49,29 +45,37 @@ import reactor.util.retry.Retry;
 @CustomLog
 @Component
 @DependsOn("dhruvaExecutorService")
-public class OptionsPingMonitor implements ApplicationListener<EnvironmentChangeEvent> {
+public class OptionsPingMonitor {
 
-  @Autowired ProxyPacketProcessor proxyPacketProcessor;
-  @Autowired OptionsPingTransaction optionsPingTransaction;
-  @Autowired CommonConfigurationProperties commonConfigurationProperties;
-  @Autowired DnsServerGroupUtil dnsServerGroupUtil;
-  @Autowired public MetricService metricsService;
-  @Autowired DhruvaExecutorService dhruvaExecutorService;
+  private ProxyPacketProcessor proxyPacketProcessor;
+  private OptionsPingTransaction optionsPingTransaction;
+  private CommonConfigurationProperties commonConfigurationProperties;
+  private DnsServerGroupUtil dnsServerGroupUtil;
+  protected MetricService metricsService;
   protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Status> elementStatus = new ConcurrentHashMap<>();
   protected ConcurrentMap<String, Boolean> serverGroupStatus = new ConcurrentHashMap<>();
   private Map<String, ServerGroup> localSGMap;
-  @Setter private int maxFetchTime = 1500;
-  @Setter private int fetchTime = 500;
-  @Setter private int fetchIncrementTime = 250;
   private final Scheduler upElementsScheduler =
       Schedulers.newBoundedElastic(100, 100, "BE-Up-Elements");
   private final Scheduler downElementsScheduler =
       Schedulers.newBoundedElastic(100, 100, "BE-Down-Elements");
 
+  public OptionsPingMonitor(
+      ProxyPacketProcessor proxyPacketProcessor,
+      OptionsPingTransaction optionsPingTransaction,
+      CommonConfigurationProperties commonConfigurationProperties,
+      DnsServerGroupUtil dnsServerGroupUtil,
+      MetricService metricsService) {
+    this.proxyPacketProcessor = proxyPacketProcessor;
+    this.optionsPingTransaction = optionsPingTransaction;
+    this.commonConfigurationProperties = commonConfigurationProperties;
+    this.dnsServerGroupUtil = dnsServerGroupUtil;
+    this.metricsService = metricsService;
+  }
+
   @PostConstruct
   public void initOptionsPing() {
-    dhruvaExecutorService.startExecutorService(ExecutorType.CONFIG_UPDATE);
     proxyPacketProcessor.registerOptionsListener(optionsPingTransaction);
     startMonitoring(commonConfigurationProperties.getServerGroups());
     this.metricsService.emitSgStatusPerInterval(10, TimeUnit.SECONDS);
@@ -358,19 +362,15 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
         && (serverGroup.getSgType() != SGType.STATIC || serverGroup.getElements() != null));
   }
 
-  @Override
-  public void onApplicationEvent(@NotNull EnvironmentChangeEvent event) {
-
-    if (event.getKeys().stream()
-        .anyMatch(
-            key -> {
-              // Refresh OPTIONS pings only when serverGroup config has some changes.
-              return (key.contains("serverGroups") || key.contains("optionsPingPolicy"));
-            })) {
-      logger.info("ServerGroups environment config changed with keys :{}", event.getKeys());
-      dhruvaExecutorService
-          .getExecutorThreadPool(ExecutorType.CONFIG_UPDATE)
-          .execute(new RefreshHandle());
+  @EventListener()
+  public void onRefresh(RefreshScopeRefreshedEvent event) {
+    logger.info("Even: {} detected", event.getName());
+    if (sgMapUpdated()) {
+      disposeExistingFlux();
+      opFlux.clear();
+      startMonitoring(commonConfigurationProperties.getServerGroups());
+    } else {
+      logger.info("SG Map Not updated. Returning.");
     }
   }
 
@@ -384,39 +384,13 @@ public class OptionsPingMonitor implements ApplicationListener<EnvironmentChange
    * is a hack added to overcome a bug in the kubernetes client which takes some time (few milli seconds)
    * to update the Bean under refreshScope after doing get on that object when a config refresh happens .
    */
-  protected void getUpdatedMaps() {
-    int originalFetchTime = fetchTime;
-    boolean isUpdated = false;
-    logger.info("Change detected in ServerGroups Config. Fetching latest SG Map");
-    while (fetchTime < maxFetchTime) {
-      try {
-        Thread.sleep(fetchTime);
-      } catch (InterruptedException e) {
-        logger.error("Exception happened for sleep.");
-      }
-      if (isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
-        logger.info("SG Map Updated. Working with new map!");
-        localSGMap = commonConfigurationProperties.getServerGroups();
-        isUpdated = true;
-        break;
-      }
-      fetchTime += fetchIncrementTime;
+  protected boolean sgMapUpdated() {
+    if (isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
+      logger.info("SG Map Updated. Working with new map!");
+      localSGMap = commonConfigurationProperties.getServerGroups();
+      return true;
     }
-    fetchTime = originalFetchTime;
-    if (!isUpdated) {
-      logger.error("ServerGroup refresh failed.");
-      throw new DhruvaRuntimeException("ServerGroup Refresh Failed.");
-    }
-  }
-
-  protected class RefreshHandle implements Runnable {
-    @Override
-    public void run() {
-      getUpdatedMaps();
-      disposeExistingFlux();
-      opFlux.clear();
-      startMonitoring(commonConfigurationProperties.getServerGroups());
-    }
+    return false;
   }
 
   private Predicate<ServerGroupElement> upFilter =

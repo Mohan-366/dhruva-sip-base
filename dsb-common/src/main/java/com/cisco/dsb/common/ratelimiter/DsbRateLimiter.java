@@ -1,8 +1,11 @@
 package com.cisco.dsb.common.ratelimiter;
 
+import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.DENY_CODE;
+import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.RATE_LIMIT_CODE;
+
 import com.cisco.dsb.common.dto.RateLimitInfo;
+import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit.ResponseOptions;
 import com.cisco.dsb.common.service.MetricService;
-import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.wx2.ratelimit.RateLimitContext;
 import com.cisco.wx2.ratelimit.RateLimiter;
 import com.cisco.wx2.ratelimit.policy.Action;
@@ -20,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import lombok.CustomLog;
@@ -44,6 +48,9 @@ public class DsbRateLimiter extends RateLimiter {
 
   @Getter private Map<String, AllowAndDenyList> allowDenyListsMap = new HashMap<>();
 
+  @Getter @Setter @Nonnull
+  Map<String, ResponseOptions> ratePolicyToResponseOptionsMap = new HashMap<>();
+
   // This cache holds the global PROCESS permit and the individual USER permits
   // keyed on REMOTE IP. A Permit is an aggregate of all Counters for a given
   // REMOTE IP.
@@ -65,10 +72,10 @@ public class DsbRateLimiter extends RateLimiter {
   }
 
   public void setPolicies(List<Policy> policies) {
+    removePolicies();
     if (policies == null || policies.isEmpty()) {
       return;
     }
-    removePolicies();
     for (Policy policy : policies) {
       logger.info("Adding policy {}", policy);
       addPolicy(policy);
@@ -98,17 +105,13 @@ public class DsbRateLimiter extends RateLimiter {
     return null;
   }
 
-  public void setAllowDenyListsMap(Map<String, AllowAndDenyList> allowDenyListsMap) {
-    if (allowDenyListsMap == null) {
-      logger.warn("AllowDenyListsMap is null");
-      return;
-    }
+  public void setAllowDenyListsMap(@Nonnull Map<String, AllowAndDenyList> allowDenyListsMap) {
     this.allowDenyListsMap = allowDenyListsMap;
     addAllowCIDRObjects(allowDenyListsMap);
     addDenyCIDRObjects(allowDenyListsMap);
   }
 
-  public Action.Enforcement getEnforcement(DsbRateLimitContext context) {
+  public void evaluateDsbContext(DsbRateLimitContext context) {
     try {
       Action.Enforcement enforcement = evaluate(context);
       boolean pass = enforcement.isPass() || !enforcement.getPolicy().enforce();
@@ -141,20 +144,20 @@ public class DsbRateLimiter extends RateLimiter {
                 .policyName(policyName)
                 .isRequest(context.isRequest())
                 .action(
-                    enforcement.getCode() == 429
+                    enforcement.getCode() == DENY_CODE
                         ? RateLimitInfo.Action.DENY
                         : RateLimitInfo.Action.RATE_LIMIT)
                 .build();
         metricService.updateRateLimiterInfo(rateLimitInfo);
-        if (enforcement.getCode() == -1) { // The message has been rate-limited. Send Event.
-          Event.emitRateLimiterEvent(rateLimitInfo, context.getMessage());
+        if (enforcement.getCode() == RATE_LIMIT_CODE
+            && context.isRequest) { // The message has been rate-limited.
+          context.setResponseOptions(ratePolicyToResponseOptionsMap.get(policyName));
         }
       }
-      return pass ? null : enforcement;
+      context.setPass(pass);
     } catch (RuntimeException e) {
       logger.warn("Unable to evaluate rate limiting", e);
     }
-    return null;
   }
 
   private Cache<String, Permit> makePermitCache() {

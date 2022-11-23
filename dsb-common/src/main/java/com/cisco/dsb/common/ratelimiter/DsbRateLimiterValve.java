@@ -1,8 +1,9 @@
 package com.cisco.dsb.common.ratelimiter;
 
+import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.DEFAULT_RATE_LIMITED_RESPONSE_REASON;
 import static gov.nist.javax.sip.header.SIPHeaderNames.CALL_ID;
 
-import com.cisco.wx2.ratelimit.policy.Action;
+import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit.ResponseOptions;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.MessageChannel;
@@ -14,6 +15,7 @@ import javax.sip.message.Response;
 import lombok.CustomLog;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 
 @NoArgsConstructor
 @CustomLog
@@ -32,19 +34,29 @@ public class DsbRateLimiterValve implements SIPMessageValve {
             .callId(sipRequest.getCallId().getCallId())
             .isRequest(true)
             .build();
-    Action.Enforcement enforcement = isPassFromRateLimitFilter(messageMetaData);
-    boolean allow = true;
-
-    if (enforcement != null) {
-      allow = false;
-      if (enforcement.getCode() == -1) {
-        sendResponse(sipRequest, messageChannel, 599, "Fraud And Dos Control");
-      } else if (enforcement.getCode() == 429) {
-        // else we simply drop the message like for deny action for deny IP
+    DsbRateLimitContext context = evaluateAndGetRateLimitContext(messageMetaData);
+    if (context == null) {
+      return true;
+    }
+    if (context.isPass()) {
+      return true;
+    } else {
+      ResponseOptions responseOptions = context.getResponseOptions();
+      if (responseOptions != null) {
+        if (StringUtils.isEmpty(responseOptions.getReasonPhrase())) {
+          responseOptions.setReasonPhrase(DEFAULT_RATE_LIMITED_RESPONSE_REASON);
+        }
+        logger.debug("Sending response to rate-limited request: {} ");
+        sendResponse(
+            sipRequest,
+            messageChannel,
+            responseOptions.getStatusCode(),
+            responseOptions.getReasonPhrase());
+      } else {
         logger.debug("Dropping request: {} ");
       }
+      return false;
     }
-    return allow;
   }
 
   @SneakyThrows
@@ -58,7 +70,8 @@ public class DsbRateLimiterValve implements SIPMessageValve {
             .callId(response.getHeader(CALL_ID).toString())
             .isRequest(false)
             .build();
-    return isPassFromRateLimitFilter(messageMetaData) == null;
+    DsbRateLimitContext context = evaluateAndGetRateLimitContext(messageMetaData);
+    return ((context == null) || context.isPass());
   }
 
   protected void sendResponse(
@@ -75,11 +88,10 @@ public class DsbRateLimiterValve implements SIPMessageValve {
     }
   }
 
-  private Action.Enforcement isPassFromRateLimitFilter(MessageMetaData messageMetaData)
+  private DsbRateLimitContext evaluateAndGetRateLimitContext(MessageMetaData messageMetaData)
       throws ExecutionException {
-    Action.Enforcement enforcement;
     if (dsbRateLimiter == null) {
-      logger.error("dsgRateLimiter null");
+      logger.error("DsbRateLimiter null");
       return null;
     }
     // using the app consumer to set the userID for rate-limiter key
@@ -90,8 +102,8 @@ public class DsbRateLimiterValve implements SIPMessageValve {
     }
     DsbRateLimitContext dsbRateLimitContext =
         new DsbRateLimitContext(messageMetaData, dsbRateLimiter);
-    enforcement = dsbRateLimiter.getEnforcement(dsbRateLimitContext);
-    return enforcement;
+    dsbRateLimiter.evaluateDsbContext(dsbRateLimitContext);
+    return dsbRateLimitContext;
   }
 
   @Override

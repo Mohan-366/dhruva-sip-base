@@ -8,6 +8,9 @@ public class RateLimitConstants {
   public static final String NETWORK_LEVEL_POLICY_PREFIX = "networkLevelPolicy";
   public static final String POLICY_VALUE_DELIMITER = "--";
   public static final String UNDERSCORE = "_";
+  public static final int DENY_CODE = 429;
+  public static final int RATE_LIMIT_CODE = -1;
+  public static final String DEFAULT_RATE_LIMITED_RESPONSE_REASON = "Fraud Control";
 
   private RateLimitConstants() {}
 }

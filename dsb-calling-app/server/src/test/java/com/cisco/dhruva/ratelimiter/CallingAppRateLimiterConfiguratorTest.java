@@ -13,7 +13,6 @@ import static org.testng.Assert.assertTrue;
 import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.ratelimiter.AllowAndDenyList;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimitAttribute;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
@@ -23,7 +22,6 @@ import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit;
 import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.Type;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
-import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.wx2.ratelimit.policy.Policy;
@@ -47,8 +45,6 @@ import org.testng.annotations.Test;
 public class CallingAppRateLimiterConfiguratorTest {
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Mock CallingAppConfigurationProperty callingAppConfigurationProperty;
-  @Mock MetricService metricService;
-  @Mock DhruvaExecutorService dhruvaExecutorService;
   @InjectMocks DsbRateLimiter dsbRateLimiter;
   private Map<String, Policy> expectedPoliciesMap = new HashMap<>();
   private RateLimitPolicy rateLimitPolicyNetwork;
@@ -153,10 +149,7 @@ public class CallingAppRateLimiterConfiguratorTest {
 
     callingAppRateLimiterConfigurator =
         new CallingAppRateLimiterConfigurator(
-            callingAppConfigurationProperty,
-            commonConfigurationProperties,
-            dsbRateLimiter,
-            dhruvaExecutorService);
+            callingAppConfigurationProperty, commonConfigurationProperties, dsbRateLimiter);
     addExpectedPolicies();
   }
 
@@ -212,20 +205,16 @@ public class CallingAppRateLimiterConfiguratorTest {
 
   @Test
   public void testRateLimiterConfigUpdated() {
-    int initialFetchTime = 100;
-    int maxFetchTime = 100;
-    assertFalse(
-        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
-    List<RateLimitPolicy> rateLimitPolicyListNew = new ArrayList<>();
-    Map<String, PolicyNetworkAssociation> rateLimiterNetworkMapNew = new HashMap<>();
-    rateLimitPolicyListNew.addAll(rateLimitPolicyList);
+    assertFalse(callingAppRateLimiterConfigurator.rateLimiterConfigUpdated());
+    List<RateLimitPolicy> rateLimitPolicyListNew = new ArrayList<>(rateLimitPolicyList);
     rateLimitPolicyListNew.add(
         RateLimitPolicy.builder()
             .setName("PolicyNew")
             .setType(Type.NETWORK)
             .setRateLimit(RateLimit.builder().setInterval("5").setPermits(2).build())
             .build());
-    rateLimiterNetworkMapNew.putAll(rateLimiterNetworkMap);
+    Map<String, PolicyNetworkAssociation> rateLimiterNetworkMapNew =
+        new HashMap<>(rateLimiterNetworkMap);
     rateLimiterNetworkMapNew.put(
         "PolicyNew",
         PolicyNetworkAssociation.builder()
@@ -234,26 +223,21 @@ public class CallingAppRateLimiterConfiguratorTest {
             .build());
     when(callingAppConfigurationProperty.getRateLimitPolicyList())
         .thenReturn(rateLimitPolicyListNew);
-    assertTrue(
-        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+    assertTrue(callingAppRateLimiterConfigurator.rateLimiterConfigUpdated());
 
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     when(callingAppConfigurationProperty.getRateLimiterNetworkMap())
         .thenReturn(rateLimiterNetworkMapNew);
-    assertTrue(
-        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+    assertTrue(callingAppRateLimiterConfigurator.rateLimiterConfigUpdated());
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     when(callingAppConfigurationProperty.getRateLimiterNetworkMap())
         .thenReturn(rateLimiterNetworkMap);
-    callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime);
-    assertFalse(
-        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+    callingAppRateLimiterConfigurator.rateLimiterConfigUpdated();
+    assertFalse(callingAppRateLimiterConfigurator.rateLimiterConfigUpdated());
   }
 
   @Test
   public void testRateLimiterConfigUpdated_2() {
-    int initialFetchTime = 100;
-    int maxFetchTime = 100;
     RateLimitPolicy policy1 =
         RateLimitPolicy.builder()
             .setType(Type.NETWORK)
@@ -272,13 +256,12 @@ public class CallingAppRateLimiterConfiguratorTest {
             .setDenyList(new String[] {"2.2.2.2", "3.3.3.3"})
             .setAutoBuild(true)
             .build();
-    List<RateLimitPolicy> l1 = new ArrayList();
-    List<RateLimitPolicy> l2 = new ArrayList();
+    List<RateLimitPolicy> l1 = new ArrayList<>();
+    List<RateLimitPolicy> l2 = new ArrayList<>();
     l1.add(policy1);
     l2.add(policy2);
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(l1).thenReturn(l2);
-    assertTrue(
-        callingAppRateLimiterConfigurator.rateLimiterConfigUpdated(initialFetchTime, maxFetchTime));
+    assertTrue(callingAppRateLimiterConfigurator.rateLimiterConfigUpdated());
   }
 
   @Test
