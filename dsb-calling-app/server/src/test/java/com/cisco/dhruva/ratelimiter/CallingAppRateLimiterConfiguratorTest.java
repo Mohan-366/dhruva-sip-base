@@ -7,6 +7,7 @@ import static com.cisco.dsb.common.ratelimiter.RateLimitConstants.PROCESS;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -30,6 +31,7 @@ import com.cisco.wx2.ratelimit.policy.UserMatcher;
 import com.cisco.wx2.ratelimit.policy.UserMatcher.Mode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +42,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class CallingAppRateLimiterConfiguratorTest {
@@ -67,7 +70,7 @@ public class CallingAppRateLimiterConfiguratorTest {
   String sgIP2 = "7.7.7.7";
 
   @BeforeClass
-  public void setup() throws DhruvaException {
+  public void init() {
     MockitoAnnotations.openMocks(this);
     rateLimitPstn = RateLimit.builder().setInterval("1s").setPermits(10).build();
     rateLimitGlobal = RateLimit.builder().setInterval("1s").setPermits(100).build();
@@ -99,6 +102,11 @@ public class CallingAppRateLimiterConfiguratorTest {
             .build();
     rateLimitPolicyList.add(rateLimitPolicyNetwork);
     rateLimitPolicyList.add(rateLimitPolicyGlobal);
+  }
+
+  @BeforeMethod
+  public void setup() throws DhruvaException {
+
     when(callingAppConfigurationProperty.getRateLimitPolicyList()).thenReturn(rateLimitPolicyList);
     PolicyNetworkAssociation policyNetworkAssociationNetwork =
         PolicyNetworkAssociation.builder()
@@ -201,6 +209,22 @@ public class CallingAppRateLimiterConfiguratorTest {
                 assertPolicyLists(entry, rateLimitPolicyGlobal);
               }
             });
+  }
+
+  @Test
+  public void testConfigureAllowPolicyWithAutoBuild() {
+    when(callingAppConfigurationProperty.getRateLimitPolicyList())
+        .thenReturn(Collections.singletonList(rateLimitPolicyAutoBuild));
+    callingAppRateLimiterConfigurator =
+        new CallingAppRateLimiterConfigurator(
+            callingAppConfigurationProperty, commonConfigurationProperties, dsbRateLimiter);
+    callingAppRateLimiterConfigurator.configure();
+    // test policies
+    List<Policy> policies = dsbRateLimiter.getPolicies();
+    assertNotNull(policies);
+    // even though allowList is null in the policy, allow policy should get created since autoBuild
+    // is true and servers exist for the corresponding network.
+    assertEquals(policies.size(), 3);
   }
 
   @Test

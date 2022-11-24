@@ -76,16 +76,16 @@ public class CallingAppRateLimiterConfigurator implements RateLimiterConfigurato
       return;
     }
     setDsbRateLimiterUserIdSetter(configureUserIdSetter());
+    createAllowDenyListMap();
     List<Policy> policies = createPolicies();
     dsbRateLimiter.setPolicies(policies);
-    createAllowDenyListMap();
     dsbRateLimiter.setAllowDenyListsMap(allowDenyListsMap);
     dsbRateLimiter.setRatePolicyToResponseOptionsMap(ratePolicyToResponseOptionsMap);
   }
 
   @EventListener()
   public void onRefresh(RefreshScopeRefreshedEvent event) {
-    logger.info("Even: {} detected", event.getName());
+    logger.info("Event: {} detected", event.getName());
     if (!rateLimiterConfigUpdated()) {
       /*
        * Whether or not RL config is changed we will attempt to reconfigure it since SGs could have
@@ -175,6 +175,19 @@ public class CallingAppRateLimiterConfigurator implements RateLimiterConfigurato
           createDenyRangeList(rateLimitPolicy, allowAndDenyList);
           if (allowAndDenyList.isNotEmpty()) {
             allowDenyListsMap.put(rateLimitPolicy.getName(), allowAndDenyList);
+            logger.info("policyName: {}", rateLimitPolicy.getName());
+            if (Objects.nonNull(allowAndDenyList.getAllowIPList())) {
+              logger.info("allowList: {}", allowAndDenyList.getAllowIPList().toString());
+            }
+            if (Objects.nonNull(allowAndDenyList.getAllowIPRangeList())) {
+              logger.info("allowRangeList: {}", allowAndDenyList.getAllowIPRangeList().toString());
+            }
+            if (Objects.nonNull(allowAndDenyList.getDenyIPList())) {
+              logger.info("denyList: {}", allowAndDenyList.getDenyIPList().toString());
+            }
+            if (Objects.nonNull(allowAndDenyList.getDenyIPRangeList())) {
+              logger.info("denyRangeList: {}", allowAndDenyList.getDenyIPRangeList().toString());
+            }
           }
         });
   }
