@@ -91,7 +91,7 @@ public class OptionsPingMonitor {
       }
       logger.info("Starting OPTIONS pings for elements of ServerGroup: {}", serverGroup);
       serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
-      this.metricsService.getSgStatusMap().put(serverGroup.getHostName(), true);
+      this.metricsService.getSgStatusMap().put(serverGroup.getName(), true);
       pingPipeLine(serverGroup);
     }
   }
@@ -106,7 +106,7 @@ public class OptionsPingMonitor {
     if (!serverGroupStatus.containsKey(serverGroup.getHostName())) {
       logger.info("Marking ServerGroup {} as UP initially", serverGroup.getName());
       serverGroupStatus.put(serverGroup.getHostName(), true);
-      this.metricsService.getSgStatusMap().put(serverGroup.getHostName(), true);
+      this.metricsService.getSgStatusMap().put(serverGroup.getName(), true);
     }
     return getElements(serverGroup)
         .filter(
@@ -114,7 +114,7 @@ public class OptionsPingMonitor {
         .flatMap(
             element ->
                 sendPingRequestToUpElement(
-                    serverGroup.getHostName(),
+                    serverGroup.getName(),
                     serverGroup.getNetworkName(),
                     element,
                     serverGroup.getOptionsPingPolicy()))
@@ -123,7 +123,7 @@ public class OptionsPingMonitor {
             (err) -> {
               logger.warn("Uncaught error while creating UP element flux {},restarting flux", err);
               serverGroupStatus.put(serverGroup.getHostName(), false);
-              metricsService.sendSGMetric(serverGroup.getHostName(), false);
+              metricsService.sendSGMetric(serverGroup.getName(), false);
               return Mono.empty();
             })
         .repeatWhen(
@@ -143,7 +143,7 @@ public class OptionsPingMonitor {
         .flatMap(
             element ->
                 sendPingRequestToDownElement(
-                    serverGroup.getHostName(),
+                    serverGroup.getName(),
                     serverGroup.getNetworkName(),
                     element,
                     serverGroup.getOptionsPingPolicy()))
@@ -151,7 +151,7 @@ public class OptionsPingMonitor {
         .onErrorResume(
             (err) -> {
               serverGroupStatus.put(serverGroup.getHostName(), false);
-              metricsService.sendSGMetric(serverGroup.getHostName(), false);
+              metricsService.sendSGMetric(serverGroup.getName(), false);
               logger.warn(
                   "Uncaught error while creating DOWN element flux {},restarting flux", err);
               return Mono.empty();
@@ -346,14 +346,14 @@ public class OptionsPingMonitor {
       this.serverGroupStatus.put(serverGroup.getHostName(), true);
       logger.info("Marking Servergroup {} as UP from DOWN", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), false);
-      metricsService.sendSGMetric(serverGroup.getHostName(), true);
+      metricsService.sendSGMetric(serverGroup.getName(), true);
     }
     // marking sg down if currentStatus is down and prev is up and if it's upFlux only
     else if (!currentStatus && previousStatus && upFlux) {
       this.serverGroupStatus.put(serverGroup.getHostName(), false);
       logger.info("Marking ServerGroup {} as DOWN from UP", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), true);
-      metricsService.sendSGMetric(serverGroup.getHostName(), false);
+      metricsService.sendSGMetric(serverGroup.getName(), false);
     }
   }
 
