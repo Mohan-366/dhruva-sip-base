@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49387,
-  "iteration": 1658303464112,
+  "iteration": 1669262721417,
   "links": [],
   "panels": [
     {
@@ -1285,15 +1285,21 @@
   "refresh": false,
   "schemaVersion": 27,
   "style": "dark",
-  "tags": [],
+  "tags": [
+    "dhruva"
+  ],
   "templating": {
     "list": [
       {
         "allValue": null,
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": [
+            "wdfwintsip-a-1"
+          ],
+          "value": [
+            "wdfwintsip-a-1"
+          ]
         },
         "datasource": "influx_microservice_metrics",
         "definition": "",
@@ -1339,5 +1345,5 @@
   "timezone": "",
   "title": "DNS metrics - DSB",
   "uid": "7l55c-onk",
-  "version": 2
+  "version": 3
 }

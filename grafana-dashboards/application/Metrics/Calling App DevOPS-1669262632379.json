@@ -1,0 +1,410 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 50372,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [
+        "dhruva"
+      ],
+      "targetBlank": true,
+      "title": "dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Sip Messages and connection details ",
+      "type": "row"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 10,
+        "x": 0,
+        "y": 1
+      },
+      "id": 22,
+      "options": {
+        "content": "<style>a:visited {color:green;}</style>\n<hr/>\n<table width=100%>\n<tr>\n<td valign=top width=50%>\n<li><a href='https://metrics-noram-int.wbx2.com/d/QwET7bD7z/sip-messages-overview?orgId=1' target='_blank'>SIP Messages stats</a></li>\n<li><a href='https://metrics-noram-int.wbx2.com/d/hihOmHEnk/connection-metrices-dsb?orgId=1' target='_blank'>Connection stats</a></li>\n<li><a href='https://metrics-noram-int.wbx2.com/goto/0L-g0LvVk' target='_blank'>Error Rate</a></li>\n</td>\n</tr>\n</table>\n<hr/>       ",
+        "mode": "html"
+      },
+      "pluginVersion": "7.5.2",
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": false,
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(<time_column>) as time_sec,\n  <value column> as value,\n  <series name column> as metric\nFROM <table name>\nWHERE $__timeFilter(time_column)\nORDER BY <time_column> ASC\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Sip messages ",
+      "type": "text"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 18,
+      "panels": [
+        {
+          "datasource": null,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 2
+          },
+          "id": 23,
+          "title": "Panel Title",
+          "type": "add-panel"
+        }
+      ],
+      "title": "Aysnc and exception events",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 12,
+      "panels": [
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 9,
+            "x": 0,
+            "y": 3
+          },
+          "id": 14,
+          "options": {
+            "content": "<style>a:visited {color:green;}</style>\n<hr/>\n<table width=100%>\n<tr>\n<td valign=top width=50%>\n<li><a href='https://metrics-noram-int.wbx2.com/d/QzvfbgX7k/dhruva-application-jvm-metrics?orgId=1' target='_blank'>JVM</a></li>\n<li><a href='https://metrics-noram-int.wbx2.com/d/89cRnmY7z/executor-metrics-dsb?orgId=1' target='_blank'>Executor</a></li>\n</td>\n</tr>\n</table>\n<hr/>        ",
+            "mode": "html"
+          },
+          "pluginVersion": "7.5.2",
+          "targets": [
+            {
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": false,
+              "rawSql": "SELECT\n  UNIX_TIMESTAMP(<time_column>) as time_sec,\n  <value column> as value,\n  <series name column> as metric\nFROM <table name>\nWHERE $__timeFilter(time_column)\nORDER BY <time_column> ASC\n",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "JVM and executor details",
+          "type": "text"
+        }
+      ],
+      "title": "JVM and executor service metrics",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 10,
+      "panels": [
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 10,
+            "x": 0,
+            "y": 4
+          },
+          "id": 16,
+          "options": {
+            "content": "<style>a:visited {color:green;}</style>\n<hr/>\n<table width=100%>\n<tr>\n<td valign=top width=50%>\n<li><a href='https://metrics-noram-int.wbx2.com/d/GGpW1aE7k/trunk-monitoring-metrics?orgId=1' target='_blank'>Trunk</a></li>\n</td>\n</tr>\n</table>\n<hr/>           ",
+            "mode": "html"
+          },
+          "pluginVersion": "7.5.2",
+          "targets": [
+            {
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": false,
+              "rawSql": "SELECT\n  UNIX_TIMESTAMP(<time_column>) as time_sec,\n  <value column> as value,\n  <series name column> as metric\nFROM <table name>\nWHERE $__timeFilter(time_column)\nORDER BY <time_column> ASC\n",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Trunk Monitoring",
+          "type": "text"
+        }
+      ],
+      "title": "Trunk monitoring",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 6,
+      "panels": [
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "id": 8,
+          "options": {
+            "content": "<style>a:visited {color:green;}</style>\n<hr/>\n<table width=100%>\n<tr>\n<td valign=top width=50%>\n<li><a href='https://grafana.int.wdfwwxc-int-2.int.infra.webex.com/d/taQlRuxik/k8s-cluster-summary?orgId=1&refresh=30s&var-cluster=Prometheus&var-ds=&var-datasource=Prometheus&var-node=All&var-namespace=All' target='_blank'>wdfwwxc-int-2 cluster health</a></li>\n<li><a href='https://grafana.int.wdfwwxc-int-2.int.infra.webex.com/d/taQlRuxik/k8s-cluster-summary?orgId=1&refresh=30s&var-cluster=Prometheus&var-ds=&var-datasource=Prometheus&var-node=All&var-namespace=All' target='_blank'>wsjcwxc-int-3 cluster health</a></li>\n<li><a href='https://grafana.int.wdfwwxc-int-2.int.infra.webex.com/d/6581e46e4e5c7ba40a07646395ef7b23/kubernetes-compute-resources-pod?orgId=1&refresh=10s&from=now-1h&to=now&var-datasource=Prometheus&var-cluster=&var-namespace=wxc-pstn-dhruva-ucre&var-pod=all' target='_blank'>wdfwwxc-int-2 pod health</a></li>\n<li><a href='https://grafana.int.wsjcwxc-int-3.int.infra.webex.com/d/6581e46e4e5c7ba40a07646395ef7b23/kubernetes-compute-resources-pod?orgId=1&refresh=10s&from=now-1h&to=now&var-datasource=Prometheus&var-cluster=&var-namespace=kafka&var-pod=kafka-communicator-7b949cd66d-hzs2v' target='_blank'>wsjcwxc-int-3 pod health</a></li>\n</td>\n</tr>\n</table>\n<hr/>  ",
+            "mode": "html"
+          },
+          "pluginVersion": "7.5.2",
+          "targets": [
+            {
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": false,
+              "rawSql": "SELECT\n  UNIX_TIMESTAMP(<time_column>) as time_sec,\n  <value column> as value,\n  <series name column> as metric\nFROM <table name>\nWHERE $__timeFilter(time_column)\nORDER BY <time_column> ASC\n",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "K8s cluster and pods metrics",
+          "type": "text"
+        }
+      ],
+      "title": "Platform metrics",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 2,
+      "panels": [
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 10,
+            "x": 0,
+            "y": 6
+          },
+          "id": 4,
+          "options": {
+            "content": "<style>a:visited {color:green;}</style>\n<hr/>\n<table width=100%>\n<tr>\n<td valign=top width=50%>\n<li><a href='https://metrics-noram-int.wbx2.com/d/7l55c-onk/dns-metrics-dsb?orgId=1' target='_blank'>DNS lookup metrics</a></li>\n</td>\n</tr>\n</table>\n<hr/>       ",
+            "mode": "html"
+          },
+          "pluginVersion": "7.5.2",
+          "targets": [
+            {
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": false,
+              "rawSql": "SELECT\n  UNIX_TIMESTAMP(<time_column>) as time_sec,\n  <value column> as value,\n  <series name column> as metric\nFROM <table name>\nWHERE $__timeFilter(time_column)\nORDER BY <time_column> ASC\n",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "DNS Metrics",
+          "type": "text"
+        }
+      ],
+      "title": "DNS metrics",
+      "type": "row"
+    }
+  ],
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [
+    "dhruva"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Calling App DevOPS",
+  "uid": "c3nq3DNVk",
+  "version": 20
+}

@@ -12,12 +12,28 @@
       }
     ]
   },
+  "description": "",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 50428,
-  "iteration": 1667906774658,
-  "links": [],
+  "iteration": 1669262798238,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "dhruva"
+      ],
+      "targetBlank": true,
+      "title": "Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "panels": [
     {
       "datasource": null,
@@ -33,27 +49,35 @@
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": [
-        "#FFEE52",
-        "#E02F44",
-        "#299c46"
-      ],
       "datasource": "influx_microservice_metrics",
-      "decimals": null,
       "description": "Total Number of calls",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:256",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgb(250, 250, 250)",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
         "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 4,
@@ -64,43 +88,23 @@
       "id": 54,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:253",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:254",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -141,46 +145,42 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total Invites",
-      "type": "singlestat",
-      "valueFontSize": "150%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:256",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorPrefix": false,
-      "colorValue": true,
-      "colors": [
-        "#73BF69",
-        "rgba(237, 129, 40, 0.89)",
-        "#F2495C"
-      ],
       "datasource": "influx_microservice_metrics",
-      "decimals": null,
       "description": "Total number of calls accepted by dhruva",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:256",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
         "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 4,
@@ -191,43 +191,23 @@
       "id": 69,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:253",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:254",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -268,44 +248,46 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total calls success",
-      "type": "singlestat",
-      "valueFontSize": "150%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:256",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": true,
-      "colors": [
-        "#F2495C",
-        "rgba(237, 129, 40, 0.89)",
-        "#299c46"
-      ],
       "datasource": "influx_microservice_metrics",
       "description": "Total Number of dhruva client failure responses (4xx)",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:256",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
         "overrides": []
-      },
-      "format": "short",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 4,
@@ -316,43 +298,23 @@
       "id": 87,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:253",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:254",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -393,44 +355,46 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total 4xx ",
-      "type": "singlestat",
-      "valueFontSize": "200%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:256",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": true,
-      "colors": [
-        "#F2495C",
-        "rgba(237, 129, 40, 0.89)",
-        "#299c46"
-      ],
       "datasource": "influx_microservice_metrics",
       "description": "Total Number of dhruva server failure responses 5xx",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:256",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
         "overrides": []
-      },
-      "format": "short",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 4,
@@ -441,43 +405,23 @@
       "id": 89,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:253",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:254",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -518,44 +462,46 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total 5xx",
-      "type": "singlestat",
-      "valueFontSize": "200%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:256",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": true,
-      "colors": [
-        "#F2495C",
-        "rgba(237, 129, 40, 0.89)",
-        "#299c46"
-      ],
       "datasource": "influx_microservice_metrics",
       "description": "Total Number of dhruva global failure responses 6xx",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:256",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
         "overrides": []
-      },
-      "format": "short",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 4,
@@ -566,43 +512,23 @@
       "id": 90,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:253",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:254",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -643,21 +569,10 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total 6xx",
-      "type": "singlestat",
-      "valueFontSize": "200%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:256",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -675,25 +590,38 @@
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:469",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
         "overrides": []
-      },
-      "format": "short",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 9,
@@ -704,43 +632,23 @@
       "id": 47,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:466",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:467",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -781,21 +689,10 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total calls rejected by Dhruva",
-      "type": "singlestat",
-      "valueFontSize": "170%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:469",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "aliasColors": {
@@ -1156,14 +1053,135 @@
     },
     {
       "cacheTimeout": null,
-      "columns": [],
       "datasource": "influx_microservice_metrics",
       "description": "",
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time"
+              },
+              {
+                "id": "unit",
+                "value": "time: YYYY-MM-DD HH:mm:ss"
+              },
+              {
+                "id": "custom.align",
+                "value": null
+              },
+              {
+                "id": "custom.width",
+                "value": 181
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#FADE2A",
+                      "value": null
+                    },
+                    {
+                      "color": "#FF9830",
+                      "value": 500
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 599
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 82
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "callId"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 395
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "transport"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 77
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "responseReason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 211
+              }
+            ]
+          }
+        ]
       },
-      "fontSize": "100%",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -1172,42 +1190,11 @@
       },
       "id": 79,
       "links": [],
-      "pageSize": null,
-      "pluginVersion": "6.7.3",
-      "showHeader": true,
-      "sort": {
-        "col": 2,
-        "desc": false
+      "options": {
+        "showHeader": true,
+        "sortBy": []
       },
-      "styles": [
-        {
-          "$$hashKey": "object:3806",
-          "alias": "Time",
-          "align": "auto",
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "pattern": "Time",
-          "type": "date"
-        },
-        {
-          "$$hashKey": "object:3807",
-          "alias": "",
-          "align": "",
-          "colorMode": "value",
-          "colors": [
-            "#FADE2A",
-            "#FF9830",
-            "#F2495C"
-          ],
-          "decimals": null,
-          "pattern": "method",
-          "thresholds": [
-            "500",
-            "599"
-          ],
-          "type": "number",
-          "unit": "short"
-        }
-      ],
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "groupBy": [
@@ -1227,7 +1214,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"callId\", \"method\", \"transport\" , \"responseReason\"  FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT \"callId\", \"method\", \"transport\" , \"responseReason\" , \"additionalDetails\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "table",
@@ -1251,8 +1238,15 @@
       "timeFrom": null,
       "timeShift": null,
       "title": "Dhruva rejected call details",
-      "transform": "table",
-      "type": "table-old"
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {
+            "reducers": []
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "collapsed": false,
@@ -1270,25 +1264,38 @@
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "$$hashKey": "object:469",
+              "id": 0,
+              "op": "=",
+              "text": "0",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
         "overrides": []
-      },
-      "format": "short",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
       },
       "gridPos": {
         "h": 9,
@@ -1299,43 +1306,23 @@
       "id": 94,
       "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "$$hashKey": "object:466",
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "$$hashKey": "object:467",
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "pluginVersion": "6.7.3",
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "alias": "",
@@ -1376,21 +1363,10 @@
           "tags": []
         }
       ],
-      "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
       "title": "Total calls rejected by Downstream",
-      "type": "singlestat",
-      "valueFontSize": "170%",
-      "valueMaps": [
-        {
-          "$$hashKey": "object:469",
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "total"
+      "type": "stat"
     },
     {
       "aliasColors": {
@@ -1749,14 +1725,123 @@
     },
     {
       "cacheTimeout": null,
-      "columns": [],
       "datasource": "influx_microservice_metrics",
       "description": "",
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time"
+              },
+              {
+                "id": "unit",
+                "value": "time: YYYY-MM-DD HH:mm:ss"
+              },
+              {
+                "id": "custom.align",
+                "value": null
+              },
+              {
+                "id": "custom.width",
+                "value": 205
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#FADE2A",
+                      "value": null
+                    },
+                    {
+                      "color": "#FF9830",
+                      "value": 500
+                    },
+                    {
+                      "color": "rgba(245, 54, 54, 0.9)",
+                      "value": 599
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 97
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "callId"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 395
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "transport"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 84
+              }
+            ]
+          }
+        ]
       },
-      "fontSize": "100%",
       "gridPos": {
         "h": 9,
         "w": 24,
@@ -1765,42 +1850,11 @@
       },
       "id": 93,
       "links": [],
-      "pageSize": null,
-      "pluginVersion": "6.7.3",
-      "showHeader": true,
-      "sort": {
-        "col": 3,
-        "desc": true
+      "options": {
+        "showHeader": true,
+        "sortBy": []
       },
-      "styles": [
-        {
-          "$$hashKey": "object:3806",
-          "alias": "Time",
-          "align": "auto",
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "pattern": "Time",
-          "type": "date"
-        },
-        {
-          "$$hashKey": "object:3807",
-          "alias": "",
-          "align": "",
-          "colorMode": "value",
-          "colors": [
-            "#FADE2A",
-            "#FF9830",
-            "rgba(245, 54, 54, 0.9)"
-          ],
-          "decimals": null,
-          "pattern": "method",
-          "thresholds": [
-            "500",
-            "599"
-          ],
-          "type": "number",
-          "unit": "short"
-        }
-      ],
+      "pluginVersion": "7.5.2",
       "targets": [
         {
           "groupBy": [
@@ -1844,8 +1898,15 @@
       "timeFrom": null,
       "timeShift": null,
       "title": "Downstream rejected call details",
-      "transform": "table",
-      "type": "table-old"
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {
+            "reducers": []
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "collapsed": false,
@@ -1862,6 +1923,87 @@
       "type": "row"
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "D",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "count"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "keep_state",
+        "for": "10m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "4xx response exceeding alert",
+        "noDataState": "ok",
+        "notifications": []
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -2048,7 +2190,16 @@
           "tags": []
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 100,
+          "visible": true
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -2557,7 +2708,9 @@
   "refresh": false,
   "schemaVersion": 27,
   "style": "dark",
-  "tags": [],
+  "tags": [
+    "dhruva"
+  ],
   "templating": {
     "list": [
       {
@@ -2670,5 +2823,5 @@
   "timezone": "",
   "title": "Error Rate KPI",
   "uid": "BFYRv6SVk",
-  "version": 1
+  "version": 24
 }

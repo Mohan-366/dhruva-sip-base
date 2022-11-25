@@ -16,22 +16,24 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 50375,
-  "iteration": 1667888534884,
+  "iteration": 1669262742749,
   "links": [],
   "panels": [
     {
       "aliasColors": {},
-      "bars": false,
+      "bars": true,
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short"
+        },
         "overrides": []
       },
-      "fill": 1,
-      "fillGradient": 0,
+      "fill": 3,
+      "fillGradient": 3,
       "gridPos": {
         "h": 9,
         "w": 12,
@@ -108,7 +110,7 @@
       "title": "RateLimited Messages",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 1,
         "value_type": "individual"
       },
       "type": "graph",
@@ -121,6 +123,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:213",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -129,6 +132,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:214",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -144,7 +148,7 @@
     },
     {
       "aliasColors": {},
-      "bars": false,
+      "bars": true,
       "dashLength": 10,
       "dashes": false,
       "datasource": "influx_microservice_metrics",
@@ -241,6 +245,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:286",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -249,6 +254,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:287",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -265,15 +271,17 @@
   ],
   "schemaVersion": 27,
   "style": "dark",
-  "tags": [],
+  "tags": [
+    "dhruva"
+  ],
   "templating": {
     "list": [
       {
         "allValue": null,
         "current": {
-          "selected": true,
-          "text": "wdfwwxc-int-2",
-          "value": "wdfwwxc-int-2"
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": "influx_microservice_metrics",
         "definition": "show tag values from \"dhruva.connection\" with key = \"environment\"",
@@ -299,12 +307,12 @@
     ]
   },
   "time": {
-    "from": "now-90d",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "DSB RateLimiting",
   "uid": "oMhpktHVk",
-  "version": 13
+  "version": 15
 }
