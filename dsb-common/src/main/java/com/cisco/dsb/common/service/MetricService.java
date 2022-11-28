@@ -337,8 +337,9 @@ public class MetricService {
           for (Map.Entry<String, Boolean> entry : sgStatusMap.entrySet()) {
             if (!entry.getKey().isEmpty()) {
               Metric sgStatusMetric = Metrics.newMetric().measurement(SG_STATUS_MEASUREMENT);
+              int status = (entry.getValue().equals(true)) ? 1 : 0;
               sgStatusMetric.tag(SG_TAG, entry.getKey());
-              sgStatusMetric.field(STATUS_FIELD, entry.getValue());
+              sgStatusMetric.field(STATUS_FIELD, status);
               sgStatusSet.add(sgStatusMetric);
             }
           }
@@ -359,9 +360,10 @@ public class MetricService {
                 && !sgeToSgMapping.isEmpty()
                 && sgeToSgMapping.get(entry.getKey()) != null) {
               Metric sgeStatusMetric = Metrics.newMetric().measurement(SGE_STATUS_MEASUREMENT);
+              int status = (entry.getValue().equals(true)) ? 1 : 0;
               sgeStatusMetric.tag(SG_TAG, sgeToSgMapping.get(entry.getKey()));
               sgeStatusMetric.tag(SGE_TAG, entry.getKey());
-              sgeStatusMetric.field(STATUS_FIELD, entry.getValue());
+              sgeStatusMetric.field(STATUS_FIELD, status);
               sgeStatusSet.add(sgeStatusMetric);
             }
           }
@@ -546,10 +548,11 @@ public class MetricService {
 
   public void sendSGMetric(String sgName, Boolean status) {
 
+    int statusInt = (status.equals(true)) ? 1 : 0;
     Metric metric =
         Metrics.newMetric()
             .measurement(SG_STATUS_MEASUREMENT)
-            .field(STATUS_FIELD, status)
+            .field(STATUS_FIELD, statusInt)
             .tag(SG_TAG, sgName);
 
     sgStatusMap.put(sgName, status);
@@ -557,11 +560,11 @@ public class MetricService {
   }
 
   public void sendSGElementMetric(String sgName, String sgeName, Boolean status) {
-
+    int statusInt = (status.equals(true)) ? 1 : 0;
     Metric metric =
         Metrics.newMetric()
             .measurement(SGE_STATUS_MEASUREMENT)
-            .field(STATUS_FIELD, status)
+            .field(STATUS_FIELD, statusInt)
             .tag(SGE_TAG, sgeName)
             .tag(SG_TAG, sgName);
     sgeStatusMap.put(sgeName, status);

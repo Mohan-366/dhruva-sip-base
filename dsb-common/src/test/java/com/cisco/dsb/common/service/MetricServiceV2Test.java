@@ -343,11 +343,11 @@ public class MetricServiceV2Test {
 
           {
             if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg1")) {
-              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), true);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), 1);
             } else if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg2")) {
-              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), false);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), 0);
             } else if (((InfluxPoint) eachMetric.get()).getTags().get("sgName").equals("sg3")) {
-              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), false);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), 0);
             }
           }
         });
@@ -382,9 +382,8 @@ public class MetricServiceV2Test {
                 .getTags()
                 .get("sgeName")
                 .equals("127.0.0.1:5060:UDP")) {
-              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), true);
+              assertEquals(((InfluxPoint) eachMetric.get()).getFields().get("status"), 1);
               assertEquals(((InfluxPoint) eachMetric.get()).getTags().get("sgName"), "sg1");
-
             } else if (((InfluxPoint) eachMetric.get())
                 .getTags()
                 .get("sgName")

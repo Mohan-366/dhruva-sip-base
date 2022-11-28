@@ -429,6 +429,8 @@ public class MetricServiceTest {
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgeName"));
 
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsValue(0));
+
     Assert.assertEquals(metricService.getSgeStatusMap().get(sgeName), false);
   }
 
@@ -449,6 +451,8 @@ public class MetricServiceTest {
 
     Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgName"));
     Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
+    Assert.assertTrue(capturedMetricPoint.getFields().containsValue(1));
+
     Assert.assertEquals(metricService.getSgStatusMap().get(sgName), true);
   }
 
