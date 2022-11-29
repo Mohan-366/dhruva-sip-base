@@ -1,8 +1,8 @@
 package com.cisco.dsb.common.record;
 
 import com.cisco.wx2.util.Utilities;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -26,14 +26,12 @@ public class DhruvaAppRecordTest {
     }
   }
 
-  @Test(
-      description = "basic app initialization tests",
-      expectedExceptions = NoSuchElementException.class)
+  @Test(description = "basic app initialization tests")
   public void test1() {
     DhruvaAppRecord dhruvaAppRecord = DhruvaAppRecord.create();
     Assert.assertNotNull(dhruvaAppRecord);
 
-    LinkedList<Record> records = dhruvaAppRecord.getHistory();
+    ConcurrentLinkedQueue<Record> records = dhruvaAppRecord.getHistory();
     Assert.assertTrue(records.isEmpty());
 
     long t1 = System.currentTimeMillis();
@@ -44,6 +42,10 @@ public class DhruvaAppRecordTest {
 
   @Test(description = "add records")
   public void test2() {
+    ArrayList<TestState> states = new ArrayList<>();
+    states.add(TestState.IN_SIP_EVENT1);
+    states.add(TestState.IN_SIP_EVENT2);
+
     DhruvaAppRecord dhruvaAppRecord = DhruvaAppRecord.create();
     Assert.assertNotNull(dhruvaAppRecord);
     Utilities.Checks checks = new Utilities.Checks();
@@ -51,7 +53,7 @@ public class DhruvaAppRecordTest {
     checks.add("test1 dns query", "success");
     dhruvaAppRecord.add(TestState.IN_SIP_EVENT1, checks);
 
-    LinkedList<Record> records = dhruvaAppRecord.getHistory();
+    ConcurrentLinkedQueue<Record> records = dhruvaAppRecord.getHistory();
     Assert.assertFalse(records.isEmpty());
 
     Assert.assertEquals(records.size(), 1);
@@ -61,11 +63,11 @@ public class DhruvaAppRecordTest {
     dhruvaAppRecord.add(TestState.IN_SIP_EVENT2, checks);
 
     Assert.assertEquals(records.size(), 2);
-    Assert.assertSame(dhruvaAppRecord.getState(), TestState.IN_SIP_EVENT2);
-
-    Assert.assertSame(records.getFirst().getState(), TestState.IN_SIP_EVENT1);
-
-    Assert.assertTrue(dhruvaAppRecord.firstTime() >= dhruvaAppRecord.creationTimeSinceEpochMs());
+    Object[] a = records.toArray();
+    for (int i = 0; i < a.length; i++) {
+      Record r = (Record) a[i];
+      Assert.assertSame(r.getState(), states.get(i));
+    }
 
     dhruvaAppRecord.addIfNotAlready(TestState.IN_SIP_EVENT1, null);
 

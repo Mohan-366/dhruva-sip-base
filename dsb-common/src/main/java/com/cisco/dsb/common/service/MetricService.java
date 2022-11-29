@@ -808,7 +808,11 @@ public class MetricService {
       String key = joiner.join(callId, metric);
       StopWatch stopWatch = stopWatchTimers.get(key);
       if (stopWatch != null) {
-        stopWatch.split();
+        try {
+          stopWatch.split();
+        } catch (IllegalStateException e) {
+          logger.info("stopwatch split exception {} for callID {}", e.getMessage(), callId);
+        }
       }
     }
   }

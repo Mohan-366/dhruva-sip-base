@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManager;
 import javax.sip.*;
@@ -90,7 +89,6 @@ public class ProxyService {
   // Default ProxyConfig
   private ProxyAppConfig proxyAppConfig = ProxyAppConfig.builder().build();
 
-  @PostConstruct
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = commonConfigurationProperties.getListenPoints();
     ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();

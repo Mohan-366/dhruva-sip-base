@@ -4,7 +4,6 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dhruva.application.calltype.CallType;
 import com.cisco.dhruva.application.calltype.CallTypeEnum;
-import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
@@ -22,6 +21,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.sip.message.Response;
 import org.mockito.*;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeTest;
@@ -44,6 +44,8 @@ public class DhruvaCallingAppTest {
   public void init() {
     MockitoAnnotations.openMocks(this);
     when(callingAppConfigurationProperty.getRateLimiterMetricPerInterval()).thenReturn(100);
+    // Calling this explicity , ideally will be invoked by spring once all the beans are loaded.
+    dhruvaCallingApp.init(mock(ContextRefreshedEvent.class));
   }
 
   @AfterMethod
@@ -53,7 +55,7 @@ public class DhruvaCallingAppTest {
   }
 
   @Test
-  public void testAppInitialization() throws FilterTreeException {
+  public void testAppInitialization() throws Exception {
     ImmutableList<CallTypeEnum> calltypes_expected =
         ImmutableList.of(
             com.cisco.dhruva.application.calltype.CallTypeEnum.DIAL_IN_PSTN,
@@ -64,6 +66,7 @@ public class DhruvaCallingAppTest {
     ArgumentCaptor<List<CallTypeEnum>> interestedCallTypes = ArgumentCaptor.forClass(List.class);
     InOrder order = inOrder(filter, proxyService);
     order.verify(filter).register(interestedCallTypes.capture());
+    order.verify(proxyService).init();
     order.verify(proxyService).register(proxyAppConfig.capture());
     this.proxyAppConfig = proxyAppConfig.getValue();
     List<CallTypeEnum> calltypes_actual = interestedCallTypes.getValue();

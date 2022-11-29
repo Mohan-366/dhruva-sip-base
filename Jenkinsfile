@@ -135,8 +135,8 @@ def failBuild(message) {
 }
 
 def getTag(){
-    if (env.GIT_BRANCH == "master"){
-        def TAG="2."+env.BUILD_NUMBER
+    if (env.GIT_BRANCH == "spring_ready_post_listen"){
+        def TAG="2."+env.BUILD_NUMBER+"-rgowrimoTestUpgrade"
         return TAG
     }
     if (env.CHANGE_ID != null){
@@ -144,11 +144,10 @@ def getTag(){
     }
     // this condition should not happen I think
     return "default"
-
 }
 
 def getMetaData(tag){
-    if (env.GIT_BRANCH == 'master'){
+    if (env.GIT_BRANCH == 'spring_ready_post_listen'){
         return {
                 description = 'Dhruva-proxy for calling application'
                 image_name = 'dhruva'

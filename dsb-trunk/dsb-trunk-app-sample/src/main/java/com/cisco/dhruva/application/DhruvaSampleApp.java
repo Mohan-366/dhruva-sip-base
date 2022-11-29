@@ -6,10 +6,12 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@CustomLog
 public class DhruvaSampleApp {
   private ProxyService proxyService;
   private ProxyAppConfig proxyAppConfig;
@@ -35,6 +37,13 @@ public class DhruvaSampleApp {
             .isMaintenanceEnabled(isMaintenance)
             .requestConsumer(getRequestConsumer())
             .build();
+
+    try {
+      proxyService.init();
+    } catch (Exception e) {
+      logger.error("Unable to initialize proxy, exiting!!!", e);
+      System.exit(-1);
+    }
 
     proxyService.register(proxyAppConfig);
   }

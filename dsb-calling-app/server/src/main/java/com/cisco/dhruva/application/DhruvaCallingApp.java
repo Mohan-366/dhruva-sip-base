@@ -16,12 +16,18 @@ import com.cisco.dsb.proxy.dto.ProxyAppConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.wx2.util.Utilities;
 import com.google.common.collect.ImmutableList;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +40,7 @@ public class DhruvaCallingApp {
   private CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
   private CallingAppConfigurationProperty callingAppConfigurationProperty;
   private MetricService metricService;
+  @Autowired private ApplicationContext appContext;
 
   @Autowired
   DhruvaCallingApp(
@@ -49,48 +56,58 @@ public class DhruvaCallingApp {
     this.callingAppRateLimiterConfigurator = callingAppRateLimiterConfigurator;
     this.callingAppConfigurationProperty = callingAppConfigurationProperty;
     this.metricService = metricService;
-
-    init();
   }
 
-  public void init() {
-    proxyAppConfig =
-        ProxyAppConfig.builder()
-            ._1xx(false)
-            ._2xx(true)
-            ._3xx(true)
-            ._4xx(true)
-            ._5xx(true)
-            ._6xx(true)
-            .isMaintenanceEnabled(isMaintenance)
-            .midDialog(true)
-            .requestConsumer(getRequestConsumer())
-            .strayResponseNormalizer(doStrayResponseNormalization())
-            .build();
+  @EventListener
+  public void init(ContextRefreshedEvent contextRefreshedEvent) {
+    if (Objects.nonNull(contextRefreshedEvent)) {
+      logger.debug("spring application ready event {}", contextRefreshedEvent.toString());
+      proxyAppConfig =
+          ProxyAppConfig.builder()
+              ._1xx(false)
+              ._2xx(true)
+              ._3xx(true)
+              ._4xx(true)
+              ._5xx(true)
+              ._6xx(true)
+              .isMaintenanceEnabled(isMaintenance)
+              .midDialog(true)
+              .requestConsumer(getRequestConsumer())
+              .strayResponseNormalizer(doStrayResponseNormalization())
+              .build();
 
-    ImmutableList<CallTypeEnum> interestedCallTypes =
-        ImmutableList.of(
-            CallTypeEnum.DIAL_IN_PSTN,
-            CallTypeEnum.DIAL_IN_B2B,
-            CallTypeEnum.DIAL_OUT_WXC,
-            CallTypeEnum.DIAL_OUT_B2B);
+      ImmutableList<CallTypeEnum> interestedCallTypes =
+          ImmutableList.of(
+              CallTypeEnum.DIAL_IN_PSTN,
+              CallTypeEnum.DIAL_IN_B2B,
+              CallTypeEnum.DIAL_OUT_WXC,
+              CallTypeEnum.DIAL_OUT_B2B);
 
-    try {
-      filter.register(interestedCallTypes);
-    } catch (FilterTreeException e) {
-      logger.error("Unable to add calltype to filter tree, exiting!!!", e);
-      System.exit(-1);
+      try {
+        filter.register(interestedCallTypes);
+      } catch (FilterTreeException e) {
+        logger.error("Unable to add calltype to filter tree, exiting!!!", e);
+        int exitCode = SpringApplication.exit(appContext, (ExitCodeGenerator) () -> 0);
+        System.exit(exitCode);
+      }
+      try {
+        proxyService.init();
+      } catch (Exception e) {
+        logger.error("Unable to initialize proxy, exiting!!!", e);
+        int exitCode = SpringApplication.exit(appContext, (ExitCodeGenerator) () -> 0);
+        System.exit(exitCode);
+      }
+      proxyService.register(proxyAppConfig);
+      callingAppRateLimiterConfigurator.configure();
+      logger.debug("Initializing RateLimiter metric collection");
+      metricService.emitRateLimiterMetricPerInterval(
+          callingAppConfigurationProperty.getRateLimiterMetricPerInterval(), TimeUnit.SECONDS);
+
+      // register events
+      ImmutableList<Class<? extends DhruvaEvent>> interestedEvents =
+          ImmutableList.of(LoggingEvent.class);
+      eventingService.register(interestedEvents);
     }
-    proxyService.register(proxyAppConfig);
-    callingAppRateLimiterConfigurator.configure();
-    logger.debug("Initializing RateLimiter metric collection");
-    metricService.emitRateLimiterMetricPerInterval(
-        callingAppConfigurationProperty.getRateLimiterMetricPerInterval(), TimeUnit.SECONDS);
-
-    // register events
-    ImmutableList<Class<? extends DhruvaEvent>> interestedEvents =
-        ImmutableList.of(LoggingEvent.class);
-    eventingService.register(interestedEvents);
   }
 
   private Supplier<Boolean> isMaintenance =
@@ -117,6 +134,10 @@ public class DhruvaCallingApp {
                 + proxySIPRequest.getCallId();
         logger.error(errorMessage, ie);
         proxySIPRequest.reject(Response.NOT_FOUND, errorMessage);
+      } catch (Exception e) {
+        logger.error("Unhandled exception {}, sending back 5xx error", e.getCause());
+        proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, null);
+        proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, "exception in App request consumer");
       }
     };
   }

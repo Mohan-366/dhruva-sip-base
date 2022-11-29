@@ -2,25 +2,24 @@ package com.cisco.dsb.common.record;
 
 import com.cisco.wx2.util.Utilities;
 import com.google.common.base.Ticker;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 
-// Current implementation is not thread safe
 @CustomLog
 public class DhruvaAppRecord {
 
-  private final LinkedList<Record> history;
-  private final HashSet<DhruvaState> statesAdded;
+  private final ConcurrentLinkedQueue<Record> history;
+  private final Set<DhruvaState> statesAdded;
   private final long creationTimeSinceEpochMs;
   private final Ticker ticker;
 
   public static final String PASSPORT_KEY = "passport";
 
   public DhruvaAppRecord() {
-    this.history = new LinkedList<>();
-    this.statesAdded = new HashSet<>();
+    this.history = new ConcurrentLinkedQueue<>();
+    this.statesAdded = Collections.synchronizedSet(new HashSet<>());
     this.creationTimeSinceEpochMs = System.currentTimeMillis();
     this.ticker = Ticker.systemTicker();
   }
@@ -30,16 +29,16 @@ public class DhruvaAppRecord {
   }
 
   public DhruvaState getState() {
-    assert history.peekLast() != null;
-    return history.peekLast().getState();
+    assert history.peek() != null;
+    return history.peek().getState();
   }
 
-  public LinkedList<Record> getHistory() {
+  public ConcurrentLinkedQueue<Record> getHistory() {
     return history;
   }
 
   public void add(DhruvaState state, @Nullable Utilities.Checks checks) {
-    history.addLast(new Record(state, now(), checks));
+    history.add(new Record(state, now(), checks));
     statesAdded.add(state);
   }
 
@@ -54,7 +53,10 @@ public class DhruvaAppRecord {
   }
 
   public long firstTime() {
-    return history.getFirst().getTime();
+    if (history.peek() != null) {
+      return history.peek().getTime();
+    }
+    return 0;
   }
 
   public long creationTimeSinceEpochMs() {
@@ -88,15 +90,16 @@ public class DhruvaAppRecord {
     StringBuilder sb = new StringBuilder();
     sb.append("CurrentRecord {");
     sb.append("start_ms=").append(creationTimeSinceEpochMs()).append(", ");
-
+    Object[] a = history.toArray();
     sb.append('[');
-    for (Record item : history) {
+    for (Object item : a) {
+      Record r = (Record) item;
       sb.append("elapsed_time_ns:")
-          .append(item.getTime() - startTime)
+          .append(r.getTime() - startTime)
           .append('=')
-          .append(item.getState())
+          .append(r.getState())
           .append(": description= ")
-          .append(item.getChecks() != null ? item.getChecks().toStringAndClear() : "None")
+          .append(r.getChecks() != null ? r.getChecks().toStringAndClear() : "None")
           .append(", ");
     }
     sb.append("total_time_elapsed_ns:").append(now - startTime).append('=').append("NOW");

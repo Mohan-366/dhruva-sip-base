@@ -10,12 +10,14 @@ import javax.annotation.PostConstruct;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 @Service
 @CustomLog
 public class DhruvaApp {
   @Autowired ProxyService proxyService;
+  @Autowired private ApplicationContext appContext;
 
   private Supplier<Boolean> isMaintenance = () -> false;
 
@@ -51,6 +53,12 @@ public class DhruvaApp {
             .isMaintenanceEnabled(isMaintenance)
             .requestConsumer(requestConsumer)
             .build();
+    try {
+      proxyService.init();
+    } catch (Exception e) {
+      logger.error("Unable to initialize proxy, exiting!!!", e);
+      System.exit(-1);
+    }
     proxyService.register(appConfig);
   }
 }

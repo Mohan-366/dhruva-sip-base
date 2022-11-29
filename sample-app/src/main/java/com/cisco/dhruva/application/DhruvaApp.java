@@ -43,6 +43,12 @@ public class DhruvaApp {
     // TODO change to single method register(res,req)
     ProxyAppConfig appConfig =
         ProxyAppConfig.builder()._2xx(true)._4xx(true).requestConsumer(requestConsumer).build();
+    try {
+      proxyService.init();
+    } catch (Exception e) {
+      logger.error("Unable to initialize proxy, exiting!!!", e);
+      System.exit(-1);
+    }
     proxyService.register(appConfig);
   }
 }
