@@ -134,6 +134,7 @@ public class DhruvaCallingApp {
                 + proxySIPRequest.getCallId();
         logger.error(errorMessage, ie);
         proxySIPRequest.reject(Response.NOT_FOUND, errorMessage);
+
       } catch (Exception e) {
         logger.error("Unhandled exception {}, sending back 5xx error", e.getCause());
         proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, null);

@@ -3,6 +3,7 @@ package com.cisco.dsb.trunk.trunks;
 import com.cisco.dsb.common.circuitbreaker.ConditionalTransformer;
 import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreakerUtil;
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBElement;
@@ -26,14 +27,15 @@ import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
 import gov.nist.javax.sip.header.Contact;
 import gov.nist.javax.sip.header.ContactList;
+import java.text.ParseException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.sip.message.Response;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -163,17 +165,15 @@ public abstract class AbstractTrunk implements LoadBalancable {
             () -> {
               ProxySIPResponse bestResponse = cookie.getBestResponse();
               if (bestResponse == null) {
-                if (err instanceof DhruvaRuntimeException) {
-                  return Mono.error(err);
-                } else if (err instanceof TimeoutException) {
-                  logger.error(
-                      "Received overall timeout Exception, timeout:{}",
-                      egress.getOverallResponseTimeout());
+                try {
+                  DhruvaRuntimeException bestException = cookie.getBestException();
+                  return Mono.just(
+                      cookie.originalRequest.createResponse(
+                          bestException.getErrCode().getResponseCode(),
+                          bestException.getMessage()));
+                } catch (DhruvaException | ParseException e) {
+                  logger.error("Unable to create Error Response", e);
                   return Mono.empty();
-                } else {
-                  return Mono.error(
-                      new DhruvaRuntimeException(
-                          ErrorCode.APP_REQ_PROC, "no best response found", err));
                 }
               }
               return Mono.just(bestResponse);
@@ -207,9 +207,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
         .flatMap(endPoint -> sendToProxy(cookie, endPoint))
         .timeout(Duration.ofSeconds(egress.getOverallResponseTimeout()))
         .<ProxySIPResponse>handle(
-            (proxySIPResponse, sink) -> {
-              handleProxyResponse(cookie).accept(proxySIPResponse, sink);
-            })
+            (proxySIPResponse, sink) -> handleProxyResponse(cookie).accept(proxySIPResponse, sink))
         .transform(proxySIPResponseMono -> handleProxyException(proxySIPResponseMono, cookie));
   }
 
@@ -226,16 +224,68 @@ public abstract class AbstractTrunk implements LoadBalancable {
   private Mono<ProxySIPResponse> handleProxyException(
       Mono<ProxySIPResponse> proxySIPResponseMono, TrunkCookie cookie) {
     return proxySIPResponseMono
-        .onErrorMap(
-            DsbCircuitBreakerUtil::isCircuitBreakerException,
-            (err) ->
-                new DhruvaRuntimeException(
-                    ErrorCode.TRUNK_RETRY_NEXT,
-                    "Circuit is Open for endPoint: " + cookie.sgeLoadBalancer.getCurrentElement(),
-                    err))
-        // retry only it matches TRUNK_RETRY ERROR CODE
-        .retryWhen(this.retryTrunkOnException)
+        .doOnError(this.recordException(cookie))
+        .retryWhen(this.retryHandler())
         .onErrorResume(sendBestResponseOnException(cookie));
+  }
+
+  /**
+   * Each Trunk can override this class to implement their own retry filter based on ErrorCodes.
+   *
+   * @return
+   */
+  private Retry retryHandler() {
+    return Retry.max(MAX_ELEMENT_RETRIES)
+        .doBeforeRetry((s) -> logger.debug("Retrying after retryTrunkOnException", s.failure()))
+        .filter(
+            err -> {
+              if (err instanceof DhruvaRuntimeException
+                  && ((DhruvaRuntimeException) err).getErrCode() == ErrorCode.TRUNK_RETRY_NEXT)
+                return true;
+              else if (DsbCircuitBreakerUtil.isCircuitBreakerException(err)) return true;
+              return failOverException().test(err);
+            });
+  }
+
+  protected Predicate<Throwable> failOverException() {
+    return err -> {
+      if (err instanceof DhruvaRuntimeException) {
+        switch (((DhruvaRuntimeException) err).getErrCode()) {
+          case REQUEST_TIME_OUT:
+          case DESTINATION_UNREACHABLE:
+            return true;
+        }
+      }
+      return false;
+    };
+  }
+
+  private Consumer<Throwable> recordException(TrunkCookie cookie) {
+    return err -> {
+      DhruvaRuntimeException dre;
+      if (err instanceof DhruvaRuntimeException) {
+        dre = ((DhruvaRuntimeException) err);
+        // We should not record trunk_retry_next as it does not map to any response. To exit the
+        // retry loop an exception
+        // apart from trunk_retry_next will be thrown and we need to record only such exception to
+        // generate the best response.
+        if (dre.getErrCode() == ErrorCode.TRUNK_RETRY_NEXT) return;
+      } else if (err instanceof TimeoutException)
+        dre =
+            new DhruvaRuntimeException(ErrorCode.REQUEST_TIME_OUT, "Overall pipeline timeout", err);
+      else if (DsbCircuitBreakerUtil.isCircuitBreakerException(err))
+        dre = new DhruvaRuntimeException(ErrorCode.CB_OPEN, err.getMessage(), err);
+      else dre = new DhruvaRuntimeException(err);
+      if (cookie.getBestException() == null) {
+        cookie.setBestException(dre);
+        return;
+      }
+      // record best exception based on errCode
+      if (dre.getErrCode().getResponseCode()
+          < cookie.getBestException().getErrCode().getResponseCode()) {
+        cookie.setBestException(dre);
+      }
+    };
   }
 
   private boolean shouldFailover(ProxySIPResponse proxySIPResponse, TrunkCookie cookie) {
@@ -461,19 +511,6 @@ public abstract class AbstractTrunk implements LoadBalancable {
     getMetricService().getTrunkLBAlgorithm().put(this.name, lbType);
   }
 
-  /*
-   We want to trigger retry error only on certain error code
-  */
-  private final Retry retryTrunkOnException =
-      Retry.max(MAX_ELEMENT_RETRIES)
-          .doBeforeRetry((s) -> logger.debug("Retrying after retryTrunkOnException", s.failure()))
-          .filter(
-              (err) ->
-                  err instanceof DhruvaRuntimeException
-                      && ((DhruvaRuntimeException) err)
-                          .getErrCode()
-                          .equals(ErrorCode.TRUNK_RETRY_NEXT));
-
   @Override
   public String toString() {
     return String.format("(name=%s; ingress=%s; egress=%s)", name, ingress, egress);
@@ -484,6 +521,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
   public static class TrunkCookie {
     ProxySIPRequest clonedRequest;
     ProxySIPResponse bestResponse;
+    DhruvaRuntimeException bestException;
     LoadBalancer sgeLoadBalancer;
     LoadBalancer sgLoadBalancer;
     LoadBalancer rsgLoadBalancer; // Resolved SG from 3xx
@@ -510,13 +548,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
    * success and failure responses
    */
   private Predicate<Object> getCircuitBreakerRecordResult(TrunkCookie cookie) {
-    return response ->
-        response instanceof ProxySIPResponse
-            && (((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
-                    .getRoutePolicy()
-                    .getFailoverResponseCodes()
-                    .contains(((ProxySIPResponse) response).getStatusCode())
-                || (((ProxySIPResponse) response).getStatusCode() == Response.REQUEST_TIMEOUT));
+    return object ->
+        ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement())
+            .getRoutePolicy()
+            .getFailoverResponseCodes()
+            .contains(((ProxySIPResponse) object).getStatusCode());
   }
 
   private Mono<ProxySIPResponse> sendToProxy(TrunkCookie cookie, EndPoint endPoint) {
@@ -527,6 +563,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
                 dsbCircuitBreaker,
                 endPoint,
                 cbRecordResult,
+                failOverException(),
                 getEgress().getRoutePolicy().getCircuitBreakConfig()));
   }
 
@@ -576,7 +613,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
     while (loadBalancer.getNextElement() != null) {
       if (isActive((Pingable) loadBalancer.getCurrentElement()))
         return loadBalancer.getCurrentElement();
-      logger.debug("Skipping inActive Element as it's down", loadBalancer.getCurrentElement());
+      logger.debug(
+          "Skipping inActive Element as it's down {}", loadBalancer.getCurrentElement().toString());
     }
     return null;
   }

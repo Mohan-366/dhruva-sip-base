@@ -1,6 +1,7 @@
 package com.cisco.dsb.proxy.messaging;
 
 import com.cisco.dsb.common.context.ExecutionContext;
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
@@ -10,12 +11,10 @@ import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.proxy.sip.*;
 import gov.nist.javax.sip.message.SIPMessage;
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import javax.servlet.ServletException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipProvider;
 import javax.sip.address.SipURI;
@@ -106,7 +105,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   }
 
   @Override
-  public boolean validate() throws IOException, ServletException {
+  public boolean validate() {
     return false;
   }
 
@@ -196,4 +195,9 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
           new SipMetricsContext(
               metricService, state, this.getCallId(), this.getCallTypeName(), true);
       };
+
+  public ProxySIPResponse createResponse(int respCode, String details)
+      throws DhruvaException, ParseException {
+    return proxyInterface.createResponse(respCode, this, details);
+  }
 }

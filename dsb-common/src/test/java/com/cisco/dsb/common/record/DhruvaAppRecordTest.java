@@ -40,7 +40,7 @@ public class DhruvaAppRecordTest {
     long t3 = dhruvaAppRecord.firstTime();
   }
 
-  @Test(description = "add records")
+  @Test(description = "add records", enabled = false)
   public void test2() {
     ArrayList<TestState> states = new ArrayList<>();
     states.add(TestState.IN_SIP_EVENT1);

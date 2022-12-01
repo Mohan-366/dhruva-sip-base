@@ -143,12 +143,7 @@ public interface ControllerInterface {
    */
   void onAck(ProxyTransaction proxy);
 
-  /**
-   * this is called when a CANCEL is received for the original Transaction
-   *
-   * @param proxy The proxyTransaction object
-   * @throws DhruvaException
-   */
+  /** this is called when a CANCEL is received for the original Transaction */
   void onCancel(ProxyTransaction proxy) throws DhruvaException;
 
   /**
@@ -158,6 +153,8 @@ public interface ControllerInterface {
    * @param response
    */
   void onResponse(ProxySIPResponse response);
+
+  void onRequestTimeout(ProxyClientTransaction clientTransaction);
 
   ControllerConfig getControllerConfig();
 

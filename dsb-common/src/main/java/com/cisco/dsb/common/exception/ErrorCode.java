@@ -25,6 +25,8 @@ public enum ErrorCode {
   NOT_FOUND(404, Action.SEND_ERR_RESPONSE),
   TRUNK_RETRY_NEXT(0),
   TRUNK_NO_RETRY(502, Action.SEND_ERR_RESPONSE),
+  REQUEST_TIME_OUT(408, Action.RETRY),
+  CB_OPEN(502),
   INIT(0);
 
   @Getter private final int responseCode;

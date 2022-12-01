@@ -194,7 +194,11 @@ public class DsbCircuitBreakerTest {
             Mono.defer(() -> proxy.send(endPoint))
                 .transformDeferred(
                     ConditionalTransformer.of(
-                        dsbCircuitBreaker, endPoint, cbRecordResult, circuitBreakConfig)))
+                        dsbCircuitBreaker,
+                        endPoint,
+                        cbRecordResult,
+                        (o) -> true,
+                        circuitBreakConfig)))
         .expectError(error)
         .verify();
   }
@@ -204,7 +208,11 @@ public class DsbCircuitBreakerTest {
             Mono.defer(() -> proxy.send(endPoint))
                 .transformDeferred(
                     ConditionalTransformer.of(
-                        dsbCircuitBreaker, endPoint, cbRecordResult, circuitBreakConfig)))
+                        dsbCircuitBreaker,
+                        endPoint,
+                        cbRecordResult,
+                        (o) -> true,
+                        circuitBreakConfig)))
         .expectNext(expectedResponse)
         .verifyComplete();
   }

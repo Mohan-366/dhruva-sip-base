@@ -15,13 +15,15 @@ public class ConditionalTransformer<T> implements UnaryOperator<Publisher<T>> {
       DsbCircuitBreaker dsbCircuitBreaker,
       EndPoint endPoint,
       Predicate<Object> cbRecordResult,
+      Predicate<Throwable> cbRecordException,
       CircuitBreakConfig cbConfig) {
     if (dsbCircuitBreaker == null) {
       return new ConditionalTransformer();
     } else {
       return (UnaryOperator<T>)
           CircuitBreakerOperator.of(
-              dsbCircuitBreaker.getOrCreateCircuitBreaker(endPoint, cbRecordResult, cbConfig));
+              dsbCircuitBreaker.getOrCreateCircuitBreaker(
+                  endPoint, cbRecordResult, cbRecordException, cbConfig));
     }
   }
 

@@ -26,18 +26,24 @@ public class DsbCircuitBreaker implements RemovalListener {
 
   @SneakyThrows
   public CircuitBreaker getOrCreateCircuitBreaker(
-      EndPoint endPoint, Predicate<Object> recordResult, CircuitBreakConfig circuitBreakConfig) {
+      EndPoint endPoint,
+      Predicate<Object> recordResult,
+      Predicate<Throwable> recordException,
+      CircuitBreakConfig circuitBreakConfig) {
     String key = endPoint.getHost() + endPoint.getPort() + endPoint.getProtocol();
     return cache.get(
         key,
         () -> {
           logger.info("Creating CircuitBreaker for endpoint: {}", endPoint);
-          return createCircuitBreaker(key, recordResult, circuitBreakConfig);
+          return createCircuitBreaker(key, recordResult, recordException, circuitBreakConfig);
         });
   }
 
   private CircuitBreaker createCircuitBreaker(
-      String key, Predicate<Object> recordResult, CircuitBreakConfig config) {
+      String key,
+      Predicate<Object> recordResult,
+      Predicate<Throwable> recordException,
+      CircuitBreakConfig config) {
 
     CircuitBreakerConfig circuitBreakerConfig =
         CircuitBreakerConfig.custom()
@@ -48,6 +54,7 @@ public class DsbCircuitBreaker implements RemovalListener {
             .permittedNumberOfCallsInHalfOpenState(
                 config.getPermittedNumberOfCallsInHAlfOpenState())
             .recordResult(recordResult)
+            .recordException(recordException)
             .build();
     CircuitBreaker circuitBreaker = CircuitBreaker.of(key, circuitBreakerConfig);
     logCircuitBreakerEvents(circuitBreaker);

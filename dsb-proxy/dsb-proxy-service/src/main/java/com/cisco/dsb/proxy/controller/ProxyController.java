@@ -25,6 +25,7 @@ import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.*;
+import com.google.common.net.InetAddresses;
 import gov.nist.core.HostPort;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.address.AddressImpl;
@@ -37,8 +38,6 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -85,8 +84,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Getter static final boolean mEmulate2543 = false;
 
   @Getter protected boolean usingRouteHeader = false;
-
-  protected ArrayList unCancelledBranches = new ArrayList(3);
 
   public HashMap<Integer, Map<String, String>> parsedProxyParamsByType = null;
 
@@ -173,6 +170,40 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             });
 
     ((ProxyTransaction) proxyTransaction).respond((SIPResponse) response);
+  }
+
+  @Override
+  public ProxySIPResponse createResponse(
+      int responseCode, ProxySIPRequest proxySIPRequest, String details)
+      throws ParseException, DhruvaException {
+    logger.debug("Trying to create ProxySIPResponse");
+    SIPResponse response =
+        ((SIPResponse)
+            JainSipHelper.getMessageFactory()
+                .createResponse(responseCode, proxySIPRequest.getOriginalRequest()));
+    ProxyClientTransaction proxyClientTransaction = proxySIPRequest.getProxyClientTransaction();
+    if (proxyTransaction instanceof ProxyTransaction) {
+      ProxySIPResponse proxySIPResponse =
+          MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
+              response,
+              sipProvider,
+              proxyClientTransaction == null ? null : proxyClientTransaction.getBranch(),
+              new ExecutionContext());
+
+      Optional.ofNullable(((ProxyTransaction) this.proxyTransaction).getServerTransaction())
+          .ifPresent(
+              proxySrvTxn -> {
+                proxySrvTxn.setInternallyGeneratedResponse(true);
+                proxySrvTxn.setAdditionalDetails(details);
+              });
+      proxySIPResponse.setProxyInterface(this);
+      logger.debug("Created ProxySIPResponse!");
+      return proxySIPResponse;
+    }
+    logger.error(
+        "Unable to Create ProxySIPResponse as {} is not instance of ProxyTransaction",
+        proxyTransaction);
+    throw new DhruvaException("Unable to create Response");
   }
 
   @Override
@@ -295,7 +326,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           proxySIPRequest.setParams(pp);
           proxyTransaction.addProxyRecordRoute(proxySIPRequest);
           return proxyTransaction.proxyPostProcess(proxySIPRequest);
-        } catch (SipException | ParseException | DhruvaException | UnknownHostException e) {
+        } catch (SipException | ParseException | DhruvaException e) {
           throw new DhruvaRuntimeException(
               ErrorCode.PROXY_REQ_PROC_ERR,
               "exception while doing proxy transaction processing",
@@ -314,7 +345,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   }
 
   public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest)
-      throws DhruvaException, ParseException, UnknownHostException {
+      throws DhruvaException, ParseException {
     SIPRequest request = proxySIPRequest.getRequest();
 
     Optional<DhruvaNetwork> optionalDhruvaNetwork =
@@ -336,8 +367,14 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         throw e;
       }
     }
-    request.setRemoteAddress(
-        InetAddress.getByName(proxySIPRequest.getDownstreamElement().getHost()));
+    // NOTE: Downstream should strictly be IP:PORT, rURI with hostName is not supported.
+    try {
+      request.setRemoteAddress(
+          InetAddresses.forString(proxySIPRequest.getDownstreamElement().getHost()));
+    } catch (IllegalArgumentException ex) {
+      logger.error("Unable to set remoteAddress on request", ex);
+    }
+
     dpp.setProxyToPort(proxySIPRequest.getDownstreamElement().getPort());
     request.setRemotePort(proxySIPRequest.getDownstreamElement().getPort());
 
@@ -496,10 +533,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
    * getRouteParameters() to get the value. As per RFC 2543 (strict routing), the route header does
    * not support header parameters in route header. So, if the previous element is a strict router,
    * the header parameters object remains null.
-   *
-   * @param proxySipRequest
-   * @return the proxySipRequst with FIX URI as described above
-   * @throws RuntimeException if fix did not succeed.
    */
   Function<ProxySIPRequest, Mono<ProxySIPRequest>> incomingProxyRequestFixLr =
       proxySIPRequest -> {
@@ -840,49 +873,21 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       proxySIPRequest.handleProxyEvent(
           metricService, SipMetricsContext.State.proxyNewRequestSendFailure);
     }
-
-    ErrorCode errorCode;
-    if (err instanceof DhruvaRuntimeException)
-      errorCode = ((DhruvaRuntimeException) err).getErrCode();
-    else errorCode = ErrorCode.UNKNOWN_ERROR_REQ;
-    if (err instanceof SipException && err.getCause() instanceof IOException)
-      errorCode = ErrorCode.DESTINATION_UNREACHABLE;
     logger.error("Error occurred while forwarding request", err);
-    SIPResponse sipResponse;
-    try {
-      sipResponse =
-          ProxyResponseGenerator.createResponse(
-              errorCode.getResponseCode(), ourRequest.getOriginalRequest());
-    } catch (DhruvaException | ParseException ex) {
-      throw new DhruvaRuntimeException(ErrorCode.CREATE_ERR_RESPONSE, ex.getMessage(), err);
+
+    if (proxyClientTransaction != null) {
+      logger.debug("Remove Timer C from the ProxyClientTransaction due to ProxyFailure");
+      proxyClientTransaction.removeTimerC();
     }
-
-    if (proxyTransaction instanceof ProxyTransaction) {
-      proxyClientTransaction =
-          proxyClientTransaction != null
-              ? proxyClientTransaction
-              : ((ProxyTransaction) proxyTransaction).getClientTransaction();
-      ProxySIPResponse proxySIPResponse =
-          MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
-              sipResponse,
-              sipProvider,
-              proxyClientTransaction == null ? null : proxyClientTransaction.getBranch(),
-              new ExecutionContext());
-
-      Optional.ofNullable(((ProxyTransaction) this.proxyTransaction).getServerTransaction())
-          .ifPresent(
-              proxySrvTxn -> {
-                proxySrvTxn.setInternallyGeneratedResponse(true);
-                proxySrvTxn.setAdditionalDetails(err.getMessage());
-              });
-
-      if (proxyClientTransaction != null) {
-        logger.debug("Remove Timer C from the ProxyClientTransaction due to ProxyFailure");
-        proxyClientTransaction.removeTimerC();
-      }
-      proxySIPResponse.setProxyInterface(this);
-      ((ProxyCookieImpl) cookie).getResponseCF().complete(proxySIPResponse);
+    DhruvaRuntimeException wrappedException;
+    if (err instanceof DhruvaRuntimeException) {
+      wrappedException = ((DhruvaRuntimeException) err);
+    } else {
+      wrappedException = new DhruvaRuntimeException(err);
+      if (err instanceof SipException && err.getCause() instanceof IOException)
+        wrappedException.setErrCode(ErrorCode.DESTINATION_UNREACHABLE);
     }
+    ((ProxyCookieImpl) cookie).getResponseCF().completeExceptionally(wrappedException);
   }
 
   @Override
@@ -957,5 +962,13 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     Optional<String> network = DhruvaNetwork.getNetworkFromProvider(response.getProvider());
     if (network.isPresent()) response.setNetwork(network.get());
     else logger.warn("Unable to set incoming network from SipProvider");
+  }
+
+  @Override
+  public void onRequestTimeout(ProxyClientTransaction clientTransaction) {
+    ((ProxyCookieImpl) clientTransaction.getCookie())
+        .getResponseCF()
+        .completeExceptionally(
+            new DhruvaRuntimeException(ErrorCode.REQUEST_TIME_OUT, "Request timed out"));
   }
 }

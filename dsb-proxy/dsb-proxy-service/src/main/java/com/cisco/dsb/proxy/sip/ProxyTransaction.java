@@ -1,18 +1,15 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.proxy.ControllerInterface;
 import com.cisco.dsb.proxy.ProxyState;
-import com.cisco.dsb.proxy.controller.ProxyController;
 import com.cisco.dsb.proxy.controller.ProxyResponseGenerator;
 import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.errors.InvalidStateException;
-import com.cisco.dsb.proxy.messaging.MessageConvertor;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import gov.nist.javax.sip.message.SIPRequest;
@@ -46,7 +43,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
   public static final String NL = System.getProperty("line.separator");
 
   /** the vector of branches for proxied requests */
-  @Setter @Getter private Map branches = null;
+  @Setter @Getter private Map<ClientTransaction, ProxyClientTransaction> branches = null;
 
   @Getter @Setter private boolean m_isForked = false;
   private ClientTransaction m_originalClientTrans = null;
@@ -154,11 +151,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
 
     super.init(controller, config, request);
 
-    ServerTransaction llServer = server;
-
-    if (controller != null) {
-      this.controller = controller;
-    }
+    this.controller = controller;
 
     currentClientState = PROXY_INITIAL;
     currentServerState = PROXY_INITIAL;
@@ -180,7 +173,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       // some hacking around to provide quick and easy support for
       // stray ACKs and CANCELs
       if (getStrayStatus() == NOT_STRAY) {
-        serverTransaction = createProxyServerTransaction(llServer, request);
+        serverTransaction = createProxyServerTransaction(server, request);
         logger.info("Created a ProxyServerTransaction for {}", request.getMethod());
       } else {
         logger.info("No ProxyServerTransaction created for {}", request.getMethod());
@@ -279,27 +272,14 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           break;
       }
 
-      try {
-        logger.info("Process {} statefully on proxy's client side", request.getMethod());
-        proxySIPRequest.setStatefulClientTransaction(true);
-        prepareRequest(proxySIPRequest);
-
-      } catch (Exception e) {
-        logger.error("Got exception in proxyTo()!", e);
-        // This exception looks like it will be caught immediately by the series
-        // of catch blocks below.  Can we do this in a less expensive way? - JPS
-        DestinationUnreachableException exception =
-            new DestinationUnreachableException(e.getMessage());
-        exception.addSuppressed(e);
-        throw exception;
-      }
+      logger.info("Process {} statefully on proxy's client side", request.getMethod());
+      proxySIPRequest.setStatefulClientTransaction(true);
+      prepareRequest(proxySIPRequest);
 
     } catch (InvalidStateException e) {
       throw new DhruvaRuntimeException(ErrorCode.INVALID_STATE, e.getMessage(), e);
     } catch (InvalidParameterException e) {
       throw new DhruvaRuntimeException(ErrorCode.INVALID_PARAM, e.getMessage(), e);
-    } catch (DestinationUnreachableException e) {
-      throw new DhruvaRuntimeException(ErrorCode.DESTINATION_UNREACHABLE, e.getMessage(), e);
     } catch (Throwable e) {
       throw new DhruvaRuntimeException(ErrorCode.UNKNOWN_ERROR_REQ, e.getMessage(), e);
     }
@@ -326,9 +306,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       return Mono.error(
           new DhruvaRuntimeException(
               ErrorCode.REQUEST_NO_PROVIDER,
-              String.format(
-                  "unable to find provider for outbound request with network:"
-                      + network.getName())));
+              "unable to find provider for outbound request with network:" + network.getName()));
 
     SIPRequest request = proxySIPRequest.getRequest();
 
@@ -349,7 +327,7 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
           m_originalClientTrans = clientTrans;
         } else {
           if (branches == null) {
-            branches = new HashMap(2);
+            branches = new HashMap<>(2);
           }
           branches.put(clientTrans, proxyClientTrans);
 
@@ -426,7 +404,6 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
             ErrorCode.INVALID_STATE,
             "Cannot send " + responseClass + "xx response in " + (currentServerState) + " state",
             null);
-        return;
       } else if (getStrayStatus() == NOT_STRAY) {
         getServerTransaction().respond(response);
         controller.onResponseSuccess(this, getServerTransaction());
@@ -532,31 +509,8 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
       proxyClientTrans.cancel();
     }
 
-    // construct a timeout response
-    // ignore future responses except 200 OKs
     proxyClientTrans.timedOut();
-
-    try {
-      SIPResponse response =
-          ProxyResponseGenerator.createResponse(Response.REQUEST_TIMEOUT, getOriginalRequest());
-
-      ProxySIPResponse proxySIPResponse =
-          MessageConvertor.convertJainSipResponseMessageToDhruvaMessage(
-              response, provider, trans, new ExecutionContext());
-      proxySIPResponse.setProxyTransaction(this);
-      proxySIPResponse.setProxyInterface(((ProxyController) controller));
-      Optional.ofNullable(this.getServerTransaction())
-          .ifPresent(
-              proxySrvTxn -> {
-                proxySrvTxn.setInternallyGeneratedResponse(true);
-                proxySrvTxn.setAdditionalDetails("Request timed out");
-              });
-      // invoke the final response method above
-      controller.onFinalResponse(proxyClientTrans.getCookie(), proxySIPResponse);
-
-    } catch (DhruvaException | ParseException e) {
-      logger.error("Exception thrown while creating response for timeout", e);
-    }
+    controller.onRequestTimeout(proxyClientTrans);
   }
 
   /**

@@ -1,9 +1,10 @@
 package com.cisco.dsb.trunk.trunks;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.normalization.Normalization;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import javax.sip.message.Response;
+import org.junit.Assert;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -55,7 +58,7 @@ public class AbstractTrunkTest {
 
   @BeforeTest
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
   }
 
   @BeforeMethod
@@ -121,7 +124,7 @@ public class AbstractTrunkTest {
   @Test(
       description =
           "tests the basic pipeline of sendToProxy in case of DhruvaRuntimeException and TimeoutException")
-  public void testSendToProxyPipeline2() throws ParseException {
+  public void testSendToProxyPipeline2() throws ParseException, DhruvaException {
     TestTrunk testTrunk = new TestTrunk();
 
     Egress egress = new Egress();
@@ -164,9 +167,18 @@ public class AbstractTrunkTest {
     CompletableFuture<ProxySIPResponse> responseCF =
         CompletableFuture.failedFuture(new DhruvaRuntimeException("test exception"));
     when(proxySIPRequest1.proxy(any())).thenReturn(responseCF);
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(proxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return proxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
+
     StepVerifier.create(testTrunk.sendToProxy(proxySIPRequest, normalization))
-        .expectError(DhruvaRuntimeException.class)
-        .verify();
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.SERVER_INTERNAL_ERROR))
+        .verifyComplete();
 
     // TimeOut exception returns Mono.empty()
     when(proxySIPRequest.clone()).thenReturn(proxySIPRequest1);
@@ -174,7 +186,7 @@ public class AbstractTrunkTest {
         CompletableFuture.failedFuture(new TimeoutException("test exception"));
     when(proxySIPRequest1.proxy(any())).thenReturn(responseCF1);
     StepVerifier.create(testTrunk.sendToProxy(proxySIPRequest, normalization))
-        .expectNextCount(0)
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.REQUEST_TIMEOUT))
         .verifyComplete();
   }
 }

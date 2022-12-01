@@ -9,6 +9,7 @@ import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreakerState;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.dns.DnsException;
+import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
@@ -62,6 +63,7 @@ import org.springframework.context.ApplicationContext;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -145,7 +147,7 @@ public class TrunkTest {
   }
 
   @Test(description = "any internal server error will return Mono.error()")
-  public void testUnhandledException() {
+  public void testUnhandledException() throws DhruvaException, ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     Egress egrees = new Egress();
     ServerGroup serverGroup =
@@ -164,12 +166,17 @@ public class TrunkTest {
     // dnsServerGroupUtil is not set, which will throw NPE. Since this fails before sending request
     // to proxy,
     // there is no point trying again for next EndPoint, hence error is thrown
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return failedProxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectErrorMatches(
-            err ->
-                err instanceof DhruvaRuntimeException
-                    && ((DhruvaRuntimeException) err).getErrCode().equals(ErrorCode.APP_REQ_PROC))
-        .verify();
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.SERVER_INTERNAL_ERROR))
+        .verifyComplete();
   }
 
   @Test(description = "single SG with A record")
@@ -287,7 +294,7 @@ public class TrunkTest {
   }
 
   @Test(description = "pick based on availability")
-  public void testStaticAvailability() {
+  public void testStaticAvailability() throws DhruvaException, ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
 
     OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
@@ -344,14 +351,17 @@ public class TrunkTest {
     when(optionsPingController.getStatus(serverGroupElements.get(1))).thenReturn(false);
     when(optionsPingController.getStatus(serverGroupElements.get(2))).thenReturn(false);
     // Verify when SG and all elements are down, we send back 502 response
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return failedProxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectErrorMatches(
-            err ->
-                err instanceof DhruvaRuntimeException
-                    && ((DhruvaRuntimeException) err)
-                        .getErrCode()
-                        .equals(ErrorCode.FETCH_ENDPOINT_ERROR))
-        .verify();
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
+        .verifyComplete();
   }
 
   @Test(description = "combination of static and dynamic")
@@ -538,8 +548,6 @@ public class TrunkTest {
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
 
-    Consumer<ProxySIPRequest> requestConsumer = request -> {};
-    BiConsumer<TrunkCookie, EndPoint> trunkCookieConsumer = (cookie, endPoint) -> {};
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
@@ -916,7 +924,7 @@ public class TrunkTest {
 
   @Test(
       description = "Test trunk egress with CB. When none of the endpoints have CB open return 502")
-  public void testCircuitBreaker() throws InterruptedException {
+  public void testCircuitBreaker() throws InterruptedException, DhruvaException, ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     RoutePolicy routePolicy =
         RoutePolicy.builder()
@@ -958,8 +966,6 @@ public class TrunkTest {
     OptionsPingController optionsPingController = Mockito.mock(OptionsPingController.class);
     antaresTrunk.setOptionsPingController(optionsPingController);
     when(optionsPingController.getStatus(any())).thenReturn(true);
-    AtomicInteger state =
-        new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
     doAnswer(
             invocationOnMock -> {
               when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.SERVICE_UNAVAILABLE);
@@ -1009,24 +1015,33 @@ public class TrunkTest {
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
-
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return failedProxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectError(DhruvaRuntimeException.class)
-        .verify();
-    try {
-      antaresTrunk.processEgress(proxySIPRequest, normalization);
-    } catch (DhruvaRuntimeException dre) {
-      Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
-    }
-    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
-    response.subscribe(
-        next -> {}, err -> Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left"));
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
+        .verifyComplete();
+
     Assert.assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 
-  @Test(description = "Test trunk egress with CB. When proxy returns 408 Request Timeout")
-  public void testCircuitBreakerWith408RequestTimeout() throws InterruptedException {
+  @DataProvider
+  public Object[][] isFailoverException() {
+    return new Object[][] {{false}, {true}};
+  }
+
+  @Test(
+      description =
+          "CB should open the circuit when the exception matched the failOverExceptions of the trunk.",
+      dataProvider = "isFailoverException")
+  public void testCircuitBreakerWithException(boolean isFailover)
+      throws InterruptedException, DhruvaException, ParseException {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
     RoutePolicy routePolicy =
         RoutePolicy.builder()
@@ -1051,27 +1066,29 @@ public class TrunkTest {
 
     when(commonConfigurationProperties.getServerGroups()).thenReturn(sgMap);
     trunkTestUtil.initTrunk(List.of(sg1), antaresTrunk, dsbCircuitBreaker);
-
-    AtomicInteger state =
-        new AtomicInteger(0); // 0 means fail response(503), 1 means fail response(500)
     doAnswer(
             invocationOnMock -> {
-              when(failedProxySIPResponse.getStatusCode()).thenReturn(Response.REQUEST_TIMEOUT);
-              return CompletableFuture.completedFuture(failedProxySIPResponse);
+              CompletableFuture<ProxySIPResponse> rcf = new CompletableFuture<>();
+              if (isFailover) {
+                rcf.completeExceptionally(
+                    new DhruvaRuntimeException(ErrorCode.REQUEST_TIME_OUT, "Request timedOut"));
+              } else
+                rcf.completeExceptionally(
+                    new DhruvaRuntimeException(
+                        ErrorCode.INVALID_PARAM, "Invalid request param or corrupt state machine"));
+              return rcf;
             })
         .when(clonedPSR)
         .proxy(any(EndPoint.class));
     doAnswer(
             invocationOnMock -> {
-              DnsDestination dnsDestination = invocationOnMock.getArgument(1);
-
               when(locateSIPServersResponse.getDnsException()).thenReturn(Optional.empty());
               when(locateSIPServersResponse.getHops())
                   .thenReturn(
                       List.of(
                           new Hop(
                               sg1.getHostName(),
-                              "2.1.1.1",
+                              isFailover ? "2.1.1.1" : "3.1.1.1",
                               Transport.UDP,
                               5060,
                               5,
@@ -1083,36 +1100,58 @@ public class TrunkTest {
         .locateDestinationAsync(eq(null), any(DnsDestination.class));
 
     EndPoint endPoint =
-        new EndPoint("testNetwork", "2.1.1.1", 5060, Transport.UDP, "test2.akg.com");
+        new EndPoint(
+            "testNetwork",
+            isFailover ? "2.1.1.1" : "3.1.1.1",
+            5060,
+            Transport.UDP,
+            "test2.akg.com");
+    // clean up cb endpoint state
     doAnswer(invocationOnMock -> SipParamConstants.DIAL_OUT_TAG)
         .when(rUri)
         .getParameter(SipParamConstants.CALLTYPE);
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return failedProxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
+
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectNext(failedProxySIPResponse)
+        .assertNext(
+            psr ->
+                Assert.assertEquals(
+                    psr.getStatusCode(),
+                    isFailover ? Response.REQUEST_TIMEOUT : Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
         DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectNext(failedProxySIPResponse)
+        .assertNext(
+            psr ->
+                Assert.assertEquals(
+                    psr.getStatusCode(),
+                    isFailover ? Response.REQUEST_TIMEOUT : Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
     Thread.sleep(10);
     Assert.assertEquals(
-        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+        isFailover ? DsbCircuitBreakerState.OPEN : DsbCircuitBreakerState.CLOSED,
+        dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
 
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .expectError(DhruvaRuntimeException.class)
-        .verify();
-    try {
-      antaresTrunk.processEgress(proxySIPRequest, normalization);
-    } catch (DhruvaRuntimeException dre) {
-      Assert.assertEquals(dre.getErrCode(), ErrorCode.TRUNK_NO_RETRY);
-    }
-    Mono<ProxySIPResponse> response = antaresTrunk.processEgress(proxySIPRequest, normalization);
-    response.subscribe(
-        next -> {}, err -> Assert.assertEquals(err.getMessage(), "DNS Exception, no more SG left"));
+        .assertNext(
+            psr ->
+                Assert.assertEquals(
+                    psr.getStatusCode(),
+                    isFailover ? Response.BAD_GATEWAY : Response.SERVER_INTERNAL_ERROR))
+        .verifyComplete();
+
     Assert.assertEquals(
-        DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
+        isFailover ? DsbCircuitBreakerState.OPEN : DsbCircuitBreakerState.CLOSED,
+        dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 
   @Test
@@ -1190,7 +1229,7 @@ public class TrunkTest {
           try {
             ((SipUri) proxySIPRequest.getRequest().getTo().getAddress().getURI()).setHost(ip);
           } catch (ParseException e) {
-            System.out.println(e);
+            Assert.fail("Unable to set host ip", e);
           }
         };
     normalization.setEgressMidCallPostNormConsumer(egressMidCallPostNormConsumer);
@@ -1200,6 +1239,78 @@ public class TrunkTest {
         .verifyComplete();
     // Application of normalization validated here
     Assert.assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), ip);
+  }
+
+  @Test(
+      description =
+          "Choose best exception when no response received for any endpoints. Each Exception is associated with"
+              + "an errorCode and each errorCode has ResponseCode attached")
+  public void testBestExceptionResponse() throws DhruvaException, ParseException {
+    AntaresTrunk antaresTrunk = new AntaresTrunk();
+    ServerGroup sg1 =
+        ServerGroup.builder()
+            .setHostName("static1")
+            .setSgType(SGType.STATIC)
+            .setWeight(100)
+            .setPriority(10)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .build();
+    List<ServerGroupElement> serverGroupElements = trunkTestUtil.getServerGroupElements(2, true);
+    sg1.setElements(serverGroupElements);
+
+    ServerGroup sg2 =
+        ServerGroup.builder()
+            .setHostName("static2")
+            .setSgType(SGType.STATIC)
+            .setWeight(100)
+            .setPriority(5)
+            .setRoutePolicy(sgRoutePolicy)
+            .setNetworkName("testNetwork")
+            .setElements(trunkTestUtil.getServerGroupElements(1, false))
+            .build();
+    trunkTestUtil.initTrunk(Arrays.asList(sg1, sg2), antaresTrunk, null);
+
+    AtomicInteger state = new AtomicInteger(0);
+    doAnswer(
+            invocationOnMock -> {
+              int cState = state.getAndIncrement();
+              DhruvaRuntimeException exception;
+              switch (cState) {
+                case 0:
+                  exception =
+                      new DhruvaRuntimeException(
+                          ErrorCode.DESTINATION_UNREACHABLE, "Fetch endpoint error");
+                  break;
+                case 2:
+                default:
+                  exception = new DhruvaRuntimeException(ErrorCode.INVALID_PARAM, "Invalid error");
+                  break;
+                case 1:
+                  exception =
+                      new DhruvaRuntimeException(
+                          ErrorCode.REQUEST_TIME_OUT, "Fetch endpoint error");
+                  break;
+              }
+              CompletableFuture<ProxySIPResponse> cf = new CompletableFuture<>();
+              cf.completeExceptionally(exception);
+              return cf;
+            })
+        .when(clonedPSR)
+        .proxy(any(EndPoint.class));
+
+    doAnswer(
+            invocationOnMock -> {
+              int respCode = invocationOnMock.getArgument(0);
+              when(failedProxySIPResponse.getStatusCode()).thenReturn(respCode);
+              return failedProxySIPResponse;
+            })
+        .when(proxySIPRequest)
+        .createResponse(anyInt(), anyString());
+
+    StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
+        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.REQUEST_TIMEOUT))
+        .verifyComplete();
   }
 
   public class SampleTrunk extends AbstractTrunk {

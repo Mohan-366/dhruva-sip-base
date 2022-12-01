@@ -8,6 +8,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
@@ -35,10 +36,7 @@ import com.cisco.wx2.dto.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nist.javax.sip.SipStackImpl;
-import gov.nist.javax.sip.header.Allow;
-import gov.nist.javax.sip.header.RecordRouteList;
-import gov.nist.javax.sip.header.Route;
-import gov.nist.javax.sip.header.RouteList;
+import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
@@ -120,7 +118,7 @@ public class ProxyControllerTest {
 
   @BeforeClass
   void init() throws Exception {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     sipStack = mock(SipStack.class);
 
@@ -308,14 +306,10 @@ public class ProxyControllerTest {
   }
 
   public ProxyController getProxyController(ProxySIPRequest proxySIPRequest) {
-    ProxyController controller =
-        proxyControllerFactory
-            .proxyController()
-            .apply(
-                proxySIPRequest.getServerTransaction(),
-                proxySIPRequest.getProvider(),
-                proxyAppConfig);
-    return controller;
+    return proxyControllerFactory
+        .proxyController()
+        .apply(
+            proxySIPRequest.getServerTransaction(), proxySIPRequest.getProvider(), proxyAppConfig);
   }
 
   @BeforeMethod
@@ -514,7 +508,8 @@ public class ProxyControllerTest {
     // Mock Trunk Service
     EndPoint endPoint =
         new EndPoint(outgoingNetwork1.getName(), "9.9.9.9", 5061, outgoingNetwork1.getTransport());
-    CompletableFuture responseCF = proxyController.proxyRequest(proxySIPRequest, endPoint);
+    CompletableFuture<ProxySIPResponse> responseCF =
+        proxyController.proxyRequest(proxySIPRequest, endPoint);
 
     // adding sleep as we have to wait for ProxySendMessage.sendProxyRequestAsync to be invoked
     // after subscription
@@ -563,7 +558,7 @@ public class ProxyControllerTest {
 
   @Test(description = "stack send request throws SipException due to Destination Unreachable")
   public void testOutgoingRequestSendStackException()
-      throws SipException, ExecutionException, InterruptedException, TimeoutException {
+      throws SipException, InterruptedException, TimeoutException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -606,17 +601,21 @@ public class ProxyControllerTest {
 
     Assert.assertEquals(
         ((ProxyCookieImpl) proxySIPRequest.getCookie()).getResponseCF(), responseCF);
-    ProxySIPResponse response = responseCF.get(100, TimeUnit.MILLISECONDS);
+    try {
+      responseCF.get(100, TimeUnit.MILLISECONDS);
+    } catch (ExecutionException ex) {
+      assert (((DhruvaRuntimeException) ex.getCause()).getErrCode()
+          == ErrorCode.DESTINATION_UNREACHABLE);
+    }
+
     verify(clientTransaction).sendRequest();
-    Assert.assertNotEquals(response, null);
-    Assert.assertEquals(response.getStatusCode(), Response.BAD_GATEWAY);
   }
 
   @Test(
       description =
           "stack send request throws DhruvaException since provider for that network is not specified")
   public void testOutgoingRequestProviderException()
-      throws SipException, ExecutionException, InterruptedException, TimeoutException {
+      throws SipException, InterruptedException, TimeoutException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -645,9 +644,12 @@ public class ProxyControllerTest {
 
     CompletableFuture<ProxySIPResponse> responseCF =
         proxyController.proxyRequest(proxySIPRequest, endPoint);
-
-    ProxySIPResponse response = responseCF.get(100, TimeUnit.MILLISECONDS);
-    Assert.assertEquals(Response.SERVER_INTERNAL_ERROR, response.getStatusCode());
+    try {
+      responseCF.get(100, TimeUnit.MILLISECONDS);
+    } catch (ExecutionException ex) {
+      assert (((DhruvaRuntimeException) ex.getCause()).getErrCode()
+          == ErrorCode.REQUEST_NO_PROVIDER);
+    }
     verify(clientTransaction, never()).sendRequest();
     reset(clientTransaction);
   }
@@ -743,7 +745,7 @@ public class ProxyControllerTest {
   }
 
   @Test(description = "calling proxyrequest without setting outgoing network")
-  public void testProxyRequestWithoutNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithoutNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -759,14 +761,11 @@ public class ProxyControllerTest {
     proxyController.onNewRequest(proxySIPRequest);
     CompletableFuture<ProxySIPResponse> cf = proxyController.proxyRequest(proxySIPRequest);
     Assert.assertTrue(cf.isCompletedExceptionally());
-    cf.whenComplete(
-        (msg, ex) -> {
-          Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class);
-        });
+    cf.whenComplete((msg, ex) -> Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class));
   }
 
   @Test(description = "proxyrequest called with invalid network")
-  public void testProxyRequestWithInvalidNetwork() throws ExecutionException, InterruptedException {
+  public void testProxyRequestWithInvalidNetwork() {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -783,13 +782,10 @@ public class ProxyControllerTest {
     proxySIPRequest.setOutgoingNetwork("invalid");
     CompletableFuture<ProxySIPResponse> cf = proxyController.proxyRequest(proxySIPRequest);
     Assert.assertTrue(cf.isCompletedExceptionally());
-    cf.whenComplete(
-        (msg, ex) -> {
-          Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class);
-        });
+    cf.whenComplete((msg, ex) -> Assert.assertSame(ex.getCause(), DhruvaRuntimeException.class));
   }
 
-  @Test(description = "proxyrequest without route header, route using rURI")
+  @Test(description = "proxy request without route header, route using rURI")
   public void testProxyRequestWithoutRoute()
       throws ParseException, SipException, InterruptedException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
@@ -929,7 +925,7 @@ public class ProxyControllerTest {
     RouteHeader ownRouteHeader =
         JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
 
-    ListIterator routes = sipRequest.getHeaders(RouteHeader.NAME);
+    ListIterator<SIPHeader> routes = sipRequest.getHeaders(RouteHeader.NAME);
     if (routes != null && routes.hasNext()) {
       while (routes.hasNext()) {
         sipRequest.removeHeader(RouteHeader.NAME, true);
@@ -1029,7 +1025,7 @@ public class ProxyControllerTest {
     assert proxySIPRequest.getLrFixUri() == null;
 
     RouteHeader lastRouteHeader = null;
-    ListIterator routes = proxySIPRequest.getRequest().getHeaders(RouteHeader.NAME);
+    ListIterator<SIPHeader> routes = proxySIPRequest.getRequest().getHeaders(RouteHeader.NAME);
     if (routes != null && routes.hasNext()) {
       // Get to the last value
       do lastRouteHeader = (RouteHeader) routes.next();
@@ -1139,7 +1135,7 @@ public class ProxyControllerTest {
   }
 
   @DataProvider
-  public Object[] toggleValues() {
+  public Object[][] toggleValues() {
     return new Boolean[][] {{true}, {false}};
   }
 
@@ -1225,7 +1221,7 @@ public class ProxyControllerTest {
 
     doNothing().when(st).sendResponse(any(Response.class));
 
-    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), null);
+    Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
 
     verify(proxyTransaction).cancel();
     verify(st).sendResponse(captor.capture());
@@ -1412,9 +1408,7 @@ public class ProxyControllerTest {
           "test proxy client creation for outgoing ACK request - mid-dialog."
               + "This test covers failure scenario where proxy is not able to forward request since outgoing network is not set"
               + "Route headers are not set in this case.We should not send back any error response to client for ACK")
-  public void testOutgoingACKRequestFailureProxyTransaction()
-      throws SipException, ParseException, ExecutionException, InterruptedException,
-          TimeoutException {
+  public void testOutgoingACKRequestFailureProxyTransaction() throws SipException {
 
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -1442,5 +1436,40 @@ public class ProxyControllerTest {
 
     CompletableFuture<ProxySIPResponse> responseCF = proxyController.proxyRequest(proxySIPRequest);
     Assert.assertTrue(responseCF.isCompletedExceptionally());
+  }
+
+  @Test(description = "create ProxySIPResponse with valid response code")
+  public void testCreateResponse() throws DhruvaException, ParseException {
+    int respCode = Response.SERVICE_UNAVAILABLE;
+    String details = "Service Unavailable";
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxyTransaction proxyTransaction = mock(ProxyTransaction.class);
+    ProxyServerTransaction proxyServerTransaction = mock(ProxyServerTransaction.class);
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+    proxyController.setProxyTransaction(proxyTransaction);
+    when(proxyTransaction.getServerTransaction()).thenReturn(proxyServerTransaction);
+
+    ProxySIPResponse proxySIPResponse =
+        proxyController.createResponse(respCode, proxySIPRequest, details);
+
+    Assert.assertEquals(proxySIPResponse.getStatusCode(), respCode);
+    verify(proxyServerTransaction, times(1)).setInternallyGeneratedResponse(eq(true));
+    verify(proxyServerTransaction, times(1)).setAdditionalDetails(eq(details));
+    Assert.assertEquals(proxySIPResponse.getProxyInterface(), proxyController);
+  }
+
+  @Test(
+      description = "Exception while creating proxySIPResponse",
+      expectedExceptions = DhruvaException.class)
+  public void testCreateResponseException() throws DhruvaException, ParseException {
+    int respCode = Response.SERVICE_UNAVAILABLE;
+    String details = "Service Unavailable";
+    ServerTransaction serverTransaction = mock(ServerTransaction.class);
+    ProxySIPRequest proxySIPRequest =
+        getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
+    ProxyController proxyController = getProxyController(proxySIPRequest);
+    proxyController.createResponse(respCode, proxySIPRequest, details);
   }
 }
