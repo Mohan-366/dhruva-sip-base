@@ -18,14 +18,13 @@ public class DNSSRVRecord {
 
   @Range private Long ttl;
 
-  @Range(min = 1, max = 100)
+  @Range(max = 100)
   private Integer priority;
 
-  @Range(min = 1, max = 100)
+  @Range(max = 100)
   private Integer weight;
 
-  @Range(min = 4000, max = 8000)
-  private Integer port;
+  @Range private Integer port;
 
   @Pattern(regexp = TARGET_PATTERN)
   private String target;
