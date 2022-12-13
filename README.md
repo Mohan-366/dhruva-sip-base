@@ -44,7 +44,7 @@ To use the dsb artifacts in any new repo, the following text will have to be add
 
 ### Prerequisites
 - Ensure you have access to clone this repo.
-- Clone the repo in your IDE (IntelliJ Ultimate recommended (see below)) and make sure you have JDK8.
+- Clone the repo in your IDE (IntelliJ Ultimate recommended (see below)) and make sure you have JDK11.
 - Setup [secure access to Cisco's artifactory](https://sqbu-github.cisco.com/pages/WebexSquared/docs/DeveloperTools/maven.html).
 
 #### Intellij Ultimate
