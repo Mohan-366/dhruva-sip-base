@@ -4,7 +4,7 @@ https://sqbu-github.cisco.com/WebExSquared/cisco-spark-base/blob/master/csb-comm
 -->
 <included>
     <!-- Suppressing third party low level logs-->
-    <logger name="org.springframework" level="ERROR"/>
+    <logger name="org.springframework" level="WARN"/>
     <logger name="org.apache" level="ERROR"/>
     <logger name="org.eclipse" level="ERROR"/>
     <logger name="sun.rmi" level="ERROR"/>
