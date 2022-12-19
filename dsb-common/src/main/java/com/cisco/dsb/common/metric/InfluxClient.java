@@ -20,11 +20,13 @@ public class InfluxClient implements MetricClient {
   @Inject private DhruvaProperties dhruvaProperties;
 
   public static final String INSTANCE_NAME_KEY = "instanceName";
+  public static final String SERVICE_NAME_KEY = "serviceName";
 
   @Override
   public void sendMetric(Metric metric) {
     metric.timestamp(Instant.now());
     metric.tag(INSTANCE_NAME_KEY, getInstanceName());
+    metric.tag(SERVICE_NAME_KEY, dhruvaProperties.getServiceNameEnvVar());
     influxDBClientHelper.writePointAsync((InfluxPoint) metric.get());
   }
 
@@ -34,6 +36,7 @@ public class InfluxClient implements MetricClient {
         metrics.stream()
             .map(metric -> metric.timestamp(Instant.now()))
             .map(metric -> metric.tag(INSTANCE_NAME_KEY, getInstanceName()))
+            .map(metric -> metric.tag(SERVICE_NAME_KEY, dhruvaProperties.getServiceNameEnvVar()))
             .map(metric -> (InfluxPoint) metric.get())
             .collect(Collectors.toSet());
     if (!influxPoints.isEmpty()) {

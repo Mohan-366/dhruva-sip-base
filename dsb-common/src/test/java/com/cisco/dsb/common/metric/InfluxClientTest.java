@@ -103,12 +103,14 @@ public class InfluxClientTest {
   public void influxClientSendMetricTest() {
     ArgumentCaptor<InfluxPoint> metricCaptor = ArgumentCaptor.forClass(InfluxPoint.class);
 
+    when(dhruvaProperties.getServiceNameEnvVar()).thenReturn("dhruva-dev");
     doNothing().when(influxDBClientHelper).writePointAsync(any());
     influxClient.sendMetric(testMetric1);
     verify(influxDBClientHelper, times(1)).writePointAsync(metricCaptor.capture());
     InfluxPoint receivedMetric = metricCaptor.getValue();
 
     Assert.assertNotNull(receivedMetric);
+    Assert.assertEquals(receivedMetric.getTag("serviceName"), "dhruva-dev");
     // equals check for all the fields/tags of metric emitted
     Assert.assertEquals(
         receivedMetric.getMeasurement(), ((InfluxMetric) testMetric1).measurement());
@@ -118,7 +120,7 @@ public class InfluxClientTest {
   public void influxClientSendMetricsTest() {
 
     ArgumentCaptor<Set<InfluxPoint>> metricsCaptor = ArgumentCaptor.forClass(Set.class);
-
+    when(dhruvaProperties.getServiceNameEnvVar()).thenReturn("dhruva-dev");
     doNothing().when(influxDBClientHelper).writePointAsync(any());
 
     Set<Metric> metricsSet = new HashSet<>();
@@ -131,6 +133,7 @@ public class InfluxClientTest {
     Set<InfluxPoint> receivedMetric = metricsCaptor.getValue();
 
     Assert.assertEquals(receivedMetric.size(), 2);
+    Assert.assertEquals(receivedMetric.stream().findFirst().get().getTag("serviceName"), "dhruva-dev");
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric1.get()));
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric2.get()));
   }

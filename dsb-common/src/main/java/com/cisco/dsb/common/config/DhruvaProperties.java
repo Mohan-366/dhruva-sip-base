@@ -29,10 +29,12 @@ public class DhruvaProperties extends ConfigProperties {
   public static final String MACHINE_ACCOUNT_PASSWORD = "machineAccountPassword";
   public static final String ORG_ID = "orgId";*/
   public static final String POD_NAME_ENV_VAR_KEY = "POD_NAME";
+  public static final String SERVICE_NAME_ENV_VAR_KEY = "SERVICE_NAME";
 
   private static BuildInfo buildInfo;
   private final Environment env;
   @Getter @Setter private String podNameEnvVar;
+  @Getter @Setter private String serviceNameEnvVar;
 
   @PostConstruct
   public void init() {
@@ -41,6 +43,10 @@ public class DhruvaProperties extends ConfigProperties {
         StringUtils.isBlank(System.getenv(POD_NAME_ENV_VAR_KEY))
             ? String.valueOf(0)
             : System.getenv(POD_NAME_ENV_VAR_KEY);
+    this.serviceNameEnvVar =
+        StringUtils.isBlank(System.getenv(SERVICE_NAME_ENV_VAR_KEY))
+            ? String.valueOf(0)
+            : System.getenv(SERVICE_NAME_ENV_VAR_KEY);
   }
 
   @Autowired
