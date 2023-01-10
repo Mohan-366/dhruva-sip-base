@@ -9,3 +9,4 @@ dependency-reduced-pom.xml
 .factorypath
 */test-output/
 *.txt
+/grafana-dashboards/dashboard-generation/vendor/*
