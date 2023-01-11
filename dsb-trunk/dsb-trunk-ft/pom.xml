@@ -56,6 +56,7 @@
     <tomcat.server.port>9221</tomcat.server.port>
     <tomcat.ajp.port>9222</tomcat.ajp.port>
     <tomcat.rmi.port>9223</tomcat.rmi.port>
+    <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco-aggregate/jacoco.xml,target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <build>
@@ -113,9 +114,7 @@
               <cargo.servlet.port>${tomcat.server.port}</cargo.servlet.port>
               <cargo.rmi.port>${tomcat.rmi.port}</cargo.rmi.port>
               <cargo.tomcat.ajp.port>${tomcat.ajp.port}</cargo.tomcat.ajp.port>
-              <!--<cargo.jvmargs>
-                  -javaagent:${user.home}/.m2/repository/org/jacoco/org.jacoco.agent/${jacoco.version}/org.jacoco.agent-${jacoco.version}-runtime.jar=destfile=${project.build.directory}/jacoco-it.exec,append=true
-              </cargo.jvmargs>-->
+              <cargo.jvmargs>${itArgLine}</cargo.jvmargs>
             </properties>
           </configuration>
           <deployables>
@@ -159,7 +158,20 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>report</id>
+            <goals>
+              <goal>report-aggregate</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
-
 </project>

@@ -133,7 +133,8 @@ public class InfluxClientTest {
     Set<InfluxPoint> receivedMetric = metricsCaptor.getValue();
 
     Assert.assertEquals(receivedMetric.size(), 2);
-    Assert.assertEquals(receivedMetric.stream().findFirst().get().getTag("serviceName"), "dhruva-dev");
+    Assert.assertEquals(
+        receivedMetric.stream().findFirst().get().getTag("serviceName"), "dhruva-dev");
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric1.get()));
     Assert.assertTrue(receivedMetric.contains((InfluxPoint) testMetric2.get()));
   }

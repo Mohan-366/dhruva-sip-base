@@ -56,7 +56,18 @@ node('SPARK_BUILDER') {
                  step([$class: 'JacocoPublisher', changeBuildStatus: true, classPattern: '**/dsb-calling-app/server/target/classes/com/cisco,**/dsb-common/target/classes/com/cisco,**/dsb-connectivity-monitor/target/classes/com/cisco,**/dsb-proxy/dsb-proxy-service/target/classes/com/cisco,**/dsb-trunk/dsb-trunk-service/target/classes/com/cisco', execPattern: '**/target/**.exec', minimumInstructionCoverage: '1'])
              }
          }
-         stage('postBuild') {
+        if (env.GIT_BRANCH == 'master') {
+            stage('sonarQube') {
+                try {
+                    this.withCredentials([this.usernamePassword(credentialsId: 'SONAR_DHRUVA', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_TOKEN')]) {
+                        this.sh "mvn sonar:sonar -Dsonar.host.url=https://engci-sonar-blr.cisco.com/sonar/ -Dsonar.projectKey=com.cisco:dhruva-sip-base -Dsonar.login=\${SONAR_TOKEN}"
+                    }
+                } catch (Exception e) {
+                    echo "Static analysis failed ${e}"
+                }
+            }
+        }
+        stage('postBuild') {
              // Report SpotBugs static analysis warnings (also sets build result on failure)
              def spotbugs = scanForIssues tool: spotBugs(pattern: '**/spotbugsXml.xml')
              publishIssues issues: [spotbugs]
