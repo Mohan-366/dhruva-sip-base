@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @CustomLog
 public class Status {
-  private boolean up;
+  private final boolean up;
   private final AtomicLong timestamp;
 
   public Status(boolean up, long timestamp) {
@@ -35,11 +35,6 @@ public class Status {
       return false;
     }
     return timestamp.compareAndSet(prevTs, System.currentTimeMillis());
-  }
-
-  public Status setUp(boolean up) {
-    this.up = up;
-    return this;
   }
 
   @Override

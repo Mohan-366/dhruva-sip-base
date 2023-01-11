@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import org.mockito.*;
@@ -284,8 +285,18 @@ public class OptionsPingMonitorTest {
             .setMaxForwards(50)
             .build();
     server1.setOptionsPingPolicyFromConfig(opPolicy);
+    ServerGroup single = ServerGroup.builder()
+            .setName("single")
+            .setHostName("single")
+            .setNetworkName(network.getName())
+            .setElements(List.of(sge1))
+            .setRoutePolicyConfig("global")
+            .setPingOn(true)
+            .build();
+    single.setOptionsPingPolicyFromConfig(opPolicy);
     map = new HashMap<>();
     map.put(server1.getName(), server1);
+    map.put(single.getName(),single);
     ServerGroup server2 =
         ServerGroup.builder()
             .setName("sg2")
@@ -294,6 +305,7 @@ public class OptionsPingMonitorTest {
             .build();
     // adding one SG without elements. This one must not be considered by OPTIONS ping module.
     map.put(server2.getName(), server2);
+
   }
 
   @BeforeMethod
@@ -301,6 +313,7 @@ public class OptionsPingMonitorTest {
     // clear all status maps
     optionsPingMonitor.elementStatus.clear();
     optionsPingMonitor.serverGroupStatus.clear();
+    optionsPingMonitor.disposeExistingFlux();
     reset(optionsPingMonitor);
     reset(metricService);
     reset(dnsServerGroupUtil);
@@ -317,7 +330,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor2.startMonitoring(map);
     Thread.sleep(1500);
     assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
-    assertTrue(optionsPingMonitor2.serverGroupStatus.equals(metricService.getSgStatusMap()));
+    assertEquals(metricService.getSgStatusMap(), optionsPingMonitor2.serverGroupStatus);
     optionsPingMonitor2.disposeExistingFlux();
   }
 
@@ -459,8 +472,7 @@ public class OptionsPingMonitorTest {
     CompletableFuture<SIPResponse> r1 = new CompletableFuture<>();
     r1.complete(sipResponse1);
 
-    Iterator<Map.Entry<String, ServerGroup>> itr = map.entrySet().iterator();
-    ServerGroup sg = itr.next().getValue();
+    ServerGroup sg = map.get("sg1");
     when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
     when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
     when(optionsPingTransaction.proxySendOutBoundRequest(any(), any(), any())).thenReturn(r1);
@@ -1072,5 +1084,63 @@ public class OptionsPingMonitorTest {
     Thread.sleep(3000);
     optionsPingMonitor.opFlux.forEach(Disposable::dispose);
     verify(optionsPingMonitor, times(5)).createAndSendRequest(any(), any(), any());
+  }
+
+  @Test(description = "Testing transition intervals", timeOut = 20000)
+  public void testTransitionInterval() throws SipException, InterruptedException {
+    ServerGroup sg = map.get("single");
+    List<Long> timeStamp = new ArrayList<>();
+    SIPResponse response = new SIPResponse();
+    CompletableFuture<SIPResponse> responseCF = new CompletableFuture<>();
+    responseCF.complete(response);
+    when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
+    when(metricService.getSgeToSgMapping()).thenReturn(new ConcurrentHashMap<>());
+    AtomicInteger state = new AtomicInteger();
+    /*
+    0 -> init
+    1 -> element is UP
+    2 -> element is UP
+    3 -> element is DOWN
+    4 -> element is DOWN
+    5 -> element is UP
+     */
+    doAnswer(invocationOnMock -> {
+      switch (state.getAndIncrement()){
+        case 0:
+        case 1:
+        case 4:
+          response.setStatusCode(200);
+          break;
+        case 2:
+        case 3:
+          response.setStatusCode(503);
+          break;
+      }
+      timeStamp.add(System.currentTimeMillis());
+      return responseCF;
+    }).when(optionsPingTransaction).proxySendOutBoundRequest(any(),any(),any());
+    optionsPingMonitor.serverGroupStatus.putIfAbsent(sg.getHostName(), true);
+    optionsPingMonitor.metricsService.getSgStatusMap().put(sg.getName(), true);
+    optionsPingMonitor.pingPipeLine(sg);
+    while (timeStamp.size() < 6) {
+      Thread.sleep(2000);
+    }
+    optionsPingMonitor.disposeExistingFlux();
+
+    long upInterval = timeStamp.get(2) - timeStamp.get(1);
+    long downTransition = timeStamp.get(3) - timeStamp.get(2);
+    long downInterval = timeStamp.get(4) - timeStamp.get(3);
+    long upTransition = timeStamp.get(5) - timeStamp.get(4);
+    System.out.printf("UpInterval actual = %d,expected = %d\n",upInterval,opPolicy.getUpTimeInterval());
+    System.out.printf("UpInterval transition actual = %d,expected = less than ~%d\n",upTransition,opPolicy.getUpTimeInterval());
+    System.out.printf("DownInterval actual = %d,expected = %d\n",downInterval,opPolicy.getDownTimeInterval());
+    System.out.printf("DownInterval transition actual = %d,expected = less than ~%d\n",downTransition,opPolicy.getDownTimeInterval());
+
+    assertTrue(upInterval-opPolicy.getUpTimeInterval() < 100);
+    assertTrue(downInterval - opPolicy.getDownTimeInterval() < 100 );
+    assertTrue(upTransition - opPolicy.getUpTimeInterval() < 100);
+    assertTrue(downTransition - opPolicy.getDownTimeInterval() < 100);
+
+
   }
 }

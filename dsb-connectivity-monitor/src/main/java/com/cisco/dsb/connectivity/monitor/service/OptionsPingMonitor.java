@@ -310,7 +310,7 @@ public class OptionsPingMonitor {
             element,
             serverGroup.getNetworkName());
         metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
-        elementStatus.put(key, prevStatus.setUp(false));
+        elementStatus.put(key, new Status(false, 0));
       }
       return;
     }
@@ -320,7 +320,7 @@ public class OptionsPingMonitor {
         serverGroup.getOptionsPingPolicy().getFailureResponseCodes().contains(responseCode);
     if (prevStatus.isUp() && failed) {
       // element transitioned from UP to DOWN
-      elementStatus.put(key, prevStatus.setUp(false));
+      elementStatus.put(key, new Status(false, 0));
       logger.info("{} received for UP element: {}. Marking it as DOWN.", responseCode, element);
       Event.emitSGElementDownEvent(
           serverGroup.getName(),
@@ -330,7 +330,7 @@ public class OptionsPingMonitor {
           serverGroup.getNetworkName());
       metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
     } else if (!prevStatus.isUp() && !failed) {
-      elementStatus.put(key, prevStatus.setUp(true));
+      elementStatus.put(key, new Status(true, 0));
       logger.info("{} received for DOWN element: {}. Marking it as UP.", responseCode, element);
       Event.emitSGElementUpEvent(serverGroup.getName(), element, serverGroup.getNetworkName());
       metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), true);
