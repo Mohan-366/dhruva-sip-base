@@ -51,6 +51,8 @@ public class SIPListenPoint {
 
   private String hostInterface;
 
+  @Builder.Default private boolean enableRport = false;
+
   @Builder.Default
   @Setter(AccessLevel.NONE)
   private boolean isPingTimeOutOverride = false;
@@ -71,6 +73,7 @@ public class SIPListenPoint {
     this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
     this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
     this.isPingTimeOutOverride = false;
+    this.enableRport = false;
   }
 
   public void setHostInterface(String hostInterface) {

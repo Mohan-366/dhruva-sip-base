@@ -155,7 +155,11 @@ public class SipServer implements Server {
         "gov.nist.javax.sip.MIN_KEEPALIVE_TIME_SECONDS",
         commonConfigurationProperties.getMinKeepAliveTimeSeconds());
 
-    stackProps.setProperty("gov.nist.javax.sip.ALWAYS_ADD_RPORT", "false");
+    stackProps.setProperty(
+        "gov.nist.javax.sip.NEVER_ADD_RECEIVED_RPORT",
+        String.valueOf(!listenPoint.isEnableRport()));
+    stackProps.setProperty(
+        "gov.nist.javax.sip.ALWAYS_ADD_RPORT", String.valueOf(listenPoint.isEnableRport()));
 
     // Is rate Limit enabled for the corresponding listen point
     if (listenPoint.isEnableRateLimiter()) {
