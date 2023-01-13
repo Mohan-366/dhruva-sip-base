@@ -7,12 +7,14 @@ import static org.mockito.Mockito.*;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.loadbalancer.LBType;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.util.RequestHelper;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.text.ParseException;
@@ -40,7 +42,10 @@ public class AbstractTrunkTest {
 
     @Override
     public ProxySIPRequest processIngress(
-        ProxySIPRequest proxySIPRequest, Normalization normalization) {
+        ProxySIPRequest proxySIPRequest,
+        Normalization normalization,
+        Maintenance maintenance,
+        TrunkConfigurationProperties configurationProperties) {
       return proxySIPRequest;
     }
 

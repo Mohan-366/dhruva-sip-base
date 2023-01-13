@@ -747,29 +747,33 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           return null;
 
         case Request.OPTIONS:
-          try {
-            logger.info("Processing OPTIONS request & responding with 200 OK");
-            Response sipResponse =
-                JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
-            addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
-            addSupportedHeader(SupportedExtensions.getExtensions(), sipResponse);
-            addAcceptHeader(sipResponse);
-            // TODO: if we know the data for 'Accept-Language' & 'AcceptEncoding' headers, add them
-            // to this OPTIONS 200 OK response (as per rfc)
-            ProxySendMessage.sendResponse(
-                sipResponse,
-                serverTransaction,
-                sipProvider,
-                true,
-                proxySIPRequest.getCallTypeName(),
-                null);
-          } catch (Exception e) {
-            throw new DhruvaRuntimeException(
-                ErrorCode.SEND_RESPONSE_ERR,
-                "Error sending 200 (OK) response for OPTIONS request",
-                e);
+          if (!proxyAppConfig.getMaintenance().get().isEnabled()) {
+            try {
+              logger.info("Processing OPTIONS request & responding with 200 OK");
+              Response sipResponse =
+                  JainSipHelper.getMessageFactory().createResponse(Response.OK, sipRequest);
+              addAllowHeader(getProxyConfigurationProperties().getAllowedMethods(), sipResponse);
+              addSupportedHeader(SupportedExtensions.getExtensions(), sipResponse);
+              addAcceptHeader(sipResponse);
+              // TODO: if we know the data for 'Accept-Language' & 'AcceptEncoding' headers, add
+              // them
+              // to this OPTIONS 200 OK response (as per rfc)
+              ProxySendMessage.sendResponse(
+                  sipResponse,
+                  serverTransaction,
+                  sipProvider,
+                  true,
+                  proxySIPRequest.getCallTypeName(),
+                  null);
+            } catch (Exception e) {
+              throw new DhruvaRuntimeException(
+                  ErrorCode.SEND_RESPONSE_ERR,
+                  "Error sending 200 (OK) response for OPTIONS request",
+                  e);
+            }
+            return null;
           }
-          return null;
+          return proxySIPRequest;
 
         default:
           // strayRequest = NOT_STRAY;

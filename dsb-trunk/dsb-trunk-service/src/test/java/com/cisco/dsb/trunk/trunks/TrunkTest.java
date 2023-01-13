@@ -3,6 +3,8 @@ package com.cisco.dsb.trunk.trunks;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreakerState;
@@ -13,6 +15,7 @@ import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.loadbalancer.LBType;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
@@ -31,6 +34,8 @@ import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.ProxyInterface;
+import com.cisco.dsb.trunk.MaintenanceMode;
+import com.cisco.dsb.trunk.MaintenanceModeImpl;
 import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.TrunkTestUtil;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk.TrunkCookie;
@@ -50,7 +55,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sip.address.Address;
@@ -175,7 +183,7 @@ public class TrunkTest {
         .when(proxySIPRequest)
         .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.SERVER_INTERNAL_ERROR))
+        .assertNext(psr -> assertEquals(psr.getStatusCode(), Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
   }
 
@@ -229,7 +237,7 @@ public class TrunkTest {
 
     // verification
 
-    Assert.assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
+    assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
     verify(proxySIPRequest, times(2)).clone();
     verify(clonedPSR, times(2)).proxy(any(EndPoint.class));
   }
@@ -285,7 +293,7 @@ public class TrunkTest {
         .expectNext(bestResponse)
         .verifyComplete();
 
-    Assert.assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
+    assertEquals(antaresTrunk.getLoadBalancerMetric(), expectedValues);
     // verification
     verify(proxySIPRequest, times(4)).clone();
     verify(clonedPSR, times(3)).proxy(any(EndPoint.class));
@@ -360,7 +368,7 @@ public class TrunkTest {
         .when(proxySIPRequest)
         .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
+        .assertNext(psr -> assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
         .verifyComplete();
   }
 
@@ -799,10 +807,43 @@ public class TrunkTest {
         .verifyComplete();
   }
 
-  @Test(description = "Test ingress")
-  public void testProcessIngressAntares() {
+  @Test(
+      description =
+          "Test maintenance behaviour in trunk ingress. "
+              + "1. When not in maintenance mode, proceed with normalisation & further routing"
+              + "2. When in maintenance mode, execute maintenance behaviour")
+  public void testTrunkIngressMaintenanceBehaviour() {
     AntaresTrunk antaresTrunk = new AntaresTrunk();
-    antaresTrunk.processIngress(proxySIPRequest, normalization);
+    AntaresTrunk spyTrunk = spy(antaresTrunk);
+    TrunkConfigurationProperties trunkConfigurationProperties =
+        mock(TrunkConfigurationProperties.class);
+    MaintenanceMode maintenanceMode = mock(MaintenanceModeImpl.class);
+    MaintenanceMode spyMaintenanceMode = spy(maintenanceMode);
+
+    BiFunction<Maintenance, TrunkConfigurationProperties, MaintenanceMode> getMaintenanceMode =
+        (maintenance, configurationProperties) -> spyMaintenanceMode;
+    doReturn(getMaintenanceMode).when(spyTrunk).getMaintenanceMode();
+
+    // 1. When not in maintenance mode
+    Predicate<ProxySIPRequest> isMaintenance = (proxySIPRequest) -> false;
+    doReturn(isMaintenance).when(spyMaintenanceMode).isInMaintenanceMode();
+
+    assertEquals(
+        spyTrunk.processIngress(proxySIPRequest, normalization, null, trunkConfigurationProperties),
+        proxySIPRequest);
+    verify(spyMaintenanceMode, times(0)).maintenanceBehaviour();
+
+    // 2. When in maintenance mode
+    isMaintenance = (proxySIPRequest) -> true;
+    doReturn(isMaintenance).when(spyMaintenanceMode).isInMaintenanceMode();
+
+    Function<ProxySIPRequest, ProxySIPRequest> maintenanceBehaviour = (proxySipRequest) -> null;
+    doReturn(maintenanceBehaviour).when(spyMaintenanceMode).maintenanceBehaviour();
+
+    assertNull(
+        spyTrunk.processIngress(
+            proxySIPRequest, normalization, null, trunkConfigurationProperties));
+    verify(spyMaintenanceMode, times(1)).maintenanceBehaviour();
   }
 
   @Test
@@ -1007,13 +1048,13 @@ public class TrunkTest {
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
-    Assert.assertEquals(
+    assertEquals(
         DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .expectNext(failedProxySIPResponse)
         .verifyComplete();
     Thread.sleep(10);
-    Assert.assertEquals(
+    assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
     doAnswer(
             invocationOnMock -> {
@@ -1024,10 +1065,10 @@ public class TrunkTest {
         .when(proxySIPRequest)
         .createResponse(anyInt(), anyString());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
+        .assertNext(psr -> assertEquals(psr.getStatusCode(), Response.BAD_GATEWAY))
         .verifyComplete();
 
-    Assert.assertEquals(
+    assertEquals(
         DsbCircuitBreakerState.OPEN, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
 
@@ -1122,34 +1163,34 @@ public class TrunkTest {
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .assertNext(
             psr ->
-                Assert.assertEquals(
+                assertEquals(
                     psr.getStatusCode(),
                     isFailover ? Response.REQUEST_TIMEOUT : Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
     Thread.sleep(10);
-    Assert.assertEquals(
+    assertEquals(
         DsbCircuitBreakerState.CLOSED, dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .assertNext(
             psr ->
-                Assert.assertEquals(
+                assertEquals(
                     psr.getStatusCode(),
                     isFailover ? Response.REQUEST_TIMEOUT : Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
     Thread.sleep(10);
-    Assert.assertEquals(
+    assertEquals(
         isFailover ? DsbCircuitBreakerState.OPEN : DsbCircuitBreakerState.CLOSED,
         dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
 
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
         .assertNext(
             psr ->
-                Assert.assertEquals(
+                assertEquals(
                     psr.getStatusCode(),
                     isFailover ? Response.BAD_GATEWAY : Response.SERVER_INTERNAL_ERROR))
         .verifyComplete();
 
-    Assert.assertEquals(
+    assertEquals(
         isFailover ? DsbCircuitBreakerState.OPEN : DsbCircuitBreakerState.CLOSED,
         dsbCircuitBreaker.getCircuitBreakerState(endPoint).get());
   }
@@ -1238,7 +1279,7 @@ public class TrunkTest {
         .expectNext(successProxySIPResponse)
         .verifyComplete();
     // Application of normalization validated here
-    Assert.assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), ip);
+    assertEquals(((SipUri) request.getTo().getAddress().getURI()).getHost(), ip);
   }
 
   @Test(
@@ -1309,7 +1350,7 @@ public class TrunkTest {
         .createResponse(anyInt(), anyString());
 
     StepVerifier.create(antaresTrunk.processEgress(proxySIPRequest, normalization))
-        .assertNext(psr -> Assert.assertEquals(psr.getStatusCode(), Response.REQUEST_TIMEOUT))
+        .assertNext(psr -> assertEquals(psr.getStatusCode(), Response.REQUEST_TIMEOUT))
         .verifyComplete();
   }
 
@@ -1317,7 +1358,10 @@ public class TrunkTest {
 
     @Override
     public ProxySIPRequest processIngress(
-        ProxySIPRequest proxySIPRequest, Normalization normalization) {
+        ProxySIPRequest proxySIPRequest,
+        Normalization normalization,
+        Maintenance maintenance,
+        TrunkConfigurationProperties configurationProperties) {
       return null;
     }
 

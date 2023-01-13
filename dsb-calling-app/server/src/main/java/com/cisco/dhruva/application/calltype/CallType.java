@@ -3,6 +3,7 @@ package com.cisco.dhruva.application.calltype;
 import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
 import com.cisco.dhruva.application.errormapping.Mappings;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.service.MetricService;
@@ -44,6 +45,8 @@ public interface CallType {
 
   ErrorMappingPolicy getErrorMappingPolicy();
 
+  Maintenance getMaintenance();
+
   static MetricService getMetricService() {
     return SpringApplicationContext.getAppContext() == null
         ? null
@@ -68,56 +71,59 @@ public interface CallType {
     checks.add("ingress key lookup", ingress);
     checks.add("egress key lookup", egress);
     proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_TRUNK_PROCESS_REQUEST, checks);
-    trunkManager.handleIngress(getIngressTrunk(), proxySIPRequest, ingress, getNormalization());
-    trunkManager
-        .handleEgress(getEgressTrunk(), proxySIPRequest, egress, getNormalization())
-        .doFinally(
-            (signalType) -> {
-              // Emit latency metric for non mid-dialog requests
-              Logger.logger.info(
-                  "dhruva message record {}",
-                  proxySIPRequest.getAppRecord() == null
-                      ? "None"
-                      : proxySIPRequest.getAppRecord().toString());
-              proxySIPRequest.handleProxyEvent(
-                  getMetricService(),
-                  SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
-            })
-        .map(this.getResponseMapper())
-        .subscribe(
-            proxySIPResponse -> {
-              Logger.logger.debug(
-                  "Received response, callid:{} statusCode:{}",
-                  proxySIPResponse.getCallId(),
-                  proxySIPResponse.getStatusCode());
 
-              proxySIPResponse.setCallTypeName(this.getClass().getSimpleName());
-              handleTrunkMetric(
-                  ingress, proxySIPResponse.getStatusCode(), proxySIPResponse.getCallId());
-              proxySIPResponse.proxy();
-            },
-            err -> {
-              Logger.logger.error(
-                  "exception while sending the request with callId:{}",
-                  proxySIPRequest.getCallId(),
-                  err);
-              Utilities.Checks failureChecks = new Utilities.Checks();
-              checks.add("call type handle egress", err.getMessage());
-              proxySIPRequest
-                  .getAppRecord()
-                  .add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, failureChecks);
-              int errorResponse;
-              if (err instanceof DhruvaRuntimeException) {
-                proxySIPRequest.reject(
-                    ((DhruvaRuntimeException) err).getErrCode().getResponseCode(),
-                    err.getMessage());
-                errorResponse = ((DhruvaRuntimeException) err).getErrCode().getResponseCode();
-              } else {
-                proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, err.getMessage());
-                errorResponse = Response.SERVER_INTERNAL_ERROR;
-              }
-              handleTrunkMetric(ingress, errorResponse, proxySIPRequest.getCallId());
-            });
+    ProxySIPRequest proxyRequest =
+        trunkManager.handleIngress(
+            getMaintenance(), getIngressTrunk(), proxySIPRequest, ingress, getNormalization());
+    if (proxyRequest != null) {
+      trunkManager
+          .handleEgress(getEgressTrunk(), proxySIPRequest, egress, getNormalization())
+          .doFinally(
+              (signalType) -> {
+                // Emit latency metric for non mid-dialog requests
+                Logger.logger.info(
+                    "dhruva message record {}",
+                    proxySIPRequest.getAppRecord() == null
+                        ? "None"
+                        : proxySIPRequest.getAppRecord().toString());
+                proxySIPRequest.handleProxyEvent(
+                    getMetricService(),
+                    SipMetricsContext.State.proxyNewRequestFinalResponseProcessed);
+              })
+          .map(this.getResponseMapper())
+          .subscribe(
+              proxySIPResponse -> {
+                Logger.logger.debug(
+                    "Received response, callid:{} statusCode:{}",
+                    proxySIPResponse.getCallId(),
+                    proxySIPResponse.getStatusCode());
+
+                proxySIPResponse.setCallTypeName(this.getClass().getSimpleName());
+                handleTrunkMetric(
+                    ingress, proxySIPResponse.getStatusCode(), proxySIPResponse.getCallId());
+                proxySIPResponse.proxy();
+              },
+              err -> {
+                Logger.logger.error(
+                    "exception while sending the request with callId:{}",
+                    proxySIPRequest.getCallId(),
+                    err);
+                Utilities.Checks failureChecks = new Utilities.Checks();
+                checks.add("call type handle egress", err.getMessage());
+                proxySIPRequest
+                    .getAppRecord()
+                    .add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, failureChecks);
+                int errorResponse;
+                if (err instanceof DhruvaRuntimeException) {
+                  errorResponse = ((DhruvaRuntimeException) err).getErrCode().getResponseCode();
+                  proxySIPRequest.reject(errorResponse, err.getMessage());
+                } else {
+                  errorResponse = Response.SERVER_INTERNAL_ERROR;
+                  proxySIPRequest.reject(errorResponse, err.getMessage());
+                }
+                handleTrunkMetric(ingress, errorResponse, proxySIPRequest.getCallId());
+              });
+    }
   }
 
   default void incrementCPSCounter(ProxySIPRequest proxySIPRequest) {

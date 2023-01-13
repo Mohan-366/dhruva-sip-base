@@ -11,6 +11,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @Setter
 public class Ingress {
   private String name;
+  private String maintenancePolicy;
 
   @Override
   public boolean equals(Object a) {

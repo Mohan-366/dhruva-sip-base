@@ -8,6 +8,7 @@ import com.cisco.dhruva.application.exceptions.FilterTreeException;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.log.event.*;
 import com.cisco.dsb.proxy.ProxyService;
@@ -40,6 +41,8 @@ public class DhruvaCallingApp {
   private CallingAppRateLimiterConfigurator callingAppRateLimiterConfigurator;
   private CallingAppConfigurationProperty callingAppConfigurationProperty;
   private MetricService metricService;
+  private Supplier<Maintenance> maintenance =
+      () -> callingAppConfigurationProperty.getMaintenance();
   @Autowired private ApplicationContext appContext;
 
   @Autowired
@@ -70,7 +73,7 @@ public class DhruvaCallingApp {
               ._4xx(true)
               ._5xx(true)
               ._6xx(true)
-              .isMaintenanceEnabled(isMaintenance)
+              .maintenance(maintenance)
               .midDialog(true)
               .requestConsumer(getRequestConsumer())
               .strayResponseNormalizer(doStrayResponseNormalization())
@@ -109,13 +112,6 @@ public class DhruvaCallingApp {
       eventingService.register(interestedEvents);
     }
   }
-
-  private Supplier<Boolean> isMaintenance =
-      () -> callingAppConfigurationProperty.getMaintenance().isEnabled();
-  private Supplier<Integer> getResponse =
-      () -> callingAppConfigurationProperty.getMaintenance().getResponseCode();
-  private Supplier<String> getDescripton =
-      () -> callingAppConfigurationProperty.getMaintenance().getDescription();
 
   private Consumer<ProxySIPRequest> getRequestConsumer() {
     return proxySIPRequest -> {

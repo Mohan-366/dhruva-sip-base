@@ -1,6 +1,7 @@
 package com.cisco.dhruva.application;
 
 import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.ratelimiter.PolicyNetworkAssociation;
 import com.cisco.dsb.common.ratelimiter.RateLimitPolicy;
 import java.util.*;
@@ -33,8 +34,7 @@ public class CallingAppConfigurationProperty {
   // metric emitting interval config
   @Getter @Setter private int rateLimiterMetricPerInterval = 120;
 
-  @NotBlank @Getter @Setter
-  private Maintenance maintenance = Maintenance.MaintenanceBuilder().build();
+  @Getter @Setter private Maintenance maintenance = Maintenance.MaintenanceBuilder().build();
 
   @Getter private List<RateLimitPolicy> rateLimitPolicyList = new ArrayList<>();
   @Getter private Map<String, PolicyNetworkAssociation> rateLimiterNetworkMap = new HashMap<>();

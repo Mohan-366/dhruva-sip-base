@@ -5,6 +5,7 @@ import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
 import com.cisco.dhruva.application.errormapping.Mappings;
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BToPSTNNorm;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.TrunkManager;
@@ -88,6 +89,11 @@ public class DialOutB2B implements CallType {
   @Override
   public ErrorMappingPolicy getErrorMappingPolicy() {
     return this.errorMappingPolicy;
+  }
+
+  @Override
+  public Maintenance getMaintenance() {
+    return configurationProperty.getMaintenance();
   }
 
   @PostConstruct

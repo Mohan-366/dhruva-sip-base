@@ -285,7 +285,8 @@ public class OptionsPingMonitorTest {
             .setMaxForwards(50)
             .build();
     server1.setOptionsPingPolicyFromConfig(opPolicy);
-    ServerGroup single = ServerGroup.builder()
+    ServerGroup single =
+        ServerGroup.builder()
             .setName("single")
             .setHostName("single")
             .setNetworkName(network.getName())
@@ -296,7 +297,7 @@ public class OptionsPingMonitorTest {
     single.setOptionsPingPolicyFromConfig(opPolicy);
     map = new HashMap<>();
     map.put(server1.getName(), server1);
-    map.put(single.getName(),single);
+    map.put(single.getName(), single);
     ServerGroup server2 =
         ServerGroup.builder()
             .setName("sg2")
@@ -305,7 +306,6 @@ public class OptionsPingMonitorTest {
             .build();
     // adding one SG without elements. This one must not be considered by OPTIONS ping module.
     map.put(server2.getName(), server2);
-
   }
 
   @BeforeMethod
@@ -1104,21 +1104,24 @@ public class OptionsPingMonitorTest {
     4 -> element is DOWN
     5 -> element is UP
      */
-    doAnswer(invocationOnMock -> {
-      switch (state.getAndIncrement()){
-        case 0:
-        case 1:
-        case 4:
-          response.setStatusCode(200);
-          break;
-        case 2:
-        case 3:
-          response.setStatusCode(503);
-          break;
-      }
-      timeStamp.add(System.currentTimeMillis());
-      return responseCF;
-    }).when(optionsPingTransaction).proxySendOutBoundRequest(any(),any(),any());
+    doAnswer(
+            invocationOnMock -> {
+              switch (state.getAndIncrement()) {
+                case 0:
+                case 1:
+                case 4:
+                  response.setStatusCode(200);
+                  break;
+                case 2:
+                case 3:
+                  response.setStatusCode(503);
+                  break;
+              }
+              timeStamp.add(System.currentTimeMillis());
+              return responseCF;
+            })
+        .when(optionsPingTransaction)
+        .proxySendOutBoundRequest(any(), any(), any());
     optionsPingMonitor.serverGroupStatus.putIfAbsent(sg.getHostName(), true);
     optionsPingMonitor.metricsService.getSgStatusMap().put(sg.getName(), true);
     optionsPingMonitor.pingPipeLine(sg);
@@ -1131,16 +1134,20 @@ public class OptionsPingMonitorTest {
     long downTransition = timeStamp.get(3) - timeStamp.get(2);
     long downInterval = timeStamp.get(4) - timeStamp.get(3);
     long upTransition = timeStamp.get(5) - timeStamp.get(4);
-    System.out.printf("UpInterval actual = %d,expected = %d\n",upInterval,opPolicy.getUpTimeInterval());
-    System.out.printf("UpInterval transition actual = %d,expected = less than ~%d\n",upTransition,opPolicy.getUpTimeInterval());
-    System.out.printf("DownInterval actual = %d,expected = %d\n",downInterval,opPolicy.getDownTimeInterval());
-    System.out.printf("DownInterval transition actual = %d,expected = less than ~%d\n",downTransition,opPolicy.getDownTimeInterval());
+    System.out.printf(
+        "UpInterval actual = %d,expected = %d\n", upInterval, opPolicy.getUpTimeInterval());
+    System.out.printf(
+        "UpInterval transition actual = %d,expected = less than ~%d\n",
+        upTransition, opPolicy.getUpTimeInterval());
+    System.out.printf(
+        "DownInterval actual = %d,expected = %d\n", downInterval, opPolicy.getDownTimeInterval());
+    System.out.printf(
+        "DownInterval transition actual = %d,expected = less than ~%d\n",
+        downTransition, opPolicy.getDownTimeInterval());
 
-    assertTrue(upInterval-opPolicy.getUpTimeInterval() < 100);
-    assertTrue(downInterval - opPolicy.getDownTimeInterval() < 100 );
+    assertTrue(upInterval - opPolicy.getUpTimeInterval() < 100);
+    assertTrue(downInterval - opPolicy.getDownTimeInterval() < 100);
     assertTrue(upTransition - opPolicy.getUpTimeInterval() < 100);
     assertTrue(downTransition - opPolicy.getDownTimeInterval() < 100);
-
-
   }
 }

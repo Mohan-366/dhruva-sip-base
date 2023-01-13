@@ -1,10 +1,13 @@
 package com.cisco.dhruva.application;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dhruva.application.calltype.DialInPSTN;
 import com.cisco.dhruva.application.errormapping.ErrorMappingPolicy;
 import com.cisco.dhruva.application.errormapping.Mappings;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +26,8 @@ public class CallingAppConfigurationPropertyTest {
 
   Map<String, CallTypeConfigProperties> callTypesPropertiesMap = new HashMap<>();
   Map<String, ErrorMappingPolicy> errorMappingPolicyMap = new HashMap<>();
+  Map<String, CallTypeConfig> callTypesMap = new HashMap<>();
 
-  Map<String, CallTypeConfig> callTypeConfigMap = new HashMap<>();
   ErrorMappingPolicy errorMappingPolicy = new ErrorMappingPolicy();
   List<Integer> errorCodes1 = new ArrayList<>();
   List<Integer> errorCodes2 = new ArrayList<>();
@@ -58,7 +61,7 @@ public class CallingAppConfigurationPropertyTest {
     callTypeConfigProperties.setErrorMappingPolicy(errorMappingPolicy.getName());
 
     callTypesPropertiesMap.put("dialInPSTN", callTypeConfigProperties);
-    callTypeConfigMap.put(
+    callTypesMap.put(
         DialInPSTN.getCallTypeNameStr(), new CallTypeConfig("abc", errorMappingPolicy));
   }
 
@@ -81,6 +84,12 @@ public class CallingAppConfigurationPropertyTest {
     assertEquals(networkPSTN, configurationProperty.getNetworkPSTN());
     assertEquals(networkB2B, configurationProperty.getNetworkB2B());
     assertEquals(pstnIngress, configurationProperty.getPstnIngress());
+
+    // verify default maintenance mode config and set config
+    Maintenance maintenance = configurationProperty.getMaintenance();
+    assertFalse(maintenance.isEnabled());
+    maintenance.setEnabled(true);
+    assertTrue(maintenance.isEnabled());
 
     // Validate CallType configs
     Assert.notNull(

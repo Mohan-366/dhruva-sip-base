@@ -10,6 +10,7 @@ import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
 import com.cisco.dsb.common.loadbalancer.LoadBalancer;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.servergroup.*;
@@ -20,6 +21,9 @@ import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
 import com.cisco.dsb.proxy.ProxyState;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
+import com.cisco.dsb.trunk.MaintenanceMode;
+import com.cisco.dsb.trunk.MaintenanceModeImpl;
+import com.cisco.dsb.trunk.TrunkConfigurationProperties;
 import com.cisco.dsb.trunk.util.RedirectionSet;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import com.cisco.wx2.util.Utilities;
@@ -33,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -112,8 +117,17 @@ public abstract class AbstractTrunk implements LoadBalancable {
     return egress.getLbType();
   }
 
+  public BiFunction<Maintenance, TrunkConfigurationProperties, MaintenanceMode>
+      getMaintenanceMode() {
+    return (maintenance, configurationProperties) ->
+        MaintenanceModeImpl.getInstance(maintenance, configurationProperties, this);
+  }
+
   public abstract ProxySIPRequest processIngress(
-      ProxySIPRequest proxySIPRequest, Normalization normalization);
+      ProxySIPRequest proxySIPRequest,
+      Normalization normalization,
+      Maintenance maintenance,
+      TrunkConfigurationProperties configurationProperties);
 
   public abstract Mono<ProxySIPResponse> processEgress(
       ProxySIPRequest proxySIPRequest, Normalization normalization);

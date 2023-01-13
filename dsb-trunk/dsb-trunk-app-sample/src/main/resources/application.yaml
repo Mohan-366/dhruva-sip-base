@@ -54,6 +54,8 @@ trunk:
   DEFAULT:
     Default:
       name: Default
+      ingress:
+        name: default
       egress:
         routePolicy: p1
         lbType: weight

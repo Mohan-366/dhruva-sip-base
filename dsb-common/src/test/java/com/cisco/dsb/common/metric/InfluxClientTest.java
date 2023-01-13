@@ -53,7 +53,7 @@ public class InfluxClientTest {
             invocation -> {
               Object arg0 = invocation.getArgument(0);
               // ((Metric) arg0).get()
-              Assert.assertEquals(testMetric1.get(), ((InfluxPoint) ((Metric) arg0).get()));
+              Assert.assertEquals(testMetric1.get(), ((Metric) arg0).get());
               return null;
             })
         .when(influxClientMock)
@@ -112,8 +112,7 @@ public class InfluxClientTest {
     Assert.assertNotNull(receivedMetric);
     Assert.assertEquals(receivedMetric.getTag("serviceName"), "dhruva-dev");
     // equals check for all the fields/tags of metric emitted
-    Assert.assertEquals(
-        receivedMetric.getMeasurement(), ((InfluxMetric) testMetric1).measurement());
+    Assert.assertEquals(receivedMetric.getMeasurement(), testMetric1.measurement());
   }
 
   @Test(description = "test case for checking multiple influxpoints")

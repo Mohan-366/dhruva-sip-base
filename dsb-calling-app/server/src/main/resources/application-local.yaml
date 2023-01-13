@@ -9,7 +9,6 @@ app:
   maintenance:
     enabled: false
     description: "DSB is in maintenance"
-    responseCode: 503
   errorMappingPolicy:
     antaresErrorPolicy:
       name: &antaresErrorPolicy antaresErrorPolicy
@@ -50,6 +49,16 @@ app:
       networks: [*netsp]
 
 common:
+  maintenancePolicy:
+    mPolicy1:
+      name: &mPolicy1 mPolicy1
+      dropMsgTypes: [ 'OPTIONS' ]
+    mPolicy2:
+      name: &mPolicy2 mPolicy2
+      responseCode: 400
+    globalPolicy:
+      name: &globalPolicy global
+      responseCode: 503
   listenPoints:
     - name: *netsp
       port: 5060
@@ -207,6 +216,7 @@ trunk:
       name: NS
       ingress:
         name: ns_ig
+        maintenancePolicy: *mPolicy1
       egress:
         routePolicy: policy1
         lbType: ONCE

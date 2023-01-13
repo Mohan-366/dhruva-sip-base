@@ -3,6 +3,7 @@ package com.cisco.dsb.trunk;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.normalization.Normalization;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.connectivity.monitor.service.OptionsPingController;
@@ -109,7 +110,11 @@ public class TrunkManager {
   }
 
   public ProxySIPRequest handleIngress(
-      TrunkType type, ProxySIPRequest proxySIPRequest, String key, Normalization normalization) {
+      Maintenance maintenanceConfig,
+      TrunkType type,
+      ProxySIPRequest proxySIPRequest,
+      String key,
+      Normalization normalization) {
 
     AbstractTrunk trunk =
         this.registry
@@ -120,7 +125,11 @@ public class TrunkManager {
             .get(key);
     if (trunk == null)
       throw new DhruvaRuntimeException("Key \"" + key + "\" does not match trunk of type " + type);
-    return trunk.processIngress(proxySIPRequest, normalization);
+
+    logger.info("Chosen trunk ingress is: " + trunk.getName());
+
+    return trunk.processIngress(
+        proxySIPRequest, normalization, maintenanceConfig, configurationProperties);
   }
 
   public Mono<ProxySIPResponse> handleEgress(

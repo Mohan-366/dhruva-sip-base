@@ -3,6 +3,7 @@ package com.cisco.dsb.common.config.sip;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.dto.TrustedSipSources;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.maintanence.MaintenancePolicy;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -121,6 +122,8 @@ public class CommonConfigurationProperties {
 
   @Getter private Map<String, OptionsPingPolicy> optionsPingPolicyMap = new HashMap<>();
 
+  @Getter private Map<String, MaintenancePolicy> maintenancePolicyMap = new HashMap<>();
+
   // initial delay for triggering custom check for /ping once server is running
   @Getter @Setter private long customMonitorPingInitialDelayInSec = 30L;
   // time on which custom health checks will be evaluated periodically
@@ -193,7 +196,6 @@ public class CommonConfigurationProperties {
   }
 
   public void setServerGroups(Map<String, ServerGroup> serverGroups) {
-
     // update SG map
     updateMap(this.serverGroups, serverGroups);
     this.serverGroups
@@ -216,6 +218,11 @@ public class CommonConfigurationProperties {
                                 + "\" not found");
                       });
             });
+  }
+
+  public void setMaintenancePolicy(Map<String, MaintenancePolicy> maintenancePolicyMap) {
+    logger.info("Configuring maintenance policies");
+    this.maintenancePolicyMap = maintenancePolicyMap;
   }
 
   private void updateTransport(ServerGroup sg, Transport transport) {

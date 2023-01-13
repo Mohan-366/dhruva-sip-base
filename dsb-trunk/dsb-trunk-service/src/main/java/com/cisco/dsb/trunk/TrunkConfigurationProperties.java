@@ -4,6 +4,7 @@ import com.cisco.dsb.common.circuitbreaker.DsbCircuitBreaker;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.maintanence.MaintenancePolicy;
 import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -26,7 +27,7 @@ import org.springframework.stereotype.Component;
 @RefreshScope
 @CustomLog
 public class TrunkConfigurationProperties {
-  private CommonConfigurationProperties commonConfigurationProperties;
+  @Getter private CommonConfigurationProperties commonConfigurationProperties;
   private DnsServerGroupUtil dnsServerGroupUtil;
   @Getter private OptionsPingController optionsPingController;
   private DsbCircuitBreaker dsbCircuitBreaker;
@@ -60,27 +61,43 @@ public class TrunkConfigurationProperties {
   @Getter private Map<String, DefaultTrunk> defaultTrunkMap = new HashMap<>();
   @Getter private Map<String, Collection<ServerGroup>> trunkServerGroupHashMap = new HashMap<>();
   @Getter private Map<ServerGroup, Set<String>> serverToTrunkMap = new HashMap<>();
+  @Getter private Map<String, MaintenancePolicy> trunkToMaintenancePolicyMap = new HashMap<>();
+
+  private void configureTrunkToMaintenancePolicyMap(String trunkName, AbstractTrunk trunk) {
+    if (Objects.nonNull(trunk.getIngress())
+        && Objects.nonNull(trunk.getIngress().getMaintenancePolicy())) {
+      trunkToMaintenancePolicyMap.put(
+          trunkName,
+          commonConfigurationProperties
+              .getMaintenancePolicyMap()
+              .get(trunk.getIngress().getMaintenancePolicy()));
+    }
+  }
 
   public void setPSTN(Map<String, PSTNTrunk> pstnTrunkMap) {
     updateMap(this.pstnTrunkMap, pstnTrunkMap);
     this.pstnTrunkMap.values().forEach(this::createSGFromConfig);
     this.pstnTrunkMap.put(
         SipParamConstants.DEFAULT_DTG_VALUE_FOR_MIDCALL, getDefaultPSTNTrunkForMidCall());
+    this.pstnTrunkMap.forEach(this::configureTrunkToMaintenancePolicyMap);
   }
 
   public void setB2B(Map<String, B2BTrunk> b2BTrunkMap) {
     updateMap(this.b2BTrunkMap, createChildTrunksForB2B(b2BTrunkMap));
     this.b2BTrunkMap.values().forEach(this::createSGFromConfig);
+    this.b2BTrunkMap.forEach(this::configureTrunkToMaintenancePolicyMap);
   }
 
   public void setCallingCore(Map<String, CallingTrunk> callingTrunkMap) {
     updateMap(this.callingTrunkMap, callingTrunkMap);
     this.callingTrunkMap.values().forEach(this::createSGFromConfig);
+    this.callingTrunkMap.forEach(this::configureTrunkToMaintenancePolicyMap);
   }
 
   public void setDefault(Map<String, DefaultTrunk> defaultTrunkMap) {
     updateMap(this.defaultTrunkMap, defaultTrunkMap);
     this.defaultTrunkMap.values().forEach(this::createSGFromConfig);
+    this.defaultTrunkMap.forEach(this::configureTrunkToMaintenancePolicyMap);
   }
 
   private void createSGFromConfig(AbstractTrunk trunk) {
@@ -147,9 +164,8 @@ public class TrunkConfigurationProperties {
           serverGroup
               .getElements()
               .forEach(
-                  serverGroupElement -> {
-                    serverGroupElements.put(serverGroupElement.toUniqueElementString(), 0l);
-                  });
+                  serverGroupElement ->
+                      serverGroupElements.put(serverGroupElement.toUniqueElementString(), 0L));
         });
     return serverGroupElements;
   }
@@ -161,7 +177,6 @@ public class TrunkConfigurationProperties {
     egress.setSelector(defaultDtgMap);
     Ingress ingress = new Ingress();
     ingress.setName("default-midcall-ingress");
-    PSTNTrunk defaultPSTNTrunk = new PSTNTrunk("default-midcall-egress", ingress, egress, false);
-    return defaultPSTNTrunk;
+    return new PSTNTrunk("default-midcall-egress", ingress, egress, false);
   }
 }

@@ -4,7 +4,8 @@ import static org.testng.Assert.*;
 
 import org.testng.annotations.Test;
 
-public class AppConfigTest {
+public class ProxyAppConfigTest {
+
   ProxyAppConfig appConfig = ProxyAppConfig.builder()._2xx(true).build();
 
   @Test(description = "test to getInterest for 2xx when true")

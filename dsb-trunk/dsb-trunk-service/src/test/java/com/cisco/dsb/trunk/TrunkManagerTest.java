@@ -39,7 +39,6 @@ import reactor.test.StepVerifier;
 public class TrunkManagerTest {
   @Mock TrunkConfigurationProperties trunkConfigurationProperties;
   @Mock DhruvaExecutorService dhruvaExecutorService;
-
   @Mock Executor executorService;
   OptionsPingController optionsPingController;
   TrunkManager trunkManager;
@@ -81,15 +80,13 @@ public class TrunkManagerTest {
 
     Map<String, String> selector = new HashMap<>();
     selector.put("dtg", "provider1");
+    Egress egress = mock(Egress.class);
+    when(pstnTrunkMap.get("provider1").getEgress()).thenReturn(egress);
+    when(pstnTrunkMap.get("provider1").getEgress().getSelector()).thenReturn(selector);
 
     Map<String, String> selector1 = new HashMap<>();
     selector1.put("dtg", "provider2");
-    Egress egress = mock(Egress.class);
-    when(pstnTrunkMap.get("provider1").getEgress()).thenReturn(egress);
-
-    when(pstnTrunkMap.get("provider1").getEgress().getSelector()).thenReturn(selector);
     Egress egress1 = mock(Egress.class);
-
     when(pstnTrunkMap.get("provider2").getEgress()).thenReturn(egress1);
     when(pstnTrunkMap.get("provider2").getEgress().getSelector()).thenReturn(selector1);
 
@@ -142,10 +139,7 @@ public class TrunkManagerTest {
         .processEgress(proxySIPRequest, normalization);
 
     StepVerifier.create(trunkManager.handleEgress(type, proxySIPRequest, key, normalization))
-        .assertNext(
-            proxySIPResponse1 -> {
-              assertEquals(proxySIPResponse1, proxySIPResponse);
-            })
+        .assertNext(proxySIPResponse1 -> assertEquals(proxySIPResponse1, proxySIPResponse))
         .verifyComplete();
     // Test, handle egress for Trunk type not found
     StepVerifier.create(
@@ -172,15 +166,15 @@ public class TrunkManagerTest {
       dataProvider = "trunkType",
       expectedExceptions = DhruvaRuntimeException.class)
   public void testIngress1(TrunkType type, String key, Map<String, AbstractTrunk> trunkMap) {
-
     // Test handle ingress, trunk type and key present
     doAnswer(invocationOnMock -> proxySIPRequest)
         .when(trunkMap.get(key))
-        .processIngress(proxySIPRequest, normalization);
+        .processIngress(proxySIPRequest, normalization, null, trunkConfigurationProperties);
     assertEquals(
-        trunkManager.handleIngress(type, proxySIPRequest, key, normalization), proxySIPRequest);
+        trunkManager.handleIngress(null, type, proxySIPRequest, key, normalization),
+        proxySIPRequest);
     // Test, handle ingress for Trunk type not found
-    trunkManager.handleIngress(TrunkType.NOT_FOUND, proxySIPRequest, key, normalization);
+    trunkManager.handleIngress(null, TrunkType.NOT_FOUND, proxySIPRequest, key, normalization);
   }
 
   @Test(
@@ -188,7 +182,8 @@ public class TrunkManagerTest {
       dependsOnMethods = "testIngress1",
       expectedExceptions = DhruvaRuntimeException.class)
   public void testIngress2() {
-    trunkManager.handleIngress(TrunkType.PSTN, proxySIPRequest, "key_not_present", normalization);
+    trunkManager.handleIngress(
+        null, TrunkType.PSTN, proxySIPRequest, "key_not_present", normalization);
   }
 
   @Test

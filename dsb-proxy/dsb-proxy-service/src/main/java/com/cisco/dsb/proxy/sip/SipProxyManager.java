@@ -95,9 +95,7 @@ public class SipProxyManager {
           logger.info(
               "No server transaction exist. Creating new one for {} msg", request.getMethod());
           serverTransaction = sipProvider.getNewServerTransaction(request);
-          if (isStateSuspended(proxyAppConfig, request, sipProvider, serverTransaction))
-            return null;
-
+          logger.debug("Server transaction created");
         } catch (TransactionAlreadyExistsException ex) {
           logger.error(
               "Server Transaction Already exists, dropping the message as it's retransmission", ex);
@@ -108,46 +106,13 @@ public class SipProxyManager {
             throw new DhruvaRuntimeException(ErrorCode.TRANSACTION_ERROR, ex.getMessage(), ex);
         }
       }
-      logger.info("Server transaction created");
 
-      sendProvisionalResponse().apply(request, serverTransaction, sipProvider);
+      if (!proxyAppConfig.getMaintenance().get().isEnabled()) {
+        sendProvisionalResponse().apply(request, serverTransaction, sipProvider);
+      }
 
       return createProxySipRequest().apply(request, serverTransaction, sipProvider);
     };
-  }
-
-  /*
-  * Not applicable for mid-calls
-  * Applicable only for FRESH Invite, Options
-      if maintenance is enabled, we send 503 / specified response code back to the client and return true
-        else return false
-   */
-  public boolean isStateSuspended(
-      ProxyAppConfig proxyAppConfig,
-      Request request,
-      SipProvider sipProvider,
-      ServerTransaction serverTransaction) {
-
-    if (SipUtils.isMidDialogRequest((SIPRequest) request)) {
-      return false;
-    }
-    String requestType = request.getMethod();
-    if (proxyAppConfig.getIsMaintenanceEnabled().get()
-        && (requestType.equals(Request.OPTIONS) || requestType.equals(Request.INVITE))) {
-      try {
-        ProxySendMessage.sendResponse(
-            Response.SERVICE_UNAVAILABLE,
-            "",
-            sipProvider,
-            serverTransaction,
-            (SIPRequest) request,
-            "Dhruva in maintainence");
-        return true;
-      } catch (DhruvaException e) {
-        logger.error("Error while sending response when dsb is in suspend state ", e);
-      }
-    }
-    return false;
   }
 
   /** Sends 100 Trying provisional response */
@@ -441,14 +406,15 @@ public class SipProxyManager {
       }
       Optional<SipProvider> sipProvider =
           DhruvaNetwork.getProviderFromNetwork(msgApplicationData.getOutboundNetwork());
-      if (!sipProvider.isPresent()) {
+      if (sipProvider.isEmpty()) {
         logger.error(
             "Outbound network present in RR does not match any ListenIf, dropping stray response");
         return;
       }
 
       if (proxyAppConfig != null) {
-        Consumer strayResponseNormalization = proxyAppConfig.getStrayResponseNormalizer();
+        Consumer<SIPResponse> strayResponseNormalization =
+            proxyAppConfig.getStrayResponseNormalizer();
         if (strayResponseNormalization != null) {
           logger.debug("Applying stray response normalization");
           proxyAppConfig.getStrayResponseNormalizer().accept(response);

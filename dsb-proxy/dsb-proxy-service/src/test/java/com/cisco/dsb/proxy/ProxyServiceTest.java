@@ -7,6 +7,7 @@ import com.cisco.dsb.common.config.DhruvaConfig;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -91,9 +92,7 @@ public class ProxyServiceTest {
   SIPListenPoint tlsListenPoint4;
   List<SIPListenPoint> sipListenPointList;
 
-  private String keystorePath;
-
-  public ProxyServiceTest() throws Exception {}
+  public ProxyServiceTest() {}
 
   @BeforeClass
   public void setup() throws Exception {
@@ -108,7 +107,8 @@ public class ProxyServiceTest {
     when(commonConfigurationProperties.getReliableKeepAlivePeriod()).thenReturn("25");
     when(commonConfigurationProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
 
-    keystorePath = ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
+    String keystorePath =
+        ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
     when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
     when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
     when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
@@ -238,14 +238,12 @@ public class ProxyServiceTest {
     SIPRequest request = (SIPRequest) RequestHelper.getInviteRequest();
     ExecutionContext context = new ExecutionContext();
 
-    Supplier<Boolean> t = () -> false;
+    Supplier<Maintenance> suspend = () -> Maintenance.MaintenanceBuilder().build();
     ProxyAppConfig proxyAppConfig = mock(ProxyAppConfig.class);
-    when(proxyAppConfig.getIsMaintenanceEnabled()).thenReturn(t);
+    when(proxyAppConfig.getMaintenance()).thenReturn(suspend);
 
     Consumer<ProxySIPRequest> requestConsumer =
-        proxySIPRequest -> {
-          Assert.assertEquals(proxySIPRequest.getRequest(), request);
-        };
+        proxySIPRequest -> Assert.assertEquals(proxySIPRequest.getRequest(), request);
 
     Optional<SipStack> optionalSipStack1 = proxyService.getSipStack(udpListenPoint1.getName());
     Optional<SipStack> optionalSipStack2 = proxyService.getSipStack(udpListenPoint2.getName());
@@ -263,18 +261,6 @@ public class ProxyServiceTest {
         proxyService.getSipProvider(sipStack1, udpListenPoint1);
     SipProvider sipProvider1 =
         optionalSipProvider1.orElseThrow(() -> new RuntimeException("sip provider 1 is not set"));
-
-    Optional<SipProvider> optionalSipProvider2 =
-        proxyService.getSipProvider(sipStack2, udpListenPoint2);
-
-    Optional<SipProvider> optionalSipProvider3 =
-        proxyService.getSipProvider(sipStack3, tcpListenPoint3);
-    SipProvider sipProvider3 =
-        optionalSipProvider3.orElseThrow(() -> new RuntimeException("sip provider 3 is not set"));
-    Optional<SipProvider> optionalSipProvider4 =
-        proxyService.getSipProvider(sipStack4, tlsListenPoint4);
-    SipProvider sipProvider4 =
-        optionalSipProvider4.orElseThrow(() -> new RuntimeException("sip provider 4 is not set"));
 
     ProxySIPRequest proxySIPRequest =
         DhruvaSipRequestMessage.newBuilder()
@@ -321,10 +307,7 @@ public class ProxyServiceTest {
     when(sipProxyManager.proxyAppController(any(boolean.class))).thenReturn(function4);
 
     StepVerifier.create(proxyService.requestPipeline(Mono.just(requestEvent1)))
-        .assertNext(
-            proxyRequest -> {
-              Assert.assertEquals(proxyRequest.getRequest(), request);
-            })
+        .assertNext(proxyRequest -> Assert.assertEquals(proxyRequest.getRequest(), request))
         .verifyComplete();
   }
 
@@ -332,9 +315,7 @@ public class ProxyServiceTest {
   public void testTimeoutPipeline() {
 
     Consumer<ProxySIPRequest> requestConsumer =
-        proxySIPRequest -> {
-          System.out.println("got request from proxy layer");
-        };
+        proxySIPRequest -> System.out.println("got request from proxy layer");
 
     ProxySIPResponse proxySIPResponse = mock(ProxySIPResponse.class);
     TimeoutEvent timeoutEvent = mock(TimeoutEvent.class);
@@ -346,10 +327,7 @@ public class ProxyServiceTest {
     when(sipProxyManager.handleProxyTimeoutEvent()).thenReturn(function1);
 
     StepVerifier.create(proxyService.timeOutPipeline(Mono.just(timeoutEvent)))
-        .assertNext(
-            proxyResponse -> {
-              Assert.assertEquals(proxyResponse, proxySIPResponse);
-            })
+        .assertNext(proxyResponse -> Assert.assertEquals(proxyResponse, proxySIPResponse))
         .verifyComplete();
   }
 }

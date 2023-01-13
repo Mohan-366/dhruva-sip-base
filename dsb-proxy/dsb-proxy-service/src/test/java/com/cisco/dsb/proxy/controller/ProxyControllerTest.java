@@ -11,6 +11,7 @@ import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -46,6 +47,7 @@ import java.text.ParseException;
 import java.util.Collections;
 import java.util.ListIterator;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 import javax.sip.*;
 import javax.sip.address.Hop;
 import javax.sip.address.Router;
@@ -1148,7 +1150,6 @@ public class ProxyControllerTest {
       throws SipException, InvalidArgumentException {
 
     ServerTransaction st = mock(ServerTransaction.class);
-    ProxyTransaction pt = mock(ProxyTransaction.class);
     SIPProxy sipProxy = mock(SIPProxy.class);
 
     ProxySIPRequest proxySIPRequest =
@@ -1294,14 +1295,16 @@ public class ProxyControllerTest {
     verify(responseCF, times(1)).complete(proxySIPResponse);
   }
 
-  @Test(description = "An incoming OPTIONS request to the proxy must be responded with a 200 OK")
+  @Test(
+      description =
+          "1. An incoming OPTIONS request to the proxy must be responded with a 200 OK (when not in maintenance mode)"
+              + "2. During maintenance mode, no 200 OK for OPTIONS -> the msg is processed at the application level (trunk based maintenance policy applied)")
   public void testOptionsHandling() throws SipException, InvalidArgumentException {
 
     ServerTransaction st = mock(ServerTransaction.class);
 
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.OPTIONS, st);
-    System.out.println("SIP Request :  " + proxySIPRequest.getRequest());
     ProxyController proxyController = getProxyController(proxySIPRequest);
 
     String allowedMethods =
@@ -1323,17 +1326,23 @@ public class ProxyControllerTest {
 
     SupportedExtensions.addExtension("feature1");
 
+    /// maintenance mode - enabled
+    Supplier<Maintenance> maintenanceSupplier =
+        () -> Maintenance.MaintenanceBuilder().setEnabled(true).build();
+    when(proxyAppConfig.getMaintenance()).thenReturn(maintenanceSupplier);
+    Assert.assertEquals(proxyController.handleRequest().apply(proxySIPRequest), proxySIPRequest);
+    verify(st, times(0)).sendResponse(any(Response.class));
+
+    // maintenance mode - not enabled
+    maintenanceSupplier = () -> Maintenance.MaintenanceBuilder().setEnabled(false).build();
+    when(proxyAppConfig.getMaintenance()).thenReturn(maintenanceSupplier);
     when(proxyConfigurationProperties.getAllowedMethods()).thenReturn(allowedMethods);
-
-    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
-
     doNothing().when(st).sendResponse(any(Response.class));
 
+    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
     Assert.assertNull(proxyController.handleRequest().apply(proxySIPRequest));
-
     verify(st).sendResponse(captor.capture());
     Response response = captor.getValue();
-    System.out.println("Response: " + response);
     Assert.assertEquals(response.getStatusCode(), 200);
     Assert.assertEquals(response.getReasonPhrase(), "OK");
     Assert.assertEquals(

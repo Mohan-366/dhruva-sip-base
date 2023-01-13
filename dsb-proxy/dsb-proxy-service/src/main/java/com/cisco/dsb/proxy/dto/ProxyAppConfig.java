@@ -1,5 +1,6 @@
 package com.cisco.dsb.proxy.dto;
 
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.util.Objects;
@@ -12,9 +13,7 @@ import lombok.Getter;
 @Getter
 public class ProxyAppConfig {
   Consumer<ProxySIPRequest> requestConsumer;
-  Supplier<Boolean> isMaintenanceEnabled;
-  Supplier<String> description;
-  Supplier<Integer> responseCode;
+  Supplier<Maintenance> maintenance;
   Consumer<SIPResponse> strayResponseNormalizer;
   @Builder.Default boolean midDialog = false;
   @Builder.Default boolean _1xx = false;

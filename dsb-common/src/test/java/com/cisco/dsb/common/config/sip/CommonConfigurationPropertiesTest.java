@@ -2,6 +2,7 @@ package com.cisco.dsb.common.config.sip;
 
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.maintanence.MaintenancePolicy;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -257,7 +258,7 @@ public class CommonConfigurationPropertiesTest {
 
   private Map<String, ServerGroup> getStaticServerGroupMap() {
     Map<String, ServerGroup> serverGroupMap = new HashMap<>();
-    List<ServerGroupElement> sgElems = new ArrayList();
+    List<ServerGroupElement> sgElems = new ArrayList<>();
     ServerGroupElement sgElem1 =
         ServerGroupElement.builder().setIpAddress("127.0.0.2").setPort(8181).build();
     ServerGroupElement sgElem2 =
@@ -289,5 +290,16 @@ public class CommonConfigurationPropertiesTest {
     Assert.assertEquals(Transport.UDP, sgArecord.getTransport());
 
     return serverGroupMap;
+  }
+
+  @Test
+  public void testMaintenancePolicyMap() {
+    MaintenancePolicy mPolicyWithValue =
+        MaintenancePolicy.builder().setName("mPolicyWithValue").build();
+    Map<String, MaintenancePolicy> maintenancePolicyMap = new HashMap<>();
+    maintenancePolicyMap.put(mPolicyWithValue.getName(), mPolicyWithValue);
+
+    props.setMaintenancePolicy(maintenancePolicyMap);
+    Assert.assertEquals(props.getMaintenancePolicyMap(), maintenancePolicyMap);
   }
 }

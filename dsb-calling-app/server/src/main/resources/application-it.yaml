@@ -5,9 +5,9 @@ app:
   b2b-egress: "Antares"
   calling-egress: "NS"
   pstn-ingress: "CcpFusionUS"
-  maintanence:
+  maintenance:
     enabled: false
-
+    description: "DSB is in maintenance"
   rateLimitPolicy:
     - name: &rateLimitPolicyPstn "rateLimitPolicyPstn"
       allowList: ['1.1.1.1', '2.2.2.2']
@@ -29,6 +29,17 @@ app:
       policyName: *rateLimitPolicyPstn
       networks: [*netsp]
 common:
+  maintenancePolicy:
+    mPolicy1:
+      name: &mPolicy1 mPolicy1
+      dropMsgTypes: ['OPTIONS']
+      responseCode: 400
+    mPolicy2:
+      name: &mPolicy2 mPolicy2
+      responseCode: 400
+    globalPolicy:
+      name: &globalPolicy global
+      responseCode: 503
   customMonitorPingInitialDelayInSec: 5
   customMonitorPingPeriodInSec: 30
   listenPoints:
@@ -183,6 +194,7 @@ trunk:
       name: NS
       ingress:
         name: ns_ig
+        maintenancePolicy: *mPolicy1
       egress:
         lbType: ONCE
         serverGroups:

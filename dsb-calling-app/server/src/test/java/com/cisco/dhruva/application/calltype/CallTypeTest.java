@@ -12,11 +12,13 @@ import com.cisco.dhruva.normalisation.callTypeNormalization.DialInB2BToCallingCo
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialInPSTNToB2BNorm;
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutB2BToPSTNNorm;
 import com.cisco.dhruva.normalisation.callTypeNormalization.DialOutWXCToB2BNorm;
+import com.cisco.dhruva.normalisation.callTypeNormalization.Normalization;
 import com.cisco.dhruva.util.RequestHelper;
 import com.cisco.dhruva.util.ResponseHelper;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -126,7 +128,9 @@ public class CallTypeTest {
   }
 
   @Test(
-      description = "all calltypes with ingress and egress key present",
+      description =
+          "all calltypes with ingress and egress key present. "
+              + "Ingress processing returns the proxySipRequest, so egress processing can continue",
       dataProvider = "getCallTypes")
   public void testProcessRequest(CallType callType) throws ParseException {
     if (callType instanceof DialOutB2B) {
@@ -135,10 +139,21 @@ public class CallTypeTest {
       when(sipRequest.getRequestURI()).thenReturn(sipUri);
       when(proxySIPRequest.getRequest()).thenReturn(sipRequest);
     }
+
+    Maintenance maintenance = mock(Maintenance.class);
+    when(configurationProperty.getMaintenance()).thenReturn(maintenance);
+    when(trunkManager.handleIngress(
+            maintenance,
+            callType.getIngressTrunk(),
+            proxySIPRequest,
+            callType.getIngressKey(),
+            callType.getNormalization()))
+        .thenReturn(proxySIPRequest);
     callType.processRequest(proxySIPRequest);
     verify(proxySIPResponse, times(1)).proxy();
     verify(trunkManager, times(1))
         .handleIngress(
+            maintenance,
             callType.getIngressTrunk(),
             proxySIPRequest,
             callType.getIngressKey(),
@@ -151,6 +166,41 @@ public class CallTypeTest {
             callType.getNormalization());
 
     verify(metricService, times(1)).sendTrunkMetric(callType.getIngressKey(), 0, null);
+  }
+
+  @Test(
+      description =
+          "Ingress processing returns null, so egress processing will not happen. "
+              + "This happens when dhruva goes into maintenance mode, so call should not perform egress logic")
+  public void testProcessRequestWhenInMaintenanceMode() {
+    CallType callType =
+        new DialInPSTN(trunkManager, configurationProperty, new DialInPSTNToB2BNorm());
+    Maintenance maintenance = mock(Maintenance.class);
+    when(configurationProperty.getMaintenance()).thenReturn(maintenance);
+    when(trunkManager.handleIngress(
+            maintenance,
+            callType.getIngressTrunk(),
+            proxySIPRequest,
+            callType.getIngressKey(),
+            callType.getNormalization()))
+        .thenReturn(null);
+    callType.processRequest(proxySIPRequest);
+    verify(proxySIPResponse, times(0)).proxy();
+    verify(trunkManager, times(1))
+        .handleIngress(
+            maintenance,
+            callType.getIngressTrunk(),
+            proxySIPRequest,
+            callType.getIngressKey(),
+            callType.getNormalization());
+    verify(trunkManager, times(0))
+        .handleEgress(
+            callType.getEgressTrunk(),
+            proxySIPRequest,
+            callType.getEgressKey(proxySIPRequest),
+            callType.getNormalization());
+
+    verify(metricService, times(0)).sendTrunkMetric(callType.getIngressKey(), 0, null);
   }
 
   @Test(description = "dtg null DialOutB2B")
@@ -175,6 +225,17 @@ public class CallTypeTest {
     CallType callType = new DialInPSTN(trunkManager, configurationProperty, normalization);
     DhruvaRuntimeException dhruvaRuntimeException =
         new DhruvaRuntimeException(ErrorCode.APP_REQ_PROC, "Error while proxying the request");
+    Maintenance maintenance = mock(Maintenance.class);
+
+    when(configurationProperty.getMaintenance()).thenReturn(maintenance);
+    doReturn(proxySIPRequest)
+        .when(trunkManager)
+        .handleIngress(
+            any(Maintenance.class),
+            any(TrunkType.class),
+            any(ProxySIPRequest.class),
+            anyString(),
+            any(Normalization.class));
     when(trunkManager.handleEgress(
             any(TrunkType.class), any(ProxySIPRequest.class), anyString(), any()))
         .thenReturn(Mono.error(dhruvaRuntimeException));

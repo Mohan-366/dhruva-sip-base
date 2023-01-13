@@ -121,8 +121,8 @@ public class ProxySendMessage {
       } else {
         sipProvider.sendResponse(response);
       }
-      logger.info("Successfully sent response {}", response.getStatusCode());
       handleResponseLMA(sipProvider, sipResponse, internal, false, callType, additionalDetails);
+      logger.info("Successfully sent response {}", response.getStatusCode());
     } catch (Exception e) {
       throw new DhruvaException(
           "Exception occurred while trying to send response:" + e.getCause(), e);

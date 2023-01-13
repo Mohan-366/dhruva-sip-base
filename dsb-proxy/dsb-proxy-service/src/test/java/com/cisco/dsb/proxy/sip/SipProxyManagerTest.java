@@ -9,6 +9,7 @@ import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
@@ -99,7 +100,7 @@ public class SipProxyManagerTest {
     ProxySIPResponse proxySIPResponse =
         sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
-    verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
+    verify(sipResponse, times(1)).getTopmostViaHeader();
     reset(sipResponse);
 
     // Test: Top via with no Branch
@@ -109,8 +110,8 @@ public class SipProxyManagerTest {
     when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
     proxySIPResponse = sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
-    verify(sipResponse, Mockito.times(1)).getTopmostViaHeader();
-    verify(via1, Mockito.times(1)).getBranch();
+    verify(sipResponse, times(1)).getTopmostViaHeader();
+    verify(via1, times(1)).getBranch();
     assertNull(proxySIPResponse);
     reset(sipResponse, via1);
 
@@ -125,7 +126,7 @@ public class SipProxyManagerTest {
         .thenReturn(false);
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
-    verify(sipResponse, Mockito.times(0)).removeFirst(eq(ViaHeader.NAME));
+    verify(sipResponse, times(0)).removeFirst(eq(ViaHeader.NAME));
     reset(sipResponse);
 
     // Test: Top via with matching listenIf but no Via left after top via removal
@@ -142,8 +143,8 @@ public class SipProxyManagerTest {
         .removeFirst(eq(ViaHeader.NAME));
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
-    verify(sipResponse, Mockito.times(1)).removeFirst(eq(ViaHeader.NAME));
-    verify(controllerConfig, Mockito.times(0)).doRecordRoute();
+    verify(sipResponse, times(1)).removeFirst(eq(ViaHeader.NAME));
+    verify(controllerConfig, times(0)).doRecordRoute();
     reset(sipResponse, controllerConfig);
 
     // Test: Valid ViaList but RR does not contain outbound network to send out the response
@@ -160,8 +161,7 @@ public class SipProxyManagerTest {
         .removeFirst(eq(ViaHeader.NAME));
     when(controllerConfig.doRecordRoute()).thenReturn(true);
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
-    verify(controllerConfig, Mockito.times(1))
-        .setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
+    verify(controllerConfig, times(1)).setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
     // Can't assert properly because DhruvaNetwork.getProviderFromNetwork is static method
     assertNull(proxySIPResponse);
     reset(controllerConfig);
@@ -185,7 +185,7 @@ public class SipProxyManagerTest {
     DhruvaNetwork.setSipProvider("test_out_network", sipProvider);
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
-    verify(sipProvider, Mockito.times(0)).sendResponse(sipResponse);
+    verify(sipProvider, times(0)).sendResponse(sipResponse);
 
     reset(sipProvider);
 
@@ -220,10 +220,9 @@ public class SipProxyManagerTest {
     assertNull(proxySIPResponse);
     // this simply checks that stayResponseNormalizer was invoked for stray response
     assertEquals(normalizationCounter.get(), 1);
-    verify(sipProvider, Mockito.times(1)).sendResponse(sipResponse);
+    verify(sipProvider, times(1)).sendResponse(sipResponse);
     // verify previous testcase also here, i.e invalid network in RR
-    verify(controllerConfig, Mockito.times(2))
-        .setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
+    verify(controllerConfig, times(2)).setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
   }
 
   @Test(description = "test to process the proxyTransaction for provisional response")
@@ -235,7 +234,7 @@ public class SipProxyManagerTest {
     when(proxySIPResponse.getResponseClass()).thenReturn(1);
 
     sipProxyManager.processProxyTransaction().apply(proxySIPResponse);
-    verify(pt, Mockito.times(1)).provisionalResponse(proxySIPResponse);
+    verify(pt, times(1)).provisionalResponse(proxySIPResponse);
   }
 
   @Test(description = "test to process the proxyTransaction for final response")
@@ -247,11 +246,11 @@ public class SipProxyManagerTest {
     when(proxySIPResponse.getResponseClass()).thenReturn(2);
 
     sipProxyManager.processProxyTransaction().apply(proxySIPResponse);
-    verify(pt, Mockito.times(1)).finalResponse(proxySIPResponse);
+    verify(pt, times(1)).finalResponse(proxySIPResponse);
   }
 
   @DataProvider
-  public Object[] getServerTransaction() {
+  public Object[][] getServerTransaction() {
     return new ServerTransaction[][] {{null}, {mock(ServerTransaction.class)}};
   }
 
@@ -267,6 +266,7 @@ public class SipProxyManagerTest {
     SIPRequest request = mock(SIPRequest.class);
     SipProvider sp = mock(SipProvider.class);
     ProxySIPRequest proxySipRequest = mock(ProxySIPRequest.class);
+    ProxyAppConfig config = mock(ProxyAppConfig.class);
 
     if (serverTransaction == null) {
       when(request.getMethod()).thenReturn(Request.ACK);
@@ -281,77 +281,75 @@ public class SipProxyManagerTest {
         (rq, stx, spd) -> rq;
     TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest> mockCreateProxyRequest =
         (rq, stx, spd) -> proxySipRequest;
-    SipProxyManager spySipProxyManager = Mockito.spy(sipProxyManager);
+    SipProxyManager spySipProxyManager = spy(sipProxyManager);
 
+    Supplier<Maintenance> maintenance = () -> Maintenance.MaintenanceBuilder().build();
+    when(config.getMaintenance()).thenReturn(maintenance);
     when(spySipProxyManager.sendProvisionalResponse()).thenReturn(mockSendProvisional);
     when(spySipProxyManager.createProxySipRequest()).thenReturn(mockCreateProxyRequest);
 
     Assert.assertEquals(
-        spySipProxyManager.createServerTransactionAndProxySIPRequest(null).apply(requestEvent),
+        spySipProxyManager.createServerTransactionAndProxySIPRequest(config).apply(requestEvent),
         proxySipRequest);
     verify(sp, times(0)).getNewServerTransaction(request);
   }
 
-  @DataProvider
-  public Object[][] dsbStatus() {
-    return new Object[][] {
-      {Request.OPTIONS, false, null},
-      {Request.INVITE, false, null},
-      {Request.INVITE, true, mock(ProxySIPRequest.class)}
-    };
-  }
-
   @Test(
-      dataProvider = "dsbStatus",
-      description = "test suspend resume for Options, Invite , re-Invite flows ")
-  public void testSuspend(String requestType, boolean isMidDialog, ProxySIPRequest proxySIPRequest)
-      throws SipException {
+      description =
+          "1. When in maintenance mode, no provisional response is sent"
+              + "2. When in non-maintenance mode, provisional response is sent only for INVITE")
+  public void testProvisionalWithMaintenanceToggle() throws InvalidArgumentException, SipException {
 
     RequestEvent requestEvent = mock(RequestEvent.class);
-    SIPRequest request = mock(SIPRequest.class);
-    SIPResponse response = mock(SIPResponse.class);
-    SipProvider sp = mock(SipProvider.class);
-
-    Supplier<Boolean> t = () -> true;
-    Supplier<Integer> i = () -> 503;
-    Supplier<String> s = () -> "DSB is in maintainence";
-
-    ProxyAppConfig proxyAppConfig1 = Mockito.mock(ProxyAppConfig.class);
-    when(proxyAppConfig1.getIsMaintenanceEnabled()).thenReturn(t);
-    when(proxyAppConfig1.getResponseCode()).thenReturn(i);
-    when(proxyAppConfig1.getDescription()).thenReturn(s);
-
-    ProxySIPRequest proxySipRequest = proxySIPRequest;
+    SIPRequest request = new SIPRequest();
+    ProxySIPRequest proxySipRequest = mock(ProxySIPRequest.class);
+    ServerTransaction st = mock(ServerTransaction.class);
 
     when(requestEvent.getRequest()).thenReturn(request);
-    when(requestEvent.getServerTransaction()).thenReturn(null);
-    when(requestEvent.getSource()).thenReturn(sp);
+    when(requestEvent.getServerTransaction()).thenReturn(st);
+    doNothing().when(st).sendResponse(any(Response.class));
+    when(controllerConfig.isStateful()).thenReturn(false);
 
-    when(request.createResponse(anyInt())).thenReturn(response);
-    doNothing().when(response).removeContent();
-    doNothing().when(response).removeHeader(anyString());
+    SipProxyManager spySipProxyManager = spy(sipProxyManager);
+    TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest> mockCreateProxyRequest =
+        (rq, stx, spd) -> proxySipRequest;
+    when(spySipProxyManager.createProxySipRequest()).thenReturn(mockCreateProxyRequest);
 
-    when(controllerConfig.isStateful()).thenReturn(true);
-    when(request.getMethod()).thenReturn(requestType);
-    SipProxyManager spySipProxyManager = Mockito.spy(sipProxyManager);
-
-    if (isMidDialog) {
-      when(request.getToTag()).thenReturn("totag");
-      TriFunction<Request, ServerTransaction, SipProvider, Request> mockSendProvisional =
-          (rq, stx, spd) -> rq;
-      TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest> mockCreateProxyRequest =
-          (rq, stx, spd) -> proxySipRequest;
-      when(spySipProxyManager.sendProvisionalResponse()).thenReturn(mockSendProvisional);
-      when(spySipProxyManager.createProxySipRequest()).thenReturn(mockCreateProxyRequest);
-    }
-
-    Assert.assertEquals(
+    // in maintenance mode -> no 100 response
+    Supplier<Maintenance> maintenance =
+        () -> Maintenance.MaintenanceBuilder().setEnabled(true).build();
+    ProxyAppConfig proxyAppConfig = mock(ProxyAppConfig.class);
+    when(proxyAppConfig.getMaintenance()).thenReturn(maintenance);
+    assertEquals(
         spySipProxyManager
-            .createServerTransactionAndProxySIPRequest(proxyAppConfig1)
+            .createServerTransactionAndProxySIPRequest(proxyAppConfig)
             .apply(requestEvent),
-        proxySIPRequest);
-    if (isMidDialog) verify(sp, times(0)).sendResponse(response);
-    else verify(sp, times(1)).sendResponse(response);
+        proxySipRequest);
+    verify(st, times(0)).sendResponse(any(Response.class));
+
+    // not in maintenance mode, request is ACK -> no 100 response
+    request.setMethod(Request.ACK);
+    maintenance = () -> Maintenance.MaintenanceBuilder().build();
+    maintenance.get().setEnabled(false);
+    when(proxyAppConfig.getMaintenance()).thenReturn(maintenance);
+    when(spySipProxyManager.sendProvisionalResponse()).thenCallRealMethod();
+    assertEquals(
+        spySipProxyManager
+            .createServerTransactionAndProxySIPRequest(proxyAppConfig)
+            .apply(requestEvent),
+        proxySipRequest);
+    verify(st, times(0)).sendResponse(any(Response.class));
+
+    // not in maintenance mode, request is INVITE -> send 100 response
+    request.setMethod(Request.INVITE);
+    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
+    assertEquals(
+        spySipProxyManager
+            .createServerTransactionAndProxySIPRequest(proxyAppConfig)
+            .apply(requestEvent),
+        proxySipRequest);
+    verify(st, times(1)).sendResponse(captor.capture());
+    assertEquals(captor.getValue().getStatusCode(), Response.TRYING);
   }
 
   @Test(
@@ -376,11 +374,11 @@ public class SipProxyManagerTest {
         (rq, stx, spd) -> rq;
     TriFunction<Request, ServerTransaction, SipProvider, ProxySIPRequest> mockCreateProxyRequest =
         (rq, stx, spd) -> proxySipRequest;
-    SipProxyManager spySipProxyManager = Mockito.spy(sipProxyManager);
+    SipProxyManager spySipProxyManager = spy(sipProxyManager);
 
-    Supplier<Boolean> t = () -> false;
-    ProxyAppConfig proxyAppConfig1 = Mockito.mock(ProxyAppConfig.class);
-    when(proxyAppConfig1.getIsMaintenanceEnabled()).thenReturn(t);
+    Supplier<Maintenance> maintenance = () -> Maintenance.MaintenanceBuilder().build();
+    ProxyAppConfig proxyAppConfig = mock(ProxyAppConfig.class);
+    when(proxyAppConfig.getMaintenance()).thenReturn(maintenance);
 
     when(sp.getNewServerTransaction(request)).thenReturn(st);
     when(spySipProxyManager.sendProvisionalResponse()).thenReturn(mockSendProvisional);
@@ -388,39 +386,10 @@ public class SipProxyManagerTest {
 
     Assert.assertEquals(
         spySipProxyManager
-            .createServerTransactionAndProxySIPRequest(proxyAppConfig1)
+            .createServerTransactionAndProxySIPRequest(proxyAppConfig)
             .apply(requestEvent),
         proxySipRequest);
     verify(sp, times(1)).getNewServerTransaction(request);
-  }
-
-  @DataProvider
-  public Object[] getMethod() {
-    return new String[][] {{Request.ACK}, {Request.INVITE}};
-  }
-
-  @Test(dataProvider = "getMethod", description = "Send 100 trying response only for INVITE")
-  public void testSendingProvisionalResponse(String requestType)
-      throws SipException, InvalidArgumentException {
-
-    SIPRequest request = mock(SIPRequest.class);
-    SipProvider sp = mock(SipProvider.class);
-    ServerTransaction st = mock(ServerTransaction.class);
-    SIPResponse sipResponse = mock(SIPResponse.class);
-
-    SipProxyManager spySipProxyManager = Mockito.spy(sipProxyManager);
-    ArgumentCaptor<Response> captor = ArgumentCaptor.forClass(Response.class);
-
-    when(request.getMethod()).thenReturn(requestType);
-    when(request.createResponse(100)).thenReturn(sipResponse);
-    doNothing().when(st).sendResponse(any(Response.class));
-
-    assertEquals(spySipProxyManager.sendProvisionalResponse().apply(request, st, sp), request);
-    if (requestType.equals(Request.INVITE)) {
-      verify(st, times(1)).sendResponse(any(Response.class));
-    } else {
-      verify(st, times(0)).sendResponse(any(Response.class));
-    }
   }
 
   @Test(description = "Creates a new ProxyController for a proxy SIP Request")
@@ -660,7 +629,7 @@ public class SipProxyManagerTest {
     ProxySIPResponse response = sipProxyManager.handleProxyTimeoutEvent().apply(timeoutEvent);
 
     Assert.assertNull(response);
-    verify(pt, Mockito.times(1)).timeOut(ct, sipProvider);
+    verify(pt, times(1)).timeOut(ct, sipProvider);
   }
 
   @Test(
@@ -678,7 +647,7 @@ public class SipProxyManagerTest {
         sipProxyManager.handleProxyTimeoutEvent().apply(timeoutEvent);
     Assert.assertNull(proxySIPResponse);
 
-    verify(pt, Mockito.times(1)).timeOut(st);
+    verify(pt, times(1)).timeOut(st);
   }
 
   @Test(description = "app interested in mid-dialog")
