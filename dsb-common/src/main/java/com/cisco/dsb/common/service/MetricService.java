@@ -13,6 +13,7 @@ import com.cisco.dsb.common.dto.RateLimitInfo;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.*;
+import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.common.util.log.event.Event.DIRECTION;
@@ -58,11 +59,11 @@ public class MetricService {
 
   private static final String SGE_STATUS_MEASUREMENT = "sgeMetric";
 
-  private static final String STATUS_FIELD = "status";
+  public static final String FIELD_STATUS = "status";
 
-  private static final String SG_TAG = "sgName";
+  public static final String TAG_SG_NAME = "sgName";
 
-  private static final String SGE_TAG = "sgeName";
+  public static final String TAG_SGE_NAME = "sgeName";
 
   private static final String TRUNK_TAG = "trunk";
   private static final String TRUNK_ALGO_TAG = "trunkAlgo";
@@ -79,6 +80,7 @@ public class MetricService {
   private static final String IS_REQUEST = "isRequest";
   private static final String COUNT = "count";
   private static final String ACTION = "action";
+  public static final String TAG_NETWORK_NAME = "networkName";
 
   private final ScheduledExecutorService scheduledExecutor;
   MetricClient metricClient;
@@ -98,9 +100,9 @@ public class MetricService {
 
   @Getter @Setter private Map<RateLimitInfo, Integer> rateLimiterMap;
 
-  @Getter @Setter private Map<String, Boolean> sgStatusMap = new ConcurrentHashMap<>();
+  @Getter @Setter private Map<ServerGroup, Boolean> sgStatusMap = new ConcurrentHashMap<>();
 
-  @Getter @Setter private Map<String, String> sgeToSgMapping = new ConcurrentHashMap<>();
+  @Getter @Setter private Map<String, ServerGroup> sgeToSgMapping = new ConcurrentHashMap<>();
 
   @Getter @Setter private Map<String, Boolean> sgeStatusMap = new ConcurrentHashMap<>();
 
@@ -331,45 +333,45 @@ public class MetricService {
 
   public Supplier<Set<Metric>> sgStatusMetricSupplier() {
 
-    Supplier<Set<Metric>> sgStatusSupplier =
-        () -> {
-          Set<Metric> sgStatusSet = new HashSet<>();
-          for (Map.Entry<String, Boolean> entry : sgStatusMap.entrySet()) {
-            if (!entry.getKey().isEmpty()) {
-              Metric sgStatusMetric = Metrics.newMetric().measurement(SG_STATUS_MEASUREMENT);
-              int status = (entry.getValue().equals(true)) ? 1 : 0;
-              sgStatusMetric.tag(SG_TAG, entry.getKey());
-              sgStatusMetric.field(STATUS_FIELD, status);
-              sgStatusSet.add(sgStatusMetric);
-            }
-          }
+    return () -> {
+      Set<Metric> sgStatusSet = new HashSet<>();
+      sgStatusMap.forEach(
+          (serverGroup, value) -> {
+            Metric sgStatusMetric = createSgStatusMetric(serverGroup, value);
+            sgStatusSet.add(sgStatusMetric);
+          });
 
-          return sgStatusSet;
-        };
-    return sgStatusSupplier;
+      return sgStatusSet;
+    };
+  }
+
+  private Metric createSgStatusMetric(ServerGroup serverGroup, Boolean status) {
+    int statusInt = (status.equals(true)) ? 1 : 0;
+    return Metrics.newMetric()
+        .measurement(SG_STATUS_MEASUREMENT)
+        .tag(TAG_SG_NAME, serverGroup.getName())
+        .tag(TAG_NETWORK_NAME, serverGroup.getNetworkName())
+        .field(FIELD_STATUS, statusInt);
   }
 
   public Supplier<Set<Metric>> sgeStatusMetricSupplier() {
 
-    Supplier<Set<Metric>> sgeStatusSupplier =
-        () -> {
-          Set<Metric> sgeStatusSet = new HashSet<>();
+    return () -> {
+      Set<Metric> sgeStatusSet = new HashSet<>();
 
-          for (Map.Entry<String, Boolean> entry : sgeStatusMap.entrySet()) {
-            if (!entry.getKey().isEmpty()
+      sgeStatusMap.forEach(
+          (sgeName, status) -> {
+            if (!sgeName.isEmpty()
                 && !sgeToSgMapping.isEmpty()
-                && sgeToSgMapping.get(entry.getKey()) != null) {
-              Metric sgeStatusMetric = Metrics.newMetric().measurement(SGE_STATUS_MEASUREMENT);
-              int status = (entry.getValue().equals(true)) ? 1 : 0;
-              sgeStatusMetric.tag(SG_TAG, sgeToSgMapping.get(entry.getKey()));
-              sgeStatusMetric.tag(SGE_TAG, entry.getKey());
-              sgeStatusMetric.field(STATUS_FIELD, status);
+                && sgeToSgMapping.get(sgeName) != null) {
+              ServerGroup serverGroup = sgeToSgMapping.get(sgeName);
+              Metric sgeStatusMetric = createSgeStatusMetric(serverGroup, sgeName, status);
               sgeStatusSet.add(sgeStatusMetric);
             }
-          }
-          return sgeStatusSet;
-        };
-    return sgeStatusSupplier;
+          });
+
+      return sgeStatusSet;
+    };
   }
 
   public void emitTrunkStatusSupplier(String measurement) {
@@ -546,29 +548,26 @@ public class MetricService {
     sendMetric(metric);
   }
 
-  public void sendSGMetric(String sgName, Boolean status) {
-
-    int statusInt = (status.equals(true)) ? 1 : 0;
-    Metric metric =
-        Metrics.newMetric()
-            .measurement(SG_STATUS_MEASUREMENT)
-            .field(STATUS_FIELD, statusInt)
-            .tag(SG_TAG, sgName);
-
-    sgStatusMap.put(sgName, status);
+  public void sendSGMetric(ServerGroup serverGroup, Boolean status) {
+    Metric metric = createSgStatusMetric(serverGroup, status);
+    sgStatusMap.put(serverGroup, status);
     sendMetric(metric);
   }
 
-  public void sendSGElementMetric(String sgName, String sgeName, Boolean status) {
-    int statusInt = (status.equals(true)) ? 1 : 0;
-    Metric metric =
-        Metrics.newMetric()
-            .measurement(SGE_STATUS_MEASUREMENT)
-            .field(STATUS_FIELD, statusInt)
-            .tag(SGE_TAG, sgeName)
-            .tag(SG_TAG, sgName);
+  public void sendSGElementMetric(ServerGroup serverGroup, String sgeName, Boolean status) {
+    Metric metric = createSgeStatusMetric(serverGroup, sgeName, status);
     sgeStatusMap.put(sgeName, status);
     sendMetric(metric);
+  }
+
+  private Metric createSgeStatusMetric(ServerGroup serverGroup, String sgeName, Boolean status) {
+    int statusInt = (status.equals(true)) ? 1 : 0;
+    return Metrics.newMetric()
+        .measurement(SGE_STATUS_MEASUREMENT)
+        .field(FIELD_STATUS, statusInt)
+        .tag(TAG_SGE_NAME, sgeName)
+        .tag(TAG_SG_NAME, serverGroup.getName())
+        .tag(TAG_NETWORK_NAME, serverGroup.getNetworkName());
   }
 
   public void sendTrunkMetric(String trunk, int response, String callId) {

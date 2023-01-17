@@ -1,14 +1,21 @@
 package com.cisco.dsb.common.service;
 
+import static com.cisco.dsb.common.service.MetricService.FIELD_STATUS;
+import static com.cisco.dsb.common.service.MetricService.TAG_NETWORK_NAME;
+import static com.cisco.dsb.common.service.MetricService.TAG_SGE_NAME;
+import static com.cisco.dsb.common.service.MetricService.TAG_SG_NAME;
 import static com.cisco.dsb.common.service.MetricService.joiner;
 import static org.awaitility.Awaitility.with;
 import static org.mockito.Mockito.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.metric.SipMetricsContext;
+import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.jain.channelCache.ConnectionMetricRunnable;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbSipTCPMessageProcessor;
 import com.cisco.dsb.common.transport.Connection;
@@ -105,17 +112,17 @@ public class MetricServiceTest {
     Map<String, String> capturedTags = capturedMetricPoint.getTags();
     Map<String, Object> capturedFields = capturedMetricPoint.getFields();
 
-    Assert.assertTrue(capturedTags.containsKey("method"));
-    Assert.assertTrue(capturedTags.containsKey("messageType"));
-    Assert.assertTrue(capturedTags.containsKey("direction"));
-    Assert.assertTrue(capturedTags.containsKey("isMidCall"));
-    Assert.assertTrue(capturedTags.containsKey("isInternallyGenerated"));
-    Assert.assertTrue(capturedFields.containsKey("callId"));
-    Assert.assertTrue(capturedFields.containsKey("cSeq"));
-    Assert.assertTrue(capturedFields.containsKey("requestUri"));
+    assertTrue(capturedTags.containsKey("method"));
+    assertTrue(capturedTags.containsKey("messageType"));
+    assertTrue(capturedTags.containsKey("direction"));
+    assertTrue(capturedTags.containsKey("isMidCall"));
+    assertTrue(capturedTags.containsKey("isInternallyGenerated"));
+    assertTrue(capturedFields.containsKey("callId"));
+    assertTrue(capturedFields.containsKey("cSeq"));
+    assertTrue(capturedFields.containsKey("requestUri"));
     Assert.assertFalse(capturedFields.containsKey("processingDelayInMillis"));
-    Assert.assertTrue(capturedTags.containsKey("callType"));
-    Assert.assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
+    assertTrue(capturedTags.containsKey("callType"));
+    assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
 
     // scenario 2, dir-out , internally gen
     metricService.sendSipMessageMetric(
@@ -142,19 +149,19 @@ public class MetricServiceTest {
     capturedTags = capturedMetricPoint.getTags();
     capturedFields = capturedMetricPoint.getFields();
 
-    Assert.assertTrue(capturedTags.containsKey("method"));
-    Assert.assertTrue(capturedTags.containsKey("messageType"));
-    Assert.assertTrue(capturedTags.containsKey("direction"));
-    Assert.assertTrue(capturedTags.containsKey("isMidCall"));
-    Assert.assertTrue(capturedTags.containsKey("isInternallyGenerated"));
-    Assert.assertTrue(capturedFields.containsKey("callId"));
-    Assert.assertTrue(capturedFields.containsKey("cSeq"));
-    Assert.assertTrue(capturedFields.containsKey("requestUri"));
+    assertTrue(capturedTags.containsKey("method"));
+    assertTrue(capturedTags.containsKey("messageType"));
+    assertTrue(capturedTags.containsKey("direction"));
+    assertTrue(capturedTags.containsKey("isMidCall"));
+    assertTrue(capturedTags.containsKey("isInternallyGenerated"));
+    assertTrue(capturedFields.containsKey("callId"));
+    assertTrue(capturedFields.containsKey("cSeq"));
+    assertTrue(capturedFields.containsKey("requestUri"));
     Assert.assertFalse(
         capturedTags.containsKey(
             "callType")); // calltype tag value will be null so no tag will be emitted in form of
     // influx point/ metric point
-    Assert.assertTrue(capturedFields.containsKey("processingDelayInMillis"));
+    assertTrue(capturedFields.containsKey("processingDelayInMillis"));
   }
 
   public void sendSipEventMetricResponseTest() {
@@ -183,19 +190,19 @@ public class MetricServiceTest {
     Map<String, String> capturedTags = capturedMetricPoint.getTags();
     Map<String, Object> capturedFields = capturedMetricPoint.getFields();
 
-    Assert.assertTrue(capturedTags.containsKey("method"));
-    Assert.assertTrue(capturedTags.containsKey("messageType"));
-    Assert.assertTrue(capturedTags.containsKey("direction"));
-    Assert.assertTrue(capturedTags.containsKey("isMidCall"));
-    Assert.assertTrue(capturedTags.containsKey("isInternallyGenerated"));
-    Assert.assertTrue(capturedFields.containsKey("callId"));
-    Assert.assertTrue(capturedFields.containsKey("cSeq"));
-    Assert.assertTrue(capturedFields.containsKey("responseCode"));
-    Assert.assertTrue(capturedFields.containsKey("responseReason"));
-    Assert.assertTrue(capturedFields.containsKey("additionalDetails"));
+    assertTrue(capturedTags.containsKey("method"));
+    assertTrue(capturedTags.containsKey("messageType"));
+    assertTrue(capturedTags.containsKey("direction"));
+    assertTrue(capturedTags.containsKey("isMidCall"));
+    assertTrue(capturedTags.containsKey("isInternallyGenerated"));
+    assertTrue(capturedFields.containsKey("callId"));
+    assertTrue(capturedFields.containsKey("cSeq"));
+    assertTrue(capturedFields.containsKey("responseCode"));
+    assertTrue(capturedFields.containsKey("responseReason"));
+    assertTrue(capturedFields.containsKey("additionalDetails"));
     Assert.assertFalse(capturedFields.containsKey("processingDelayInMillis"));
-    Assert.assertTrue(capturedTags.containsKey("callType"));
-    Assert.assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
+    assertTrue(capturedTags.containsKey("callType"));
+    assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
   }
 
   @Test(description = "Test to verify emitted connection metrics")
@@ -271,24 +278,24 @@ public class MetricServiceTest {
 
     List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
     Assert.assertNotNull(capturedMetric);
-    Assert.assertTrue(capturedMetric.size() >= 2);
+    assertTrue(capturedMetric.size() >= 2);
 
     for (Metric eachMetric : capturedMetric) {
       InfluxPoint capturedMetricPoint = (InfluxPoint) eachMetric.get();
-      Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
+      assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection");
       // add more assert to check the metrics
 
       Map<String, String> capturedTags = capturedMetricPoint.getTags();
       Map<String, Object> capturedFields = capturedMetricPoint.getFields();
 
-      Assert.assertTrue(capturedTags.containsKey("transport"));
-      Assert.assertTrue(capturedTags.containsKey("direction"));
-      Assert.assertTrue(capturedTags.containsKey("connectionState"));
-      Assert.assertTrue(capturedFields.containsKey("id"));
-      Assert.assertTrue(capturedFields.containsKey("localAddress"));
-      Assert.assertTrue(capturedFields.containsKey("localPort"));
-      Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
-      Assert.assertTrue(capturedFields.containsKey("remotePort"));
+      assertTrue(capturedTags.containsKey("transport"));
+      assertTrue(capturedTags.containsKey("direction"));
+      assertTrue(capturedTags.containsKey("connectionState"));
+      assertTrue(capturedFields.containsKey("id"));
+      assertTrue(capturedFields.containsKey("localAddress"));
+      assertTrue(capturedFields.containsKey("localPort"));
+      assertTrue(capturedFields.containsKey("remoteAddress"));
+      assertTrue(capturedFields.containsKey("remotePort"));
     }
   }
 
@@ -316,7 +323,7 @@ public class MetricServiceTest {
     verify(metricClientMock, times(0)).sendMetric(metricArgumentCaptor.capture());
 
     List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
-    Assert.assertTrue(capturedMetric == null || capturedMetric.isEmpty());
+    assertTrue(capturedMetric == null || capturedMetric.isEmpty());
   }
 
   @DataProvider(name = "connectionFailureMetricData")
@@ -363,24 +370,24 @@ public class MetricServiceTest {
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection.failure");
+    assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.connection.failure");
 
     Map<String, String> capturedTags = capturedMetricPoint.getTags();
     Map<String, Object> capturedFields = capturedMetricPoint.getFields();
 
-    Assert.assertTrue(capturedTags.containsKey("transport"));
-    Assert.assertEquals(capturedTags.get("transport"), transport);
+    assertTrue(capturedTags.containsKey("transport"));
+    assertEquals(capturedTags.get("transport"), transport);
 
-    Assert.assertTrue(capturedFields.containsKey("localAddress"));
-    Assert.assertEquals(capturedFields.get("localAddress"), localAddress);
-    Assert.assertTrue(capturedFields.containsKey("localPort"));
-    Assert.assertEquals(capturedFields.get("localPort"), localPort);
-    Assert.assertTrue(capturedFields.containsKey("remoteAddress"));
-    Assert.assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
-    Assert.assertTrue(capturedFields.containsKey("remotePort"));
-    Assert.assertEquals(capturedFields.get("remotePort"), remotePort);
-    Assert.assertTrue(capturedFields.containsKey("errorMessage"));
-    Assert.assertEquals(capturedFields.get("errorMessage"), errorMessage);
+    assertTrue(capturedFields.containsKey("localAddress"));
+    assertEquals(capturedFields.get("localAddress"), localAddress);
+    assertTrue(capturedFields.containsKey("localPort"));
+    assertEquals(capturedFields.get("localPort"), localPort);
+    assertTrue(capturedFields.containsKey("remoteAddress"));
+    assertEquals(capturedFields.get("remoteAddress"), remoteAddress);
+    assertTrue(capturedFields.containsKey("remotePort"));
+    assertEquals(capturedFields.get("remotePort"), remotePort);
+    assertTrue(capturedFields.containsKey("errorMessage"));
+    assertEquals(capturedFields.get("errorMessage"), errorMessage);
   }
 
   public void sendDnsMetricTest() {
@@ -400,9 +407,9 @@ public class MetricServiceTest {
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("queryType"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("dnsProcessingDelayMillis"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("query"));
+    assertTrue(capturedMetricPoint.getTags().containsKey("queryType"));
+    assertTrue(capturedMetricPoint.getFields().containsKey("dnsProcessingDelayMillis"));
+    assertTrue(capturedMetricPoint.getFields().containsKey("query"));
     // if tag is false, it will not be present in the final metrics, here this tag does have null
     // value
     Assert.assertFalse(capturedMetricPoint.getTags().containsKey("failureReason"));
@@ -411,11 +418,14 @@ public class MetricServiceTest {
   public void sendSGEMetricTest() {
 
     String sgName = "SG1";
+    String networkName = "PSTN";
     String sgeName = "127.0.0.1:5060:UDP";
-
     Boolean status = false;
 
-    metricService.sendSGElementMetric(sgName, sgeName, status);
+    ServerGroup serverGroup =
+        ServerGroup.builder().setName(sgName).setNetworkName(networkName).build();
+
+    metricService.sendSGElementMetric(serverGroup, sgeName, status);
 
     ArgumentCaptor<Metric> metricArgCaptor = ArgumentCaptor.forClass(Metric.class);
     Mockito.verify(metricClientMock).sendMetric(metricArgCaptor.capture());
@@ -425,21 +435,21 @@ public class MetricServiceTest {
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgName"));
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgeName"));
+    assertEquals(capturedMetricPoint.getTags().get(TAG_SG_NAME), sgName);
+    assertEquals(capturedMetricPoint.getTags().get(TAG_SGE_NAME), sgeName);
+    assertEquals(capturedMetricPoint.getTags().get(TAG_NETWORK_NAME), networkName);
+    assertEquals(capturedMetricPoint.getField(FIELD_STATUS), 0);
 
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsValue(0));
-
-    Assert.assertEquals(metricService.getSgeStatusMap().get(sgeName), false);
+    assertEquals(metricService.getSgeStatusMap().get(sgeName), false);
   }
 
   public void sendSGMetricTest() {
-
     String sgName = "SG1";
     Boolean status = true;
-
-    metricService.sendSGMetric(sgName, status);
+    String networkName = "PSTN";
+    ServerGroup serverGroup =
+        ServerGroup.builder().setName(sgName).setNetworkName(networkName).build();
+    metricService.sendSGMetric(serverGroup, status);
 
     ArgumentCaptor<Metric> metricArgCaptor = ArgumentCaptor.forClass(Metric.class);
     Mockito.verify(metricClientMock).sendMetric(metricArgCaptor.capture());
@@ -449,11 +459,11 @@ public class MetricServiceTest {
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("sgName"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("status"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsValue(1));
+    assertEquals(capturedMetricPoint.getTag(TAG_SG_NAME), sgName);
+    assertEquals(capturedMetricPoint.getTag(TAG_NETWORK_NAME), networkName);
+    assertEquals(capturedMetricPoint.getField(FIELD_STATUS), 1);
 
-    Assert.assertEquals(metricService.getSgStatusMap().get(sgName), true);
+    assertEquals(metricService.getSgStatusMap().get(serverGroup), true);
   }
 
   public void sendTrunkMetricTest() {
@@ -470,13 +480,13 @@ public class MetricServiceTest {
     Assert.assertNotNull(capturedMetric);
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
-    Assert.assertEquals(capturedMetric.measurement(), "dhruva.trunkMetric");
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("trunk"));
-    Assert.assertTrue(capturedMetricPoint.getTag("trunk").equals(trunk));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("response"));
-    Assert.assertTrue(capturedMetricPoint.getField("response").equals(response));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
-    Assert.assertTrue(capturedMetricPoint.getField("callId").equals(callId));
+    assertEquals(capturedMetric.measurement(), "dhruva.trunkMetric");
+    assertTrue(capturedMetricPoint.getTags().containsKey("trunk"));
+    assertTrue(capturedMetricPoint.getTag("trunk").equals(trunk));
+    assertTrue(capturedMetricPoint.getFields().containsKey("response"));
+    assertTrue(capturedMetricPoint.getField("response").equals(response));
+    assertTrue(capturedMetricPoint.getFields().containsKey("callId"));
+    assertTrue(capturedMetricPoint.getField("callId").equals(callId));
   }
 
   public void latencyMetricExceptionTest() {
@@ -484,14 +494,14 @@ public class MetricServiceTest {
     // Callid set to null , context state is not defined
     SipMetricsContext metricsContext = new SipMetricsContext(metricService, null, null, true);
 
-    Assert.assertEquals(metricsContext.getCallId(), "");
+    assertEquals(metricsContext.getCallId(), "");
     Assert.assertNull(metricsContext.state);
-    Assert.assertTrue(metricsContext.isSuccessful());
+    assertTrue(metricsContext.isSuccessful());
 
     // emitMetric set to false
     metricsContext = new SipMetricsContext(metricService, null, null, false);
 
-    Assert.assertEquals(metricsContext.getCallId(), "");
+    assertEquals(metricsContext.getCallId(), "");
     Assert.assertNull(metricsContext.state);
     Assert.assertFalse(metricsContext.isSuccessful());
   }
@@ -624,11 +634,11 @@ public class MetricServiceTest {
     Metric capturedMetric = metricArgumentCaptor.getValue();
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
 
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("count"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("duration"));
+    assertTrue(capturedMetricPoint.getFields().containsKey("count"));
+    assertTrue(capturedMetricPoint.getFields().containsKey("duration"));
     Assert.assertFalse(capturedMetricPoint.getFields().containsKey("durationExpected"));
-    Assert.assertTrue(capturedMetricPoint.getFields().containsKey("eventSuccess"));
-    Assert.assertTrue(capturedMetricPoint.getTags().containsKey("callType"));
+    assertTrue(capturedMetricPoint.getFields().containsKey("eventSuccess"));
+    assertTrue(capturedMetricPoint.getTags().containsKey("callType"));
   }
 
   @Test(description = "test case to check various negative scenarios for emitting latency metric")
@@ -652,8 +662,8 @@ public class MetricServiceTest {
     Assert.assertNotNull(capturedMetric);
 
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get();
-    Assert.assertEquals(capturedMetricPoint.getTags().size(), 0);
-    Assert.assertEquals(capturedMetricPoint.getFields().size(), 0);
+    assertEquals(capturedMetricPoint.getTags().size(), 0);
+    assertEquals(capturedMetricPoint.getFields().size(), 0);
 
     // Metric will be created without any tags and fields as count, duration nothing is evaluated
     metricService.update("test.latency", 0L, 1L, null, 1L, null, null, null, null);
@@ -664,8 +674,8 @@ public class MetricServiceTest {
     Assert.assertNotNull(capturedMetric);
 
     capturedMetricPoint = (InfluxPoint) capturedMetric.get();
-    Assert.assertEquals(capturedMetricPoint.getTags().size(), 0);
-    Assert.assertEquals(capturedMetricPoint.getFields().size(), 0);
+    assertEquals(capturedMetricPoint.getTags().size(), 0);
+    assertEquals(capturedMetricPoint.getFields().size(), 0);
   }
 
   public void createMetricsForLatencyPositiveTest() {
@@ -693,12 +703,12 @@ public class MetricServiceTest {
     Assert.assertNotEquals(capturedFields.size(), 0);
 
     // callid
-    Assert.assertTrue(capturedFields.containsKey("callId"));
-    Assert.assertTrue(capturedFields.containsValue(callId));
+    assertTrue(capturedFields.containsKey("callId"));
+    assertTrue(capturedFields.containsValue(callId));
 
     // calltype
-    Assert.assertTrue(capturedTags.containsKey("callType"));
-    Assert.assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
+    assertTrue(capturedTags.containsKey("callType"));
+    assertTrue(capturedTags.containsValue(CALLTYPE_TEST));
   }
 
   public void startTimerTest() {
@@ -710,7 +720,7 @@ public class MetricServiceTest {
     metricService.getTimers().invalidateAll();
     metricService.startTimer(testCallId, testMetricName);
     Cache<String, Long> timers = metricService.getTimers();
-    Assert.assertEquals(timers.size(), 0);
+    assertEquals(timers.size(), 0);
 
     // negative scenario 2
     testMetricName = "test.metrics";
@@ -790,26 +800,26 @@ public class MetricServiceTest {
       InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get(i).get();
 
       if ("dhruva.service.health".equals(capturedMetricPoint.getMeasurement())) {
-        Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
-        Assert.assertEquals(capturedMetricPoint.getField("availability"), 100.0);
+        assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
+        assertEquals(capturedMetricPoint.getField("availability"), 100.0);
       }
 
       if (capturedMetricPoint.getTags().containsValue("testUpstreamSrv1")) {
-        Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
-        Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
-        Assert.assertEquals(capturedMetricPoint.getField("availability"), 100.0);
+        assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
+        assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
+        assertEquals(capturedMetricPoint.getField("availability"), 100.0);
       }
 
       if (capturedMetricPoint.getTags().containsValue("testUpstreamSrv2")) {
-        Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
-        Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
-        Assert.assertEquals(capturedMetricPoint.getField("availability"), 100.0);
+        assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
+        assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
+        assertEquals(capturedMetricPoint.getField("availability"), 100.0);
       }
 
       if (capturedMetricPoint.getTags().containsValue("testUpstreamSrv3")) {
-        Assert.assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
-        Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.OFFLINE.toString());
-        Assert.assertEquals(capturedMetricPoint.getField("availability"), 0.0);
+        assertEquals(capturedMetricPoint.getMeasurement(), "dhruva.service.upstream.health");
+        assertEquals(capturedMetricPoint.getTag("state"), ServiceState.OFFLINE.toString());
+        assertEquals(capturedMetricPoint.getField("availability"), 0.0);
       }
     }
   }
@@ -827,13 +837,13 @@ public class MetricServiceTest {
 
     List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
 
-    Assert.assertEquals(capturedMetric.size(), 1);
+    assertEquals(capturedMetric.size(), 1);
     Assert.assertNotNull(capturedMetric);
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get(0).get();
 
     if ("dhruva.service.health".equals(capturedMetricPoint.getMeasurement())) {
-      Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
-      Assert.assertEquals(capturedMetricPoint.getField("availability"), 100.0);
+      assertEquals(capturedMetricPoint.getTag("state"), ServiceState.ONLINE.toString());
+      assertEquals(capturedMetricPoint.getField("availability"), 100.0);
     }
   }
 
@@ -860,13 +870,13 @@ public class MetricServiceTest {
 
     List<Metric> capturedMetric = metricArgumentCaptor.getAllValues();
 
-    Assert.assertEquals(capturedMetric.size(), 1);
+    assertEquals(capturedMetric.size(), 1);
     Assert.assertNotNull(capturedMetric);
     InfluxPoint capturedMetricPoint = (InfluxPoint) capturedMetric.get(0).get();
 
     if ("dhruva.service.health".equals(capturedMetricPoint.getMeasurement())) {
-      Assert.assertEquals(capturedMetricPoint.getTag("state"), ServiceState.OFFLINE.toString());
-      Assert.assertEquals(capturedMetricPoint.getField("availability"), 0.0);
+      assertEquals(capturedMetricPoint.getTag("state"), ServiceState.OFFLINE.toString());
+      assertEquals(capturedMetricPoint.getField("availability"), 0.0);
     }
   }
 
@@ -881,29 +891,29 @@ public class MetricServiceTest {
     HashMap<String, StopWatch> timers = metricService.getStopWatchTimers();
     Assert.assertNotNull(timers.get(key));
     StopWatch stopWatch = timers.get(key);
-    Assert.assertTrue(stopWatch.isStarted());
+    assertTrue(stopWatch.isStarted());
 
     // Pause
     metricService.pauseStopWatch(callId, metric);
-    Assert.assertTrue(stopWatch.isSuspended());
+    assertTrue(stopWatch.isSuspended());
 
     // Resume
     metricService.resumeStopWatch(callId, metric);
-    Assert.assertTrue(stopWatch.isStarted());
+    assertTrue(stopWatch.isStarted());
 
     // split
     metricService.splitStopWatch(callId, metric);
 
     TimeUnit timeUnit = TimeUnit.MILLISECONDS;
     long splitTime1 = timeUnit.convert(stopWatch.getSplitNanoTime(), TimeUnit.NANOSECONDS);
-    Assert.assertTrue(splitTime1 >= 0);
+    assertTrue(splitTime1 >= 0);
 
     long splitTime2 = metricService.getSplitTimeStopWatch(callId, metric);
-    Assert.assertEquals(splitTime2, splitTime1);
+    assertEquals(splitTime2, splitTime1);
 
     // End
     metricService.endStopWatch(callId, metric);
-    Assert.assertTrue(stopWatch.isStopped());
+    assertTrue(stopWatch.isStopped());
 
     // Make sure key is removed
     Assert.assertNull(timers.get(key));
@@ -911,7 +921,7 @@ public class MetricServiceTest {
     metricService.startStopWatch(callId, metric);
     doSomeTask(100);
 
-    Assert.assertTrue(metricService.getSplitTimeStopWatch(callId, metric) < 0);
+    assertTrue(metricService.getSplitTimeStopWatch(callId, metric) < 0);
   }
 
   private void doSomeTask(long sleep) {

@@ -8,6 +8,7 @@ import com.cisco.dsb.common.dto.RateLimitInfo.Action;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.metric.MetricClient;
+import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.wx2.dto.health.ServiceHealth;
 import com.cisco.wx2.metrics.InfluxPoint;
 import java.util.HashMap;
@@ -327,10 +328,15 @@ public class MetricServiceV2Test {
 
   @Test(description = "Test to check sgSupplier")
   public void sgStatusMetricSupplier() {
-    ConcurrentHashMap<String, Boolean> sgMapTest = new ConcurrentHashMap<>();
-    sgMapTest.put("sg1", true);
-    sgMapTest.put("sg2", false);
-    sgMapTest.put("sg3", false);
+    ConcurrentHashMap<ServerGroup, Boolean> sgMapTest = new ConcurrentHashMap<>();
+
+    ServerGroup serverGroup1 = ServerGroup.builder().setName("sg1").build();
+    ServerGroup serverGroup2 = ServerGroup.builder().setName("sg2").build();
+    ServerGroup serverGroup3 = ServerGroup.builder().setName("sg3").build();
+
+    sgMapTest.put(serverGroup1, true);
+    sgMapTest.put(serverGroup2, false);
+    sgMapTest.put(serverGroup3, false);
 
     metricService.setSgStatusMap(sgMapTest);
 
@@ -362,9 +368,12 @@ public class MetricServiceV2Test {
 
     metricService.setSgeStatusMap(sgeMapTest);
 
-    ConcurrentHashMap<String, String> sgetosgMapTest = new ConcurrentHashMap<>();
-    sgetosgMapTest.put("127.0.0.1:5060:UDP", "sg1");
-    sgetosgMapTest.put("127.0.0.1:5061:UDP", "sg2");
+    ServerGroup serverGroup1 = ServerGroup.builder().setName("sg1").build();
+    ServerGroup serverGroup2 = ServerGroup.builder().setName("sg2").build();
+
+    ConcurrentHashMap<String, ServerGroup> sgetosgMapTest = new ConcurrentHashMap<>();
+    sgetosgMapTest.put("127.0.0.1:5060:UDP", serverGroup1);
+    sgetosgMapTest.put("127.0.0.1:5061:UDP", serverGroup2);
     // sgetosgMapTest.put("127.0.0.1:5062:UDP", "sg2");
 
     metricService.setSgeToSgMapping(sgetosgMapTest);

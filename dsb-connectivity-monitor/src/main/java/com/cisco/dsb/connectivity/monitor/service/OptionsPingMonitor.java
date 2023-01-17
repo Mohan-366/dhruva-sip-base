@@ -91,7 +91,7 @@ public class OptionsPingMonitor {
       }
       logger.info("Starting OPTIONS pings for elements of ServerGroup: {}", serverGroup);
       serverGroupStatus.putIfAbsent(serverGroup.getHostName(), true);
-      this.metricsService.getSgStatusMap().put(serverGroup.getName(), true);
+      this.metricsService.getSgStatusMap().put(serverGroup, true);
       pingPipeLine(serverGroup);
     }
   }
@@ -106,24 +106,18 @@ public class OptionsPingMonitor {
     if (!serverGroupStatus.containsKey(serverGroup.getHostName())) {
       logger.info("Marking ServerGroup {} as UP initially", serverGroup.getName());
       serverGroupStatus.put(serverGroup.getHostName(), true);
-      this.metricsService.getSgStatusMap().put(serverGroup.getName(), true);
+      this.metricsService.getSgStatusMap().put(serverGroup, true);
     }
     return getElements(serverGroup)
         .filter(
             upFilter.and(isExpiredStatus(serverGroup.getOptionsPingPolicy().getUpTimeInterval())))
-        .flatMap(
-            element ->
-                sendPingRequestToUpElement(
-                    serverGroup.getName(),
-                    serverGroup.getNetworkName(),
-                    element,
-                    serverGroup.getOptionsPingPolicy()))
+        .flatMap(element -> sendPingRequestToUpElement(serverGroup, element))
         .transformDeferred(responseFlux -> handleStatusUpdate(responseFlux, serverGroup, true))
         .onErrorResume(
-            (err) -> {
+            err -> {
               logger.warn("Uncaught error while creating UP element flux {},restarting flux", err);
               serverGroupStatus.put(serverGroup.getHostName(), false);
-              metricsService.sendSGMetric(serverGroup.getName(), false);
+              metricsService.sendSGMetric(serverGroup, false);
               return Mono.empty();
             })
         .repeatWhen(
@@ -140,18 +134,12 @@ public class OptionsPingMonitor {
             upFilter
                 .negate()
                 .and(isExpiredStatus(serverGroup.getOptionsPingPolicy().getDownTimeInterval())))
-        .flatMap(
-            element ->
-                sendPingRequestToDownElement(
-                    serverGroup.getName(),
-                    serverGroup.getNetworkName(),
-                    element,
-                    serverGroup.getOptionsPingPolicy()))
+        .flatMap(element -> sendPingRequestToDownElement(serverGroup, element))
         .transform(responseFlux -> handleStatusUpdate(responseFlux, serverGroup, false))
         .onErrorResume(
-            (err) -> {
+            err -> {
               serverGroupStatus.put(serverGroup.getHostName(), false);
-              metricsService.sendSGMetric(serverGroup.getName(), false);
+              metricsService.sendSGMetric(serverGroup, false);
               logger.warn(
                   "Uncaught error while creating DOWN element flux {},restarting flux", err);
               return Mono.empty();
@@ -177,22 +165,23 @@ public class OptionsPingMonitor {
   /**
    * Separate methods to ping up elements and retries will be performed only in case of up elements.
    *
-   * @param network network to use while sending OPTIONS
+   * @param serverGroup
    * @param element element to send OPTIONS to
-   * @param optionsPingPolicy policy to use while retrying with various ping intervals
    * @return ResponseData with element and either of SIPResponse or Exception.
    */
   protected Mono<ResponseData> sendPingRequestToUpElement(
-      String sgName,
-      String network,
-      ServerGroupElement element,
-      OptionsPingPolicy optionsPingPolicy) {
+      ServerGroup serverGroup, ServerGroupElement element) {
 
-    this.metricsService.getSgeToSgMapping().putIfAbsent(element.toUniqueElementString(), sgName);
+    this.metricsService
+        .getSgeToSgMapping()
+        .putIfAbsent(element.toUniqueElementString(), serverGroup);
+    OptionsPingPolicy optionsPingPolicy = serverGroup.getOptionsPingPolicy();
     int downInterval = optionsPingPolicy.getDownTimeInterval();
     logger.debug("Sending ping to UP element: {}", element);
     return Mono.defer(
-            () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
+            () ->
+                Mono.fromFuture(
+                    createAndSendRequest(serverGroup.getNetworkName(), element, optionsPingPolicy)))
         .doOnError(
             throwable ->
                 logger.error(
@@ -209,21 +198,23 @@ public class OptionsPingMonitor {
    * Separate methods to ping up elements and retries will not be performed in case of down
    * elements.
    *
-   * @param network network to use while sending OPTIONS
+   * @param serverGroup
    * @param element element to send OPTIONS to
-   * @param optionsPingPolicy policy to use while retrying with various ping intervals
    * @return ResponseData with element and either of SIPResponse or Exception.
    */
   protected Mono<ResponseData> sendPingRequestToDownElement(
-      String sgName,
-      String network,
-      ServerGroupElement element,
-      OptionsPingPolicy optionsPingPolicy) {
+      ServerGroup serverGroup, ServerGroupElement element) {
 
     logger.debug("Sending ping to DOWN element: {}", element);
-    this.metricsService.getSgeToSgMapping().putIfAbsent(element.toUniqueElementString(), sgName);
+    this.metricsService
+        .getSgeToSgMapping()
+        .putIfAbsent(element.toUniqueElementString(), serverGroup);
+
     return Mono.defer(
-            () -> Mono.fromFuture(createAndSendRequest(network, element, optionsPingPolicy)))
+            () ->
+                Mono.fromFuture(
+                    createAndSendRequest(
+                        serverGroup.getNetworkName(), element, serverGroup.getOptionsPingPolicy())))
         .map(sipResponse -> new ResponseData(sipResponse, element))
         .onErrorResume(
             throwable -> {
@@ -309,7 +300,7 @@ public class OptionsPingMonitor {
             "Error response received for element",
             element,
             serverGroup.getNetworkName());
-        metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
+        metricsService.sendSGElementMetric(serverGroup, element.getUniqueString(), false);
         elementStatus.put(key, new Status(false, 0));
       }
       return;
@@ -328,12 +319,12 @@ public class OptionsPingMonitor {
           "Error response received for element",
           element,
           serverGroup.getNetworkName());
-      metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), false);
+      metricsService.sendSGElementMetric(serverGroup, element.getUniqueString(), false);
     } else if (!prevStatus.isUp() && !failed) {
       elementStatus.put(key, new Status(true, 0));
       logger.info("{} received for DOWN element: {}. Marking it as UP.", responseCode, element);
       Event.emitSGElementUpEvent(serverGroup.getName(), element, serverGroup.getNetworkName());
-      metricsService.sendSGElementMetric(serverGroup.getName(), element.getUniqueString(), true);
+      metricsService.sendSGElementMetric(serverGroup, element.getUniqueString(), true);
     }
     if (!failed) sgStatus.compareAndSet(false, true);
   }
@@ -346,14 +337,14 @@ public class OptionsPingMonitor {
       this.serverGroupStatus.put(serverGroup.getHostName(), true);
       logger.info("Marking Servergroup {} as UP from DOWN", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), false);
-      metricsService.sendSGMetric(serverGroup.getName(), true);
+      metricsService.sendSGMetric(serverGroup, true);
     }
     // marking sg down if currentStatus is down and prev is up and if it's upFlux only
     else if (!currentStatus && previousStatus && upFlux) {
       this.serverGroupStatus.put(serverGroup.getHostName(), false);
       logger.info("Marking ServerGroup {} as DOWN from UP", serverGroup.getName());
       Event.emitSGEvent(serverGroup.getName(), true);
-      metricsService.sendSGMetric(serverGroup.getName(), false);
+      metricsService.sendSGMetric(serverGroup, false);
     }
   }
 

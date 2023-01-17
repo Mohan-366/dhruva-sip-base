@@ -53,7 +53,7 @@ public class OptionsPingMonitorTest {
   ServerGroupElement sge1, sge2, sge3, sge4, sge5, sge6;
 
   Map<String, Status> expectedElementStatusInt = new HashMap<>();
-  Map<String, String> expectedMapping = new HashMap<>();
+  Map<String, ServerGroup> expectedMapping = new HashMap<>();
 
   List<ServerGroup> serverGroups = new ArrayList<>();
   OptionsPingPolicy opPolicy = OptionsPingPolicy.builder().build();
@@ -152,7 +152,7 @@ public class OptionsPingMonitorTest {
                 .build();
         portCounter++;
         sgeList.add(sge);
-        expectedMapping.put(sge.toUniqueElementString(), sg.getHostName());
+        expectedMapping.put(sge.toUniqueElementString(), sg);
         int select = new Random().nextInt(3 - 1 + 1) + 1;
 
         switch (select) {
@@ -330,7 +330,7 @@ public class OptionsPingMonitorTest {
     optionsPingMonitor2.startMonitoring(map);
     Thread.sleep(1500);
     assertTrue(optionsPingMonitor2.serverGroupStatus.get(sg.getName()));
-    assertEquals(metricService.getSgStatusMap(), optionsPingMonitor2.serverGroupStatus);
+    assertTrue(metricService.getSgStatusMap().get(sg));
     optionsPingMonitor2.disposeExistingFlux();
   }
 
@@ -394,18 +394,18 @@ public class OptionsPingMonitorTest {
         .when(optionsPingMonitor4)
         .createAndSendRequest("testSG", sge, optionsPingPolicy);
     Thread.sleep(500);
-    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<ServerGroup> argumentCaptor = ArgumentCaptor.forClass(ServerGroup.class);
     ArgumentCaptor<String> argumentCaptor1 = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<Boolean> argumentCaptor2 = ArgumentCaptor.forClass(Boolean.class);
 
     verify(metricService)
         .sendSGElementMetric(
             argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor1.getValue(), "127.0.0.10:10:UDP");
     Assert.assertEquals(argumentCaptor2.getValue(), false);
     verify(metricService).sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor2.getValue(), false);
 
     // Marking sge as up by sending 200, should send UP metric
@@ -417,11 +417,11 @@ public class OptionsPingMonitorTest {
     verify(metricService, times(2))
         .sendSGElementMetric(
             argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor2.getValue(), true);
     verify(metricService, times(2))
         .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor2.getValue(), true);
 
     Exception exception =
@@ -436,11 +436,11 @@ public class OptionsPingMonitorTest {
     verify(metricService, times(3))
         .sendSGElementMetric(
             argumentCaptor.capture(), argumentCaptor1.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor2.getValue(), false);
     verify(metricService, times(3))
         .sendSGMetric(argumentCaptor.capture(), argumentCaptor2.capture());
-    Assert.assertEquals(argumentCaptor.getValue(), "testSG");
+    Assert.assertEquals(argumentCaptor.getValue(), sg);
     Assert.assertEquals(argumentCaptor2.getValue(), false);
 
     optionsPingMonitor4.disposeExistingFlux();
@@ -672,8 +672,10 @@ public class OptionsPingMonitorTest {
         .createAndSendRequest(anyString(), any(), any());
     ResponseData exceptionResponse = new ResponseData(exception, sge1);
 
+    ServerGroup serverGroupTemp = ServerGroup.builder().setName("temp").build();
+
     Mono<ResponseData> response =
-        optionsPingMonitor5.sendPingRequestToDownElement("temp", "net1", sge1, optionsPingPolicy);
+        optionsPingMonitor5.sendPingRequestToDownElement(serverGroupTemp, sge1);
 
     StepVerifier.create(response.log()).expectNext(exceptionResponse).verifyComplete();
   }
@@ -1123,7 +1125,7 @@ public class OptionsPingMonitorTest {
         .when(optionsPingTransaction)
         .proxySendOutBoundRequest(any(), any(), any());
     optionsPingMonitor.serverGroupStatus.putIfAbsent(sg.getHostName(), true);
-    optionsPingMonitor.metricsService.getSgStatusMap().put(sg.getName(), true);
+    optionsPingMonitor.metricsService.getSgStatusMap().put(sg, true);
     optionsPingMonitor.pingPipeLine(sg);
     while (timeStamp.size() < 6) {
       Thread.sleep(2000);
