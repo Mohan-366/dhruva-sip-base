@@ -4,6 +4,7 @@ import static org.mockito.Mockito.*;
 
 import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.config.DhruvaConfig;
+import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
@@ -12,7 +13,7 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.tls.CertTrustManagerProperties;
+import com.cisco.dsb.common.sip.tls.CertServiceTrustManagerProperties;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.transport.Transport;
@@ -52,7 +53,10 @@ import reactor.test.StepVerifier;
 public class ProxyServiceTest {
 
   @Mock CommonConfigurationProperties commonConfigurationProperties;
-  @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
+
+  @Spy
+  CertServiceTrustManagerProperties certServiceTrustManagerProperties =
+      new CertServiceTrustManagerProperties();
 
   @Mock MetricService metricsService;
 
@@ -103,18 +107,21 @@ public class ProxyServiceTest {
         .thenReturn(scheduledThreadPoolExecutor);
     when(dhruvaExecutorService.getExecutorThreadPool(any())).thenReturn(stripedExecutorService);
     when(commonConfigurationProperties.getKeepAlivePeriod()).thenReturn(5000L);
-    when(commonConfigurationProperties.getClientAuthType()).thenReturn("Enabled");
     when(commonConfigurationProperties.getReliableKeepAlivePeriod()).thenReturn("25");
     when(commonConfigurationProperties.getMinKeepAliveTimeSeconds()).thenReturn("20");
-
-    String keystorePath =
+    TruststoreConfigurationProperties truststoreConfigurationProperties =
+        new TruststoreConfigurationProperties();
+    String keyStorePath =
         ProxyServiceTest.class.getClassLoader().getResource("keystore.jks").getPath();
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
-    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
-    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
-    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
-    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
-    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
+    truststoreConfigurationProperties.setTrustStoreFilePath(keyStorePath);
+    truststoreConfigurationProperties.setTrustStoreType("jks");
+    truststoreConfigurationProperties.setTrustStorePassword("dsb123");
+    truststoreConfigurationProperties.setKeyStoreFilePath(keyStorePath);
+    truststoreConfigurationProperties.setKeyStorePassword("dsb123");
+    truststoreConfigurationProperties.setKeyStoreType("jks");
+    when(commonConfigurationProperties.getTruststoreConfig())
+        .thenReturn(truststoreConfigurationProperties);
+
     udpListenPoint1 =
         SIPListenPoint.SIPListenPointBuilder()
             .setName("UDPNetwork1")

@@ -40,7 +40,7 @@ public class JainStackInitializerTest {
   @BeforeClass
   public void before() {
     MockitoAnnotations.initMocks(this);
-    when(commonConfigurationProperties.getTlsOcspResponseTimeoutInSeconds()).thenReturn(1);
+    // when(commonConfigurationProperties.getTlsOcspResponseTimeoutInSeconds()).thenReturn(1);
   }
 
   @Test(

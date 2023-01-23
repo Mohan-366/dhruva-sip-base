@@ -1,6 +1,8 @@
 package com.cisco.dsb.common.config.sip;
 
+import com.cisco.dsb.common.config.CertConfigurationProperties;
 import com.cisco.dsb.common.config.RoutePolicy;
+import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.maintanence.MaintenancePolicy;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
@@ -8,13 +10,9 @@ import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import gov.nist.javax.sip.stack.ClientAuthType;
+import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -31,76 +29,42 @@ public class CommonConfigurationPropertiesTest {
 
   @Test(description = "tests the getters and setters for one set of properties")
   public void testGetterSettersForFewProps() {
-    List<String> cipherSuites = new ArrayList<>();
-    cipherSuites.add("Cipher1");
-    List<String> tlsProtocols = new ArrayList<>();
-    tlsProtocols.add("TLSv1.1");
 
-    props.setEnableCertService(true);
     props.setUseRedisAsCache(true);
-    props.setTlsAuthType(TLSAuthenticationType.NONE);
     props.setSipCertificate("sipCertificate");
     props.setSipPrivateKey("sipPrivateKey");
     props.setUdpEventloopThreadCount(10);
     props.setTlsEventloopThreadCount(10);
     props.setConnectionIdleTimeout(36000);
-    props.setTlsCiphers(cipherSuites);
     props.setHostPortEnabled(true);
     props.setHostInfo("testHost");
-    props.setAcceptedIssuersEnabled(true);
     props.setTlsHandShakeTimeOutMilliSeconds(10000);
     props.setConnectionWriteTimeoutInMllis(10000);
-    props.setTlsOcspResponseTimeoutInSeconds(10);
-    props.setTlsTrustStoreFilePath("/path/to/truststore");
-    props.setTlsTrustStoreType("pkcs12");
-    props.setTlsTrustStorePassword("trustPass");
-    props.setTlsKeyStoreFilePath("/path/to/keystore");
-    props.setTlsKeyStoreType("jks");
-    props.setTlsKeyStorePassword("keyPass");
-    props.setTlsCertRevocationEnableSoftFail(true);
-    props.setTlsCertEnableOcsp(true);
-    props.setClientAuthType("Enabled");
-    props.setNioEnabled(true);
+
     props.setKeepAlivePeriod(10);
     props.setReliableKeepAlivePeriod("10");
     props.setMinKeepAliveTimeSeconds("10");
     props.setLogKeepAlivesEnabled(true);
     props.setSocketConnectionTimeout(10000);
     props.setDhruvaUserAgent("TestAgent");
-    props.setTlsProtocols(tlsProtocols);
 
-    Assert.assertTrue(props.isEnableCertService());
     Assert.assertTrue(props.isUseRedisAsCache());
-    Assert.assertEquals(props.getTlsAuthType(), TLSAuthenticationType.NONE);
     Assert.assertEquals(props.getSipCertificate(), "sipCertificate");
     Assert.assertEquals(props.getSipPrivateKey(), "sipPrivateKey");
     Assert.assertEquals(props.getUdpEventloopThreadCount(), 10);
     Assert.assertEquals(props.getTlsEventloopThreadCount(), 10);
     Assert.assertEquals(props.getConnectionIdleTimeout(), 36000);
-    Assert.assertEquals(props.getTlsCiphers(), cipherSuites);
     Assert.assertTrue(props.isHostPortEnabled());
     Assert.assertEquals(props.getHostInfo(), "testHost");
-    Assert.assertTrue(props.isAcceptedIssuersEnabled());
     Assert.assertEquals(props.getTlsHandShakeTimeOutMilliSeconds(), 10000);
     Assert.assertEquals(props.getConnectionWriteTimeoutInMllis(), 10000);
-    Assert.assertEquals(props.getTlsOcspResponseTimeoutInSeconds(), 10);
-    Assert.assertEquals(props.getTlsTrustStoreFilePath(), "/path/to/truststore");
-    Assert.assertEquals(props.getTlsTrustStoreType(), "pkcs12");
-    Assert.assertEquals(props.getTlsTrustStorePassword(), "trustPass");
-    Assert.assertEquals(props.getTlsKeyStoreFilePath(), "/path/to/keystore");
-    Assert.assertEquals(props.getTlsKeyStoreType(), "jks");
-    Assert.assertEquals(props.getTlsKeyStorePassword(), "keyPass");
-    Assert.assertTrue(props.isTlsCertRevocationEnableSoftFail());
-    Assert.assertTrue(props.isTlsCertEnableOcsp());
-    Assert.assertEquals(props.getClientAuthType(), "Enabled");
-    Assert.assertTrue(props.isNioEnabled());
+    Assert.assertFalse(props.isNioEnabled());
     Assert.assertEquals(props.getKeepAlivePeriod(), 10);
     Assert.assertEquals(props.getReliableKeepAlivePeriod(), "10");
     Assert.assertEquals(props.getMinKeepAliveTimeSeconds(), "10");
     Assert.assertTrue(props.isLogKeepAlivesEnabled());
     Assert.assertEquals(CommonConfigurationProperties.getSocketConnectionTimeout(), 10000);
     Assert.assertEquals(props.getDhruvaUserAgent(), "TestAgent");
-    Assert.assertEquals(props.getTlsProtocols(), tlsProtocols);
   }
 
   @Test(description = "tests getter setters of dns properties")
@@ -301,5 +265,45 @@ public class CommonConfigurationPropertiesTest {
 
     props.setMaintenancePolicy(maintenancePolicyMap);
     Assert.assertEquals(props.getMaintenancePolicyMap(), maintenancePolicyMap);
+  }
+
+  @Test
+  public void testTlsConfiguration() {
+    List<String> cipherSuites = new ArrayList<>();
+    cipherSuites.add("Cipher1");
+    List<String> tlsProtocols = new ArrayList<>();
+    tlsProtocols.add("TLSv1.1");
+    tlsProtocols.add("TLSv1.2");
+    TruststoreConfigurationProperties truststoreConfigurationProperties =
+        new TruststoreConfigurationProperties();
+    truststoreConfigurationProperties.setCiphers(cipherSuites);
+    truststoreConfigurationProperties.setTrustStoreFilePath("/path/to/truststore");
+    truststoreConfigurationProperties.setTrustStoreType("pkcs12");
+    truststoreConfigurationProperties.setTrustStorePassword("trustPass");
+    truststoreConfigurationProperties.setKeyStoreFilePath("/path/to/keystore");
+    truststoreConfigurationProperties.setKeyStoreType("jks");
+    truststoreConfigurationProperties.setKeyStorePassword("keyPass");
+    truststoreConfigurationProperties.setOcspResponseTimeoutInSeconds(10);
+    truststoreConfigurationProperties.setTlsProtocols(tlsProtocols);
+
+    CertConfigurationProperties certConfigurationProperties = new CertConfigurationProperties();
+    certConfigurationProperties.setAcceptedIssuersEnabled(true);
+    certConfigurationProperties.setOcsp(true);
+    certConfigurationProperties.setClientAuthType(ClientAuthType.Enabled);
+    certConfigurationProperties.setRevocationSoftfail(true);
+    certConfigurationProperties.setTrustedSipSources("akg.cisco.com,akg.webex.com");
+    certConfigurationProperties.setTrustAllCerts(false);
+    certConfigurationProperties.setRequiredTrustedSipSources(true);
+
+    props.setTruststoreConfiguration(truststoreConfigurationProperties);
+    props.setListenPoints(
+        Collections.singletonList(
+            SIPListenPoint.SIPListenPointBuilder()
+                .setCertPolicy(certConfigurationProperties)
+                .build()));
+
+    Assert.assertEquals(props.getTruststoreConfig(), truststoreConfigurationProperties);
+    Assert.assertEquals(
+        props.getListenPoints().get(0).getCertPolicy(), certConfigurationProperties);
   }
 }

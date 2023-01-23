@@ -19,7 +19,6 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
-import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
@@ -42,12 +41,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.PreDestroy;
-import javax.net.ssl.KeyManager;
 import javax.sip.*;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
@@ -76,10 +73,6 @@ public class ProxyService {
 
   @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
 
-  @Autowired DsbTrustManager dsbTrustManager;
-
-  @Nullable @Autowired KeyManager keyManager;
-
   @Autowired DsbRateLimiter dsbRateLimiter;
 
   ConcurrentHashMap<String, SipStack> proxyStackMap = new ConcurrentHashMap<>();
@@ -91,7 +84,7 @@ public class ProxyService {
 
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = commonConfigurationProperties.getListenPoints();
-    ArrayList<CompletableFuture> listenPointFutures = new ArrayList<CompletableFuture>();
+    ArrayList<CompletableFuture<SipStack>> listenPointFutures = new ArrayList<>();
     DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
     for (SIPListenPoint sipListenPoint : sipListenPoints) {
 
@@ -108,10 +101,8 @@ public class ProxyService {
               commonConfigurationProperties,
               sipListenPoint,
               dsbRateLimiter,
-              (transport == Transport.TLS)
-                  ? (getTrustManager(sipListenPoint.getTlsAuthType()))
-                  : null,
-              (transport == Transport.TLS) ? keyManager : null,
+              (transport == Transport.TLS) ? (getTrustManager(sipListenPoint)) : null,
+              (transport == Transport.TLS) ? dsbTrustManagerFactory.getKeyManager() : null,
               dhruvaExecutorService,
               metricService,
               proxyPacketProcessor);
@@ -335,7 +326,7 @@ public class ProxyService {
           new SipMetricsContext(
               metricService,
               SipMetricsContext.State.proxyNewRequestFinalResponseProcessed,
-              sipRequest.getCallId().getCallId(),
+              sipRequest.getCallId() != null ? sipRequest.getCallId().getCallId() : null,
               callType,
               true);
         }
@@ -398,13 +389,8 @@ public class ProxyService {
     return timeoutEventMono.mapNotNull(sipProxyManager.handleProxyTimeoutEvent());
   }
 
-  private DsbTrustManager getTrustManager(TLSAuthenticationType tlsAuthenticationType)
-      throws Exception {
-    if (tlsAuthenticationType != commonConfigurationProperties.getTlsAuthType()) {
-      return dsbTrustManagerFactory.getDsbTrsutManager(tlsAuthenticationType);
-    } else {
-      return dsbTrustManager;
-    }
+  private DsbTrustManager getTrustManager(SIPListenPoint sipListenPoint) throws Exception {
+    return dsbTrustManagerFactory.getDsbTrustManager(sipListenPoint.getCertPolicy());
   }
 
   public static Function<Context, Context> proxyServiceContext() {

@@ -1,152 +1,244 @@
 package com.cisco.dsb.common.sip.tls;
 
-import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_PASS;
-import static com.cisco.dsb.common.sip.tls.CertTrustManagerProperties.DHRUVA_SERVICE_USER;
+import static com.cisco.dsb.common.sip.tls.CertServiceTrustManagerProperties.DHRUVA_SERVICE_PASS;
+import static com.cisco.dsb.common.sip.tls.CertServiceTrustManagerProperties.DHRUVA_SERVICE_USER;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.testng.Assert.*;
 
-import com.cisco.dsb.common.config.DhruvaConfig;
+import com.cisco.dsb.common.config.CertConfigurationProperties;
+import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.wx2.certs.client.CertsX509TrustManager;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.PrivilegedActionException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.X509TrustManager;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class DsbTrustManagerTest {
+  @Mock X509TrustManager x509TrustManager;
+  private DsbTrustManagerFactory dsbTrustManagerFactory;
+  private CommonConfigurationProperties commonConfigurationProperties;
+  private TruststoreConfigurationProperties truststoreConfigurationProperties;
+  private String keyStorePath;
 
-  @Mock CommonConfigurationProperties commonConfigurationProperties;
-  @Spy CertTrustManagerProperties certTrustManagerProperties = new CertTrustManagerProperties();
-  @Mock CertsX509TrustManager mockCertsX509TrustManager;
-  private String keystorePath;
-  @InjectMocks DsbTrustManagerFactory dsbTrustManagerFactory;
-  @InjectMocks DhruvaConfig dhruvaConfig;
+  @DataProvider
+  public static Object[][] getRevocation() {
+    // format = {revocationEnabled,softfailEnabled}
+    return new Object[][] {{true, true}, {true, false}, {false, true}, {false, false}};
+  }
 
-  @BeforeClass
-  public void before() {
+  @BeforeTest
+  public void init() {
+    MockitoAnnotations.openMocks(this);
+    keyStorePath = DsbTrustManagerTest.class.getClassLoader().getResource("ts.p12").getPath();
+    truststoreConfigurationProperties = new TruststoreConfigurationProperties();
+    truststoreConfigurationProperties.setTrustStoreFilePath(keyStorePath);
+    truststoreConfigurationProperties.setTrustStoreType("pkcs12");
+    truststoreConfigurationProperties.setTrustStorePassword("dsb123");
+    truststoreConfigurationProperties.setKeyStoreFilePath(keyStorePath);
+    truststoreConfigurationProperties.setKeyStoreType("pkcs12");
+    commonConfigurationProperties = new CommonConfigurationProperties();
+    commonConfigurationProperties.setTruststoreConfiguration(truststoreConfigurationProperties);
+    dsbTrustManagerFactory = new DsbTrustManagerFactory();
+    dsbTrustManagerFactory.setCommonConfigurationProperties(commonConfigurationProperties);
+  }
 
-    dsbTrustManagerFactory = spy(new DsbTrustManagerFactory());
-    MockitoAnnotations.initMocks(this);
-    DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
-    keystorePath = DsbTrustManagerTest.class.getClassLoader().getResource("keystore.jks").getPath();
+  @BeforeMethod
+  public void setup() {
+    reset(x509TrustManager);
   }
 
   @Test(
       description =
-          "fetch system trust manager of a trust manager factory and check for valid certificate in keystore")
-  public void testSystemTrustManager() throws Exception {
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
-    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
-    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
-    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
-    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
-    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
-    TrustManager tm = dhruvaConfig.dsbTrustManager();
-    Assert.assertNotNull(tm);
-    Assert.assertTrue(tm instanceof DsbTrustManager);
-    Assert.assertTrue(tm instanceof X509TrustManager);
-    X509Certificate cert = CertUtil.pemToCert(("server.crt.pem"));
+          "fetch system trust manager of a trust manager factory and check for valid certificate in keystore",
+      dataProvider = "getRevocation")
+  public void testSystemTrustManagerRevocation(boolean revoke, boolean softfail) throws Exception {
+    CertConfigurationProperties certConfigurationProperties = new CertConfigurationProperties();
+    certConfigurationProperties.setRevocationCheck(revoke);
+    certConfigurationProperties.setRevocationSoftfail(softfail);
+    certConfigurationProperties.setOcsp(false);
+    DsbTrustManager tm = dsbTrustManagerFactory.getDsbTrustManager(certConfigurationProperties);
+    X509Certificate cert = CertUtil.pemToCert(("cert.crt"));
 
     X509Certificate[] certs = {cert};
-    ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
-    ((X509TrustManager) tm).checkServerTrusted(certs, "RSA");
+    boolean revokeException = false;
+    try {
+      tm.checkClientTrusted(certs, "RSA");
+      tm.checkServerTrusted(certs, "RSA");
+    } catch (CertificateException ex) {
+      if (ex.getMessage().contains("revocation")) {
+        revokeException = true;
+      }
+    }
+
+    assertEquals(revokeException, revoke && !softfail);
   }
 
   @Test(
       description = "get systemTrustManager and check for invalid date in cert in keystore",
       expectedExceptions = {CertificateException.class})
   public void testSystemTrustManagerForInvalidDateInCertificate() throws Exception {
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
-    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
-    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
-    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
-    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
-    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
-    TrustManager tm = dhruvaConfig.dsbTrustManager();
-    Assert.assertNotNull(tm);
-    Assert.assertTrue(tm instanceof DsbTrustManager);
-    Assert.assertTrue(tm instanceof X509TrustManager);
-    X509Certificate cert = CertUtil.pemToCert(("invalid_date.crt.pem"));
+    DsbTrustManager tm = dsbTrustManagerFactory.getDsbTrustManager();
+    X509Certificate cert = CertUtil.pemToCert(("expired_cert.crt"));
 
     X509Certificate[] certs = {cert};
-    ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
+    tm.checkServerTrusted(certs, "RSA");
   }
 
   @Test(
       description = "get systemTrustManager and check for certificate not in keystore",
       expectedExceptions = {CertificateException.class})
   public void testSystemTrustManagerForUntrustedCertificate() throws Exception {
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
-    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
-    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
-    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
-    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
-    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
-    TrustManager tm = dhruvaConfig.dsbTrustManager();
-    Assert.assertNotNull(tm);
-    Assert.assertTrue(tm instanceof DsbTrustManager);
-    Assert.assertTrue(tm instanceof X509TrustManager);
-    X509Certificate cert = CertUtil.pemToCert(("not_in_keystore.crt.pem"));
+    DsbTrustManager tm = dsbTrustManagerFactory.getDsbTrustManager();
+    X509Certificate cert = CertUtil.pemToCert(("untrusted.crt"));
 
     X509Certificate[] certs = {cert};
-    ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
+    tm.checkClientTrusted(certs, "RSA");
+  }
+
+  @DataProvider
+  public Object[][] getOCSP() {
+    return new Object[][] {{true}, {false}};
+  }
+
+  @Test(description = "OCSP revocation check", dataProvider = "getOCSP")
+  public void testOCSPValidation(boolean ocsp) throws Exception {
+    CertConfigurationProperties certConfigurationProperties = new CertConfigurationProperties();
+    certConfigurationProperties.setRevocationCheck(true);
+    certConfigurationProperties.setOcsp(ocsp);
+    DsbTrustManager tm = dsbTrustManagerFactory.getDsbTrustManager(certConfigurationProperties);
+    X509Certificate cert = CertUtil.pemToCert(("cert.crt"));
+
+    X509Certificate[] certs = {cert};
+    boolean crlException = false;
+    boolean ocspException = false;
+    try {
+      tm.checkServerTrusted(certs, "RSA");
+    } catch (CertificateException ex) {
+      if (ocsp && ex.getCause() != null && ex.getCause().getMessage().contains("OCSP")) ocspException = true;
+      else if (ex.getMessage().contains("revocation")) crlException = true;
+    }
+
+    assertFalse(crlException);
+    assertEquals(ocspException, ocsp);
   }
 
   @Test(description = "getCertTrustManager ")
-  public void testCertTrustManager() throws Exception {
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(true);
-    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.MTLS);
-    when(commonConfigurationProperties.getTlsTrustStoreFilePath()).thenReturn(keystorePath);
-    when(commonConfigurationProperties.getTlsTrustStoreType()).thenReturn("jks");
-    when(commonConfigurationProperties.getTlsTrustStorePassword()).thenReturn("dsb123");
-    when(commonConfigurationProperties.isTlsCertRevocationEnableSoftFail()).thenReturn(true);
-    when(commonConfigurationProperties.isTlsCertEnableOcsp()).thenReturn(true);
-    CertTrustManagerFactory.setCertsX509TrustManager(mockCertsX509TrustManager);
+  public void testCertServiceTrustManager() throws Exception {
     System.setProperty(DHRUVA_SERVICE_PASS, "dummyPass");
     System.setProperty(DHRUVA_SERVICE_USER, "dummyUserId");
     System.setProperty("dhruvaClientId", "dummyClientId");
     System.setProperty("dhruvaClientSecret", "dummyClientPassword");
-    TrustManager tm = dhruvaConfig.dsbTrustManager();
-    Assert.assertNotNull(tm);
-    X509Certificate cert = CertUtil.pemToCert(("server.crt.pem"));
+    TruststoreConfigurationProperties truststoreConfigurationProperties =
+        new TruststoreConfigurationProperties();
+    truststoreConfigurationProperties.setEnableCertService(true);
+    CommonConfigurationProperties commonConfigurationProperties =
+        new CommonConfigurationProperties();
+    commonConfigurationProperties.setTruststoreConfiguration(truststoreConfigurationProperties);
+    DsbTrustManagerFactory dsbTrustManagerFactory = new DsbTrustManagerFactory();
+    dsbTrustManagerFactory.setCommonConfigurationProperties(commonConfigurationProperties);
+    dsbTrustManagerFactory.setCertTrustManagerProperties(new CertServiceTrustManagerProperties());
+    DsbTrustManager trustManager = dsbTrustManagerFactory.getDsbTrustManager();
 
-    X509Certificate[] certs = {cert};
-    ((X509TrustManager) tm).checkClientTrusted(certs, "RSA");
-    verify((X509TrustManager) mockCertsX509TrustManager, times(1)).checkClientTrusted(any(), any());
-  }
-
-  @Test(description = "test permissive trust manager creation")
-  public void testPermissiveTrustManager() throws Exception {
-    when(commonConfigurationProperties.isEnableCertService()).thenReturn(false);
-    when(commonConfigurationProperties.getTlsAuthType()).thenReturn(TLSAuthenticationType.NONE);
-
-    TrustManager tm = dhruvaConfig.dsbTrustManager();
-    Assert.assertNotNull(tm);
-    Assert.assertTrue(tm instanceof DsbTrustManager);
-    Assert.assertTrue(tm instanceof X509TrustManager);
-    X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
-    ((X509TrustManager) tm).checkClientTrusted(certs, "");
+    assertTrue(trustManager.trustManager instanceof CertsX509TrustManager);
   }
 
   @Test(
       description = "testing for null keymanager and trustManager",
-      expectedExceptions = {IllegalArgumentException.class})
+      expectedExceptions = {NullPointerException.class})
   public void testForNullValues() throws Exception {
     DsbNetworkLayer dsbNetworkLayer = new DsbNetworkLayer();
     dsbNetworkLayer.init(null, null);
+  }
+
+  @Test
+  public void testAllPermissive() throws CertificateException {
+    DsbTrustManager dsbTrustManager = new DsbTrustManager(null);
+    X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
+    dsbTrustManager.checkClientTrusted(certs, "");
+    dsbTrustManager.checkServerTrusted(certs, "");
+  }
+
+  @DataProvider
+  private Object[][] getValidations() {
+    return new Object[][] {{true}, {false}};
+  }
+
+  @Test(
+      description = "Test for certificate exception propagation.",
+      dataProvider = "getValidations")
+  public void testCertValidation(boolean valid) throws CertificateException {
+    doAnswer(
+            invocationOnMock -> {
+              if (!valid) throw new CertificateException("Invalid Client Certificate");
+              return null;
+            })
+        .when(x509TrustManager)
+        .checkClientTrusted(any(), anyString());
+    doAnswer(
+            invocationOnMock -> {
+              if (!valid) throw new CertificateException("Invalid Server Certificate");
+              return null;
+            })
+        .when(x509TrustManager)
+        .checkServerTrusted(any(), anyString());
+    DsbTrustManager dsbTrustManager = new DsbTrustManager(x509TrustManager);
+    X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
+    boolean gotClientException = false, gotServerException = false;
+    try {
+      dsbTrustManager.checkClientTrusted(certs, "");
+    } catch (CertificateException ex) {
+      gotClientException = true;
+    }
+
+    try {
+      dsbTrustManager.checkServerTrusted(certs, "");
+    } catch (CertificateException ex) {
+      gotServerException = true;
+    }
+    assertEquals(!valid, gotClientException);
+    assertEquals(!valid, gotServerException);
+  }
+
+  @Test(description = "Creation of Keymanager")
+  public void testKeyManager() throws Exception {
+    truststoreConfigurationProperties.setKeyStorePassword("dsb123");
+    truststoreConfigurationProperties.setKeyStoreFilePath(keyStorePath);
+    KeyManager keyManager = dsbTrustManagerFactory.getKeyManager();
+    assertNotNull(keyManager);
+  }
+
+  @Test(description = "Testing various invalid scenarios while creating keystore")
+  public void testKeyManagerFailure() throws Exception {
+    truststoreConfigurationProperties.setKeyStorePassword("invalid");
+    try {
+      dsbTrustManagerFactory.getKeyManager();
+      fail("Password is invalid, should throw IOException");
+    } catch (IOException ioException) {
+      if (!ioException.getMessage().contains("keystore password was incorrect")) {
+        fail("IOException for incorrect password does not match");
+      }
+    }
+
+    // invalid path
+    truststoreConfigurationProperties.setKeyStoreFilePath("invalid");
+    try {
+      dsbTrustManagerFactory.getKeyManager();
+      fail("Keystore path is invalid, should throw IOException");
+    } catch (PrivilegedActionException privilegedActionException) {
+      if (!(privilegedActionException.getCause() instanceof FileNotFoundException)) {
+        fail("Exception for invalid file does not match", privilegedActionException.getCause());
+      }
+    }
   }
 }

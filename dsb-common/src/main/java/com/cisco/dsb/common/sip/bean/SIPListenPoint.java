@@ -1,9 +1,9 @@
 package com.cisco.dsb.common.sip.bean;
 
+import com.cisco.dsb.common.config.CertConfigurationProperties;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
-import com.cisco.dsb.common.sip.tls.TLSAuthenticationType;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.stack.FixTransactionTimeOut;
 import java.net.*;
@@ -35,12 +35,6 @@ public class SIPListenPoint {
   private boolean attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
 
   @Builder.Default
-  private TLSAuthenticationType tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
-
-  @Builder.Default
-  private boolean enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
-
-  @Builder.Default
   private boolean enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
 
   @Builder.Default
@@ -52,6 +46,9 @@ public class SIPListenPoint {
   private String hostInterface;
 
   @Builder.Default private boolean enableRport = false;
+
+  @Builder.Default
+  private CertConfigurationProperties certPolicy = new CertConfigurationProperties();
 
   @Builder.Default
   @Setter(AccessLevel.NONE)
@@ -67,13 +64,12 @@ public class SIPListenPoint {
     this.port = CommonConfigurationProperties.DEFAULT_PORT;
     this.recordRoute = CommonConfigurationProperties.DEFAULT_RECORD_ROUTE_ENABLED;
     this.attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
-    this.tlsAuthType = CommonConfigurationProperties.DEFAULT_TLS_AUTH_TYPE;
-    this.enableCertService = CommonConfigurationProperties.DEFAULT_ENABLE_CERT_SERVICE;
     this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
     this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
     this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
     this.isPingTimeOutOverride = false;
     this.enableRport = false;
+    this.certPolicy = new CertConfigurationProperties();
   }
 
   public void setHostInterface(String hostInterface) {
@@ -122,12 +118,7 @@ public class SIPListenPoint {
             .append(enableRateLimiter);
     // For TLS
     if (transport.getValue() == Transport.TLS.getValue()) {
-      return sipListenPointString
-          .append(" tlsAuthentication Type = ")
-          .append(tlsAuthType)
-          .append(" isCertEnabled = ")
-          .append(enableCertService)
-          .toString();
+      return sipListenPointString.append(certPolicy).toString();
     }
     return sipListenPointString.toString();
   }

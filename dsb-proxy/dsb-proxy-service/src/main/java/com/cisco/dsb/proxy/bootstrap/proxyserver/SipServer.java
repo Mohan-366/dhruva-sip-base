@@ -1,5 +1,7 @@
 package com.cisco.dsb.proxy.bootstrap.proxyserver;
 
+import com.cisco.dsb.common.config.CertConfigurationProperties;
+import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.ratelimiter.DsbRateLimiter;
@@ -117,6 +119,10 @@ public class SipServer implements Server {
 
   private Properties getStackProperties(SIPListenPoint listenPoint) {
 
+    CertConfigurationProperties certConfigurationProperties = listenPoint.getCertPolicy();
+    TruststoreConfigurationProperties truststoreConfigurationProperties =
+        commonConfigurationProperties.getTruststoreConfig();
+
     Properties stackProps = ProxyStackFactory.getDefaultProxyStackProperties(listenPoint.getName());
     stackProps.setProperty("gov.nist.javax.sip.STACK_LOGGER", DhruvaStackLogger.class.getName());
     stackProps.setProperty("gov.nist.javax.sip.SERVER_LOGGER", DhruvaServerLogger.class.getName());
@@ -143,11 +149,34 @@ public class SipServer implements Server {
         "gov.nist.javax.sip.MESSAGE_PROCESSOR_FACTORY",
         DsbJainSipMessageProcessorFactory.class.getName());
     //    stackProps.setProperty("gov.nist.javax.sip.DEBUG_LOG", JainStackLogger.class.getName());
-    stackProps.setProperty(
-        "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE",
-        commonConfigurationProperties.getClientAuthType());
+    if (listenPoint.getTransport() == Transport.TLS) {
+      stackProps.setProperty(
+          "gov.nist.javax.sip.TLS_CLIENT_AUTH_TYPE",
+          certConfigurationProperties.getClientAuthType().toString());
+      stackProps.setProperty(
+          "gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS",
+          String.join(",", truststoreConfigurationProperties.getTlsProtocols()));
+      stackProps.setProperty(
+          "gov.nist.javax.sip.ENABLED_CIPHER_SUITES",
+          String.join(",", truststoreConfigurationProperties.getCiphers()));
+      stackProps.setProperty(
+          "javax.net.ssl.keyStore", truststoreConfigurationProperties.getKeyStoreFilePath());
+      stackProps.setProperty(
+          "javax.net.ssl.keyStorePassword",
+          truststoreConfigurationProperties.getKeyStorePassword());
+      stackProps.setProperty(
+          "javax.net.ssl.keyStoreType", truststoreConfigurationProperties.getKeyStoreType());
+      stackProps.setProperty(
+          "javax.net.ssl.trustStore", truststoreConfigurationProperties.getTrustStoreFilePath());
+      stackProps.setProperty(
+          "javax.net.ssl.trustStorePassword",
+          truststoreConfigurationProperties.getTrustStorePassword());
+      stackProps.setProperty(
+          "javax.net.ssl.trustStoreType", truststoreConfigurationProperties.getTrustStoreType());
+    }
+
     stackProps.setProperty("gov.nist.javax.sip.NETWORK_LAYER", DsbNetworkLayer.class.getName());
-    stackProps.setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", "TLSv1.2");
+
     stackProps.setProperty(
         "gov.nist.javax.sip.RELIABLE_CONNECTION_KEEP_ALIVE_TIMEOUT",
         commonConfigurationProperties.getReliableKeepAlivePeriod());

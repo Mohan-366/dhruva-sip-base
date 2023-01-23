@@ -167,23 +167,18 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
     - Please note, to run TLS you will have to specify keystore and truststore location in the configuration YAML file, under "common" tag
       ```yaml
           common:
-            tlsKeyStorePassword: dsb123
-            tlsKeyStoreType: "jks"
-            tlsKeyStoreFilePath: "/tmp/keystore.jks"
-            tlsTrustStorePassword: dsb123
-            tlsTrustStoreFilePath: "/tmp/keystore.jks" 
-            tlsTrustStoreType: "jks"
-    - By default, the TLS authentication type is set to ```SERVER``` type in Jain. If you wish to enable MTLS (server and client authentication) then set the following property in env.
-          clientAuthType = “Enabled” (by default this is “Disabled”)
-      - As a result, the default trustManager will have above config.
+            tls:
+               keyStorePassword: dsb123
+               keyStoreFilePath: "/tmp/keystore.jks"
+               trustStorePassword: dsb123
+               trustStoreFilePath: "/tmp/keystore.jks" 
+               trustStoreType: "jks"
+    - Look into CertConfigurationProperties class for more details for trustManager configuration.
       - There are three different types of truststores possible.
-          - SystemTrustStore with MTLS/SERVER authentication enabled as per the above config.
+          - SystemTrustStore(default).
           - CertTrustManager used to talk to cert service for authentication
           - Permissive TrustStore which allows everything (any certificate).
-      - Every stack can choose from one of the above.
-          - In order to choose SystemTrustStore, tlsAuthType in SipListenPoint must not be “NONE”.
-          - The default value for this in properties file is SERVER. And can be overridden in SIPListenPoint json env provided.
-          - In order to choose Permissive TrustStore, specify property tlsAuthType as NONE in the configuration YAML file
+      - Every stack can set different cert validation as mentioned in CertConfigurationProperties class. Key is `certPolicy` under listenPoint.
           ```yaml
           common:
           listenPoints:
@@ -192,7 +187,8 @@ We are in CSB 3.2.4-rc.85 version (in which we can disable the redis dependency 
               transport: TLS
               hostIPAddress: "<IP of machine where DSB runs"
               recordRoute: true
-              tlsAuthType: NONE
+              certPolicy:
+                ...... : .....
       - In order to get CertTrustManager set property ```enableCertService``` to true in the configuration YAML file.
 
 

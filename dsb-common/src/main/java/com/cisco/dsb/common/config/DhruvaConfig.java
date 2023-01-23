@@ -11,8 +11,6 @@ import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.metric.InfluxClient;
 import com.cisco.dsb.common.metric.MetricClient;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
-import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.util.log.ConnectionAspect;
 import com.cisco.dsb.common.util.log.event.EventingService;
@@ -25,7 +23,6 @@ import com.ciscospark.server.Wx2ConfigAdapter;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.net.ssl.KeyManager;
 import lombok.CustomLog;
 import org.aspectj.lang.Aspects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -163,16 +160,6 @@ public class DhruvaConfig extends Wx2ConfigAdapter {
         .retentionDurationMillis(commonConfigurationProperties.getTimeOutDnsCache())
         .metered(dnsMetricsReporter())
         .build();
-  }
-
-  @Bean
-  public DsbTrustManager dsbTrustManager() throws Exception {
-    return dsbTrustManagerFactory.getDsbTrsutManager();
-  }
-
-  @Bean
-  public KeyManager keyManager(CommonConfigurationProperties sipProperties) {
-    return DsbNetworkLayer.createKeyManager(sipProperties);
   }
 
   // TODO DSB

@@ -2,7 +2,7 @@ package com.cisco.dsb.common.health;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.tls.DsbTrustManager;
+import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.wx2.client.health.ServiceHealthPinger;
 import com.cisco.wx2.dto.health.ServiceHealth;
@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.net.*;
 import java.security.SecureRandom;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.net.ssl.KeyManager;
@@ -28,7 +27,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @CustomLog
@@ -40,11 +38,7 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
   @Autowired CommonConfigurationProperties commonConfigurationProperties;
 
   @Autowired ServiceHealthManager serviceHealthManager;
-
-  @Autowired DsbTrustManager dsbTrustManager;
-
-  @Nullable @Autowired KeyManager keyManager;
-
+  @Autowired DsbTrustManagerFactory dsbTrustManagerFactory;
   @Autowired SocketFactory socketFactory;
 
   @Setter private SSLSocketFactory sslSocketFactory;
@@ -54,13 +48,13 @@ public class DsbListenPointHealthPinger implements ServiceHealthPinger {
   public void initialize() throws Exception {
     List<SIPListenPoint> listenPoints = commonConfigurationProperties.getListenPoints();
 
-    if (listenPoints.stream()
-        .filter(Objects::nonNull)
-        .anyMatch(
-            listenPoint ->
-                StringUtils.equalsIgnoreCase(
-                    Transport.TLS.name(), listenPoint.getTransport().name()))) {
-      this.init(dsbTrustManager, keyManager);
+    for (SIPListenPoint listenPoint : listenPoints) {
+      if (listenPoint.getTransport() == Transport.TLS) {
+        this.init(
+            dsbTrustManagerFactory.getDsbTrustManager(listenPoint.getCertPolicy()),
+            dsbTrustManagerFactory.getKeyManager());
+        break;
+      }
     }
   }
 

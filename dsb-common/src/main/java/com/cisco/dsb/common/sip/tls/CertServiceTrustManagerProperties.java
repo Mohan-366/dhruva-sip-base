@@ -14,7 +14,7 @@ import org.springframework.core.env.StandardEnvironment;
 @Configuration
 @Qualifier("certTrustManagerConfigProperties")
 @CustomLog
-public class CertTrustManagerProperties extends ConfigProperties {
+public class CertServiceTrustManagerProperties extends ConfigProperties {
 
   private static final String DEFAULT_DHRUVA_USER_AGENT = "WX2_DHRUVA";
   static final String REVOCATION_TIMEOUT_MILLISECONDS = "revocationTimeoutMilliseconds";
@@ -58,7 +58,7 @@ public class CertTrustManagerProperties extends ConfigProperties {
   private Properties secrets;
   private static Environment environment = new StandardEnvironment();
 
-  public CertTrustManagerProperties() {
+  public CertServiceTrustManagerProperties() {
     super(environment, DEFAULT_DHRUVA_USER_AGENT);
     this.secrets = new Properties(System.getProperties());
   }
