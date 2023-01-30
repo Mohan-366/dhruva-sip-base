@@ -15,17 +15,18 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @CustomLog
+@Getter
 public class Egress {
 
-  @Getter private RoutePolicy routePolicy;
-  @Getter private String routePolicyConfig;
+  private RoutePolicy routePolicy;
+  private String routePolicyConfig;
 
-  @Getter private LBType lbType;
-  @Getter private List<ServerGroups> serverGroupsConfig;
+  private LBType lbType = LBType.WEIGHT;
+  private List<ServerGroups> serverGroupsConfig;
 
-  @Getter private Map<String, String> selector;
-  @Getter private final Map<String, ServerGroup> serverGroupMap = new HashMap<>();
-  @Getter @Setter private int overallResponseTimeout = 300;
+  private Map<String, String> selector;
+  private final Map<String, ServerGroup> serverGroupMap = new HashMap<>();
+  @Setter private int overallResponseTimeout = 300;
 
   public void setServerGroups(List<ServerGroups> serverGroups) {
     this.serverGroupsConfig = serverGroups;

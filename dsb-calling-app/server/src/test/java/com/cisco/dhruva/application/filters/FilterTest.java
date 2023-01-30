@@ -57,11 +57,19 @@ public class FilterTest {
     networkB2B.setConfigurationProperty(configurationProperty);
     NetworkWxC networkWxC = new NetworkWxC();
     networkWxC.setConfigurationProperty(configurationProperty);
+    CallTypeDialInTagOrMidDialogDialIn callTypeDialInTagOrMidDialogDialIn =
+        new CallTypeDialInTagOrMidDialogDialIn();
+    callTypeDialInTagOrMidDialogDialIn.setConfigurationProperty(configurationProperty);
+    CallTypeDialOutTagOrMidDialogDialOut callTypeDialOutTagOrMidDialogDialOut =
+        new CallTypeDialOutTagOrMidDialogDialOut();
+    callTypeDialOutTagOrMidDialogDialOut.setConfigurationProperty(configurationProperty);
 
     FilterFactory filterFactory = new FilterFactory();
     filterFactory.setNetworkPSTN(networkPSTN);
     filterFactory.setNetworkB2B(networkB2B);
     filterFactory.setNetworkWxC(networkWxC);
+    filterFactory.setCallTypeDialInTagOrMidDialogDialIn(callTypeDialInTagOrMidDialogDialIn);
+    filterFactory.setCallTypeDialOutTagOrMidDialogDialOut(callTypeDialOutTagOrMidDialogDialOut);
 
     SpringApplicationContext springApplicationContext = new SpringApplicationContext();
     ApplicationContext applicationContext = mock(ApplicationContext.class);

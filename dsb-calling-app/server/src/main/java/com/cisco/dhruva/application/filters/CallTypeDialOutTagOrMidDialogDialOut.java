@@ -1,12 +1,22 @@
 package com.cisco.dhruva.application.filters;
 
+import com.cisco.dhruva.application.CallingAppConfigurationProperty;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.trunk.util.SipParamConstants;
 import gov.nist.javax.sip.address.SipUri;
 import java.util.function.Predicate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class CallTypeDialOutTagOrMidDialogDialOut extends FilterNode {
-  private static final String OUTGOING_NETWORK = "net_sp";
+  private CallingAppConfigurationProperty configurationProperty;
+
+  @Autowired
+  public void setConfigurationProperty(
+      CallingAppConfigurationProperty callingAppConfigurationProperty) {
+    this.configurationProperty = callingAppConfigurationProperty;
+  }
 
   CallTypeDialOutTagOrMidDialogDialOut() {
     super(new FilterId(FilterId.Id.CALLTYPE_DIAL_OUT_OR_MID_DIALOG_DIAL_OUT));
@@ -28,7 +38,7 @@ public class CallTypeDialOutTagOrMidDialogDialOut extends FilterNode {
 
   private boolean isMidDialogDialIn(ProxySIPRequest proxySIPRequest) {
     if (proxySIPRequest.isMidCall()) {
-      return (OUTGOING_NETWORK).equals(proxySIPRequest.getOutgoingNetwork());
+      return proxySIPRequest.getOutgoingNetwork().equals(configurationProperty.getNetworkPSTN());
     }
     return false;
   }

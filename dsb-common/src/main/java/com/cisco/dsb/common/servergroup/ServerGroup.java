@@ -21,7 +21,7 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   private String name;
   private String hostName;
   private String networkName;
-  @Builder.Default private LBType lbType = LBType.HIGHEST_Q;
+  @Builder.Default private LBType lbType = LBType.WEIGHT;
   @Builder.Default private boolean pingOn = false;
   private List<ServerGroupElement> elements;
   private RoutePolicy routePolicy;
@@ -69,6 +69,11 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
 
   public void setOptionsPingPolicyFromConfig(OptionsPingPolicy optionsPingPolicy) {
     this.optionsPingPolicy = optionsPingPolicy;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+    if (hostName == null) this.hostName = name;
   }
 
   public OptionsPingPolicy getOptionsPingPolicy() {

@@ -10,6 +10,6 @@ import lombok.*;
 @Builder(setterPrefix = "set", toBuilder = true)
 public class ServerGroups {
   String sg;
-  int priority;
-  int weight;
+  int priority = 10;
+  int weight = 100;
 }

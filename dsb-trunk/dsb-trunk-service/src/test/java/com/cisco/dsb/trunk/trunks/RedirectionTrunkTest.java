@@ -454,12 +454,10 @@ public class RedirectionTrunkTest {
             .setPort(6060)
             .setTransport(Transport.UDP)
             .build();
-    ServerGroupElement resolvedAS =
-        ServerGroupElement.builder()
-            .setIpAddress("2.2.2.2")
-            .setPort(7000)
-            .setTransport(Transport.UDP)
-            .build();
+    ServerGroupElement resolvedAS = new ServerGroupElement();
+    resolvedAS.setIpAddress("2.2.2.2");
+    resolvedAS.setPort(7000);
+    resolvedAS.setTransport(Transport.UDP);
     trunkTestUtil.initTrunk(nsServerGroups, trunk, null);
     trunk.setDnsServerGroupUtil(dnsServerGroupUtil);
     // resolve dns

@@ -8,6 +8,8 @@ public class FilterFactory {
   private NetworkB2B networkB2B;
   private NetworkPSTN networkPSTN;
   private NetworkWxC networkWxC;
+  private CallTypeDialOutTagOrMidDialogDialOut callTypeDialOutTagOrMidDialogDialOut;
+  private CallTypeDialInTagOrMidDialogDialIn callTypeDialInTagOrMidDialogDialIn;
 
   @Autowired
   public void setNetworkB2B(NetworkB2B networkB2B) {
@@ -24,6 +26,18 @@ public class FilterFactory {
     this.networkWxC = networkWxC;
   }
 
+  @Autowired
+  public void setCallTypeDialOutTagOrMidDialogDialOut(
+      CallTypeDialOutTagOrMidDialogDialOut callTypeDialOutTagOrMidDialogDialOut) {
+    this.callTypeDialOutTagOrMidDialogDialOut = callTypeDialOutTagOrMidDialogDialOut;
+  }
+
+  @Autowired
+  public void setCallTypeDialInTagOrMidDialogDialIn(
+      CallTypeDialInTagOrMidDialogDialIn callTypeDialInTagOrMidDialogDialIn) {
+    this.callTypeDialInTagOrMidDialogDialIn = callTypeDialInTagOrMidDialogDialIn;
+  }
+
   protected FilterNode getFilterNode(FilterId.Id id) {
     switch (id) {
       case ROOT:
@@ -35,9 +49,9 @@ public class FilterFactory {
       case NETWORK_WXC:
         return networkWxC;
       case CALLTYPE_DIAL_IN_OR_MID_DIALOG_DIAL_IN:
-        return new CallTypeDialInTagOrMidDialogDialIn();
+        return callTypeDialInTagOrMidDialogDialIn;
       case CALLTYPE_DIAL_OUT_OR_MID_DIALOG_DIAL_OUT:
-        return new CallTypeDialOutTagOrMidDialogDialOut();
+        return callTypeDialOutTagOrMidDialogDialOut;
       default:
         return null;
     }

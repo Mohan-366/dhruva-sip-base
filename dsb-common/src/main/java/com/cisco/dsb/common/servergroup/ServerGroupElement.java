@@ -3,7 +3,6 @@ package com.cisco.dsb.common.servergroup;
 import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.StringTokenizer;
-import javax.validation.constraints.NotBlank;
 import lombok.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -16,15 +15,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @AllArgsConstructor
 public class ServerGroupElement implements LBElement, Pingable {
 
-  @NotBlank private String ipAddress;
+  private String ipAddress;
 
-  @NotBlank private int port;
+  private int port;
 
-  @NotBlank private Transport transport;
+  private Transport transport;
 
-  @NotBlank private int priority;
+  @Builder.Default private int priority = 10;
 
-  @NotBlank private int weight;
+  @Builder.Default private int weight = 100;
 
   private String uniqueString;
 
@@ -55,7 +54,6 @@ public class ServerGroupElement implements LBElement, Pingable {
    *     <p>A negative integer if this object has a higher q-value, a positive integer if this
    *     object has a lower q-value, or <code>0</code> if this object has the same q-value. NOTE: 0
    *     means it's a duplicate
-   * @throws ClassCastException
    */
   @Override
   public int compareTo(Object obj) throws ClassCastException {
@@ -129,7 +127,7 @@ public class ServerGroupElement implements LBElement, Pingable {
 
   private int doStringDomainCompare(String[] list1, String[] list2) {
 
-    int compare = 0;
+    int compare;
     int i = Math.min(list1.length, list2.length) - 1;
     for (; i >= 0; i--) {
       compare = list1[i].compareTo(list2[i]);
@@ -151,9 +149,7 @@ public class ServerGroupElement implements LBElement, Pingable {
     }
     synchronized (this) {
       if (uniqueString == null) {
-        StringBuilder uniqueSB = new StringBuilder();
-        uniqueSB.append(ipAddress + ":" + port + ":" + transport);
-        uniqueString = uniqueSB.toString();
+        uniqueString = ipAddress + ":" + port + ":" + transport;
       }
     }
 
