@@ -9,7 +9,6 @@
     <artifactId>dhruva-sip-base</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
-
     <repositories>
         <repository>
             <id>webex-cca-release</id>
@@ -53,6 +52,28 @@
         <skipITs>false</skipITs>
         <skipFTs>false</skipFTs>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>sonar</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <sonar.host.url>https://engci-sonar-blr.cisco.com/sonar</sonar.host.url>
+                <sonar.code.codeCoveragePlugin>jacoco</sonar.code.codeCoveragePlugin>
+                <!-- JaCoCo configuration outside the scope of this doc but is expected to be identified by property jacoco.reportFile -->
+                <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+                <sonar.scm.enabled>true</sonar.scm.enabled>
+                <sonar.scm.provider>git</sonar.scm.provider>
+                <sonar.exclusions>**/Mock*.java</sonar.exclusions>
+                <sonar.cpd.skip>true</sonar.cpd.skip>
+                <sonar.alm.github.app.id>76</sonar.alm.github.app.id>
+                <sonar.alm.github.app.name>engit-blr-sonar-int-gen-sqbu</sonar.alm.github.app.name>
+                <sonar.verbose>true</sonar.verbose>
+            </properties>
+        </profile>
+    </profiles>
 
     <distributionManagement>
         <repository>
