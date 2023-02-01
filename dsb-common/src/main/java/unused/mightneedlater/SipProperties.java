@@ -1,6 +1,5 @@
 package unused.mightneedlater;
 
-import com.cisco.dsb.common.sip.stack.dto.SipListenPoint;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.header.Server;
 import java.util.List;
@@ -52,13 +51,6 @@ public interface SipProperties {
    * @return
    */
   String getSipKeyStoreType();
-
-  /**
-   * Get the list of listening points for sip proxy stack.
-   *
-   * @return
-   */
-  List<SipListenPoint> getListeningPoints();
 
   /**
    * get sip stack address for SIP UA server. Default value should be 127.0.0.1
