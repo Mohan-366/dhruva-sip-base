@@ -4,7 +4,9 @@ import com.cisco.dsb.common.config.CertConfigurationProperties;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.maintanence.MaintenancePolicy;
+import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -13,18 +15,35 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.stack.ClientAuthType;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class CommonConfigurationPropertiesTest {
 
+  @Mock
+  Environment env;
+  @InjectMocks
   private CommonConfigurationProperties props;
 
-  @BeforeTest
-  public void setup() {
-    props = new CommonConfigurationProperties();
+
+  @BeforeMethod
+  public void beforeTest() {
+    MockitoAnnotations.initMocks(this);
   }
 
   @Test(description = "tests the getters and setters for one set of properties")
@@ -37,6 +56,7 @@ public class CommonConfigurationPropertiesTest {
     props.setTlsEventloopThreadCount(10);
     props.setConnectionIdleTimeout(36000);
     props.setHostPortEnabled(true);
+    when(env.getProperty("testHost")).thenReturn("1.1.1.1");
     props.setHostInfo("testHost");
     props.setTlsHandShakeTimeOutMilliSeconds(10000);
     props.setConnectionWriteTimeoutInMllis(10000);
@@ -55,7 +75,7 @@ public class CommonConfigurationPropertiesTest {
     Assert.assertEquals(props.getTlsEventloopThreadCount(), 10);
     Assert.assertEquals(props.getConnectionIdleTimeout(), 36000);
     Assert.assertTrue(props.isHostPortEnabled());
-    Assert.assertEquals(props.getHostInfo(), "testHost");
+    Assert.assertEquals(props.getHostInfo(), "1.1.1.1");
     Assert.assertEquals(props.getTlsHandShakeTimeOutMilliSeconds(), 10000);
     Assert.assertEquals(props.getConnectionWriteTimeoutInMllis(), 10000);
     Assert.assertFalse(props.isNioEnabled());

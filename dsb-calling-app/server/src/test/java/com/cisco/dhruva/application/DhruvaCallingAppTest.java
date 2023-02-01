@@ -7,6 +7,7 @@ import com.cisco.dhruva.application.calltype.CallTypeEnum;
 import com.cisco.dhruva.application.exceptions.InvalidCallTypeException;
 import com.cisco.dhruva.application.filters.Filter;
 import com.cisco.dhruva.ratelimiter.CallingAppRateLimiterConfigurator;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.util.log.event.DhruvaEvent;
@@ -111,5 +112,22 @@ public class DhruvaCallingAppTest {
         .reject(
             Response.NOT_FOUND,
             "Rejecting with 404, Unable to find the calltype for request callid: ::This is callid::");
+  }
+
+  @Test(
+          description = "Unhandled Run time exception",
+          dependsOnMethods = {"testAppInitialization"})
+  public void testRequestConsumer_3() throws InvalidCallTypeException {
+    Consumer<ProxySIPRequest> requestConsumer = proxyAppConfig.getRequestConsumer();
+    Assert.assertNotNull(requestConsumer);
+
+    when(filter.filter(proxySIPRequest)).thenThrow(DhruvaRuntimeException.class);
+    when(proxySIPRequest.getCallId()).thenReturn("::This is callid::");
+    requestConsumer.accept(proxySIPRequest);
+
+    verify(proxySIPRequest, times(1))
+            .reject(
+                    Response.SERVER_INTERNAL_ERROR,
+                    "Unhandled exception, sending back 500 error for request callid: ::This is callid::");
   }
 }

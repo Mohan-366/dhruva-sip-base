@@ -128,13 +128,16 @@ public class DhruvaCallingApp {
         String errorMessage =
             "Rejecting with 404, Unable to find the calltype for request callid: "
                 + proxySIPRequest.getCallId();
-        logger.error(errorMessage, ie);
+        logger.error(errorMessage, ie.getMessage());
         proxySIPRequest.reject(Response.NOT_FOUND, errorMessage);
 
       } catch (Exception e) {
-        logger.error("Unhandled exception {}, sending back 5xx error", e.getCause());
+        String errorMessage =
+                "Unhandled exception, sending back 500 error for request callid: "
+                        + proxySIPRequest.getCallId();
+        logger.error(errorMessage+ ", exception {}", e.getMessage());
         proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, null);
-        proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, "exception in App request consumer");
+        proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, errorMessage);
       }
     };
   }
