@@ -5,7 +5,7 @@ pipelineProperties(
         name: 'dhruva',
         numToKeep: 20
 )
-node('SPARK_BUILDER') {
+node('SPARK_BUILDER_JAVA11') {
 
     try{
         // ***** CREDENTIALS USED IN IT-JENKINS *****

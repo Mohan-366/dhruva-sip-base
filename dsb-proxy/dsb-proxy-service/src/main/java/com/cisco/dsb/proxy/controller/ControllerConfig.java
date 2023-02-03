@@ -450,14 +450,17 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
       String user = url.getUser();
       boolean b;
       if (isRequestURI) {
-        host = url.getHost();
+        host = HostPortUtil.reverseHostInfoToLocalIp(this, url);
         b = (null != checkRecordRoutes(user, host, port, transport.toString().toLowerCase()));
         if (b) logger.debug("request-uri matches with one of Record-Route interfaces");
         return Mono.just(b);
       } else {
         host = url.getMAddrParam();
-        if (host == null) host = url.getHost();
-        return recognizeWithDns(user, host, port, transport).switchIfEmpty(Mono.just(false));
+        if (host == null)
+          host = HostPortUtil.reverseHostInfoToLocalIp(this, url);
+        return recognizeWithDns(
+                user, host, port, transport)
+            .switchIfEmpty(Mono.just(false));
       }
     }
     return Mono.just(false);
