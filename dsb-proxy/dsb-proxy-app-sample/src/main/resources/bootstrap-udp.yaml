@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: dsb-proxy-ft
+  cloud:
+    consul:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+management:
+  metrics:
+    export:
+      influx:
+        enabled: false

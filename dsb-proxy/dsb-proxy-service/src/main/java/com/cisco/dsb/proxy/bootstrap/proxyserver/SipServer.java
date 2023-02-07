@@ -20,6 +20,7 @@ import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
 import gov.nist.javax.sip.SipStackImpl;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +30,7 @@ import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
 import lombok.CustomLog;
+import org.springframework.util.ResourceUtils;
 
 @CustomLog
 public class SipServer implements Server {
@@ -117,7 +119,7 @@ public class SipServer implements Server {
     }
   }
 
-  private Properties getStackProperties(SIPListenPoint listenPoint) {
+  private Properties getStackProperties(SIPListenPoint listenPoint) throws FileNotFoundException {
 
     CertConfigurationProperties certConfigurationProperties = listenPoint.getCertPolicy();
     TruststoreConfigurationProperties truststoreConfigurationProperties =
@@ -159,15 +161,19 @@ public class SipServer implements Server {
       stackProps.setProperty(
           "gov.nist.javax.sip.ENABLED_CIPHER_SUITES",
           String.join(",", truststoreConfigurationProperties.getCiphers()));
-      stackProps.setProperty(
-          "javax.net.ssl.keyStore", truststoreConfigurationProperties.getKeyStoreFilePath());
+      String keyAbsPath = getAbsFilePath(truststoreConfigurationProperties.getKeyStoreFilePath());
+
+      stackProps.setProperty("javax.net.ssl.keyStore", keyAbsPath);
       stackProps.setProperty(
           "javax.net.ssl.keyStorePassword",
           truststoreConfigurationProperties.getKeyStorePassword());
       stackProps.setProperty(
           "javax.net.ssl.keyStoreType", truststoreConfigurationProperties.getKeyStoreType());
-      stackProps.setProperty(
-          "javax.net.ssl.trustStore", truststoreConfigurationProperties.getTrustStoreFilePath());
+
+      String trustAbsPath =
+          getAbsFilePath(truststoreConfigurationProperties.getTrustStoreFilePath());
+
+      stackProps.setProperty("javax.net.ssl.trustStore", trustAbsPath);
       stackProps.setProperty(
           "javax.net.ssl.trustStorePassword",
           truststoreConfigurationProperties.getTrustStorePassword());
@@ -196,5 +202,10 @@ public class SipServer implements Server {
       stackProps.setProperty("gov.nist.javax.sip.SIP_MESSAGE_VALVE", valve);
     }
     return stackProps;
+  }
+
+  private String getAbsFilePath(String filePath) throws FileNotFoundException {
+    String absolutePath = ResourceUtils.getFile(filePath).getAbsolutePath();
+    return absolutePath;
   }
 }

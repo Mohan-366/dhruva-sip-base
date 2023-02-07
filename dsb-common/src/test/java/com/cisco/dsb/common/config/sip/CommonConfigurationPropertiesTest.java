@@ -1,12 +1,12 @@
 package com.cisco.dsb.common.config.sip;
 
+import static org.mockito.Mockito.when;
+
 import com.cisco.dsb.common.config.CertConfigurationProperties;
 import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.config.TruststoreConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
-import com.cisco.dsb.common.executor.ExecutorType;
 import com.cisco.dsb.common.maintanence.MaintenancePolicy;
-import com.cisco.dsb.common.metric.Metric;
 import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
@@ -15,31 +15,19 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.stack.ClientAuthType;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class CommonConfigurationPropertiesTest {
 
-  @Mock
-  Environment env;
-  @InjectMocks
-  private CommonConfigurationProperties props;
-
+  @Mock Environment env;
+  @InjectMocks private CommonConfigurationProperties props;
 
   @BeforeMethod
   public void beforeTest() {

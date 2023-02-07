@@ -95,7 +95,6 @@
                   "reasonPhrase": "OK"
                 }
               }
-
             },
             {
               "description": "normal request",
@@ -114,13 +113,9 @@
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
-          "port": 5061
-        },
-        "serverCommunicationInfo": {
-          "ip": "127.0.0.1",
-          "port": 5067
-        },
-        "transport": "udp"
+          "port": 5061,
+          "transport": "udp"
+        }
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",
@@ -282,13 +277,9 @@
       "dsb": {
         "clientCommunicationInfo": {
           "ip": "127.0.0.1",
-          "port": 5061
-        },
-        "serverCommunicationInfo": {
-          "ip": "127.0.0.1",
-          "port": 5067
-        },
-        "transport": "udp"
+          "port": 5061,
+          "transport": "udp"
+        }
       },
       "uac": {
         "myUri": "sip:uac@nist.gov",

@@ -125,7 +125,8 @@ public class DsbTrustManagerTest {
     try {
       tm.checkServerTrusted(certs, "RSA");
     } catch (CertificateException ex) {
-      if (ocsp && ex.getCause() != null && ex.getCause().getMessage().contains("OCSP")) ocspException = true;
+      if (ocsp && ex.getCause() != null && ex.getCause().getMessage().contains("OCSP"))
+        ocspException = true;
       else if (ex.getMessage().contains("revocation")) crlException = true;
     }
 
@@ -164,7 +165,7 @@ public class DsbTrustManagerTest {
   @Test
   public void testAllPermissive() throws CertificateException {
     DsbTrustManager dsbTrustManager = new DsbTrustManager(null);
-    X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
+    X509Certificate[] certs = {CertUtil.pemToCert("untrusted.crt")};
     dsbTrustManager.checkClientTrusted(certs, "");
     dsbTrustManager.checkServerTrusted(certs, "");
   }
@@ -193,7 +194,7 @@ public class DsbTrustManagerTest {
         .when(x509TrustManager)
         .checkServerTrusted(any(), anyString());
     DsbTrustManager dsbTrustManager = new DsbTrustManager(x509TrustManager);
-    X509Certificate[] certs = {CertUtil.pemToCert("not_in_keystore.crt.pem")};
+    X509Certificate[] certs = {CertUtil.pemToCert("untrusted.crt")};
     boolean gotClientException = false, gotServerException = false;
     try {
       dsbTrustManager.checkClientTrusted(certs, "");

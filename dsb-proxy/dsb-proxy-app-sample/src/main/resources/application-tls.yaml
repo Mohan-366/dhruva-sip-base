@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    kubernetes:
+      config:
+        namespace: default
+        sources:
+          - name: server
+          - name: servergroup
+
+      reload:
+        enabled: true
+common:
+  tls:
+    keyStorePassword: dsb123
+    keyStoreFilePath: "classpath:certs/ts.p12"
+    trustStorePassword: dsb123
+    trustStoreFilePath: "classpath:certs/ts.p12"
+    trustStoreType: "pkcs12"
+  listen-points:
+    - name: "SampleNetwork" #DO not change this name as it's embedded into sample-app
+      port: 5063
+      transport: TLS
+      hostIPAddress: "127.0.0.1"
+      cert-policy:
+        revocation-check: false

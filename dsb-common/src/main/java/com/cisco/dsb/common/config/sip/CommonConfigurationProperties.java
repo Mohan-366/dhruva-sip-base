@@ -26,8 +26,7 @@ import org.springframework.stereotype.Component;
 @CustomLog
 @RefreshScope
 public class CommonConfigurationProperties {
-  @Autowired
-  Environment environment;
+  @Autowired Environment environment;
   // Defaults for listenPoint builder and sipProxy builder
   public static final String DEFAULT_NETWORK_NAME = "TCPNetwork";
   public static final String DEFAULT_HOST_IP = "127.0.0.1";
@@ -129,8 +128,8 @@ public class CommonConfigurationProperties {
     this.listenPoints = listenPoints;
     listenPoints.forEach(SIPListenPoint::init);
   }
-  //Currently supports only one interface(public)
-  //Might be bit misleading, value is used to resolve env variable.
+  // Currently supports only one interface(public)
+  // Might be bit misleading, value is used to resolve env variable.
   public void setHostInfo(String hostInfo) {
     this.hostInfo = environment.getProperty(hostInfo);
   }

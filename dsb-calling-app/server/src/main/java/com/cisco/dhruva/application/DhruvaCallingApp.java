@@ -133,9 +133,9 @@ public class DhruvaCallingApp {
 
       } catch (Exception e) {
         String errorMessage =
-                "Unhandled exception, sending back 500 error for request callid: "
-                        + proxySIPRequest.getCallId();
-        logger.error(errorMessage+ ", exception {}", e.getMessage());
+            "Unhandled exception, sending back 500 error for request callid: "
+                + proxySIPRequest.getCallId();
+        logger.error(errorMessage + ", exception {}", e.getMessage());
         proxySIPRequest.getAppRecord().add(ProxyState.IN_PROXY_APP_PROCESSING_FAILED, null);
         proxySIPRequest.reject(Response.SERVER_INTERNAL_ERROR, errorMessage);
       }

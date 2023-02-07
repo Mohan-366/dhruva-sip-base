@@ -1,0 +1,254 @@
+{
+  "testCaseConfig": [
+    {
+      "description": "Basic INVITE Flow",
+      "skipTest": false,
+      "id": "1",
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5063,
+          "transport": "tls"
+        }
+      },
+      "uac": {
+        "myUri" : "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5077,
+        "transport": "tls",
+        "messages": [{
+          "type": "request",
+          "name": "INVITE",
+          "direction": "sends",
+          "parameters": {
+            "requestParameters": {
+              "headerAdditions": {
+                "requestUri": "sip:uas@127.0.0.1:7002"
+              }
+            }
+          }
+        },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK",
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5063;transport=tls;lr>"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "tls",
+          "elementStatus": "up",
+          "messages": [{
+            "description": "normal invite",
+            "type": "request",
+            "name": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "requestUri": "sip:uas@127.0.0.1:7002",
+              "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5063;transport=tls;lr>"
+            }
+          },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+
+            },
+            {
+              "description": "normal request",
+              "type": "request",
+              "name": "ACK",
+              "direction": "receives"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Cancel INVITE Flow",
+      "id": "2",
+      "skipTest": false,
+      "dsb": {
+        "clientCommunicationInfo": {
+          "ip": "127.0.0.1",
+          "port": 5063,
+          "transport": "tls"
+        }
+      },
+      "uac": {
+        "myUri": "sip:uac@nist.gov",
+        "ip": "127.0.0.1",
+        "port": 5077,
+        "transport": "tls",
+        "messages": [
+          {
+            "type": "request",
+            "name": "INVITE",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:uas@127.0.0.1:7002"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "optional" : true,
+            "validation": {
+              "responseCode": 180,
+              "reasonPhrase": "Ringing"
+            }
+          },
+          {
+            "type": "request",
+            "name": "CANCEL",
+            "direction": "sends",
+            "parameters": {
+              "requestParameters": {
+                "headerAdditions": {
+                  "requestUri": "sip:uas@127.0.0.1:7002"
+                }
+              }
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "CANCEL",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 200,
+              "reasonPhrase": "OK"
+            }
+          },
+          {
+            "type": "response",
+            "forRequest": "INVITE",
+            "direction": "receives",
+            "validation": {
+              "responseCode": 487,
+              "reasonPhrase": "Request Terminated"
+            }
+          },
+          {
+            "type": "request",
+            "name": "ACK",
+            "direction": "sends"
+          }
+        ]
+      },
+      "uasGroup": [
+        {
+          "myUri": "sip:uas@nist.gov",
+          "ip": "127.0.0.1",
+          "port": 7002,
+          "transport": "tls",
+          "elementStatus": "up",
+          "messages": [
+            {
+              "description": "normal invite",
+              "type": "request",
+              "name": "INVITE",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:uas@127.0.0.1:7002",
+                "record-route": "<sip:rr$n=SampleNetwork@127.0.0.1:5063;transport=tls;lr>"
+              }
+            },
+            {
+              "description": "normal response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 180,
+                  "reasonPhrase": "Ringing"
+                }
+              }
+            },
+            {
+              "description": "CANCEL",
+              "type": "request",
+              "name": "CANCEL",
+              "direction": "receives",
+              "validation": {
+                "requestUri": "sip:uas@127.0.0.1:7002"
+              }
+            },
+            {
+              "description": "cancel response",
+              "type": "response",
+              "forRequest": "CANCEL",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 200,
+                  "reasonPhrase": "OK"
+                }
+              }
+            },
+            {
+              "description": "error response",
+              "type": "response",
+              "forRequest": "INVITE",
+              "direction": "sends",
+              "parameters": {
+                "responseParameters": {
+                  "responseCode": 487,
+                  "reasonPhrase": "Request Terminated"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

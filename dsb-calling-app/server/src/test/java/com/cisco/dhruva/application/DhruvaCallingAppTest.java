@@ -115,8 +115,8 @@ public class DhruvaCallingAppTest {
   }
 
   @Test(
-          description = "Unhandled Run time exception",
-          dependsOnMethods = {"testAppInitialization"})
+      description = "Unhandled Run time exception",
+      dependsOnMethods = {"testAppInitialization"})
   public void testRequestConsumer_3() throws InvalidCallTypeException {
     Consumer<ProxySIPRequest> requestConsumer = proxyAppConfig.getRequestConsumer();
     Assert.assertNotNull(requestConsumer);
@@ -126,8 +126,8 @@ public class DhruvaCallingAppTest {
     requestConsumer.accept(proxySIPRequest);
 
     verify(proxySIPRequest, times(1))
-            .reject(
-                    Response.SERVER_INTERNAL_ERROR,
-                    "Unhandled exception, sending back 500 error for request callid: ::This is callid::");
+        .reject(
+            Response.SERVER_INTERNAL_ERROR,
+            "Unhandled exception, sending back 500 error for request callid: ::This is callid::");
   }
 }

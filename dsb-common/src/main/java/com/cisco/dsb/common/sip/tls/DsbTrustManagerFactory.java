@@ -40,6 +40,7 @@ import lombok.NonNull;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ResourceUtils;
 
 @CustomLog
 @Component
@@ -191,7 +192,7 @@ public class DsbTrustManagerFactory {
       String trustStoreFile = truststoreConfigurationProperties.getTrustStoreFilePath();
       String trustStorePassword = truststoreConfigurationProperties.getTrustStorePassword();
       if (trustStoreFile != null) {
-        storeFile = new File(trustStoreFile);
+        storeFile = ResourceUtils.getFile(trustStoreFile);
         fis = getFileInputStream(storeFile);
       } else {
         storeFile = new File(javaHome + sep + "lib" + sep + "security" + sep + "jssecacerts");
@@ -360,7 +361,7 @@ public class DsbTrustManagerFactory {
     File ksFile;
     FileInputStream fis = null;
     try {
-      ksFile = new File(keyStoreFilename);
+      ksFile = ResourceUtils.getFile(keyStoreFilename);
       fis = getFileInputStream(ksFile);
       keyStore = KeyStore.getInstance(keyStoreType);
       keyStore.load(fis, keyStorePassword.toCharArray());

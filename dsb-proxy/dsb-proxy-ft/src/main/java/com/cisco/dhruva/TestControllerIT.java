@@ -14,6 +14,8 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.StandardEnvironment;
 import org.testng.ITest;
 import org.testng.SkipException;
 import org.testng.annotations.*;
@@ -25,9 +27,12 @@ public class TestControllerIT implements ITest {
   private TestInput testCases;
   private ThreadLocal<String> testName = new ThreadLocal<>();
 
+  private static final Environment env = new StandardEnvironment();
+
   @BeforeClass
   public void setUp() throws ParseException, IOException {
-    readTestCasesJsonFile();
+    String transport = env.getProperty("transportType", String.class, "UDP");
+    readTestCasesJsonFile(transport);
   }
 
   @BeforeMethod
@@ -55,14 +60,16 @@ public class TestControllerIT implements ITest {
     validator.validate();
   }
 
-  private void readTestCasesJsonFile() throws IOException, ParseException {
-    String testFilePath =
-        TestControllerIT.class.getClassLoader().getResource("testcases.json").getPath();
+  private void readTestCasesJsonFile(String transport) throws IOException, ParseException {
+    String fileName = "testcases-" + transport.trim() + ".json";
+
+    String testFilePath = TestControllerIT.class.getClassLoader().getResource(fileName).getPath();
     ObjectMapper mapper = new ObjectMapper();
     JSONParser parser = new JSONParser();
     Object object = parser.parse(new FileReader(testFilePath));
     JSONObject jsonObject = (JSONObject) object;
     testCases = mapper.readValue(jsonObject.toJSONString(), TestInput.class);
+    TEST_LOGGER.info("Input FileName of JSON: " + fileName);
     TEST_LOGGER.debug("Input JSON: \n" + jsonObject.toJSONString());
   }
 

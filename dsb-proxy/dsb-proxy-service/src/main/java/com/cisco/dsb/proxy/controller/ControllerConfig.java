@@ -456,11 +456,8 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         return Mono.just(b);
       } else {
         host = url.getMAddrParam();
-        if (host == null)
-          host = HostPortUtil.reverseHostInfoToLocalIp(this, url);
-        return recognizeWithDns(
-                user, host, port, transport)
-            .switchIfEmpty(Mono.just(false));
+        if (host == null) host = HostPortUtil.reverseHostInfoToLocalIp(this, url);
+        return recognizeWithDns(user, host, port, transport).switchIfEmpty(Mono.just(false));
       }
     }
     return Mono.just(false);
