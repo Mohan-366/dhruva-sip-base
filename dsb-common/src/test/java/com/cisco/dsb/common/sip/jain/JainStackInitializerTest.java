@@ -128,7 +128,7 @@ public class JainStackInitializerTest {
     SipListener mockListener = mock(SipListener.class);
     DhruvaNetwork.setDhruvaConfigProperties(commonConfigurationProperties);
     DsbNetworkLayer networkLayer = new DsbNetworkLayer();
-    networkLayer.init(trustManager, keyManager);
+    networkLayer.init(trustManager, keyManager, commonConfigurationProperties);
     when(mockFactory.createSipStack(mockProps)).thenReturn(mockStack);
     when(mockStack.createListeningPoint(anyString(), anyInt(), anyString())).thenReturn(mockLp);
     when(mockStack.createSipProvider(mockLp)).thenReturn(mockSp);

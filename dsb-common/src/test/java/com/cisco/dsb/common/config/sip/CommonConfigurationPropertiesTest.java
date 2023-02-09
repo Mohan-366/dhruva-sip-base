@@ -14,7 +14,9 @@ import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.stack.ClientAuthType;
+import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -313,5 +315,19 @@ public class CommonConfigurationPropertiesTest {
     Assert.assertEquals(props.getTruststoreConfig(), truststoreConfigurationProperties);
     Assert.assertEquals(
         props.getListenPoints().get(0).getCertPolicy(), certConfigurationProperties);
+  }
+
+  @Test(description = "Test trafficClassMap")
+  public void testTrafficClassMap() throws UnknownHostException {
+    List<SIPListenPoint> listenPoints = new ArrayList<>();
+    SIPListenPoint lp = new SIPListenPoint();
+    listenPoints.add(lp);
+    String key = "/" + lp.getHostIPAddress();
+    Map<String, Integer> expectedTrafficClassMap = new ConcurrentHashMap<>();
+    expectedTrafficClassMap.put(key, lp.getTrafficClass());
+
+    props.setListenPoints(listenPoints);
+    Assert.assertEquals(props.getTrafficClassMap(), expectedTrafficClassMap);
+    Assert.assertTrue(lp.toString().contains("trafficClass = 104"));
   }
 }

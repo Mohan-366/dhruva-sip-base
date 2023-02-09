@@ -43,6 +43,9 @@ public class SIPListenPoint {
   @Builder.Default
   private Integer pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
 
+  @Builder.Default
+  private Integer trafficClass = CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS;
+
   private String hostInterface;
 
   @Builder.Default private boolean enableRport = false;
@@ -67,6 +70,7 @@ public class SIPListenPoint {
     this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
     this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
     this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
+    this.trafficClass = CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS;
     this.isPingTimeOutOverride = false;
     this.enableRport = false;
     this.certPolicy = new CertConfigurationProperties();
@@ -115,7 +119,9 @@ public class SIPListenPoint {
             .append(" attachExternalIP = ")
             .append(attachExternalIP)
             .append(" enableRateLimiter = ")
-            .append(enableRateLimiter);
+            .append(enableRateLimiter)
+            .append(" trafficClass = ")
+            .append(trafficClass);
     // For TLS
     if (transport.getValue() == Transport.TLS.getValue()) {
       return sipListenPointString.append(certPolicy).toString();

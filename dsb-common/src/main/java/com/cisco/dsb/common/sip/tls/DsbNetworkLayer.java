@@ -8,6 +8,8 @@ import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.io.IOException;
 import java.net.*;
 import java.security.SecureRandom;
+import java.util.Map;
+import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -17,30 +19,36 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import lombok.CustomLog;
 import lombok.NonNull;
+import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 @CustomLog
 public class DsbNetworkLayer implements NetworkLayer {
   private SSLSocketFactory sslSocketFactory;
   private SSLServerSocketFactory sslServerSocketFactory;
-  private static int trafficClass = 0x60; // Match traffic classification as CUCM
   // Default connection timeout milliseconds.
   private int connectionTimeout = CommonConfigurationProperties.getSocketConnectionTimeout();
   protected SIPTransactionStack sipStack;
+  @Setter private CommonConfigurationProperties commonConfigurationProperties;
 
   public DsbNetworkLayer() {}
 
-  public void init(@NonNull TrustManager trustManager, @NonNull KeyManager keyManager)
+  public void init(@Nullable TrustManager trustManager, @Nullable KeyManager keyManager,
+                   @NonNull final CommonConfigurationProperties commonConfigurationProperties)
       throws Exception {
-    SecureRandom secureRandom = new SecureRandom();
-    secureRandom.nextInt();
+    if (Objects.nonNull(trustManager) && Objects.nonNull(keyManager)) {
+      SecureRandom secureRandom = new SecureRandom();
+      secureRandom.nextInt();
 
-    SSLContext sslContext = SSLContext.getInstance("TLS");
-    sslContext.init(new KeyManager[] {keyManager}, new TrustManager[] {trustManager}, secureRandom);
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(new KeyManager[]{keyManager}, new TrustManager[]{trustManager}, secureRandom);
 
-    sslServerSocketFactory = sslContext.getServerSocketFactory();
-    sslSocketFactory = sslContext.getSocketFactory();
+      sslServerSocketFactory = sslContext.getServerSocketFactory();
+      sslSocketFactory = sslContext.getSocketFactory();
 
-    logger.info("initialized with TrustManager: {}", trustManager.getClass());
+      logger.info("initialized with TrustManager: {}", trustManager.getClass());
+    }
+    this.commonConfigurationProperties = commonConfigurationProperties;
   }
 
   @Override
@@ -54,7 +62,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   }
 
   @SuppressFBWarnings(value = "UNENCRYPTED_SERVER_SOCKET", justification = "baseline suppression")
-  static class DsbServerSocket extends ServerSocket {
+  class DsbServerSocket extends ServerSocket {
     public DsbServerSocket(int port, int backlog, InetAddress bindAddr) throws IOException {
       super(port, backlog, bindAddr);
     }
@@ -72,7 +80,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   private DatagramSocket createDataGramSocket() throws SocketException {
     DatagramSocket socket = new DatagramSocket(null);
 
-    return setDatagramSocketOptions(socket);
+    return socket;
   }
 
   @Override
@@ -86,6 +94,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   public DatagramSocket createDatagramSocket(int port, InetAddress laddr) throws SocketException {
     DatagramSocket socket = createDataGramSocket();
     socket.bind(new InetSocketAddress(laddr, port));
+    setDatagramSocketOptions(socket);
     return socket;
   }
 
@@ -138,12 +147,12 @@ public class DsbNetworkLayer implements NetworkLayer {
     return connectSocket(new Socket(), address, port, myAddress, myPort);
   }
 
-  private Socket connectSocket(
+  public Socket connectSocket(
       Socket socket, InetAddress address, int port, InetAddress myAddress, int myPort)
       throws IOException {
-    setSocketOptions(socket);
     // Valid myPort value is between 0 and 65535, a null myAddress will assign the wildcard address
     socket.bind(new InetSocketAddress(myAddress, myPort));
+    setSocketOptions(socket);
 
     try {
       InetSocketAddress remoteAddress = new InetSocketAddress(address, port);
@@ -156,9 +165,11 @@ public class DsbNetworkLayer implements NetworkLayer {
     return socket;
   }
 
-  private static Socket setSocketOptions(Socket socket) throws SocketException {
+  public Socket setSocketOptions(Socket socket) throws SocketException {
     socket.setTcpNoDelay(true);
-    socket.setTrafficClass(trafficClass);
+    socket.setTrafficClass(commonConfigurationProperties.getTrafficClassMap()
+            .getOrDefault(socket.getLocalAddress().toString(),
+            CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
     return socket;
   }
 
@@ -170,9 +181,11 @@ public class DsbNetworkLayer implements NetworkLayer {
     return serverSocket;
   }
 
-  private static DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
+  private DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
       throws SocketException {
-    datagramSocket.setTrafficClass(trafficClass);
+    datagramSocket.setTrafficClass(commonConfigurationProperties.getTrafficClassMap()
+            .getOrDefault(datagramSocket.getLocalAddress().toString(),
+            CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
     datagramSocket.setReuseAddress(true);
     return datagramSocket;
   }

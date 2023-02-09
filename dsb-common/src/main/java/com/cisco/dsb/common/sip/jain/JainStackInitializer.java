@@ -191,10 +191,9 @@ public class JainStackInitializer {
           .initFromApplication(commonConfigurationProperties, executorService, metricService);
     }
     NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
-    if (listenPoint.getTransport().equals(Transport.TLS)
-        && networkLayer instanceof DsbNetworkLayer) {
-      logger.info("Initializing SSLContext in DsbNetworkLayer");
-      ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager);
+    if (networkLayer instanceof DsbNetworkLayer) {
+      logger.info("Initializing DsbNetworkLayer");
+      ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager, commonConfigurationProperties);
     }
     ListeningPoint lp =
         sipStack.createListeningPoint(

@@ -10,6 +10,7 @@ import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,6 +39,7 @@ public class CommonConfigurationProperties {
   public static final boolean DEFAULT_RECORD_ROUTE_ENABLED = true;
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
   public static final boolean DEFAULT_ENABLE_RATE_LIMITING = false;
+  public static final Integer DEFAULT_TRAFFIC_CLASS = 0x68;
 
   @Getter private TruststoreConfigurationProperties truststoreConfig;
   @Getter @Setter private boolean useRedisAsCache = false;
@@ -107,6 +109,8 @@ public class CommonConfigurationProperties {
   // toggle to enable emitting unmasked events
   @Getter @Setter private boolean emitUnmaskedEvents = true;
 
+  @Getter @Setter private Map<String, Integer> trafficClassMap = new ConcurrentHashMap<>();
+
   @Autowired
   public void setTruststoreConfiguration(TruststoreConfigurationProperties truststore) {
     this.truststoreConfig = truststore;
@@ -126,7 +130,12 @@ public class CommonConfigurationProperties {
 
   public void setListenPoints(List<SIPListenPoint> listenPoints) {
     this.listenPoints = listenPoints;
-    listenPoints.forEach(SIPListenPoint::init);
+    listenPoints.forEach(
+            sipListenPoint -> {
+              sipListenPoint.init();
+              // For each listenPoint create a HashMap entry
+              updateTrafficMap(sipListenPoint);
+            });
   }
   // Currently supports only one interface(public)
   // Might be bit misleading, value is used to resolve env variable.
@@ -206,6 +215,11 @@ public class CommonConfigurationProperties {
                   serverGroupElements.forEach(
                       serverGroupElement -> serverGroupElement.setTransport(transport)));
     }
+  }
+
+  private void updateTrafficMap(SIPListenPoint sipListenPoint) {
+    String key = "/" + sipListenPoint.getHostIPAddress();
+    trafficClassMap.put(key, sipListenPoint.getTrafficClass());
   }
 
   private <K, V> void updateMap(Map<K, V> oldMap, Map<K, V> newMap) {

@@ -155,11 +155,11 @@ public class DsbTrustManagerTest {
   }
 
   @Test(
-      description = "testing for null keymanager and trustManager",
+      description = "testing for null commonConfigurationProperties",
       expectedExceptions = {NullPointerException.class})
   public void testForNullValues() throws Exception {
     DsbNetworkLayer dsbNetworkLayer = new DsbNetworkLayer();
-    dsbNetworkLayer.init(null, null);
+    dsbNetworkLayer.init(null, null, null);
   }
 
   @Test
