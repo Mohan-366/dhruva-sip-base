@@ -11,6 +11,9 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
   <artifactId>sample-app</artifactId>
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.cisco</groupId>

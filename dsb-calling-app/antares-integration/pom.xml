@@ -13,6 +13,10 @@
     <packaging>jar</packaging>
     <artifactId>antares-integration</artifactId>
 
+    <properties>
+        <sonar.skip>true</sonar.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.cisco</groupId>

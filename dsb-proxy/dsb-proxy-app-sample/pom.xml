@@ -12,6 +12,9 @@
   <groupId>com.cisco</groupId>
   <artifactId>dsb-proxy-app-sample</artifactId>
   <packaging>war</packaging>
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.cisco</groupId>

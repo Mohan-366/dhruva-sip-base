@@ -64,6 +64,7 @@
         <tomcat.rmi.port>9223</tomcat.rmi.port>
         <dhruvaPublicUrl>http://localhost:${tomcat.server.port}/api/v1</dhruvaPublicUrl>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco-aggregate/jacoco.xml,target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.skip>true</sonar.skip>
     </properties>
 
     <build>
