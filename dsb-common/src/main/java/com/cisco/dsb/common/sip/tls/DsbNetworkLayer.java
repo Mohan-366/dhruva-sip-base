@@ -8,7 +8,6 @@ import gov.nist.javax.sip.stack.SIPTransactionStack;
 import java.io.IOException;
 import java.net.*;
 import java.security.SecureRandom;
-import java.util.Map;
 import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -33,15 +32,18 @@ public class DsbNetworkLayer implements NetworkLayer {
 
   public DsbNetworkLayer() {}
 
-  public void init(@Nullable TrustManager trustManager, @Nullable KeyManager keyManager,
-                   @NonNull final CommonConfigurationProperties commonConfigurationProperties)
+  public void init(
+      @Nullable TrustManager trustManager,
+      @Nullable KeyManager keyManager,
+      @NonNull final CommonConfigurationProperties commonConfigurationProperties)
       throws Exception {
     if (Objects.nonNull(trustManager) && Objects.nonNull(keyManager)) {
       SecureRandom secureRandom = new SecureRandom();
       secureRandom.nextInt();
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
-      sslContext.init(new KeyManager[]{keyManager}, new TrustManager[]{trustManager}, secureRandom);
+      sslContext.init(
+          new KeyManager[] {keyManager}, new TrustManager[] {trustManager}, secureRandom);
 
       sslServerSocketFactory = sslContext.getServerSocketFactory();
       sslSocketFactory = sslContext.getSocketFactory();
@@ -78,9 +80,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   }
 
   private DatagramSocket createDataGramSocket() throws SocketException {
-    DatagramSocket socket = new DatagramSocket(null);
-
-    return socket;
+    return new DatagramSocket(null);
   }
 
   @Override
@@ -167,9 +167,12 @@ public class DsbNetworkLayer implements NetworkLayer {
 
   public Socket setSocketOptions(Socket socket) throws SocketException {
     socket.setTcpNoDelay(true);
-    socket.setTrafficClass(commonConfigurationProperties.getTrafficClassMap()
-            .getOrDefault(socket.getLocalAddress().toString(),
-            CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
+    socket.setTrafficClass(
+        commonConfigurationProperties
+            .getTrafficClassMap()
+            .getOrDefault(
+                socket.getLocalAddress().toString(),
+                CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
     return socket;
   }
 
@@ -183,9 +186,12 @@ public class DsbNetworkLayer implements NetworkLayer {
 
   private DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
       throws SocketException {
-    datagramSocket.setTrafficClass(commonConfigurationProperties.getTrafficClassMap()
-            .getOrDefault(datagramSocket.getLocalAddress().toString(),
-            CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
+    datagramSocket.setTrafficClass(
+        commonConfigurationProperties
+            .getTrafficClassMap()
+            .getOrDefault(
+                datagramSocket.getLocalAddress().toString(),
+                CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
     datagramSocket.setReuseAddress(true);
     return datagramSocket;
   }

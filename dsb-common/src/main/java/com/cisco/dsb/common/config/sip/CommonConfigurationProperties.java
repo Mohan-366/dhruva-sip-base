@@ -131,11 +131,11 @@ public class CommonConfigurationProperties {
   public void setListenPoints(List<SIPListenPoint> listenPoints) {
     this.listenPoints = listenPoints;
     listenPoints.forEach(
-            sipListenPoint -> {
-              sipListenPoint.init();
-              // For each listenPoint create a HashMap entry
-              updateTrafficMap(sipListenPoint);
-            });
+        sipListenPoint -> {
+          sipListenPoint.init();
+          // For each listenPoint create a HashMap entry
+          updateTrafficMap(sipListenPoint);
+        });
   }
   // Currently supports only one interface(public)
   // Might be bit misleading, value is used to resolve env variable.

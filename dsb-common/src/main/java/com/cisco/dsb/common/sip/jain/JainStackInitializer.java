@@ -6,7 +6,6 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
-import com.cisco.dsb.common.transport.Transport;
 import com.google.common.base.Preconditions;
 import gov.nist.core.net.NetworkLayer;
 import gov.nist.javax.sip.SipStackImpl;
@@ -193,7 +192,8 @@ public class JainStackInitializer {
     NetworkLayer networkLayer = ((SIPTransactionStack) sipStack).getNetworkLayer();
     if (networkLayer instanceof DsbNetworkLayer) {
       logger.info("Initializing DsbNetworkLayer");
-      ((DsbNetworkLayer) networkLayer).init(trustManager, keyManager, commonConfigurationProperties);
+      ((DsbNetworkLayer) networkLayer)
+          .init(trustManager, keyManager, commonConfigurationProperties);
     }
     ListeningPoint lp =
         sipStack.createListeningPoint(
