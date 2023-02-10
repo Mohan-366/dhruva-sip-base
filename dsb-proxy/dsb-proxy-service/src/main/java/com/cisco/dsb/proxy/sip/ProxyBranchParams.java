@@ -91,7 +91,9 @@ public class ProxyBranchParams implements ProxyBranchParamsInterface {
     return localProxyPort;
   }
 
-  /** @return the protocol to */
+  /**
+   * @return the protocol to
+   */
   public Transport getProxyToProtocol() {
     return localProxyProtocol;
   }

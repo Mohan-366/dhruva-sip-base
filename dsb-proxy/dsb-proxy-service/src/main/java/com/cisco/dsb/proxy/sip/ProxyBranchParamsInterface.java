@@ -30,7 +30,9 @@ public interface ProxyBranchParamsInterface {
    */
   public int getProxyToPort();
 
-  /** @return protocol to use for outgoing request */
+  /**
+   * @return protocol to use for outgoing request
+   */
   public Transport getProxyToProtocol();
 
   /**

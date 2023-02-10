@@ -426,7 +426,9 @@ public class ProxyStatelessTransaction implements ProxyTransactionInterface {
     return destTransport;
   }
 
-  /** @return the default configuration settings used by this ProxyTransaction */
+  /**
+   * @return the default configuration settings used by this ProxyTransaction
+   */
   protected ProxyParamsInterface getDefaultParams() {
     return defaultParams;
   }

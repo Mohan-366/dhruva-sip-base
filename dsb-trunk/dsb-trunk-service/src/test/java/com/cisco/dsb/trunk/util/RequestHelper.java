@@ -170,7 +170,7 @@ public class RequestHelper {
           + OBFUSCATED_SDP
           + "\r\n";
 
-  private static String onlySDPObfuscatedInvite = plainRequest + OBFUSCATED_SDP + "\r\n";;
+  private static String onlySDPObfuscatedInvite = plainRequest + OBFUSCATED_SDP + "\r\n";
 
   public static Request getInviteRequest() throws ParseException {
     return JainSipHelper.getMessageFactory().createRequest(request);

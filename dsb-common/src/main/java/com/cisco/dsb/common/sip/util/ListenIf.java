@@ -134,11 +134,15 @@ public class ListenIf implements ListenInterface {
     }
   }
 
-  /** @return the translated address for the external interface or null if none was specified; */
+  /**
+   * @return the translated address for the external interface or null if none was specified;
+   */
   public String getNonTranslatedAddress() {
     return addressStr;
   }
-  /** @return the translated address for the external interface or null if none was specified; */
+  /**
+   * @return the translated address for the external interface or null if none was specified;
+   */
   public InetAddress getNonTranslatedInetAddress() {
     return addressInet;
   }
@@ -155,7 +159,9 @@ public class ListenIf implements ListenInterface {
     }
   }
 
-  /** @return the translated address for the external interface or null if none was specified; */
+  /**
+   * @return the translated address for the external interface or null if none was specified;
+   */
   public String getTranslatedAddress() {
     return translatedAddressStr;
   }
@@ -168,7 +174,9 @@ public class ListenIf implements ListenInterface {
     return translatedPort;
   }
 
-  /** @return status on whether to attach externalIP or not */
+  /**
+   * @return status on whether to attach externalIP or not
+   */
   public boolean shouldAttachExternalIp() {
     return attachExternalIp;
   }

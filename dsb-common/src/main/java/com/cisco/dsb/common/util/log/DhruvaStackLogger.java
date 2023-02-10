@@ -337,7 +337,9 @@ public class DhruvaStackLogger implements StackLogger {
     }
   }
 
-  /** @return flag to indicate if logging is enabled. */
+  /**
+   * @return flag to indicate if logging is enabled.
+   */
   @Override
   public boolean isLoggingEnabled() {
     return this.loggingEnabled;

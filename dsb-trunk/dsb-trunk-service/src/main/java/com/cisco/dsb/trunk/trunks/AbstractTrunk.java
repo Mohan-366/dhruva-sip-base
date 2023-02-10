@@ -597,8 +597,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     ServerGroup serverGroup = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement());
     AddressImpl address = (AddressImpl) contact.getAddress();
     ServerGroup rsg =
-        serverGroup
-            .toBuilder()
+        serverGroup.toBuilder()
             .setName(serverGroup.getName() + "_contact")
             .setHostName(address.getHost())
             .setPort(address.getPort())

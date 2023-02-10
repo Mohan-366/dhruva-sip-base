@@ -22,7 +22,7 @@ public class ProxyCookieImpl implements ProxyCookie {
   private Consumer<ProxySIPResponse> responseNormConsumer;
   private DhruvaNetwork requestIncomingNetwork;
 
-  public ProxyCookieImpl() {};
+  public ProxyCookieImpl() {}
 
   public ProxyCookieImpl(ProxyCookieImpl proxyCookie) {
     this.calltype = proxyCookie.calltype;

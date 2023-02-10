@@ -109,7 +109,9 @@ public class WebexMeetingInfo {
       return this;
     }*/
 
-    /** @return A WebexMeetingInfo Object, or null if all fields are null or empty */
+    /**
+     * @return A WebexMeetingInfo Object, or null if all fields are null or empty
+     */
     public WebexMeetingInfo buildIfValid() {
       if (Strings.isNullOrEmpty(webExSite)
           && Strings.isNullOrEmpty(meetingNumber)

@@ -10,7 +10,9 @@ import javax.sip.header.RecordRouteHeader;
 /** Describes configuration settings of a ProxyTransaction */
 public interface ProxyParamsInterface extends ProxyBranchParamsInterface {
 
-  /** @return default SIP port number */
+  /**
+   * @return default SIP port number
+   */
   int getDefaultPort();
 
   /**

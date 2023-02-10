@@ -221,12 +221,16 @@ public class ProxyTransaction extends ProxyStatelessTransaction {
     if (controller != null) this.controller = controller;
   }
 
-  /** @return the DsProxyServerTransaction */
+  /**
+   * @return the DsProxyServerTransaction
+   */
   public ProxyServerTransaction getServerTransaction() {
     return serverTransaction;
   }
 
-  /** @return the DsProxyServerTransaction */
+  /**
+   * @return the DsProxyServerTransaction
+   */
   public ProxyClientTransaction getClientTransaction() {
     return m_originalProxyClientTrans;
   }

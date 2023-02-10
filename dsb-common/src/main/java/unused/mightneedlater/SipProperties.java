@@ -99,7 +99,9 @@ public interface SipProperties {
 
   long getWarmUpWaitTime();
 
-  /** @return Period between SIP RFC 5626 keep alives in milliseconds. */
+  /**
+   * @return Period between SIP RFC 5626 keep alives in milliseconds.
+   */
   long getKeepAlivePeriod();
 
   /** Metrics properties. */
@@ -131,7 +133,9 @@ public interface SipProperties {
 
   long getCacheDeferredSubscribeDurationSeconds();
 
-  /** @return Set of SIP connection settings. */
+  /**
+   * @return Set of SIP connection settings.
+   */
   // List<SipConnectionSettings> getSipConnectionSettings();
 
   boolean isLogKeepAlivesEnabled();

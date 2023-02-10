@@ -8,15 +8,23 @@ import com.cisco.dsb.common.transport.Transport;
  */
 public interface ListenInterface {
 
-  /** @return port to insert into Via header */
+  /**
+   * @return port to insert into Via header
+   */
   int getPort();
 
-  /** @return protocol to insert into Via header */
+  /**
+   * @return protocol to insert into Via header
+   */
   Transport getProtocol();
 
-  /** @return the interface to insert into Via header */
+  /**
+   * @return the interface to insert into Via header
+   */
   String getAddress();
 
-  /** @return status on whether to attach externalIp or not */
+  /**
+   * @return status on whether to attach externalIp or not
+   */
   boolean shouldAttachExternalIp();
 }

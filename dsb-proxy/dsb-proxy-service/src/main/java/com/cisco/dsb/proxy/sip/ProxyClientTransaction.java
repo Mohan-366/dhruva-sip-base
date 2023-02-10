@@ -163,7 +163,9 @@ public class ProxyClientTransaction {
     logger.debug("Leaving cancel()");
   }
 
-  /** @return <b>true</b> if this is an INVITE transaction, <b>false</b> otherwise */
+  /**
+   * @return <b>true</b> if this is an INVITE transaction, <b>false</b> otherwise
+   */
   public boolean isInvite() {
     return (getRequest().getMethod().equals(Request.INVITE));
   }

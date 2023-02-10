@@ -43,12 +43,16 @@ public class ProxyParams extends ProxyBranchParams implements ProxyParamsInterfa
       this(config, DsControllerConfig.INBOUND);
     }
   */
-  /** @return default SIP port number to be used for this ProxyTransaction */
+  /**
+   * @return default SIP port number to be used for this ProxyTransaction
+   */
   public int getDefaultPort() {
     return defaultPort;
   }
 
-  /** @return the default protocol to be used for outgoing requests or to put in Record-Route */
+  /**
+   * @return the default protocol to be used for outgoing requests or to put in Record-Route
+   */
   public Transport getDefaultProtocol() {
     return defaultProtocol;
   }

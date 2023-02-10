@@ -48,6 +48,7 @@
         <cargo.maven2.plugin.version>1.8.0</cargo.maven2.plugin.version>
         <tomcat-ft.version>9.0.65</tomcat-ft.version>
         <dnsjava.version>3.5.0</dnsjava.version>
+        <fmt-maven-plugin.version>2.19</fmt-maven-plugin.version>
         <skipUTs>false</skipUTs>
         <skipITs>false</skipITs>
         <skipFTs>false</skipFTs>
@@ -73,6 +74,34 @@
                 <sonar.verbose>true</sonar.verbose>
             </properties>
         </profile>
+        <profile>
+            <id>check-code-format</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.spotify.fmt</groupId>
+                        <artifactId>fmt-maven-plugin</artifactId>
+                        <version>${fmt-maven-plugin.version}</version>
+                        <configuration>
+                            <displayLimit>10</displayLimit>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check-code-format-exe</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 
     <distributionManagement>
@@ -245,9 +274,9 @@
             </plugin>
             <!-- Format and check the code for style voilations  -->
             <plugin>
-                <groupId>com.coveo</groupId>
+                <groupId>com.spotify.fmt</groupId>
                 <artifactId>fmt-maven-plugin</artifactId>
-                <version>2.9</version>
+                <version>${fmt-maven-plugin.version}</version>
                 <configuration>
                     <displayLimit>10</displayLimit>
                 </configuration>

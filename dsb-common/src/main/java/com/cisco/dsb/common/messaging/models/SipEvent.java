@@ -41,10 +41,14 @@ public interface SipEvent extends Cloneable, Serializable {
 
   long getCseq();
 
-  /** @return reason header. */
+  /**
+   * @return reason header.
+   */
   ReasonHeader getReason();
 
-  /** @return get reason cause */
+  /**
+   * @return get reason cause
+   */
   Integer getReasonCause();
 
   /**

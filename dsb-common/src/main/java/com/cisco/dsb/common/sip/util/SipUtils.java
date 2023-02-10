@@ -32,7 +32,9 @@ public final class SipUtils {
 
   private SipUtils() {}
 
-  /** @return Branch id value */
+  /**
+   * @return Branch id value
+   */
   @SuppressFBWarnings(
       value = {"PREDICTABLE_RANDOM", "WEAK_MESSAGE_DIGEST_MD5"},
       justification = "baseline suppression")
