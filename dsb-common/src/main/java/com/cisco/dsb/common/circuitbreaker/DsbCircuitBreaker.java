@@ -2,6 +2,7 @@ package com.cisco.dsb.common.circuitbreaker;
 
 import com.cisco.dsb.common.config.CircuitBreakConfig;
 import com.cisco.dsb.common.sip.util.EndPoint;
+import com.cisco.dsb.common.util.log.event.Event;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
@@ -62,7 +63,13 @@ public class DsbCircuitBreaker implements RemovalListener {
   }
 
   private void logCircuitBreakerEvents(CircuitBreaker circuitBreaker) {
-    circuitBreaker.getEventPublisher().onEvent(event -> logger.info(event.toString()));
+    circuitBreaker
+        .getEventPublisher()
+        .onEvent(
+            event -> {
+              logger.info(event.toString());
+              Event.emitCBEvents(event);
+            });
   }
 
   public Optional<DsbCircuitBreakerState> getCircuitBreakerState(EndPoint endpoint) {

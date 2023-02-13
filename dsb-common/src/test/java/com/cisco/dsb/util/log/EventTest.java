@@ -1,5 +1,7 @@
 package com.cisco.dsb.util.log;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -17,9 +19,11 @@ import com.cisco.dsb.common.util.log.event.LoggingEvent;
 import gov.nist.javax.sip.header.HeaderFactoryImpl;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+import io.github.resilience4j.circuitbreaker.event.CircuitBreakerEvent;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import javax.sip.header.FromHeader;
 import javax.sip.header.Header;
@@ -179,6 +183,40 @@ public class EventTest {
                     ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("action"),
                     Action.RATE_LIMIT.name());
                 assertEquals(((LoggingEvent) dhruvaEvent).getSipMsgPayload(), sipMessage);
+              }
+            });
+  }
+
+  @Test
+  public void testCircuitBreakerEvent() throws ParseException {
+    MockitoAnnotations.openMocks(this);
+    Event.setEventingService(eventingService);
+    CircuitBreakerEvent cbEvent = mock(CircuitBreakerEvent.class);
+    when(cbEvent.getCircuitBreakerName()).thenReturn("10.78.98.475080TCP");
+    ZonedDateTime zonedDateTime = ZonedDateTime.now();
+    when(cbEvent.getCreationTime()).thenReturn(zonedDateTime);
+    when(cbEvent.getEventType()).thenReturn(CircuitBreakerEvent.Type.ERROR);
+    Class<ArrayList<DhruvaEvent>> listClass =
+        (Class<ArrayList<DhruvaEvent>>) (Class) ArrayList.class;
+    ArgumentCaptor<ArrayList<DhruvaEvent>> argument = ArgumentCaptor.forClass(listClass);
+    Event.emitCBEvents(cbEvent);
+    Mockito.verify(eventingService, Mockito.times(1)).publishEvents(argument.capture());
+    argument.getValue().stream()
+        .forEach(
+            dhruvaEvent -> {
+              if (dhruvaEvent instanceof LoggingEvent) {
+                System.out.println(((LoggingEvent) dhruvaEvent).getEventInfoMap());
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("circuitBreakerName"),
+                    "10.78.98.475080TCP");
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("creationTime"),
+                    zonedDateTime.toString());
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventInfoMap().get("state"),
+                    CircuitBreakerEvent.Type.ERROR.toString());
+                assertEquals(
+                    ((LoggingEvent) dhruvaEvent).getEventType(), Event.EventType.CIRCUIT_BREAKER);
               }
             });
   }

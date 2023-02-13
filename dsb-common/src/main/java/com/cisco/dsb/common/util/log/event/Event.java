@@ -18,6 +18,7 @@ import gov.nist.javax.sip.header.CSeq;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import io.github.resilience4j.circuitbreaker.event.CircuitBreakerEvent;
 import java.util.*;
 import javax.sip.message.Message;
 import lombok.CustomLog;
@@ -52,7 +53,8 @@ public class Event {
     SIPMESSAGE,
     SERVERGROUP_ELEMENT_EVENT,
     SERVERGROUP_EVENT,
-    RATE_LIMITER
+    RATE_LIMITER,
+    CIRCUIT_BREAKER
   }
 
   public enum MESSAGE_TYPE {
@@ -344,6 +346,24 @@ public class Event {
               .eventType(EventType.RATE_LIMITER)
               .eventInfoMap(eventInfo)
               .sipMsgPayload(message)
+              .build();
+      List<DhruvaEvent> events = new ArrayList<>();
+      events.add(event);
+      eventingService.publishEvents(events);
+    }
+  }
+
+  public static void emitCBEvents(CircuitBreakerEvent cbEvent) {
+    if (eventingService != null) {
+      Map<String, String> eventInfo = new HashMap<>();
+      eventInfo.put("circuitBreakerName", cbEvent.getCircuitBreakerName());
+      eventInfo.put("creationTime", cbEvent.getCreationTime().toString());
+      eventInfo.put("state", cbEvent.getEventType().toString());
+      LoggingEvent event =
+          new LoggingEvent.LoggingEventBuilder()
+              .eventType(EventType.CIRCUIT_BREAKER)
+              .eventInfoMap(eventInfo)
+              .msgPayload(cbEvent.toString())
               .build();
       List<DhruvaEvent> events = new ArrayList<>();
       events.add(event);
