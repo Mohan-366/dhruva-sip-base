@@ -117,7 +117,7 @@
           </execution>
         </executions>
         <configuration>
-          <!--<argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>-->
+          <argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>
           <skipITs>${skipFTs}</skipITs>
           <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
           <testSourceDirectory>${project.build.sourceDirectory}</testSourceDirectory>

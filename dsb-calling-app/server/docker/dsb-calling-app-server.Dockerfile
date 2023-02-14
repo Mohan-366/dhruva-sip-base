@@ -1,4 +1,4 @@
-FROM dockerhub.cisco.com/webexkubed-docker/wbx3-tomcat:2022-11-03_16-52-29
+FROM engci-maven.cisco.com/webexkubed-docker/wbx3_tomcat:2023-02-09_17-24-13
 LABEL maintainer="dhruva app team"
 LABEL quay.expires-after=7d
 RUN apt-get update -y && apt-get install lsof -y

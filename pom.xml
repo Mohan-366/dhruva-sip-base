@@ -44,11 +44,13 @@
         <spotbugs.failOnError>true</spotbugs.failOnError>
         <!-- SpotBugs should ignore JAIN SIP .class files from AspectJ weaving -->
         <spotbugs.onlyAnalyze>com.cisco.-</spotbugs.onlyAnalyze>
-        <jacoco.version>0.8.6</jacoco.version>
+        <jacoco.version>0.8.8</jacoco.version>
         <cargo.maven2.plugin.version>1.8.0</cargo.maven2.plugin.version>
+        <maven.compiler.release>17</maven.compiler.release>
         <tomcat-ft.version>9.0.65</tomcat-ft.version>
         <dnsjava.version>3.5.0</dnsjava.version>
         <fmt-maven-plugin.version>2.19</fmt-maven-plugin.version>
+        <lombok.version>1.18.22</lombok.version>
         <skipUTs>false</skipUTs>
         <skipITs>false</skipITs>
         <skipFTs>false</skipFTs>
@@ -126,7 +128,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.20</version>
+                <version>${lombok.version}</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
@@ -246,7 +248,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipUTs}</skipTests>
-                    <!--<argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>-->
+                    <argLine>-XX:+AllowRedefinitionToAddDeleteMethods</argLine>
                 </configuration>
                 <executions>
                     <execution>
@@ -291,7 +293,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.8.1</version>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -300,7 +302,8 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                            <release>11</release>
+                            <source>17</source>
+                            <target>17</target>
                         </configuration>
                     </execution>
                     <execution>
@@ -310,12 +313,14 @@
                             <goal>testCompile</goal>
                         </goals>
                         <configuration>
-                            <release>11</release>
+                            <source>17</source>
+                            <target>17</target>
                         </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <release>11</release>
+                    <source>17</source>
+                    <target>17</target>
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
                 </configuration>
             </plugin>
