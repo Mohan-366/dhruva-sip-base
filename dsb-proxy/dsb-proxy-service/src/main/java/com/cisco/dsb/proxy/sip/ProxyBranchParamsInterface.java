@@ -1,5 +1,6 @@
 package com.cisco.dsb.proxy.sip;
 
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.transport.Transport;
 
 /**
@@ -7,42 +8,33 @@ import com.cisco.dsb.common.transport.Transport;
  * roght now) to modify the default behavior for a single branch NOTE: The API for this class might
  * change as OAM&P matures
  */
-public interface ProxyBranchParamsInterface {
-
-  /**
-   * Specifies whether the proxy needs to insert itself into the Record-Route
-   *
-   * @return Record-Route setting
-   */
-  public boolean doRecordRoute();
+public interface ProxyBranchParamsInterface extends ProxyParamsInterface {
 
   /**
    * Returns the address to proxy to
    *
    * @return the address to proxy to, null if the default forwarding logic is to be used
    */
-  public String getProxyToAddress();
+  String getProxyToAddress();
 
   /**
    * Returns port to proxy to
    *
    * @return the port to proxy to; if -1 is returned, default port will be used
    */
-  public int getProxyToPort();
+  int getProxyToPort();
 
   /**
    * @return protocol to use for outgoing request
    */
-  public Transport getProxyToProtocol();
+  Transport getProxyToProtocol();
+
+  String getRequestDirection();
 
   /**
-   * @return the timeout value in milliseconds for outgoing requests. -1 means default timeout This
-   *     allows to set timeout values that are _lower_ than SIP defaults. Values higher than SIP
-   *     deafults will have no effect.
+   * @return incoming network that has to be inserted into Record-Route
    */
-  public long getRequestTimeout();
+  String getRecordRouteUserParams();
 
-  public String getRequestDirection();
-
-  public String getRecordRouteUserParams();
+  ListenIfHeader.HostnameType getHostNameType(String header);
 }

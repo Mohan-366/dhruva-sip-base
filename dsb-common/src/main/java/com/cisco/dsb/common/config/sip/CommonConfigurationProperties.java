@@ -8,6 +8,7 @@ import com.cisco.dsb.common.servergroup.OptionsPingPolicy;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +41,8 @@ public class CommonConfigurationProperties {
   public static final boolean DEFAULT_ATTACH_EXTERNAL_IP = false;
   public static final boolean DEFAULT_ENABLE_RATE_LIMITING = false;
   public static final Integer DEFAULT_TRAFFIC_CLASS = 0x68;
+  public static final ListenIfHeader.HostnameType DEFAULT_EXTERNAL_HOSTNAME_TYPE =
+      ListenIfHeader.HostnameType.LOCAL_IP;
 
   @Getter private TruststoreConfigurationProperties truststoreConfig;
   @Getter @Setter private boolean useRedisAsCache = false;
@@ -52,7 +55,6 @@ public class CommonConfigurationProperties {
   @Getter @Setter private int connectionIdleTimeout = 14400;
 
   @Getter @Setter private boolean hostPortEnabled = false;
-  @Getter private String hostInfo;
 
   @Getter @Setter private int tlsHandShakeTimeOutMilliSeconds = 5000;
   @Getter @Setter private long connectionWriteTimeoutInMllis = 60000;
@@ -137,11 +139,6 @@ public class CommonConfigurationProperties {
           updateTrafficMap(sipListenPoint);
         });
   }
-  // Currently supports only one interface(public)
-  // Might be bit misleading, value is used to resolve env variable.
-  public void setHostInfo(String hostInfo) {
-    this.hostInfo = environment.getProperty(hostInfo);
-  }
 
   public void setRoutePolicy(Map<String, RoutePolicy> routePolicyMap) {
     logger.info("Configuring ServerGroups route policy");
@@ -188,7 +185,12 @@ public class CommonConfigurationProperties {
                   .filter(lp -> lp.getName().equals(network))
                   .findFirst()
                   .ifPresentOrElse(
-                      listenPoint -> updateTransport(sg, listenPoint.getTransport()),
+                      listenPoint -> {
+                        updateTransport(sg, listenPoint.getTransport());
+                        // Once we are able to identify ingress, SG can have different hostNameType
+                        // than listenPoint
+                        updateHostNameType(sg, listenPoint);
+                      },
                       () -> {
                         throw new DhruvaRuntimeException(
                             "SGName: "
@@ -215,6 +217,11 @@ public class CommonConfigurationProperties {
                   serverGroupElements.forEach(
                       serverGroupElement -> serverGroupElement.setTransport(transport)));
     }
+  }
+
+  private void updateHostNameType(ServerGroup sg, SIPListenPoint listenPoint) {
+    sg.setViaHostName(listenPoint.getExternalHostnameType());
+    sg.setRrHostName(listenPoint.getExternalHostnameType());
   }
 
   private void updateTrafficMap(SIPListenPoint sipListenPoint) {

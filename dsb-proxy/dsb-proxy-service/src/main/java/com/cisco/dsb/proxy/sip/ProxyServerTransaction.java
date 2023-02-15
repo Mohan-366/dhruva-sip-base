@@ -67,8 +67,8 @@ public class ProxyServerTransaction {
 
       if (controllerConfig.doRecordRoute()) {
         if (rrIndexFromEnd >= 0)
-          controllerConfig.setRecordRouteInterface(response, false, rrIndexFromEnd);
-        else controllerConfig.setRecordRouteInterface(response, true, rrIndexFromEnd);
+          controllerConfig.updateRecordRouteInterface(response, false, rrIndexFromEnd);
+        else controllerConfig.updateRecordRouteInterface(response, true, rrIndexFromEnd);
       }
       String callTypeName =
           this.proxy.getClientTransaction() != null

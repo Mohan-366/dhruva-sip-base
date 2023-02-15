@@ -12,7 +12,6 @@ import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.transport.Transport;
@@ -124,7 +123,6 @@ public class ProxyServiceTest {
             .setTransport(Transport.UDP)
             .setPort(9060)
             .setRecordRoute(true)
-            .setAttachExternalIP(false)
             .build();
 
     udpListenPoint2 =
@@ -134,7 +132,6 @@ public class ProxyServiceTest {
             .setTransport(Transport.UDP)
             .setPort(9063)
             .setRecordRoute(true)
-            .setAttachExternalIP(false)
             .build();
 
     tcpListenPoint3 =
@@ -144,7 +141,6 @@ public class ProxyServiceTest {
             .setTransport(Transport.TCP)
             .setPort(8081)
             .setRecordRoute(true)
-            .setAttachExternalIP(false)
             .build();
     tlsListenPoint4 =
         SIPListenPoint.SIPListenPointBuilder()
@@ -153,7 +149,6 @@ public class ProxyServiceTest {
             .setTransport(Transport.TLS)
             .setPort(8082)
             .setRecordRoute(true)
-            .setAttachExternalIP(false)
             .build();
 
     sipListenPointList = new ArrayList<>();
@@ -164,20 +159,7 @@ public class ProxyServiceTest {
 
     when(commonConfigurationProperties.getListenPoints()).thenReturn(sipListenPointList);
 
-    doNothing()
-        .when(controllerConfig)
-        .addRecordRouteInterface(
-            any(InetAddress.class), any(int.class), any(Transport.class), any(DhruvaNetwork.class));
-
-    doNothing()
-        .when(controllerConfig)
-        .addListenInterface(
-            any(DhruvaNetwork.class),
-            any(InetAddress.class),
-            any(int.class),
-            any(Transport.class),
-            any(InetAddress.class),
-            any(boolean.class));
+    doNothing().when(controllerConfig).addListenInterface(any(SIPListenPoint.class));
 
     dhruvaServer = new DhruvaServerImpl();
     dhruvaServer.setCommonConfigurationProperties(commonConfigurationProperties);

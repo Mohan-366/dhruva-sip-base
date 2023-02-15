@@ -25,10 +25,12 @@ public class CertConfigurationProperties {
    * Connections.
    */
   private ClientAuthType clientAuthType = ClientAuthType.Disabled;
-  /**
-   * revocation | ocsp | Action | ___________|_______|________| true | true |ocsp and fallback to
-   * crl| true | false | just crl | false | X | no check |
-   */
+
+  // revocation | ocsp  | Action |
+  // ___________|_______|________|
+  // true       | true  |ocsp and fallback to crl|
+  // true       | false | just crl |
+  // false      | X     | no check |
   private boolean revocationCheck = true;
 
   private boolean revocationSoftfail = true;

@@ -57,7 +57,7 @@ public class HostNameValidationHelper {
           return san.stream()
               .anyMatch(
                   x ->
-                      x.get(1).toString().toLowerCase().equals(VALID_WEBEX_SAN)
+                      x.get(1).toString().equalsIgnoreCase(VALID_WEBEX_SAN)
                           && x.get(0)
                               .toString()
                               .equals("2") // Also check that the SAN is of type dNSName

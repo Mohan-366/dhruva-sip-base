@@ -11,6 +11,7 @@ import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.*;
@@ -327,7 +328,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             logger.debug("Created Endpoint from request, Endpoint:{}", endPoint);
             proxySIPRequest.setDownstreamElement(endPoint);
           }
-          ProxyParamsInterface pp = getProxyParams(proxySIPRequest);
+          ProxyParams pp = getProxyParams(proxySIPRequest);
           proxySIPRequest.setParams(pp);
           proxyTransaction.addProxyRecordRoute(proxySIPRequest);
           return proxyTransaction.proxyPostProcess(proxySIPRequest);
@@ -362,7 +363,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     return locatorService.resolveAddress(new HopImpl(uri.getHost(), uri.getPort(), transport));
   }
 
-  public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest)
+  public ProxyParams getProxyParams(ProxySIPRequest proxySIPRequest)
       throws DhruvaException, ParseException {
     SIPRequest request = proxySIPRequest.getRequest();
 
@@ -373,10 +374,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         optionalDhruvaNetwork.orElseThrow(
             () -> new DhruvaException("unable to find outgoing network"));
 
-    ProxyParams pp;
-    pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
-    ProxyParams dpp = pp;
-    dpp.setProxyToAddress(proxySIPRequest.getDownstreamElement().getHost());
+    ProxyParams pp = new ProxyParams(controllerConfig, outgoingNetwork.getName());
+    pp.setProxyToAddress(proxySIPRequest.getDownstreamElement().getHost());
     if (!mEmulate2543) {
       try {
         proxySIPRequest.lrEscape();
@@ -393,18 +392,39 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       logger.error("Unable to set remoteAddress on request", ex);
     }
 
-    dpp.setProxyToPort(proxySIPRequest.getDownstreamElement().getPort());
+    pp.setProxyToPort(proxySIPRequest.getDownstreamElement().getPort());
     request.setRemotePort(proxySIPRequest.getDownstreamElement().getPort());
 
-    dpp.setProxyToProtocol(proxySIPRequest.getDownstreamElement().getProtocol());
+    pp.setProxyToProtocol(proxySIPRequest.getDownstreamElement().getProtocol());
 
     // setting the record route user portion
-    pp.setRecordRouteUserParams(getRecordRouteParams(proxySIPRequest, true));
-
+    pp.setRrUserParams(getRecordRouteParams(proxySIPRequest));
+    pp.setViaHostNameType(getViaHostNameType(proxySIPRequest));
+    pp.setRrHostNameType(getRRHostNameType(proxySIPRequest));
     return pp;
   }
 
-  public String getRecordRouteParams(ProxySIPRequest proxySIPRequest, boolean escape) {
+  private ListenIfHeader.HostnameType getViaHostNameType(ProxySIPRequest proxySIPRequest) {
+    ListenIfHeader.HostnameType hostnameType = proxySIPRequest.getViaHostName();
+    if (hostnameType == null)
+      hostnameType =
+          controllerConfig
+              .getListenInterface(proxySIPRequest.getOutgoingNetwork())
+              .getHostnameType();
+    return hostnameType;
+  }
+
+  private ListenIfHeader.HostnameType getRRHostNameType(ProxySIPRequest proxySIPRequest) {
+    ListenIfHeader.HostnameType hostnameType = proxySIPRequest.getRrHostName();
+    if (hostnameType == null)
+      hostnameType =
+          controllerConfig
+              .getListenInterface(proxySIPRequest.getOutgoingNetwork())
+              .getHostnameType();
+    return hostnameType;
+  }
+
+  public String getRecordRouteParams(ProxySIPRequest proxySIPRequest) {
     logger.debug("Entering getRecordRouteParams()");
 
     String rrUser = "";
@@ -414,11 +434,6 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
             + ReConstants.BS_RR_TOKEN
             + ReConstants.BS_NETWORK_TOKEN
             + proxySIPRequest.getNetwork();
-
-    // TODO DSB Not sure what does this fn do?
-    //    if (escape) {
-    //      rrUser = SipURI.getEscapedString(rrUser, SipURI.USER_ESCAPE_BYTES);
-    //    }
 
     logger.debug("Leaving getRecordRouteParams(), returning {}", rrUser);
     return rrUser;
@@ -515,7 +530,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           if (sipURI.getMAddrParam() != null) {
 
             return controllerConfig
-                .recognize(uri, false)
+                .recognize(uri, true, true)
                 .handle(
                     (response, sink) -> {
                       if (response) {
@@ -561,7 +576,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         if (topRoute != null) uriAsync = topRoute.getAddress().getURI();
         URI finalUriAsync = uriAsync;
         return controllerConfig
-            .recognize(request.getRequestURI(), true)
+            .recognize(request.getRequestURI(), true, false)
             .handle(
                 (response, sink) -> {
                   if (response) {
@@ -617,7 +632,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
                 })
             .switchIfEmpty(
                 controllerConfig
-                    .recognize(finalUriAsync, false)
+                    .recognize(finalUriAsync, false, false)
                     .handle(
                         (response, sink) -> {
                           if (response) {

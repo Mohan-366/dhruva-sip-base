@@ -33,6 +33,7 @@ import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.header.ProxyRequire;
 import gov.nist.javax.sip.header.SIPHeader;
 import gov.nist.javax.sip.header.Unsupported;
+import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPServerTransaction;
@@ -46,7 +47,6 @@ import javax.sip.*;
 import javax.sip.address.URI;
 import javax.sip.header.MaxForwardsHeader;
 import javax.sip.header.TooManyHopsException;
-import javax.sip.header.ViaHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import lombok.CustomLog;
@@ -362,38 +362,17 @@ public class SipProxyManager {
       // process only 2xx as they are critical
       if (response.getStatusCode() / 100 != 2) return;
       // check the top Via;
-      ViaHeader myVia;
-      myVia = response.getTopmostViaHeader();
-      if (myVia == null) return;
-
-      // check the the top Via matches our proxy
-      if (myVia.getBranch() == null) { // we always insert branch
-        logger.info("Dropped stray response with bad Via");
-        return;
-      }
-      if (Objects.isNull(myVia.getHost())
-          || Objects.isNull(myVia.getTransport())
-          || !config.recognize(
-              myVia.getHost(),
-              myVia.getPort(),
-              Transport.getTypeFromString(myVia.getTransport()).orElse(Transport.NONE))) {
-        logger.info("Dropped stray response with bad via, no listenIf matching");
-        return;
-      }
-
-      response.removeFirst(ViaHeader.NAME);
-
-      // do stray response default norm here using via and routeHeader
-      ViaHeader via;
-      via = response.getTopmostViaHeader();
-      if (via == null) {
-        logger.error("No more VIA left after removing top VIA. Dropping the response");
+      ViaList viaList = response.getViaHeaders();
+      if (viaList != null && viaList.size() > 1) {
+        viaList.removeFirst();
+      } else {
+        logger.error("Invalid Via headers, expecting atleast two Via");
         return;
       }
 
       if (config.doRecordRoute()) {
         try {
-          config.setRecordRouteInterface(response, true, -1);
+          config.updateRecordRouteInterface(response, true, -1);
         } catch (ParseException e) {
           logger.info("Unable to set Record Route on stray response");
         }

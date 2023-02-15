@@ -8,7 +8,6 @@ import com.cisco.dsb.common.CallType;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.context.ExecutionContext;
 import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.maintanence.Maintenance;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
@@ -63,7 +62,6 @@ public class SipProxyManagerTest {
   @InjectMocks SipProxyManager sipProxyManager;
   @Mock ProxyControllerFactory proxyControllerFactory;
   @Mock ControllerConfig controllerConfig;
-  @Mock DhruvaExecutorService dhruvaExecutorService;
   @Mock MetricService metricService;
   @Mock CommonConfigurationProperties commonConfigurationProperties;
   @Mock ProxyAppConfig proxyAppConfig;
@@ -100,83 +98,30 @@ public class SipProxyManagerTest {
     ProxySIPResponse proxySIPResponse =
         sipProxyManager.findProxyTransaction(null).apply(responseEvent);
     assertNull(proxySIPResponse);
-    verify(sipResponse, times(1)).getTopmostViaHeader();
     reset(sipResponse);
-
-    // Test: Top via with no Branch
-    ViaList viaList = new ViaList();
-    Via via1 = mock(Via.class);
-    viaList.addFirst(via1);
-    when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
-    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    proxySIPResponse = sipProxyManager.findProxyTransaction(proxyAppConfig).apply(responseEvent);
-    verify(sipResponse, times(1)).getTopmostViaHeader();
-    verify(via1, times(1)).getBranch();
-    assertNull(proxySIPResponse);
-    reset(sipResponse, via1);
-
-    // Test: Top via with branch but does not match any listenIf
-    when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
-    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    when(via1.getBranch()).thenReturn("testbranch");
-    when(via1.getHost()).thenReturn("testHost");
-    when(via1.getPort()).thenReturn(5060);
-    when(via1.getTransport()).thenReturn(Transport.TCP.name());
-    when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
-        .thenReturn(false);
-    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
-    assertNull(proxySIPResponse);
-    verify(sipResponse, times(0)).removeFirst(eq(ViaHeader.NAME));
-    reset(sipResponse);
-
-    // Test: Top via with matching listenIf but no Via left after top via removal
-    when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
-    when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
-        .thenReturn(true);
-    doAnswer(
-            invocationOnMock -> {
-              when(sipResponse.getTopmostViaHeader()).thenReturn(null);
-              return null;
-            })
-        .when(sipResponse)
-        .removeFirst(eq(ViaHeader.NAME));
-    proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
-    assertNull(proxySIPResponse);
-    verify(sipResponse, times(1)).removeFirst(eq(ViaHeader.NAME));
-    verify(controllerConfig, times(0)).doRecordRoute();
-    reset(sipResponse, controllerConfig);
 
     // Test: Valid ViaList but RR does not contain outbound network to send out the response
-    when(sipResponse.getTopmostViaHeader()).thenReturn((Via) viaList.getFirst());
+    ViaList viaList = new ViaList();
+    viaList.add(new Via());
+    viaList.add(new Via());
+    ViaList viaListClone = ((ViaList) viaList.clone());
+    when(sipResponse.getViaHeaders()).thenReturn(viaListClone);
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
-        .thenReturn(true);
-    doAnswer(
-            invocationOnMock -> {
-              when(sipResponse.getTopmostViaHeader()).thenReturn(via1);
-              return null;
-            })
-        .when(sipResponse)
-        .removeFirst(eq(ViaHeader.NAME));
+    when(controllerConfig.recognize(any(SipUri.class))).thenReturn(true);
     when(controllerConfig.doRecordRoute()).thenReturn(true);
     proxySIPResponse = sipProxyManager.findProxyTransaction(null).apply(responseEvent);
-    verify(controllerConfig, times(1)).setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
+    verify(controllerConfig, times(1))
+        .updateRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
+    assertEquals(viaListClone.size(), 1);
     // Can't assert properly because DhruvaNetwork.getProviderFromNetwork is static method
     assertNull(proxySIPResponse);
     reset(controllerConfig);
 
     // Test: Valid ViaList, RR does contain outbound network but network not present in listenIf
-    when(controllerConfig.recognize(any(String.class), eq(5060), any(Transport.class)))
-        .thenReturn(true);
+    viaListClone = ((ViaList) viaList.clone());
+    when(sipResponse.getViaHeaders()).thenReturn(viaListClone);
+    when(controllerConfig.recognize(any(SipUri.class))).thenReturn(true);
     when(sipResponse.getStatusCode()).thenReturn(Response.OK);
-    doAnswer(
-            invocationOnMock -> {
-              when(sipResponse.getTopmostViaHeader()).thenReturn(via1);
-              return null;
-            })
-        .when(sipResponse)
-        .removeFirst(eq(ViaHeader.NAME));
     when(controllerConfig.doRecordRoute()).thenReturn(true);
     MsgApplicationData msgApplicationData =
         MsgApplicationData.builder().outboundNetwork("not_our_network").build();
@@ -190,6 +135,8 @@ public class SipProxyManagerTest {
     reset(sipProvider);
 
     // Test: Valid ViaList, RR does contain outbound network and network a valid listenIf
+    viaListClone = ((ViaList) viaList.clone());
+    when(sipResponse.getViaHeaders()).thenReturn(viaListClone);
     msgApplicationData = MsgApplicationData.builder().outboundNetwork("test_out_network").build();
     HeaderFactory headerFactory = new HeaderFactoryImpl();
     Address address = new AddressImpl();
@@ -222,7 +169,8 @@ public class SipProxyManagerTest {
     assertEquals(normalizationCounter.get(), 1);
     verify(sipProvider, times(1)).sendResponse(sipResponse);
     // verify previous testcase also here, i.e invalid network in RR
-    verify(controllerConfig, times(2)).setRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
+    verify(controllerConfig, times(2))
+        .updateRecordRouteInterface(eq(sipResponse), eq(true), eq(-1));
   }
 
   @Test(description = "test to process the proxyTransaction for provisional response")

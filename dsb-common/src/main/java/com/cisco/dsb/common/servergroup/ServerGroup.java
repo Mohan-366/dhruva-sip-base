@@ -4,6 +4,7 @@ import com.cisco.dsb.common.config.RoutePolicy;
 import com.cisco.dsb.common.loadbalancer.LBElement;
 import com.cisco.dsb.common.loadbalancer.LBType;
 import com.cisco.dsb.common.loadbalancer.LoadBalancable;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.transport.Transport;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +37,12 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
 
   @Builder.Default
   private boolean enableRedirectionOptions = false; // TODO: default should be true or false?
+
+  @Builder.Default
+  private ListenIfHeader.HostnameType viaHostName = ListenIfHeader.HostnameType.LOCAL_IP;
+
+  @Builder.Default
+  private ListenIfHeader.HostnameType rrHostName = ListenIfHeader.HostnameType.LOCAL_IP;
 
   @Override
   public boolean equals(Object a) {
@@ -157,8 +164,6 @@ public class ServerGroup implements LBElement, LoadBalancable, Pingable {
   @Override
   public List<ServerGroupElement> getElements() {
     if (elements != null) return elements;
-    /*SpringApplicationContext.getAppContext().getBean(SipServerLocatorService.class)
-    .locateDestinationAsync()*/
     return null;
   }
 }

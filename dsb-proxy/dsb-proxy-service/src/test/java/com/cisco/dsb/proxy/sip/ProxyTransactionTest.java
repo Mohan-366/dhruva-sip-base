@@ -10,6 +10,7 @@ import com.cisco.dsb.proxy.errors.DestinationUnreachableException;
 import com.cisco.dsb.proxy.errors.InternalProxyErrorException;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.SIPRequestBuilder;
+import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.header.ViaList;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
@@ -76,6 +77,9 @@ public class ProxyTransactionTest {
         .onProvisionalResponse(any(ProxyCookie.class), any(ProxySIPResponse.class));
 
     // Test for proxyTransaction with ProxyClientTransaction
+    ViaList viaList = sipResponse.getViaHeaders();
+    viaList.add(new Via());
+    viaList.add(new Via());
     proxyTransaction.setM_originalProxyClientTrans(proxyClientTransaction);
     proxyTransaction.provisionalResponse(proxySIPResponse);
 
@@ -88,8 +92,13 @@ public class ProxyTransactionTest {
 
     // test when no via left after removing top via
     reset(sipResponse, proxyClientTransaction, controllerInterface);
-    when(sipResponse.getViaHeaders()).thenReturn(null);
-
+    viaList = new ViaList();
+    viaList.add(new Via());
+    when(sipResponse.getViaHeaders()).thenReturn(viaList);
+    ViaList finalViaList = viaList;
+    doAnswer(invocationOnMock -> finalViaList.remove(0))
+        .when(sipResponse)
+        .removeFirst(eq(ViaHeader.NAME));
     proxyTransaction.provisionalResponse(proxySIPResponse);
 
     verify(sipResponse).removeFirst(ViaHeader.NAME);
@@ -131,6 +140,9 @@ public class ProxyTransactionTest {
     when(proxySIPResponse.getResponseClass()).thenReturn(2);
     when(proxyClientTransaction.getState()).thenReturn(ProxyClientTransaction.STATE_FINAL_RECVD);
     when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ViaList viaList = sipResponse.getViaHeaders();
+    viaList.add(new Via());
+    viaList.add(new Via());
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
     // verify
@@ -149,6 +161,9 @@ public class ProxyTransactionTest {
     when(proxySIPResponse.getResponseClass()).thenReturn(4);
     when(proxyClientTransaction.isInvite()).thenReturn(true);
     when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ViaList viaList = sipResponse.getViaHeaders();
+    viaList.add(new Via());
+    viaList.add(new Via());
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
 
@@ -164,6 +179,9 @@ public class ProxyTransactionTest {
     when(proxySIPResponse.getResponseClass()).thenReturn(6);
     when(proxyClientTransaction.isInvite()).thenReturn(true);
     when(proxyClientTransaction.getCookie()).thenReturn(mock(ProxyCookie.class));
+    ViaList viaList = sipResponse.getViaHeaders();
+    viaList.add(new Via());
+    viaList.add(new Via());
     // call
     proxyTransaction.finalResponse(proxySIPResponse);
 
@@ -327,7 +345,7 @@ public class ProxyTransactionTest {
   }
 
   @DataProvider
-  public Object[] getClientTransactionState() {
+  public Object[][] getClientTransactionState() {
     return new Integer[][] {
       {ProxyClientTransaction.STATE_PROV_RECVD}, {ProxyClientTransaction.STATE_REQUEST_SENT}
     };

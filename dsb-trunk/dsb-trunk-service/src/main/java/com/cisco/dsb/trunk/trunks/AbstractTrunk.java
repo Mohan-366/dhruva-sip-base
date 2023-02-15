@@ -571,6 +571,8 @@ public abstract class AbstractTrunk implements LoadBalancable {
 
   private Mono<ProxySIPResponse> sendToProxy(TrunkCookie cookie, EndPoint endPoint) {
     Predicate<Object> cbRecordResult = getCircuitBreakerRecordResult(cookie);
+    ProxySIPRequest clonedRequest = cookie.getClonedRequest();
+    setListenIfHeaders(cookie, clonedRequest);
     return Mono.defer(() -> Mono.fromFuture(cookie.getClonedRequest().proxy(endPoint)))
         .transformDeferred(
             ConditionalTransformer.of(
@@ -630,5 +632,11 @@ public abstract class AbstractTrunk implements LoadBalancable {
           "Skipping inActive Element as it's down {}", loadBalancer.getCurrentElement().toString());
     }
     return null;
+  }
+
+  private void setListenIfHeaders(TrunkCookie cookie, ProxySIPRequest proxySIPRequest) {
+    ServerGroup currentSG = ((ServerGroup) cookie.getSgLoadBalancer().getCurrentElement());
+    proxySIPRequest.setViaHostName(currentSG.getViaHostName());
+    proxySIPRequest.setRrHostName(currentSG.getRrHostName());
   }
 }

@@ -32,7 +32,6 @@ import com.cisco.dsb.proxy.sip.ProxySendMessage;
 import com.cisco.dsb.proxy.sip.SipProxyManager;
 import com.cisco.wx2.util.Utilities;
 import gov.nist.javax.sip.message.SIPRequest;
-import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,26 +128,13 @@ public class ProxyService {
                   networkConfig.getName());
               try {
                 logger.info("Server socket created for {}", sipListenPoint.getName());
-                controllerConfig.addListenInterface(
-                    networkConfig,
-                    InetAddress.getByName(sipListenPoint.getHostIPAddress()),
-                    sipListenPoint.getPort(),
-                    sipListenPoint.getTransport(),
-                    InetAddress.getByName(sipListenPoint.getHostIPAddress()),
-                    sipListenPoint.isAttachExternalIP());
+                controllerConfig.addListenInterface(sipListenPoint);
 
-                if (sipListenPoint.isRecordRoute()) {
-                  controllerConfig.addRecordRouteInterface(
-                      InetAddress.getByName(sipListenPoint.getHostIPAddress()),
-                      sipListenPoint.getPort(),
-                      sipListenPoint.getTransport(),
-                      networkConfig);
-                }
               } catch (Exception e) {
                 logger.error(
-                    "Configuring Listenpoint in DsControllerConfig failed for ListenPoint  "
-                        + sipListenPoint.getName(),
-                    e);
+                    "Configuring Listenpoint in ControllerConfig failed for ListenPoint  "
+                        + sipListenPoint.getName());
+                throw e;
               }
             } else {
               // TODO: should Dhruva exit ? or generate an Alarm

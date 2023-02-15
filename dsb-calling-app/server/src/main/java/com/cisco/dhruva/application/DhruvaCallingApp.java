@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import javax.sip.message.Response;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -90,14 +89,14 @@ public class DhruvaCallingApp {
         filter.register(interestedCallTypes);
       } catch (FilterTreeException e) {
         logger.error("Unable to add calltype to filter tree, exiting!!!", e);
-        int exitCode = SpringApplication.exit(appContext, (ExitCodeGenerator) () -> 0);
+        int exitCode = SpringApplication.exit(appContext, () -> 0);
         System.exit(exitCode);
       }
       try {
         proxyService.init();
       } catch (Exception e) {
         logger.error("Unable to initialize proxy, exiting!!!", e);
-        int exitCode = SpringApplication.exit(appContext, (ExitCodeGenerator) () -> 0);
+        int exitCode = SpringApplication.exit(appContext, () -> 0);
         System.exit(exitCode);
       }
       proxyService.register(proxyAppConfig);

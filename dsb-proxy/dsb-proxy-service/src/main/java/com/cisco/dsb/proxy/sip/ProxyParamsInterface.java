@@ -1,44 +1,31 @@
 package com.cisco.dsb.proxy.sip;
 
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.util.ListenInterface;
-import com.cisco.dsb.common.sip.util.ViaListenInterface;
-import com.cisco.dsb.common.transport.Transport;
-import java.net.InetAddress;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
+import java.text.ParseException;
+import javax.sip.InvalidArgumentException;
 import javax.sip.header.RecordRouteHeader;
+import javax.sip.header.ViaHeader;
 
 /** Describes configuration settings of a ProxyTransaction */
-public interface ProxyParamsInterface extends ProxyBranchParamsInterface {
+public interface ProxyParamsInterface {
 
   /**
-   * @return default SIP port number
+   * Specifies whether the proxy needs to insert itself into the Record-Route
+   *
+   * @return Record-Route setting
    */
-  int getDefaultPort();
+  boolean doRecordRoute();
 
   /**
-   * @return the interface to be inserted into Record-Route if the transport parameter of that
-   *     interface is NONE, no transport parameter will be used in R-R; otherwise, the transport of
-   *     this interface will be used.
+   * @return the timeout value in milliseconds for outgoing requests. -1 means default timeout This
+   *     allows to set timeout values that are _lower_ than SIP defaults. Values higher than SIP
+   *     deafults will have no effect.
    */
-  RecordRouteHeader getRecordRouteInterface(String direction);
+  long getRequestTimeout();
 
-  /**
-   * @param protocol UDP or TCP
-   * @return the address and port number that needs to be inserted into the Via header for a
-   *     specific protocol used
-   */
-  ViaListenInterface getViaInterface(Transport protocol, String direction);
+  RecordRouteHeader getRecordRoute(
+      String user, String network, ListenIfHeader.HostnameType hostnameType);
 
-  /**
-   * @return default protocol we are listening on (one of the constants defined in
-   *     DsSipTransportType.java) //This is used in Record-Route, for example This is not really
-   *     used by the proxy core anymore
-   */
-  Transport getDefaultProtocol();
-
-  ListenInterface getInterface(InetAddress address, Transport prot, int port);
-
-  ListenInterface getInterface(Transport protocol, DhruvaNetwork direction);
-
-  ListenInterface getInterface(int port, Transport protocol);
+  ViaHeader getViaHeader(String network, ListenIfHeader.HostnameType hostnameType, String branch)
+      throws InvalidArgumentException, ParseException;
 }

@@ -16,7 +16,6 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.util.RequestHelper;
 import com.cisco.dsb.proxy.util.ResponseHelper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
@@ -70,7 +69,7 @@ public class ProxyClientTransactionTest {
   }
 
   @DataProvider
-  public Object[] getNetwork() throws JsonProcessingException, DhruvaException {
+  public Object[][] getNetwork() throws DhruvaException {
 
     SIPListenPoint sipListenPoint =
         SIPListenPoint.SIPListenPointBuilder()
@@ -78,7 +77,6 @@ public class ProxyClientTransactionTest {
             .setHostIPAddress("3.3.3.3")
             .setPort(5080)
             .setTransport(Transport.UDP)
-            .setAttachExternalIP(false)
             .setRecordRoute(true)
             .build();
     testNetwork1 = DhruvaNetwork.createNetwork("test_net_proxyclient", sipListenPoint);
@@ -89,18 +87,17 @@ public class ProxyClientTransactionTest {
             .setHostIPAddress("3.3.3.3")
             .setPort(5080)
             .setTransport(Transport.TCP)
-            .setAttachExternalIP(false)
             .setRecordRoute(true)
             .build();
     testNetwork2 = DhruvaNetwork.createNetwork("test_net_proxyclient_tcp", sipListenPointTCP);
     DhruvaNetwork.setSipProvider(testNetwork2.getName(), sipProvider);
 
-    return new DhruvaNetwork[] {testNetwork1, testNetwork2};
+    return new DhruvaNetwork[][] {{testNetwork1}, {testNetwork2}};
   }
 
   @BeforeClass
   void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     springApplicationContext = new SpringApplicationContext();
     ApplicationContext context = mock(ApplicationContext.class);

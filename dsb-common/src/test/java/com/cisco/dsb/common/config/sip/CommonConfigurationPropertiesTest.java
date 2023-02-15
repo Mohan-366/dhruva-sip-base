@@ -33,7 +33,7 @@ public class CommonConfigurationPropertiesTest {
 
   @BeforeMethod
   public void beforeTest() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
   }
 
   @Test(description = "tests the getters and setters for one set of properties")
@@ -47,7 +47,6 @@ public class CommonConfigurationPropertiesTest {
     props.setConnectionIdleTimeout(36000);
     props.setHostPortEnabled(true);
     when(env.getProperty("testHost")).thenReturn("1.1.1.1");
-    props.setHostInfo("testHost");
     props.setTlsHandShakeTimeOutMilliSeconds(10000);
     props.setConnectionWriteTimeoutInMllis(10000);
 
@@ -65,7 +64,6 @@ public class CommonConfigurationPropertiesTest {
     Assert.assertEquals(props.getTlsEventloopThreadCount(), 10);
     Assert.assertEquals(props.getConnectionIdleTimeout(), 36000);
     Assert.assertTrue(props.isHostPortEnabled());
-    Assert.assertEquals(props.getHostInfo(), "1.1.1.1");
     Assert.assertEquals(props.getTlsHandShakeTimeOutMilliSeconds(), 10000);
     Assert.assertEquals(props.getConnectionWriteTimeoutInMllis(), 10000);
     Assert.assertFalse(props.isNioEnabled());
@@ -232,13 +230,12 @@ public class CommonConfigurationPropertiesTest {
 
   private Map<String, ServerGroup> getStaticServerGroupMap() {
     Map<String, ServerGroup> serverGroupMap = new HashMap<>();
-    List<ServerGroupElement> sgElems = new ArrayList<>();
     ServerGroupElement sgElem1 =
         ServerGroupElement.builder().setIpAddress("127.0.0.2").setPort(8181).build();
     ServerGroupElement sgElem2 =
         ServerGroupElement.builder().setIpAddress("127.0.0.3").setPort(8182).build();
 
-    sgElems.addAll(Arrays.asList(sgElem1, sgElem2));
+    List<ServerGroupElement> sgElems = new ArrayList<>(Arrays.asList(sgElem1, sgElem2));
 
     ServerGroup sgStatic =
         ServerGroup.builder()

@@ -21,8 +21,10 @@ import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
 import com.cisco.dsb.connectivity.monitor.dto.Status;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
 import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
+import com.cisco.dsb.proxy.controller.ControllerConfig;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.header.CallID;
+import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.text.ParseException;
@@ -33,6 +35,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
 import org.mockito.*;
@@ -57,7 +60,7 @@ public class OptionsPingMonitorTest {
 
   List<ServerGroup> serverGroups = new ArrayList<>();
   OptionsPingPolicy opPolicy = OptionsPingPolicy.builder().build();
-
+  OptionsUtil optionsUtil = new OptionsUtil();
   @Mock MetricService metricService;
 
   @Mock CommonConfigurationProperties commonConfigurationProperties;
@@ -70,6 +73,7 @@ public class OptionsPingMonitorTest {
   @InjectMocks @Spy OptionsPingMonitor optionsPingMonitor5;
   @Mock OptionsPingTransaction optionsPingTransaction;
   @Mock DnsServerGroupUtil dnsServerGroupUtil;
+  @Mock ControllerConfig controllerConfig;
 
   private ServerGroup createSGWithUpOrDownElements(
       Boolean isUpElements, OptionsPingMonitor optionsPingMonitor) {
@@ -193,7 +197,7 @@ public class OptionsPingMonitorTest {
   }
 
   @BeforeClass
-  public void init() throws DhruvaException, ParseException {
+  public void init() throws DhruvaException, ParseException, InvalidArgumentException {
     MockitoAnnotations.openMocks(this);
     metricService = mock(MetricService.class);
     when(metricService.getSgStatusMap()).thenReturn(new ConcurrentHashMap<>());
@@ -306,6 +310,14 @@ public class OptionsPingMonitorTest {
             .build();
     // adding one SG without elements. This one must not be considered by OPTIONS ping module.
     map.put(server2.getName(), server2);
+
+    when(controllerConfig.getViaHeader(any(), any(), any())).thenReturn(new Via());
+    optionsUtil.setControllerConfig(controllerConfig);
+    optionsPingMonitor.setOptionsUtil(optionsUtil);
+    optionsPingMonitor2.setOptionsUtil(optionsUtil);
+    optionsPingMonitor3.setOptionsUtil(optionsUtil);
+    optionsPingMonitor4.setOptionsUtil(optionsUtil);
+    optionsPingMonitor5.setOptionsUtil(optionsUtil);
   }
 
   @BeforeMethod
@@ -897,15 +909,15 @@ public class OptionsPingMonitorTest {
     map1.put("s3", sg3_1);
     map2.put("s1", sg2);
     map2.put("s3", sg3_2);
-    Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    Assert.assertFalse(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setPingOn(true);
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setPingOn(false);
     sg1.setHostName("s2");
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setHostName("s1");
     sg1.setNetworkName("n2");
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setNetworkName("n1");
     sg1.setOptionsPingPolicyFromConfig(
         OptionsPingPolicy.builder()
@@ -913,16 +925,16 @@ public class OptionsPingMonitorTest {
             .setName("OP_NEW")
             .setUpTimeInterval(60000)
             .build());
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setOptionsPingPolicyConfig(null);
     sg1.setElements(Arrays.asList(sge5, sge3));
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge6, sge3));
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge7, sge3));
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     sg1.setElements(Arrays.asList(sge8, sge3));
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
 
     ServerGroup sg3 =
         ServerGroup.builder()
@@ -934,8 +946,8 @@ public class OptionsPingMonitorTest {
             .setLbType(LBType.ONCE)
             .build();
     map2.put("s3", sg3);
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, null));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, null));
   }
 
   @Test
@@ -994,16 +1006,16 @@ public class OptionsPingMonitorTest {
     sg2.setElements(Arrays.asList(sge1, sge2));
     map1.put(sg1.getName(), sg1);
     map2.put(sg2.getName(), sg2);
-    Assert.assertFalse(OptionsUtil.isSGMapUpdated(map1, map2));
+    Assert.assertFalse(optionsUtil.isSGMapUpdated(map1, map2));
     op2.setFailureResponseCodes(
         new ArrayList<>(Arrays.asList(408, 502, 503))); // change failover codes
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     op2.setFailureResponseCodes(new ArrayList<>(Arrays.asList(408, 502))); // reset failover codes
     op2.setUpTimeInterval(35000); // change up interval time
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
     op2.setUpTimeInterval(30000); // reset up interval time
     op2.setDownTimeInterval(1000);
-    assertTrue(OptionsUtil.isSGMapUpdated(map1, map2));
+    assertTrue(optionsUtil.isSGMapUpdated(map1, map2));
   }
 
   @Test

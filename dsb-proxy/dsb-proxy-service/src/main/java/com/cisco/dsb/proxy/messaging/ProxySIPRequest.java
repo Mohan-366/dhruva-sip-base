@@ -6,6 +6,7 @@ import com.cisco.dsb.common.messaging.models.AbstractSipRequest;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.util.EndPoint;
 import com.cisco.dsb.common.sip.util.SipUtils;
@@ -33,7 +34,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   @Getter @Setter private String network;
   @Getter @Setter private String outgoingNetwork = null;
   @Getter private final ProxyCookie cookie;
-  @Getter @Setter private ProxyParamsInterface params;
+  @Getter @Setter private ProxyBranchParamsInterface params;
   @Getter @Setter private boolean statefulClientTransaction;
   @Getter @Setter private ProxyClientTransaction proxyClientTransaction;
   @Getter @Setter private URI lrFixUri = null;
@@ -42,6 +43,8 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   @Getter @Setter private EndPoint downstreamElement;
   @Getter HashMap<Object, Object> cache = new HashMap<>();
   @Getter @Setter private DhruvaAppRecord appRecord;
+  @Getter @Setter private ListenIfHeader.HostnameType viaHostName;
+  @Getter @Setter private ListenIfHeader.HostnameType rrHostName;
 
   public ProxySIPRequest(
       ExecutionContext executionContext,
@@ -71,6 +74,8 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     // Generally while sending out the message is cloned.
     // TBD
     this.appRecord = proxySIPRequest.appRecord;
+    this.viaHostName = proxySIPRequest.viaHostName;
+    this.rrHostName = proxySIPRequest.rrHostName;
   }
 
   public CompletableFuture<ProxySIPResponse> proxy(EndPoint endPoint) {
@@ -177,8 +182,6 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
   /**
    * Returns new proxySIPRequest whose meta data are same as original proxySipRequest but Request is
    * clone,i.e new copy
-   *
-   * @return
    */
   public Object clone() {
     return new ProxySIPRequest(this);
@@ -188,7 +191,7 @@ public class ProxySIPRequest extends AbstractSipRequest implements Cloneable {
     this.manageLatencyMetrics.accept(metricService, state);
   }
 
-  public BiConsumer<MetricService, SipMetricsContext.State> manageLatencyMetrics =
+  public final BiConsumer<MetricService, SipMetricsContext.State> manageLatencyMetrics =
       (metricService, state) -> {
         // Emit latency metric for non mid-dialog requests
         if (metricService != null && !SipUtils.isMidDialogRequest(this.getRequest()))

@@ -1,10 +1,7 @@
 package com.cisco.dsb.proxy.controller.util;
 
-import com.cisco.dsb.common.exception.DhruvaException;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.ReConstants;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import gov.nist.javax.sip.header.Route;
 import gov.nist.javax.sip.header.ims.PAssertedIdentityHeader;
@@ -26,17 +23,15 @@ public class ParseProxyParamUtil {
   private ParseProxyParamUtil() {}
 
   public static Map<String, String> getParsedProxyParams(
-      ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter)
-      throws DhruvaException {
+      ProxySIPRequest proxySIPRequest, int type, boolean decompress, String delimiter) {
     logger.info("Parsing proxy parameter for type: {}", type);
     SIPRequest request = proxySIPRequest.getRequest();
     String userPortion = null;
-    HeaderAddress header = null;
+    HeaderAddress header;
     switch (type) {
       case ReConstants.MY_URI:
         if (proxySIPRequest.getLrFixUri() != null)
           userPortion = getUserPortionFromUri(request.getRequestURI());
-        else userPortion = null;
         break;
       case ReConstants.R_URI:
         userPortion = getUserPortionFromUri(request.getRequestURI());
@@ -63,7 +58,7 @@ public class ParseProxyParamUtil {
 
     HashMap<String, String> parsedProxyParams = new HashMap<>();
     String nameValue;
-    StringTokenizer st = new StringTokenizer(userPortion.toString(), delimiter);
+    StringTokenizer st = new StringTokenizer(userPortion, delimiter);
     while (st.hasMoreTokens()) {
       nameValue = st.nextToken();
       parseNameValue(nameValue, parsedProxyParams);
@@ -82,28 +77,16 @@ public class ParseProxyParamUtil {
     }
   }
 
-  private static String getUserPortionFromUri(URI uri) throws DhruvaException {
+  private static String getUserPortionFromUri(URI uri) {
     if (uri == null) {
       return null;
     }
-    String userPortion = null;
+    String userPortion;
     if (uri.isSipURI()) {
       userPortion = ((SipURI) uri).getUser();
     } else {
       userPortion = uri.getScheme();
     }
     return userPortion;
-  }
-
-  public static Transport getNetworkTransport(
-      ControllerConfig controllerConfig, DhruvaNetwork network) {
-    Transport networkTransport = Transport.NONE;
-    for (Transport transport : Transports) {
-      if (network != null && controllerConfig.getInterface(transport, network) != null) {
-        networkTransport = transport;
-        break;
-      }
-    }
-    return networkTransport;
   }
 }

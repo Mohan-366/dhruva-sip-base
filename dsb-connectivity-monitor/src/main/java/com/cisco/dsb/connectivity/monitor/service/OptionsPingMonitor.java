@@ -1,9 +1,5 @@
 package com.cisco.dsb.connectivity.monitor.service;
 
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getNumRetry;
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.getRequest;
-import static com.cisco.dsb.connectivity.monitor.util.OptionsUtil.isSGMapUpdated;
-
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
@@ -14,14 +10,18 @@ import com.cisco.dsb.common.util.log.event.Event;
 import com.cisco.dsb.connectivity.monitor.dto.ResponseData;
 import com.cisco.dsb.connectivity.monitor.dto.Status;
 import com.cisco.dsb.connectivity.monitor.sip.OptionsPingTransaction;
+import com.cisco.dsb.connectivity.monitor.util.OptionsUtil;
 import com.cisco.dsb.proxy.sip.ProxyPacketProcessor;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -31,6 +31,7 @@ import javax.sip.SipException;
 import javax.sip.SipProvider;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
@@ -51,6 +52,7 @@ public class OptionsPingMonitor {
   private OptionsPingTransaction optionsPingTransaction;
   private CommonConfigurationProperties commonConfigurationProperties;
   private DnsServerGroupUtil dnsServerGroupUtil;
+  private OptionsUtil optionsUtil;
   protected MetricService metricsService;
   protected List<Disposable> opFlux = new ArrayList<>();
   protected ConcurrentMap<String, Status> elementStatus = new ConcurrentHashMap<>();
@@ -72,6 +74,11 @@ public class OptionsPingMonitor {
     this.commonConfigurationProperties = commonConfigurationProperties;
     this.dnsServerGroupUtil = dnsServerGroupUtil;
     this.metricsService = metricsService;
+  }
+
+  @Autowired
+  public void setOptionsUtil(OptionsUtil optionsUtil) {
+    this.optionsUtil = optionsUtil;
   }
 
   @PostConstruct
@@ -189,7 +196,8 @@ public class OptionsPingMonitor {
                     element,
                     throwable.getMessage()))
         .retryWhen(
-            Retry.fixedDelay(getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
+            Retry.fixedDelay(
+                optionsUtil.getNumRetry(element.getTransport()), Duration.ofMillis(downInterval)))
         .map(sipResponse -> new ResponseData(sipResponse, element))
         .onErrorResume(throwable -> Mono.just(new ResponseData(new Exception(throwable), element)));
   }
@@ -263,7 +271,8 @@ public class OptionsPingMonitor {
             "unable to find provider for outbound request with network:" + dhruvaNetwork.getName());
       }
 
-      SIPRequest sipRequest = getRequest(element, dhruvaNetwork, sipProvider, optionsPingPolicy);
+      SIPRequest sipRequest =
+          optionsUtil.getRequest(element, dhruvaNetwork, sipProvider, optionsPingPolicy);
       return optionsPingTransaction.proxySendOutBoundRequest(
           sipRequest, dhruvaNetwork, sipProvider);
     } catch (SipException
@@ -376,7 +385,7 @@ public class OptionsPingMonitor {
    * to update the Bean under refreshScope after doing get on that object when a config refresh happens .
    */
   protected boolean sgMapUpdated() {
-    if (isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
+    if (optionsUtil.isSGMapUpdated(commonConfigurationProperties.getServerGroups(), localSGMap)) {
       logger.info("SG Map Updated. Working with new map!");
       localSGMap = commonConfigurationProperties.getServerGroups();
       return true;

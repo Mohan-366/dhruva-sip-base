@@ -7,6 +7,7 @@ import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.transport.Transport;
+import com.cisco.dsb.proxy.controller.ControllerConfig;
 import gov.nist.javax.sip.message.SIPRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -21,16 +22,24 @@ import javax.sip.SipProvider;
 import javax.sip.address.SipURI;
 import javax.sip.header.*;
 import javax.sip.message.Request;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class OptionsUtil {
 
   // No retry has to be done for UDP, JAIN stack takes care of sending retransmissions.
   private static final int numTriesUDP = 0;
   private static final int numTriesTCP = 1;
   private static final int numTriesTLS = 1;
-  private static OptionsPingPolicy defaultOptionsPingPolicy;
+  private ControllerConfig controllerConfig;
 
-  public static SIPRequest getRequest(
+  @Autowired
+  public void setControllerConfig(ControllerConfig controllerConfig) {
+    this.controllerConfig = controllerConfig;
+  }
+
+  public SIPRequest getRequest(
       ServerGroupElement element,
       DhruvaNetwork dhruvaNetwork,
       SipProvider sipProvider,
@@ -71,15 +80,9 @@ public class OptionsUtil {
     MaxForwardsHeader maxForwards =
         headerFactory.createMaxForwardsHeader(optionsPingPolicy.getMaxForwards());
 
-    String protocol = dhruvaNetwork.getTransport().name();
     List<ViaHeader> viaHeaders = new ArrayList<>();
 
-    ViaHeader viaHeader =
-        headerFactory.createViaHeader(
-            dhruvaNetwork.getListenPoint().getHostIPAddress(),
-            dhruvaNetwork.getListenPoint().getPort(),
-            protocol,
-            null);
+    ViaHeader viaHeader = controllerConfig.getViaHeader(dhruvaNetwork.getName(), null, null);
     viaHeaders.add(viaHeader);
 
     SIPRequest sipRequest = new SIPRequest();
@@ -97,7 +100,7 @@ public class OptionsUtil {
     return sipRequest;
   }
 
-  public static int getNumRetry(Transport transport) {
+  public int getNumRetry(Transport transport) {
     switch (transport) {
       case TLS:
         return numTriesTLS;
@@ -110,8 +113,7 @@ public class OptionsUtil {
     }
   }
 
-  public static boolean isSGMapUpdated(
-      Map<String, ServerGroup> newMap, Map<String, ServerGroup> oldMap) {
+  public boolean isSGMapUpdated(Map<String, ServerGroup> newMap, Map<String, ServerGroup> oldMap) {
     if (oldMap == null && newMap == null) {
       return false;
     } else if (oldMap == null || newMap == null || oldMap.size() != newMap.size()) {

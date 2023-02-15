@@ -4,6 +4,7 @@ import com.cisco.dsb.common.config.CertConfigurationProperties;
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
 import com.cisco.dsb.common.exception.DhruvaRuntimeException;
 import com.cisco.dsb.common.exception.ErrorCode;
+import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.transport.Transport;
 import gov.nist.javax.sip.stack.FixTransactionTimeOut;
 import java.net.*;
@@ -32,7 +33,8 @@ public class SIPListenPoint {
   private boolean recordRoute = CommonConfigurationProperties.DEFAULT_RECORD_ROUTE_ENABLED;
 
   @Builder.Default
-  private boolean attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
+  private ListenIfHeader.HostnameType externalHostnameType =
+      CommonConfigurationProperties.DEFAULT_EXTERNAL_HOSTNAME_TYPE;
 
   @Builder.Default
   private boolean enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
@@ -57,6 +59,12 @@ public class SIPListenPoint {
   @Setter(AccessLevel.NONE)
   private boolean isPingTimeOutOverride = false;
 
+  // externalIP is the env name which contains the external IP.
+  private String externalIP;
+
+  // hostName is the env name which contains the hostName/fqdn.
+  private String hostName;
+
   public SIPListenPoint() {
     this.name = CommonConfigurationProperties.DEFAULT_NETWORK_NAME;
     this.hostIPAddress =
@@ -66,7 +74,7 @@ public class SIPListenPoint {
     this.transport = CommonConfigurationProperties.DEFAULT_TRANSPORT;
     this.port = CommonConfigurationProperties.DEFAULT_PORT;
     this.recordRoute = CommonConfigurationProperties.DEFAULT_RECORD_ROUTE_ENABLED;
-    this.attachExternalIP = CommonConfigurationProperties.DEFAULT_ATTACH_EXTERNAL_IP;
+    this.externalHostnameType = CommonConfigurationProperties.DEFAULT_EXTERNAL_HOSTNAME_TYPE;
     this.enableRateLimiter = CommonConfigurationProperties.DEFAULT_ENABLE_RATE_LIMITING;
     this.transactionTimeout = CommonConfigurationProperties.DEFAULT_TRANSACTION_TIMEOUT;
     this.pingTimeout = CommonConfigurationProperties.DEFAULT_PING_TIMEOUT_UDP;
@@ -116,8 +124,8 @@ public class SIPListenPoint {
             .append(port)
             .append(" recordRouteEnabled = ")
             .append(recordRoute)
-            .append(" attachExternalIP = ")
-            .append(attachExternalIP)
+            .append(" externalHostnameType = ")
+            .append(externalHostnameType)
             .append(" enableRateLimiter = ")
             .append(enableRateLimiter)
             .append(" trafficClass = ")

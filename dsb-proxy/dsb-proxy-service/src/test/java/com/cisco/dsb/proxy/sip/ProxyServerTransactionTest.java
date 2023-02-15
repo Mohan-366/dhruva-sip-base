@@ -183,7 +183,7 @@ public class ProxyServerTransactionTest {
 
     // verify
     verify(controllerConfig, Mockito.times(1))
-        .setRecordRouteInterface(sipResponse, false, rrs.size());
+        .updateRecordRouteInterface(sipResponse, false, rrs.size());
   }
 
   @Test(description = "Stateless transaction with RR in request")
@@ -212,6 +212,6 @@ public class ProxyServerTransactionTest {
     proxyServerTransaction.respond(sipResponse);
 
     // verify
-    verify(controllerConfig, Mockito.times(1)).setRecordRouteInterface(sipResponse, true, -1);
+    verify(controllerConfig, Mockito.times(1)).updateRecordRouteInterface(sipResponse, true, -1);
   }
 }

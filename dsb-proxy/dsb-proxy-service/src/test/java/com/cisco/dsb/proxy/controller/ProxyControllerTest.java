@@ -42,7 +42,6 @@ import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.stack.HopImpl;
 import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Collections;
@@ -136,47 +135,11 @@ public class ProxyControllerTest {
     dhruvaExecutorService = mock(DhruvaExecutorService.class);
     scheduledExecutor = mock(ScheduledThreadPoolExecutor.class);
 
-    controllerConfig.addListenInterface(
-        incomingNetwork,
-        InetAddress.getByName(sipListenPoint1.getHostIPAddress()),
-        sipListenPoint1.getPort(),
-        sipListenPoint1.getTransport(),
-        InetAddress.getByName(sipListenPoint1.getHostIPAddress()),
-        false);
+    controllerConfig.addListenInterface(sipListenPoint1);
 
-    controllerConfig.addListenInterface(
-        outgoingNetwork,
-        InetAddress.getByName(sipListenPoint2.getHostIPAddress()),
-        sipListenPoint2.getPort(),
-        sipListenPoint2.getTransport(),
-        InetAddress.getByName(sipListenPoint2.getHostIPAddress()),
-        false);
+    controllerConfig.addListenInterface(sipListenPoint2);
 
-    controllerConfig.addListenInterface(
-        testNetwork,
-        InetAddress.getByName(sipListenPoint3.getHostIPAddress()),
-        sipListenPoint3.getPort(),
-        sipListenPoint3.getTransport(),
-        InetAddress.getByName(sipListenPoint3.getHostIPAddress()),
-        false);
-
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPoint1.getHostIPAddress()),
-        sipListenPoint1.getPort(),
-        sipListenPoint1.getTransport(),
-        incomingNetwork);
-
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPoint2.getHostIPAddress()),
-        sipListenPoint2.getPort(),
-        sipListenPoint2.getTransport(),
-        outgoingNetwork);
-
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPoint3.getHostIPAddress()),
-        sipListenPoint3.getPort(),
-        sipListenPoint3.getTransport(),
-        testNetwork);
+    controllerConfig.addListenInterface(sipListenPoint3);
 
     proxyControllerFactory =
         new ProxyControllerFactory(
@@ -240,7 +203,6 @@ public class ProxyControllerTest {
         .setHostIPAddress("1.1.1.1")
         .setPort(5060)
         .setTransport(Transport.TCP)
-        .setAttachExternalIP(false)
         .setRecordRoute(true)
         .build();
   }
@@ -251,7 +213,6 @@ public class ProxyControllerTest {
         .setHostIPAddress("2.2.2.2")
         .setPort(5080)
         .setTransport(Transport.TCP)
-        .setAttachExternalIP(false)
         .setRecordRoute(true)
         .build();
   }
@@ -262,7 +223,6 @@ public class ProxyControllerTest {
         .setHostIPAddress("3.3.3.3")
         .setPort(5080)
         .setTransport(Transport.TCP)
-        .setAttachExternalIP(false)
         .setRecordRoute(true)
         .build();
   }
@@ -380,78 +340,12 @@ public class ProxyControllerTest {
     DhruvaNetwork.setSipProvider(udpNetworkOutgoing.getName(), udpSipProviderOutgoing);
     DhruvaNetwork.setSipProvider(tcpNetworkOutgoing.getName(), tcpSipProviderOutgoing);
     DhruvaNetwork.setSipProvider(tlsNetworkOutgoing.getName(), tlsSipProviderOutgoing);
-    controllerConfig.addListenInterface(
-        udpNetworkIncoming,
-        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
-        sipListenPointUdpIncoming.getPort(),
-        sipListenPointUdpIncoming.getTransport(),
-        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
-        false);
-    controllerConfig.addListenInterface(
-        udpNetworkOutgoing,
-        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
-        sipListenPointUdpOutgoing.getPort(),
-        sipListenPointUdpOutgoing.getTransport(),
-        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
-        false);
-    controllerConfig.addListenInterface(
-        tcpNetworkIncoming,
-        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
-        sipListenPointTcpIncoming.getPort(),
-        sipListenPointTcpIncoming.getTransport(),
-        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
-        false);
-    controllerConfig.addListenInterface(
-        tcpNetworkOutgoing,
-        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
-        sipListenPointTcpOutgoing.getPort(),
-        sipListenPointTcpOutgoing.getTransport(),
-        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
-        false);
-    controllerConfig.addListenInterface(
-        tlsNetworkIncoming,
-        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
-        sipListenPointTlsIncoming.getPort(),
-        sipListenPointTlsIncoming.getTransport(),
-        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
-        false);
-    controllerConfig.addListenInterface(
-        tlsNetworkOutgoing,
-        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
-        sipListenPointTlsOutgoing.getPort(),
-        sipListenPointTlsOutgoing.getTransport(),
-        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
-        false);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointUdpIncoming.getHostIPAddress()),
-        sipListenPointUdpIncoming.getPort(),
-        sipListenPointUdpIncoming.getTransport(),
-        udpNetworkIncoming);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointUdpOutgoing.getHostIPAddress()),
-        sipListenPointUdpOutgoing.getPort(),
-        sipListenPointUdpOutgoing.getTransport(),
-        udpNetworkOutgoing);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointTcpIncoming.getHostIPAddress()),
-        sipListenPointTcpIncoming.getPort(),
-        sipListenPointTcpIncoming.getTransport(),
-        tcpNetworkIncoming);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointTcpOutgoing.getHostIPAddress()),
-        sipListenPointTcpOutgoing.getPort(),
-        sipListenPointTcpOutgoing.getTransport(),
-        tcpNetworkOutgoing);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointTlsIncoming.getHostIPAddress()),
-        sipListenPointTlsIncoming.getPort(),
-        sipListenPointTlsIncoming.getTransport(),
-        tlsNetworkIncoming);
-    controllerConfig.addRecordRouteInterface(
-        InetAddress.getByName(sipListenPointTlsOutgoing.getHostIPAddress()),
-        sipListenPointTlsOutgoing.getPort(),
-        sipListenPointTlsOutgoing.getTransport(),
-        tlsNetworkOutgoing);
+    controllerConfig.addListenInterface(sipListenPointUdpIncoming);
+    controllerConfig.addListenInterface(sipListenPointUdpIncoming);
+    controllerConfig.addListenInterface(sipListenPointTcpIncoming);
+    controllerConfig.addListenInterface(sipListenPointTcpOutgoing);
+    controllerConfig.addListenInterface(sipListenPointTlsIncoming);
+    controllerConfig.addListenInterface(sipListenPointTlsOutgoing);
 
     return new Object[][] {
       {udpNetworkIncoming, udpNetworkOutgoing, udpSipProviderOutgoing},
