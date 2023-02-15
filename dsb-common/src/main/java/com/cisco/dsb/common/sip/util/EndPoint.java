@@ -16,18 +16,18 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 public class EndPoint implements Cloneable {
 
   /* The logical network for this end point */
-  protected String network;
+  protected final String network;
 
   /* The host name of the end point */
-  protected String host;
+  protected final String host;
 
   protected String serverGroupName;
 
   /* The port number of the end point */
-  protected int port = 5060;
+  protected final int port;
 
   /* The protocol for this end point */
-  protected Transport protocol = Transport.UDP;
+  protected final Transport protocol;
 
   @ToString.Exclude private String key = null;
   @ToString.Exclude private String _intern = null;
@@ -47,18 +47,13 @@ public class EndPoint implements Cloneable {
     this.network = network;
     this.host = host;
     this.serverGroupName = serverGroup;
-
-    if (port > 0) this.port = port;
-    if (protocol != null) this.protocol = protocol;
+    this.port = port;
+    this.protocol = protocol;
     createKey();
   }
 
   public EndPoint(String network, String host, int port, Transport protocol) {
-    this.network = network;
-    this.host = host;
-    if (port > 0) this.port = port;
-    if (protocol != null) this.protocol = protocol;
-    createKey();
+    this(network, host, port, protocol, null);
   }
 
   public EndPoint(ServerGroup serverGroup, ServerGroupElement serverGroupElement) {

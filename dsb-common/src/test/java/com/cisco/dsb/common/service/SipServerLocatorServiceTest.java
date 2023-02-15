@@ -1,13 +1,16 @@
 package com.cisco.dsb.common.service;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.dns.DnsException;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dns.SipServerLocator;
@@ -20,6 +23,8 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import javax.sip.ListeningPoint;
+import javax.sip.address.Hop;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -58,7 +63,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
         .thenReturn(
             new LocateSIPServersResponse(
                 Collections.singletonList(
-                    new Hop(
+                    new HopImpl(
                         "test.cisco.com",
                         "1.2.3.4",
                         Transport.TLS,
@@ -76,7 +81,8 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
     LocateSIPServersResponse response = responseCF.join();
     assertEquals(
         response.getHops().get(0),
-        new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
+        new HopImpl(
+            "test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
   }
 
   @Test(
@@ -120,7 +126,7 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
         .thenReturn(
             new LocateSIPServersResponse(
                 Collections.singletonList(
-                    new Hop(
+                    new HopImpl(
                         "test.cisco.com",
                         "1.2.3.4",
                         Transport.TLS,
@@ -137,13 +143,150 @@ class SipServerLocatorServiceTest /*extends AbstractTestNGSpringContextTests //a
         sipServerLocatorService.locateDestination(user, sipDestination);
     assertEquals(
         response.getHops().get(0),
-        new Hop("test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
+        new HopImpl(
+            "test.cisco.com", "1.2.3.4", Transport.TLS, 5061, 1, 1000, DNSRecordSource.DNS));
   }
 
   @Test
   public void testEqualsOfDnsDestination() {
     EqualsVerifier.simple().forClass(DnsDestination.class).verify();
   }
+
+  @Test(description = "If host is IP then don't invoke DNS resolution")
+  public void testResolveAddressIP() {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("1.1.1.1", 5060, ListeningPoint.TCP);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    sipServerLocatorService.setLocator(locator);
+    Hop resolvedHop = sipServerLocatorService.resolveAddress(hop);
+
+    verifyNoInteractions(locator);
+    assertEquals(resolvedHop, hop);
+  }
+
+  @Test
+  public void testResolveAddressARecord() throws ExecutionException, InterruptedException {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("test.cisco.com", 5060, ListeningPoint.TLS);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    when(locator.resolve(
+            hop.getHost(), LocateSIPServerTransportType.valueOf(hop.getTransport()), hop.getPort()))
+        .thenReturn(
+            new LocateSIPServersResponse(
+                Collections.singletonList(
+                    new HopImpl(
+                        "test.cisco.com",
+                        "1.2.3.4",
+                        Transport.valueOf(hop.getTransport()),
+                        hop.getPort(),
+                        1,
+                        1000,
+                        DNSRecordSource.DNS)),
+                null,
+                null,
+                null,
+                LocateSIPServersResponse.Type.HOSTNAME,
+                null));
+
+    sipServerLocatorService.setLocator(locator);
+    Hop resolvedHop = sipServerLocatorService.resolveAddress(hop);
+    assertEquals(resolvedHop.getHost(), "1.2.3.4");
+    assertEquals(resolvedHop.getPort(), hop.getPort());
+    assertEquals(resolvedHop.getTransport(), hop.getTransport());
+  }
+
+  @Test
+  public void testResolveAddressSRV() throws ExecutionException, InterruptedException {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("test.cisco.com", -1, ListeningPoint.UDP);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    when(locator.resolve(
+            hop.getHost(), LocateSIPServerTransportType.valueOf(hop.getTransport()), null))
+        .thenReturn(
+            new LocateSIPServersResponse(
+                Collections.singletonList(
+                    new HopImpl(
+                        "test.cisco.com",
+                        "1.2.3.4",
+                        Transport.valueOf(hop.getTransport()),
+                        5060,
+                        1,
+                        1000,
+                        DNSRecordSource.DNS)),
+                null,
+                null,
+                null,
+                LocateSIPServersResponse.Type.SRV,
+                null));
+    sipServerLocatorService.setLocator(locator);
+
+    Hop resolvedHop = sipServerLocatorService.resolveAddress(hop);
+    assertEquals(resolvedHop.getHost(), "1.2.3.4");
+    assertEquals(resolvedHop.getPort(), 5060);
+    assertEquals(resolvedHop.getTransport(), hop.getTransport());
+  }
+
+  @Test
+  public void testResolveAddressNotFound() throws ExecutionException, InterruptedException {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("test.cisco.com", 5060, ListeningPoint.UDP);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    try {
+      when(locator.resolve(
+              hop.getHost(),
+              LocateSIPServerTransportType.valueOf(hop.getTransport()),
+              hop.getPort()))
+          .thenReturn(new LocateSIPServersResponse());
+      sipServerLocatorService.setLocator(locator);
+      sipServerLocatorService.resolveAddress(hop);
+    } catch (DhruvaRuntimeException dre) {
+      assertEquals(dre.getErrCode(), ErrorCode.FETCH_ENDPOINT_ERROR);
+      return;
+    }
+
+    fail("Should throw exception if hostNotFound");
+  }
+
+  @Test
+  public void testResolveAddressDNSException() throws ExecutionException, InterruptedException {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("test.cisco.com", 5060, ListeningPoint.UDP);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    DnsException dnsException = new DnsException("Issue resovling");
+    try {
+      when(locator.resolve(
+              hop.getHost(),
+              LocateSIPServerTransportType.valueOf(hop.getTransport()),
+              hop.getPort()))
+          .thenReturn(
+              new LocateSIPServersResponse(
+                  null, null, null, null, LocateSIPServersResponse.Type.UNKNOWN, dnsException));
+      sipServerLocatorService.setLocator(locator);
+      sipServerLocatorService.resolveAddress(hop);
+    } catch (DhruvaRuntimeException dre) {
+      assertEquals(dre.getErrCode(), ErrorCode.FETCH_ENDPOINT_ERROR);
+      assertEquals(dre.getCause(), dnsException);
+      return;
+    }
+
+    fail("Should throw exception if hostNotFound");
+  }
+
+  @Test(
+      description =
+          "Any ExecutionException and InterruptedException is thrown with Errorcode unknown")
+  public void testResolveAddressException() throws ExecutionException, InterruptedException {
+    Hop hop = new gov.nist.javax.sip.stack.HopImpl("test.cisco.com", 5060, ListeningPoint.UDP);
+    SipServerLocator locator = mock(SipServerLocator.class);
+    when(locator.resolve(
+            hop.getHost(), LocateSIPServerTransportType.valueOf(hop.getTransport()), hop.getPort()))
+        .thenThrow(new ExecutionException(null));
+    sipServerLocatorService.setLocator(locator);
+    try {
+      sipServerLocatorService.resolveAddress(hop);
+    } catch (DhruvaRuntimeException dre) {
+      assertEquals(dre.getErrCode(), ErrorCode.UNKNOWN_ERROR_REQ);
+      assertEquals(dre.getCause().getClass(), ExecutionException.class);
+      return;
+    }
+    fail("Should throw Concurrent Exception");
+  }
+
   /*this is end-to-end test of locateDestinationAsync API
   @Test(enabled = false)
   public void testE2E(){

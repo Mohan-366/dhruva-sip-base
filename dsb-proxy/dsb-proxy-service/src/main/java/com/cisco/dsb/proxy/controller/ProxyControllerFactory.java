@@ -1,6 +1,7 @@
 package com.cisco.dsb.proxy.controller;
 
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
+import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.util.TriFunction;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
 import com.cisco.dsb.proxy.dto.ProxyAppConfig;
@@ -22,16 +23,20 @@ public class ProxyControllerFactory {
 
   DhruvaExecutorService dhruvaExecutorService;
 
+  SipServerLocatorService locatorService;
+
   @Autowired
   public ProxyControllerFactory(
       ProxyConfigurationProperties proxyConfigurationProperties,
       ControllerConfig controllerConfig,
       ProxyFactory proxyFactory,
-      DhruvaExecutorService dhruvaExecutorService) {
+      DhruvaExecutorService dhruvaExecutorService,
+      SipServerLocatorService locatorService) {
     this.proxyConfigurationProperties = proxyConfigurationProperties;
     this.controllerConfig = controllerConfig;
     this.proxyFactory = proxyFactory;
     this.dhruvaExecutorService = dhruvaExecutorService;
+    this.locatorService = locatorService;
   }
 
   @Bean
@@ -49,6 +54,7 @@ public class ProxyControllerFactory {
         proxyConfigurationProperties,
         proxyFactory,
         controllerConfig,
-        dhruvaExecutorService);
+        dhruvaExecutorService,
+        locatorService);
   }
 }

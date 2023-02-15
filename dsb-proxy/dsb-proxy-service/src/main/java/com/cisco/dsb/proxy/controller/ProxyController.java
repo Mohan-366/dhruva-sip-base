@@ -10,6 +10,7 @@ import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.metric.SipMetricsContext;
 import com.cisco.dsb.common.service.MetricService;
+import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.util.*;
@@ -26,7 +27,6 @@ import com.cisco.dsb.proxy.messaging.ProxySIPRequest;
 import com.cisco.dsb.proxy.messaging.ProxySIPResponse;
 import com.cisco.dsb.proxy.sip.*;
 import com.google.common.net.InetAddresses;
-import gov.nist.core.HostPort;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.address.SipUri;
@@ -36,15 +36,18 @@ import gov.nist.javax.sip.header.RouteList;
 import gov.nist.javax.sip.header.Supported;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.HopImpl;
 import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import javax.sip.ListeningPoint;
 import javax.sip.ServerTransaction;
 import javax.sip.SipException;
 import javax.sip.SipProvider;
+import javax.sip.address.Hop;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.AllowHeader;
@@ -68,6 +71,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
   @Getter @Setter private ControllerConfig controllerConfig;
 
   @Getter @Setter private DhruvaExecutorService dhruvaExecutorService;
+  @Getter @Setter private SipServerLocatorService locatorService;
 
   @Getter @Setter private ProxyStatelessTransaction proxyTransaction;
   /* Stores the request for this controller. Do not work on this directly, always work on the clone. */
@@ -108,7 +112,8 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
       @NonNull ProxyConfigurationProperties proxyConfigurationProperties,
       @NonNull ProxyFactory proxyFactory,
       @NonNull ControllerConfig controllerConfig,
-      @NonNull DhruvaExecutorService dhruvaExecutorService) {
+      @NonNull DhruvaExecutorService dhruvaExecutorService,
+      @NonNull SipServerLocatorService locatorService) {
     this.serverTransaction = serverTransaction;
     this.sipProvider = sipProvider;
     this.proxyAppConfig = proxyAppConfig;
@@ -116,6 +121,7 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
     this.proxyFactory = proxyFactory;
     this.controllerConfig = controllerConfig;
     this.dhruvaExecutorService = dhruvaExecutorService;
+    this.locatorService = locatorService;
   }
 
   public void setController(@NonNull ProxySIPRequest request) {
@@ -306,18 +312,17 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
           if (proxySIPRequest.getDownstreamElement() == null) {
             Optional<DhruvaNetwork> outGoingNetwork =
                 DhruvaNetwork.getNetwork(proxySIPRequest.getOutgoingNetwork());
-            HostPort hostPort = getHostPortFromRequest(proxySIPRequest.getRequest());
             EndPoint endPoint =
                 outGoingNetwork
                     .map(
-                        dhruvaNetwork ->
-                            new EndPoint(
-                                dhruvaNetwork.getName(),
-                                hostPort.getHost().getIpAddress(),
-                                hostPort.getPort() <= 0
-                                    ? dhruvaNetwork.getTransport().getDefaultPort()
-                                    : hostPort.getPort(),
-                                dhruvaNetwork.getTransport()))
+                        dhruvaNetwork -> {
+                          Hop hop = getHopFromRequest(proxySIPRequest.getRequest());
+                          return new EndPoint(
+                              dhruvaNetwork.getName(),
+                              hop.getHost(),
+                              hop.getPort(),
+                              dhruvaNetwork.getTransport());
+                        })
                     .orElseThrow(() -> new DhruvaException("unable to find outgoing network"));
             logger.debug("Created Endpoint from request, Endpoint:{}", endPoint);
             proxySIPRequest.setDownstreamElement(endPoint);
@@ -334,14 +339,27 @@ public class ProxyController implements ControllerInterface, ProxyInterface {
         }
       };
 
-  private HostPort getHostPortFromRequest(SIPRequest request) {
+  private Hop getHopFromRequest(SIPRequest request) {
     SipUri uri;
     if (request.getHeader(RouteHeader.NAME) != null) {
       uri = ((SipUri) ((Route) request.getRouteHeaders().getFirst()).getAddress().getURI());
     } else {
       uri = ((SipUri) request.getRequestURI());
     }
-    return uri.getHostPort();
+    String transport =
+        uri.getTransportParam() == null
+            ? ListeningPoint.UDP
+            : uri.getTransportParam().toUpperCase(Locale.ROOT);
+    switch (transport) {
+      case ListeningPoint.UDP:
+      case ListeningPoint.TCP:
+      case ListeningPoint.TLS:
+        break;
+      default:
+        logger.warn("Invalid Transport detected while getting hostPort, setting to default UDP");
+        transport = ListeningPoint.UDP;
+    }
+    return locatorService.resolveAddress(new HopImpl(uri.getHost(), uri.getPort(), transport));
   }
 
   public ProxyParamsInterface getProxyParams(ProxySIPRequest proxySIPRequest)

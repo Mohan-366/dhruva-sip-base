@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.SIPRequest;
+import gov.nist.javax.sip.stack.HopImpl;
 import gov.nist.javax.sip.stack.SIPTransaction;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -53,10 +54,7 @@ import javax.sip.address.Hop;
 import javax.sip.address.Router;
 import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import javax.sip.header.AcceptHeader;
-import javax.sip.header.AllowHeader;
-import javax.sip.header.RecordRouteHeader;
-import javax.sip.header.RouteHeader;
+import javax.sip.header.*;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 import org.mockito.ArgumentCaptor;
@@ -182,7 +180,11 @@ public class ProxyControllerTest {
 
     proxyControllerFactory =
         new ProxyControllerFactory(
-            proxyConfigurationProperties, controllerConfig, proxyFactory, dhruvaExecutorService);
+            proxyConfigurationProperties,
+            controllerConfig,
+            proxyFactory,
+            dhruvaExecutorService,
+            sipServerLocatorService);
 
     // Dont add 3rd network
     incomingSipProvider = mock(SipProvider.class);
@@ -335,6 +337,9 @@ public class ProxyControllerTest {
     when(router.getNextHop(any(Request.class))).thenReturn(mock(Hop.class));
     DhruvaNetwork.setSipProvider(incomingNetwork.getName(), incomingSipProvider);
     DhruvaNetwork.setSipProvider(outgoingNetwork.getName(), outgoingSipProvider);
+    doAnswer(invocationOnMock -> invocationOnMock.<HopImpl>getArgument(0))
+        .when(sipServerLocatorService)
+        .resolveAddress(any(Hop.class));
   }
 
   @AfterClass
@@ -811,8 +816,18 @@ public class ProxyControllerTest {
     Assert.assertNull(requestArgumentCaptor.getValue().getRouteHeaders());
   }
 
-  @Test(description = "using route header and outgoing network to route the call")
-  public void testProxyRequestWithRoute()
+  @DataProvider
+  public Object[][] getTransport() {
+    return new Object[][] {
+      {ListeningPoint.TLS}, {ListeningPoint.TCP}, {ListeningPoint.UDP}, {"Invalid"}, {null}
+    };
+  }
+
+  @Test(
+      description =
+          "using route header and outgoing network to route the call with different transport",
+      dataProvider = "getTransport")
+  public void testProxyRequestWithRoute(String transport)
       throws ParseException, SipException, InterruptedException {
     ServerTransaction serverTransaction = mock(ServerTransaction.class);
 
@@ -826,7 +841,7 @@ public class ProxyControllerTest {
     RouteHeader ownRouteHeader =
         JainSipHelper.createRouteHeader("rr$n=net_internal_tcp", "1.1.1.1", 5060, "tcp");
     RouteHeader routeHeader1 =
-        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, "tcp");
+        JainSipHelper.createRouteHeader("testDhruva", "10.1.1.1", 5080, transport);
     routeHeaders.addFirst(((Route) routeHeader1));
     routeHeaders.addFirst(((Route) ownRouteHeader));
     proxyController.onNewRequest(proxySIPRequest).block();
@@ -835,8 +850,16 @@ public class ProxyControllerTest {
     Thread.sleep(200);
     ArgumentCaptor<SIPRequest> requestArgumentCaptor = ArgumentCaptor.forClass(SIPRequest.class);
     verify(outgoingSipProvider, times(1)).sendRequest(requestArgumentCaptor.capture());
+    ArgumentCaptor<HopImpl> hopArgumentCaptor = ArgumentCaptor.forClass(HopImpl.class);
+    verify(sipServerLocatorService, times(1)).resolveAddress(hopArgumentCaptor.capture());
     Assert.assertEquals(
         requestArgumentCaptor.getValue().getRouteHeaders().getFirst(), routeHeader1);
+    String actualTransport = hopArgumentCaptor.getValue().getTransport();
+    String expectedTransport;
+    if (transport == null || transport.equals("Invalid")) {
+      expectedTransport = ListeningPoint.UDP;
+    } else expectedTransport = transport;
+    Assert.assertEquals(actualTransport, expectedTransport);
   }
 
   @Test(description = "test proxy client creation for outgoing bye request")
@@ -1375,7 +1398,8 @@ public class ProxyControllerTest {
             proxyConfigurationProperties,
             controllerConfig,
             proxyFactoryMock,
-            dhruvaExecutorService);
+            dhruvaExecutorService,
+            sipServerLocatorService);
 
     ProxyController proxyController =
         proxyControllerFactoryMock

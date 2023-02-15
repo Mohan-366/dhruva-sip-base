@@ -7,7 +7,7 @@ import com.cisco.dsb.common.servergroup.DnsServerGroupUtil;
 import com.cisco.dsb.common.servergroup.SGType;
 import com.cisco.dsb.common.servergroup.ServerGroup;
 import com.cisco.dsb.common.servergroup.ServerGroupElement;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.trunk.trunks.AbstractTrunk;
@@ -85,13 +85,13 @@ public class TrunkTestUtil {
     abstractTrunk.setDsbCircuitBreaker(dsbCircuitBreaker);
   }
 
-  public List<Hop> getHops(int count, ServerGroup sg1, boolean srv) {
-    List<Hop> hops = new ArrayList<>();
+  public List<HopImpl> getHops(int count, ServerGroup sg1, boolean srv) {
+    List<HopImpl> hops = new ArrayList<>();
 
     for (int i = 1; i <= count; i++) {
       int rand = random.nextInt(255) + 1;
-      Hop hop =
-          new Hop(
+      HopImpl hop =
+          new HopImpl(
               sg1.getHostName(),
               faker.internet().ipV4Address(),
               sg1.getTransport(),

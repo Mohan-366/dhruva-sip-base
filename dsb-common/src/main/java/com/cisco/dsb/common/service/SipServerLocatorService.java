@@ -1,26 +1,29 @@
 package com.cisco.dsb.common.service;
 
 import com.cisco.dsb.common.config.sip.CommonConfigurationProperties;
+import com.cisco.dsb.common.exception.DhruvaRuntimeException;
+import com.cisco.dsb.common.exception.ErrorCode;
 import com.cisco.dsb.common.executor.DhruvaExecutorService;
 import com.cisco.dsb.common.executor.ExecutorType;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dns.SipServerLocator;
-import com.cisco.dsb.common.sip.stack.dto.BindingInfo;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
-import com.cisco.dsb.common.sip.stack.dto.SipDestination;
+import com.cisco.dsb.common.sip.stack.dto.*;
+import com.cisco.dsb.common.sip.stack.util.IPValidator;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.wx2.dto.User;
 import com.cisco.wx2.util.JsonUtil;
+import gov.nist.core.net.AddressResolver;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import javax.sip.address.Hop;
 import javax.sip.address.SipURI;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +31,7 @@ import org.springframework.stereotype.Service;
 
 @CustomLog
 @Service
-public class SipServerLocatorService {
+public class SipServerLocatorService implements AddressResolver {
 
   @Autowired CommonConfigurationProperties props;
 
@@ -142,7 +145,7 @@ public class SipServerLocatorService {
       Transport transport,
       LocateSIPServersResponse sipServersResponse) {
     try {
-      List<Hop> networkHops = sipServersResponse.getHops();
+      List<HopImpl> networkHops = sipServersResponse.getHops();
       return networkHops.stream()
           .map(
               h ->
@@ -156,6 +159,39 @@ public class SipServerLocatorService {
     } catch (Exception e) {
       logger.error("response ", e);
       return Collections.emptyList();
+    }
+  }
+
+  @Override
+  public Hop resolveAddress(Hop hop) {
+    if (IPValidator.hostIsIPAddr(hop.getHost())) {
+      return hop;
+    }
+    try {
+      LocateSIPServersResponse locateSIPServersResponse =
+          locateDestination(
+              null,
+              new DnsDestination(
+                  hop.getHost(),
+                  hop.getPort(),
+                  LocateSIPServerTransportType.valueOf(
+                      hop.getTransport().toUpperCase(Locale.ROOT))));
+      List<HopImpl> hops = locateSIPServersResponse.getHops();
+      if (locateSIPServersResponse.getDnsException().isPresent()) {
+        throw new DhruvaRuntimeException(
+            ErrorCode.FETCH_ENDPOINT_ERROR, null, locateSIPServersResponse.getDnsException().get());
+      } else if (hops == null || hops.isEmpty()) {
+        throw new DhruvaRuntimeException(ErrorCode.FETCH_ENDPOINT_ERROR, "Null/Empty Hops");
+      }
+      return hops.get(0);
+
+    } catch (ExecutionException e) {
+      logger.error("Unable to resolve address {}", hop.getHost());
+      throw new DhruvaRuntimeException(e);
+    } catch (InterruptedException e) {
+      logger.error("Got interrupted exception while resolving address {}", hop.getHost());
+      Thread.currentThread().interrupt();
+      throw new DhruvaRuntimeException(e);
     }
   }
 }

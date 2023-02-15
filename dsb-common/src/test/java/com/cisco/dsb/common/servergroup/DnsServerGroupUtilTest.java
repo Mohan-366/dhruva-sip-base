@@ -8,7 +8,7 @@ import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.dto.MatchedDNSARecord;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
@@ -62,9 +62,9 @@ public class DnsServerGroupUtilTest {
 
   @DataProvider(name = "emptyOrNullHops")
   private Object[][] getEmptyorNullHop() {
-    List<Hop> hopsNull = null;
+    List<HopImpl> hopsNull = null;
 
-    List<Hop> hopsEmpty = Collections.emptyList();
+    List<HopImpl> hopsEmpty = Collections.emptyList();
     return new Object[][] {
       {Transport.TLS, hopsNull},
       {Transport.TCP, hopsEmpty},
@@ -72,7 +72,7 @@ public class DnsServerGroupUtilTest {
   }
 
   @Test(dataProvider = "emptyOrNullHops")
-  public void testCreateDnsErrorHandling(Transport transport, List<Hop> hops) {
+  public void testCreateDnsErrorHandling(Transport transport, List<HopImpl> hops) {
 
     LocateSIPServersResponse locateSIPServersResponseMock = mock(LocateSIPServersResponse.class);
     when(locateSIPServersResponseMock.getHops()).thenReturn(hops);
@@ -102,9 +102,9 @@ public class DnsServerGroupUtilTest {
             .setHostName("test.akg.com")
             .setTransport(Transport.UDP)
             .build();
-    List<Hop> hops =
+    List<HopImpl> hops =
         List.of(
-            new Hop(
+            new HopImpl(
                 "test.akg.com",
                 "1.1.1.1",
                 Transport.UDP,

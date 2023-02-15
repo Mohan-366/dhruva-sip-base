@@ -57,7 +57,7 @@ public class ProxyService {
 
   @Autowired SipServerLocatorService resolver;
 
-  @Autowired DhruvaServer server;
+  private DhruvaServer server;
 
   @Autowired ControllerConfig controllerConfig;
 
@@ -82,6 +82,11 @@ public class ProxyService {
   // Default ProxyConfig
   private ProxyAppConfig proxyAppConfig = ProxyAppConfig.builder().build();
 
+  @Autowired
+  public void setServer(DhruvaServer server) {
+    this.server = server;
+  }
+
   public void init() throws Exception {
     List<SIPListenPoint> sipListenPoints = commonConfigurationProperties.getListenPoints();
     ArrayList<CompletableFuture<SipStack>> listenPointFutures = new ArrayList<>();
@@ -98,14 +103,9 @@ public class ProxyService {
       Transport transport = sipListenPoint.getTransport();
       CompletableFuture<SipStack> listenPointFuture =
           server.startListening(
-              commonConfigurationProperties,
               sipListenPoint,
-              dsbRateLimiter,
               (transport == Transport.TLS) ? (getTrustManager(sipListenPoint)) : null,
-              (transport == Transport.TLS) ? dsbTrustManagerFactory.getKeyManager() : null,
-              dhruvaExecutorService,
-              metricService,
-              proxyPacketProcessor);
+              (transport == Transport.TLS) ? dsbTrustManagerFactory.getKeyManager() : null);
 
       listenPointFuture.whenComplete(
           (sipStack, throwable) -> {

@@ -5,12 +5,8 @@ import com.cisco.dsb.common.dns.DnsInjectionService;
 import com.cisco.dsb.common.dns.DnsLookup;
 import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
-import com.cisco.dsb.common.sip.dto.DNSInjectAction;
-import com.cisco.dsb.common.sip.dto.Hop;
-import com.cisco.dsb.common.sip.dto.InjectedDNSARecord;
-import com.cisco.dsb.common.sip.dto.InjectedDNSSRVRecord;
-import com.cisco.dsb.common.sip.dto.MatchedDNSARecord;
-import com.cisco.dsb.common.sip.dto.MatchedDNSSRVRecord;
+import com.cisco.dsb.common.sip.dto.*;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
@@ -114,9 +110,9 @@ public class SipServerLocator implements SipResolver {
       // Once we know transport, can ensure we have a port
       int portScrubbed = ensurePort(port, optTransport.get());
 
-      ArrayList<Hop> hopList = new ArrayList<Hop>();
+      ArrayList<HopImpl> hopList = new ArrayList<HopImpl>();
       hopList.add(
-          new Hop(null, name, optTransport.get(), portScrubbed, 1, 100, DNSRecordSource.DNS));
+          new HopImpl(null, name, optTransport.get(), portScrubbed, 1, 100, DNSRecordSource.DNS));
       response.setHops(hopList);
       response.setType(LocateSIPServersResponse.Type.IP);
       return response;
@@ -286,7 +282,7 @@ public class SipServerLocator implements SipResolver {
     // If two hops differ only in source (DNS | INJECTED) they are not considered dups.
     // This allows us to send to a specific IP address earlier in the chain when needed.
     try {
-      Set<Hop> hops = new LinkedHashSet<>();
+      Set<HopImpl> hops = new LinkedHashSet<>();
       List<MatchedDNSSRVRecord> srvRecords =
           resolveSRV(name, transport.toString(), injectSRV, responseLog);
       response.setDnsSRVRecords(srvRecords);
@@ -297,7 +293,7 @@ public class SipServerLocator implements SipResolver {
         // allow dups. Should be rare, but let's see them.
         response.getDnsARecords().addAll(aRecordsFromHost);
         // IP address comes from A record, port comes from the SRV record
-        List<Hop> srvHops =
+        List<HopImpl> srvHops =
             aRecordsFromHost.stream()
                 .map(
                     rA -> {
@@ -307,7 +303,7 @@ public class SipServerLocator implements SipResolver {
                                   || rA.getSource() == DNSRecordSource.INJECTED)
                               ? DNSRecordSource.INJECTED
                               : DNSRecordSource.DNS;
-                      return new Hop(
+                      return new HopImpl(
                           removeTrailingPeriod(rA.getRecord().getName()),
                           rA.getRecord().getAddress(),
                           transport,
@@ -359,7 +355,7 @@ public class SipServerLocator implements SipResolver {
           response.getDnsARecords().stream()
               .map(
                   r ->
-                      new Hop(
+                      new HopImpl(
                           removeTrailingPeriod(r.getRecord().getName()),
                           r.getRecord().getAddress(),
                           transport,

@@ -4,21 +4,26 @@ import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.sip.address.Hop;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class Hop {
+public class HopImpl implements Hop {
   @Getter private String hostname;
   @Getter private final String host;
-  @Getter private int port = -1;
-  @Getter private final Transport transport;
+  @Getter private int port;
+  private final Transport transport;
   @Getter private final Integer priority;
   @Getter private final Integer weight;
   @Getter private DNSRecordSource source;
 
+  public String getTransport() {
+    return String.valueOf(transport);
+  }
+
   @JsonCreator
-  public Hop(
+  public HopImpl(
       @JsonProperty("hostname") String hostname,
       @JsonProperty("host") String host,
       @JsonProperty("transport") Transport transport,
@@ -47,8 +52,8 @@ public class Hop {
     if (obj == this) {
       return true;
     }
-    if (obj instanceof Hop) {
-      Hop that = (Hop) obj;
+    if (obj instanceof HopImpl) {
+      HopImpl that = (HopImpl) obj;
       return new EqualsBuilder()
           .append(
               hostname != null ? hostname.toLowerCase() : null,

@@ -1,6 +1,6 @@
 package com.cisco.dsb.common.sip.stack.dto;
 
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.dto.MatchedDNSARecord;
 import com.cisco.dsb.common.sip.dto.MatchedDNSSRVRecord;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public class LocateSIPServersResponse {
 
-  private List<Hop> hops;
+  private List<HopImpl> hops;
   private List<MatchedDNSSRVRecord> dnsSRVRecords;
   private List<MatchedDNSARecord> dnsARecords;
   private List<String> log;
@@ -21,7 +21,7 @@ public class LocateSIPServersResponse {
 
   @JsonCreator
   public LocateSIPServersResponse(
-      @JsonProperty("servers") List<Hop> hops,
+      @JsonProperty("servers") List<HopImpl> hops,
       @JsonProperty("dnsSRVRecords") List<MatchedDNSSRVRecord> dnsSRVRecords,
       @JsonProperty("dnsARecords") List<MatchedDNSARecord> dnsARecords,
       @JsonProperty("log") List<String> log,
@@ -45,11 +45,11 @@ public class LocateSIPServersResponse {
         null);
   }
 
-  public List<Hop> getHops() {
+  public List<HopImpl> getHops() {
     return hops;
   }
 
-  public void setHops(List<Hop> hops) {
+  public void setHops(List<HopImpl> hops) {
     this.hops = hops;
   }
 
@@ -125,7 +125,7 @@ public class LocateSIPServersResponse {
     List<String> hops = null;
     if (this.hops != null && !this.hops.isEmpty()) {
       hops = new ArrayList<>();
-      for (Hop r : this.hops) {
+      for (HopImpl r : this.hops) {
         hops.add(
             String.format("%s:%d (%s)", r.getHost(), r.getPort(), r.getTransport().toString()));
       }

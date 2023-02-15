@@ -13,11 +13,9 @@ import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
 import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
-import com.cisco.dsb.common.sip.tls.CertServiceTrustManagerProperties;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.sip.tls.DsbTrustManagerFactory;
 import com.cisco.dsb.common.transport.Transport;
-import com.cisco.dsb.proxy.bootstrap.DhruvaServer;
 import com.cisco.dsb.proxy.bootstrap.DhruvaServerImpl;
 import com.cisco.dsb.proxy.controller.ControllerConfig;
 import com.cisco.dsb.proxy.controller.ProxyControllerFactory;
@@ -54,10 +52,6 @@ public class ProxyServiceTest {
 
   @Mock CommonConfigurationProperties commonConfigurationProperties;
 
-  @Spy
-  CertServiceTrustManagerProperties certServiceTrustManagerProperties =
-      new CertServiceTrustManagerProperties();
-
   @Mock MetricService metricsService;
 
   @Mock SipServerLocatorService resolver;
@@ -68,7 +62,7 @@ public class ProxyServiceTest {
 
   @Mock KeyManager keyManager;
 
-  @Spy DhruvaServer dhruvaServer = new DhruvaServerImpl();
+  DhruvaServerImpl dhruvaServer;
 
   @Mock Dialog dialog;
 
@@ -84,6 +78,7 @@ public class ProxyServiceTest {
   // = new SipProxyManager(proxyControllerFactory, controllerConfig);
 
   @Mock ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+  @Mock SipServerLocatorService sipServerLocatorService;
   @Mock StripedExecutorService stripedExecutorService;
   @Mock DsbTrustManager dsbTrustManager;
   @InjectMocks DsbTrustManagerFactory dsbTrustManagerFactory;
@@ -184,6 +179,13 @@ public class ProxyServiceTest {
             any(InetAddress.class),
             any(boolean.class));
 
+    dhruvaServer = new DhruvaServerImpl();
+    dhruvaServer.setCommonConfigurationProperties(commonConfigurationProperties);
+    dhruvaServer.setExecutorService(dhruvaExecutorService);
+    dhruvaServer.setMetricService(metricsService);
+    dhruvaServer.setHandler(proxyPacketProcessor);
+    dhruvaServer.setAddressResolver(sipServerLocatorService);
+    proxyService.setServer(dhruvaServer);
     proxyService.init();
   }
 

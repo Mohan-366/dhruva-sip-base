@@ -6,7 +6,7 @@ package com.cisco.dsb.proxy.controller;
 
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
@@ -486,7 +486,7 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
                       "Exception in resolving, returning false ",
                       locateSIPServersResponse.getDnsException().get());
                 }
-                List<Hop> hops = locateSIPServersResponse.getHops();
+                List<HopImpl> hops = locateSIPServersResponse.getHops();
                 if (hops == null || hops.isEmpty()) {
                   logger.error(
                       "Exception in resolving, Null / Empty hops , returning false for ", host);

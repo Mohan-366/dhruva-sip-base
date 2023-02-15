@@ -22,7 +22,7 @@ import com.cisco.dsb.common.record.DhruvaAppRecord;
 import com.cisco.dsb.common.servergroup.*;
 import com.cisco.dsb.common.service.MetricService;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
@@ -204,7 +204,7 @@ public class TrunkTest {
     trunkTestUtil.initTrunk(Collections.singletonList(sg1), antaresTrunk, null);
     antaresTrunk.setLoadBalancerMetric(new ConcurrentHashMap<>());
     ConcurrentHashMap<String, Long> expectedValues = new ConcurrentHashMap<>();
-    List<Hop> getHops = trunkTestUtil.getHops(2, sg1, false);
+    List<HopImpl> getHops = trunkTestUtil.getHops(2, sg1, false);
     getHops.forEach(
         hop ->
             expectedValues.put(hop.getHost() + ":" + hop.getPort() + ":" + hop.getTransport(), 1L));
@@ -1025,7 +1025,7 @@ public class TrunkTest {
                 when(locateSIPServersResponse.getHops())
                     .thenReturn(
                         List.of(
-                            new Hop(
+                            new HopImpl(
                                 sg2.getHostName(),
                                 "1.1.1.1",
                                 Transport.UDP,
@@ -1127,7 +1127,7 @@ public class TrunkTest {
               when(locateSIPServersResponse.getHops())
                   .thenReturn(
                       List.of(
-                          new Hop(
+                          new HopImpl(
                               sg1.getHostName(),
                               isFailover ? "2.1.1.1" : "3.1.1.1",
                               Transport.UDP,

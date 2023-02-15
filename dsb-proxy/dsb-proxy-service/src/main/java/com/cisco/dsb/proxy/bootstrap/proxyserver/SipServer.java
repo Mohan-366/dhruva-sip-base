@@ -11,7 +11,6 @@ import com.cisco.dsb.common.sip.bean.SIPListenPoint;
 import com.cisco.dsb.common.sip.jain.JainSipHelper;
 import com.cisco.dsb.common.sip.jain.JainStackInitializer;
 import com.cisco.dsb.common.sip.jain.channelCache.DsbJainSipMessageProcessorFactory;
-import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.dsb.common.sip.tls.DsbNetworkLayer;
 import com.cisco.dsb.common.sip.tls.DsbTrustManager;
 import com.cisco.dsb.common.transport.Transport;
@@ -19,13 +18,13 @@ import com.cisco.dsb.common.util.log.DhruvaServerLogger;
 import com.cisco.dsb.common.util.log.DhruvaStackLogger;
 import com.cisco.dsb.proxy.bootstrap.Server;
 import com.cisco.dsb.proxy.sip.ProxyStackFactory;
+import gov.nist.core.net.AddressResolver;
 import gov.nist.javax.sip.SipStackImpl;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import javax.sip.SipFactory;
 import javax.sip.SipListener;
 import javax.sip.SipStack;
@@ -35,26 +34,22 @@ import org.springframework.util.ResourceUtils;
 @CustomLog
 public class SipServer implements Server {
 
-  private final Transport transport;
-  private SipListener sipListener;
-  private DhruvaNetwork networkConfig;
   private MetricService metricService;
   private DhruvaExecutorService executorService;
   private CommonConfigurationProperties commonConfigurationProperties;
-  private TrustManager trustManager;
-  private KeyManager keyManager;
+  private AddressResolver addressResolver;
 
   public SipServer(
       Transport transport,
       SipListener handler,
       DhruvaExecutorService executorService,
       MetricService metricService,
-      CommonConfigurationProperties commonConfigurationProperties) {
-    this.transport = transport;
+      CommonConfigurationProperties commonConfigurationProperties,
+      AddressResolver addressResolver) {
     this.metricService = metricService;
-    this.sipListener = handler;
     this.executorService = executorService;
     this.commonConfigurationProperties = commonConfigurationProperties;
+    this.addressResolver = addressResolver;
   }
 
   @Override
@@ -64,7 +59,8 @@ public class SipServer implements Server {
       SipListener handler,
       DsbTrustManager trustManager,
       KeyManager keyManager,
-      CompletableFuture<SipStack> serverStartFuture) {
+      CompletableFuture<SipStack> serverStartFuture,
+      AddressResolver addressResolver) {
 
     SipFactory sipFactory = JainSipHelper.getSipFactory();
     int retryCount = this.commonConfigurationProperties.getListenPointRetryCount();
@@ -93,6 +89,7 @@ public class SipServer implements Server {
                   ((DsbRateLimiterValve) sipMessageValve).initFromApplication(dsbRateLimiter);
                 }
               });
+          sipStackImpl.setAddressResolver(addressResolver);
         }
         serverStartFuture.complete(sipStack);
         break;

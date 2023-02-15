@@ -8,7 +8,7 @@ import com.cisco.dsb.common.dns.*;
 import com.cisco.dsb.common.dns.dto.DNSARecord;
 import com.cisco.dsb.common.dns.dto.DNSSRVRecord;
 import com.cisco.dsb.common.sip.dto.DNSInjectAction;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.dto.InjectedDNSARecord;
 import com.cisco.dsb.common.sip.dto.InjectedDNSSRVRecord;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
@@ -77,11 +77,11 @@ public class SipServerLocatorTest {
     mockDnsLookup.addARecord(
         host2 + ".", new DNSARecord("dhruva-dhruvaintb-02.ciscospark.com.", 5, hostIP));
 
-    Set<Hop> realHops =
+    Set<HopImpl> realHops =
         new HashSet<>(
             Arrays.asList(
-                new Hop(host1, hostIP, Transport.TLS, port, 1000, 10, DNSRecordSource.DNS),
-                new Hop(host2, hostIP, Transport.TLS, port, 1000, 10, DNSRecordSource.DNS)));
+                new HopImpl(host1, hostIP, Transport.TLS, port, 1000, 10, DNSRecordSource.DNS),
+                new HopImpl(host2, hostIP, Transport.TLS, port, 1000, 10, DNSRecordSource.DNS)));
     try {
       // priority=1 specified here should cause this hostname to fall first in the hop list.
       dnsInjectionService.injectSRV(
@@ -108,7 +108,7 @@ public class SipServerLocatorTest {
       Assert.assertEquals(response.getDnsARecords().size(), 3);
       Assert.assertEquals(
           response.getHops().get(0),
-          new Hop(
+          new HopImpl(
               injectHostname,
               injectAddress,
               Transport.TLS,
@@ -220,7 +220,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TLS,
@@ -239,7 +239,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TCP,
@@ -261,7 +261,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TLS,
@@ -281,7 +281,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TLS,
@@ -301,7 +301,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TCP,
@@ -322,7 +322,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(
+            new HopImpl(
                 srvHostname,
                 injectSRVTargetAddress,
                 Transport.TLS,
@@ -344,7 +344,8 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(name, injectAddress, Transport.TLS, 5075, 1, 100, DNSRecordSource.INJECTED));
+            new HopImpl(
+                name, injectAddress, Transport.TLS, 5075, 1, 100, DNSRecordSource.INJECTED));
       }
       {
         logger.info(
@@ -359,7 +360,8 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(name, injectAddress, Transport.TCP, 5060, 1, 100, DNSRecordSource.INJECTED));
+            new HopImpl(
+                name, injectAddress, Transport.TCP, 5060, 1, 100, DNSRecordSource.INJECTED));
       }
 
       // Test Invalid(null) LookupTransportType
@@ -392,7 +394,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info(
@@ -403,7 +405,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TLS, 5061, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TLS, 5061, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info("test: name is IP, transport=TLS_AND_TCP, no port specified, assumes TCP.");
@@ -414,7 +416,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info("test: name is IP, transport=TLS, port, get back exactly what was passed.");
@@ -428,7 +430,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TLS, 5060, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TLS, 5060, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info("test: name is IP, transport=TLS_AND_TCP, port=5060, infer transport=TCP.");
@@ -439,7 +441,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TCP, 5060, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info("test: name is IP, transport=TLS_AND_TCP, port=5061, infer transport=TLS.");
@@ -450,7 +452,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TLS, 5061, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TLS, 5061, 1, 100, DNSRecordSource.DNS));
       }
       {
         logger.info(
@@ -462,7 +464,7 @@ public class SipServerLocatorTest {
         Assert.assertEquals(response.getHops().size(), 1, "number of hops mismatch");
         Assert.assertEquals(
             response.getHops().get(0),
-            new Hop(null, "10.9.8.7", Transport.TLS, 5062, 1, 100, DNSRecordSource.DNS));
+            new HopImpl(null, "10.9.8.7", Transport.TLS, 5062, 1, 100, DNSRecordSource.DNS));
       }
 
     } catch (Throwable exception) {
@@ -519,7 +521,7 @@ public class SipServerLocatorTest {
   @Test
   public void testEqualsOfHop() {
     EqualsVerifier.simple()
-        .forClass(Hop.class)
+        .forClass(HopImpl.class)
         .withOnlyTheseFields("hostname", "host", "transport", "port", "source")
         .verify();
   }

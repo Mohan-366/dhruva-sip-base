@@ -2,16 +2,18 @@ package com.cisco.dsb.common.servergroup;
 
 import com.cisco.dsb.common.exception.DhruvaException;
 import com.cisco.dsb.common.service.SipServerLocatorService;
-import com.cisco.dsb.common.sip.dto.Hop;
+import com.cisco.dsb.common.sip.dto.HopImpl;
 import com.cisco.dsb.common.sip.enums.LocateSIPServerTransportType;
 import com.cisco.dsb.common.sip.stack.dto.DnsDestination;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
+import com.cisco.dsb.common.transport.Transport;
 import com.cisco.wx2.dto.User;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -19,7 +21,7 @@ import reactor.core.publisher.Mono;
 @Component
 @CustomLog
 public class DnsServerGroupUtil {
-  private SipServerLocatorService locatorService;
+  @Getter private SipServerLocatorService locatorService;
   private Map<ServerGroup, CachedServerGroup> serverGroupCache = new ConcurrentHashMap<>();
 
   @Autowired
@@ -69,7 +71,7 @@ public class DnsServerGroupUtil {
       CompletableFuture<LocateSIPServersResponse> locateSIPServersResponse,
       ServerGroup serverGroup) {
     return Mono.fromFuture(locateSIPServersResponse)
-        .<List<Hop>>handle(
+        .<List<HopImpl>>handle(
             (response, synchronousSink) -> {
               if (response.getDnsException().isPresent()) {
                 synchronousSink.error((response.getDnsException().get()));
@@ -80,7 +82,7 @@ public class DnsServerGroupUtil {
         .mapNotNull((hops) -> getServerGroupFromHops(hops, serverGroup));
   }
 
-  private ServerGroup getServerGroupFromHops(List<Hop> hops, ServerGroup serverGroup) {
+  private ServerGroup getServerGroupFromHops(List<HopImpl> hops, ServerGroup serverGroup) {
     List<ServerGroupElement> elementList =
         hops.stream()
             .map(
@@ -88,7 +90,7 @@ public class DnsServerGroupUtil {
                     ServerGroupElement.builder()
                         .setIpAddress(hop.getHost())
                         .setPort(hop.getPort())
-                        .setTransport(hop.getTransport())
+                        .setTransport(Transport.valueOf(hop.getTransport()))
                         .setWeight(hop.getWeight())
                         .setPriority(hop.getPriority())
                         .build())
