@@ -969,7 +969,7 @@ public class ProxyControllerTest {
     ProxySIPRequest proxySIPRequest =
         getProxySipRequest(SIPRequestBuilder.RequestMethod.INVITE, serverTransaction);
     SIPRequest sipRequest = proxySIPRequest.getRequest();
-    URI uri = JainSipHelper.createSipURI("testDhruva@9.9.9.9:5060;transport=tcp");
+    URI uri = JainSipHelper.createSipURI("rr$n=net_sp_tcp@9.9.9.9:5060;transport=tcp");
     sipRequest.setRequestURI(uri);
     SipURI mAddr = (SipURI) sipRequest.getRequestURI();
     mAddr.setMAddrParam("1.1.1.1");

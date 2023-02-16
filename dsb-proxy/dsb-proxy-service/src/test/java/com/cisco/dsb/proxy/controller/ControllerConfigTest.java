@@ -11,6 +11,7 @@ import com.cisco.dsb.common.sip.dto.MsgApplicationData;
 import com.cisco.dsb.common.sip.enums.DNSRecordSource;
 import com.cisco.dsb.common.sip.header.ListenIfHeader;
 import com.cisco.dsb.common.sip.stack.dto.LocateSIPServersResponse;
+import com.cisco.dsb.common.sip.util.ReConstants;
 import com.cisco.dsb.common.sip.util.SipUtils;
 import com.cisco.dsb.common.transport.Transport;
 import com.cisco.dsb.proxy.ProxyConfigurationProperties;
@@ -48,6 +49,8 @@ public class ControllerConfigTest {
 
   @Mock ProxyConfigurationProperties proxyConfigurationProperties;
   @Mock Environment environment;
+  private String validUser = ReConstants.BS_RR_TOKEN + ReConstants.BS_NETWORK_TOKEN + "net_in";
+  private String invalidUser = "+19164895031";
 
   @BeforeTest
   public void setup() {
@@ -201,6 +204,7 @@ public class ControllerConfigTest {
   @Test(description = "recognise all type of hostNameType")
   public void testRecogniseSipUri() throws ParseException {
     SipUri requestUri = new SipUri();
+    requestUri.setUser(validUser);
     requestUri.setHost("1.1.1.1");
     requestUri.setTransportParam("udp");
     requestUri.setPort(5060);
@@ -210,6 +214,7 @@ public class ControllerConfigTest {
         .verifyComplete();
 
     SipUri maddrUri = new SipUri();
+    maddrUri.setUser(validUser);
     maddrUri.setHost("3.3.3.3"); // not part of any listenIf
     maddrUri.setTransportParam("udp");
     maddrUri.setPort(5060);
@@ -258,6 +263,7 @@ public class ControllerConfigTest {
                     null,
                     null)));
     SipUri requestUri = new SipUri();
+    requestUri.setUser(validUser);
     requestUri.setHost("test.akg.com");
     requestUri.setTransportParam("udp");
     requestUri.setPort(5060);
@@ -278,6 +284,7 @@ public class ControllerConfigTest {
     when(sipServerLocatorService.locateDestinationAsync(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(dnsResponse));
     SipUri requestUri = new SipUri();
+    requestUri.setUser(validUser);
     requestUri.setHost("test.akg.com");
     requestUri.setTransportParam("tcp");
     requestUri.setPort(5060);
@@ -292,5 +299,18 @@ public class ControllerConfigTest {
     verify(sipServerLocatorService, times(2)).locateDestinationAsync(any(), any());
     reset(sipServerLocatorService);
     controllerConfig.dnsEnabled = false;
+  }
+
+  @Test(description = "invalid user with valid hostPort")
+  public void testInvalidUserRecognise() throws ParseException {
+    SipUri requestUri = new SipUri();
+    requestUri.setUser(invalidUser);
+    requestUri.setHost("1.1.1.1");
+    requestUri.setTransportParam("udp");
+    requestUri.setPort(5060);
+
+    StepVerifier.create(controllerConfig.recognize(requestUri, true, false))
+        .expectNext(false)
+        .verifyComplete();
   }
 }

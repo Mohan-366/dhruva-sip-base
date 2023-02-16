@@ -164,11 +164,17 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     logger.debug("Entering recognize(" + ruri + ", isRequestURI=" + isRequestURI + ')');
     SipUri recognizeUri = new SipUri();
     if (uri.isSipURI()) {
+      // user portion is checked only for RURI
+      boolean checkUser = false;
       String host;
       SipURI url = (SipURI) uri;
       if (isRequestURI) {
-        if (maddr) host = url.getMAddrParam();
-        else host = url.getHost();
+        if (maddr) {
+          host = url.getMAddrParam();
+        } else {
+          host = url.getHost();
+          checkUser = true;
+        }
       } else {
         host = url.getHost();
       }
@@ -177,16 +183,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
         if (url.getTransportParam() != null)
           recognizeUri.setTransportParam(url.getTransportParam());
         recognizeUri.setHost(host);
+        recognizeUri.setUser(url.getUser());
       } catch (ParseException e) {
         logger.warn("Invalid SipURI, unable to recognize {}", url);
         return Mono.just(false);
       }
-      return recognizeWithDns(recognizeUri);
+      return recognizeWithDns(recognizeUri, checkUser);
     }
     return Mono.just(false);
   }
 
-  private Mono<Boolean> recognizeWithDns(SipUri sipUri) {
+  private Mono<Boolean> recognizeWithDns(SipUri sipUri, boolean checkUser) {
+    if (checkUser && !recogniseUser(sipUri.getUser())) return Mono.just(false);
     // Check if host matches the ListenIf sipUri.
     if (recognize(sipUri)) return Mono.just(true);
 
@@ -258,6 +266,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     return Mono.just(false);
   }
 
+  private boolean recogniseUser(String user) {
+    if (user == null) return false;
+    if (user.startsWith(ReConstants.RR)
+        || user.endsWith(ReConstants.RR_TOKEN1)
+        || user.contains(ReConstants.RR_TOKEN2)) {
+      String network = getNetworkFromUser(user);
+      for (ListenIfHeader listenIfHeader : listenIfHeaders.values()) {
+        if (network.equals(listenIfHeader.getName())) return true;
+      }
+    }
+    return false;
+  }
   /**
    * Modify the record route to reflect multi homed network in the RR. Set the outbound network of
    * the top most RR that matches listenIf into application data of msg.
@@ -356,5 +376,18 @@ public class ControllerConfig implements ProxyParamsInterface, SipRouteFixInterf
     } else {
       logger.debug("No matching listenIf found for {}", currentRRURL);
     }
+  }
+
+  private String getNetworkFromUser(String user) {
+    StringTokenizer st = new StringTokenizer(user, ReConstants.DELIMITER_STR);
+    String t;
+    while (st.hasMoreTokens()) {
+      t = st.nextToken();
+      if (t.startsWith(ReConstants.NETWORK_TOKEN)) {
+        return t.substring(ReConstants.NETWORK_TOKEN.length());
+      }
+    }
+    logger.debug("Unable to find network user in {}", user);
+    return null;
   }
 }

@@ -1,4 +1,4 @@
-FROM dockerhub.cisco.com/webexkubed-docker/wbx3_java_base:2021-11-23_22-25-24
+FROM engci-maven.cisco.com/webexkubed-docker/wbx3_java_base:2023-01-26_23-50-45
 LABEL maintainer="dhruva app team"
 LABEL quay.expires-after=7d
 ENV JAVA_VERSION=17
