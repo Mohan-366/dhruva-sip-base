@@ -24,7 +24,7 @@ import org.springframework.lang.Nullable;
 @CustomLog
 public class DsbNetworkLayer implements NetworkLayer {
   private SSLSocketFactory sslSocketFactory;
-  private SSLServerSocketFactory sslServerSocketFactory;
+  protected SSLServerSocketFactory sslServerSocketFactory;
   // Default connection timeout milliseconds.
   private int connectionTimeout = CommonConfigurationProperties.getSocketConnectionTimeout();
   protected SIPTransactionStack sipStack;
@@ -80,13 +80,16 @@ public class DsbNetworkLayer implements NetworkLayer {
   }
 
   private DatagramSocket createDataGramSocket() throws SocketException {
-    return new DatagramSocket(null);
+    DatagramSocket socket = new DatagramSocket(null);
+    setDatagramSocketOptionsPrebind(socket);
+    return socket;
   }
 
   @Override
   public DatagramSocket createDatagramSocket() throws SocketException {
     DatagramSocket socket = createDataGramSocket();
     socket.bind(new InetSocketAddress(0));
+    setDatagramSocketOptionsPostbind(socket);
     return socket;
   }
 
@@ -94,7 +97,7 @@ public class DsbNetworkLayer implements NetworkLayer {
   public DatagramSocket createDatagramSocket(int port, InetAddress laddr) throws SocketException {
     DatagramSocket socket = createDataGramSocket();
     socket.bind(new InetSocketAddress(laddr, port));
-    setDatagramSocketOptions(socket);
+    setDatagramSocketOptionsPostbind(socket);
     return socket;
   }
 
@@ -176,7 +179,7 @@ public class DsbNetworkLayer implements NetworkLayer {
     return socket;
   }
 
-  private static ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws IOException {
+  private ServerSocket setServerSocketOptions(ServerSocket serverSocket) throws IOException {
     // NOTE: some of the properties set here can be overridden by
     // ConnectionOrientedMessageProcessor.
     // check out the start() to see such properties
@@ -184,7 +187,12 @@ public class DsbNetworkLayer implements NetworkLayer {
     return serverSocket;
   }
 
-  private DatagramSocket setDatagramSocketOptions(DatagramSocket datagramSocket)
+  private void setDatagramSocketOptionsPrebind(DatagramSocket datagramSocket)
+      throws SocketException {
+    datagramSocket.setReuseAddress(true);
+  }
+
+  private void setDatagramSocketOptionsPostbind(DatagramSocket datagramSocket)
       throws SocketException {
     datagramSocket.setTrafficClass(
         commonConfigurationProperties
@@ -192,8 +200,6 @@ public class DsbNetworkLayer implements NetworkLayer {
             .getOrDefault(
                 datagramSocket.getLocalAddress().toString(),
                 CommonConfigurationProperties.DEFAULT_TRAFFIC_CLASS));
-    datagramSocket.setReuseAddress(true);
-    return datagramSocket;
   }
 
   @Override
