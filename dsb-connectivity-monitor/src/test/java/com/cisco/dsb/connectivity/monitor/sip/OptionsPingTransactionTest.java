@@ -12,11 +12,10 @@ import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie;
 import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import javax.sip.*;
 import javax.sip.header.CSeqHeader;
+import javax.sip.message.Request;
 import org.mockito.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -35,11 +34,12 @@ public class OptionsPingTransactionTest {
 
   @BeforeClass
   void init() throws TransactionUnavailableException {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     when(dhruvaExecutorService.getExecutorThreadPool(ExecutorType.OPTIONS_PING))
         .thenReturn(Executors.newSingleThreadExecutor());
 
     when(sipListenPoint.getTransport()).thenReturn(Transport.TCP);
+    when(sipListenPoint.getPingTimeout()).thenReturn(500);
     when(dhruvaNetwork.getListenPoint()).thenReturn(sipListenPoint);
     when(sipProvider.getNewClientTransaction(any())).thenReturn(clientTransaction);
     doNothing().when(eventingService).publishEvents(any());
@@ -166,5 +166,30 @@ public class OptionsPingTransactionTest {
     OptionsPingTransaction optionsPingTransaction =
         new OptionsPingTransaction(dhruvaExecutorService, eventingService);
     Assert.assertNull(optionsPingTransaction.getApplicationDataCookie(Type.DEFAULT, null));
+  }
+
+  @Test(description = "test pingTimeout if CompletableFuture does not timeout by stack event")
+  public void testTimeout() throws SipException {
+    OptionsPingTransaction optionsPingTransaction =
+        new OptionsPingTransaction(dhruvaExecutorService, eventingService);
+    when(sipProvider.getNewClientTransaction(any(Request.class))).thenReturn(clientTransaction);
+    doNothing().when(clientTransaction).sendRequest();
+    CompletableFuture<SIPResponse> responseCompletableFuture =
+        optionsPingTransaction.proxySendOutBoundRequest(request, dhruvaNetwork, sipProvider);
+
+    try {
+      responseCompletableFuture.get(2000, TimeUnit.MILLISECONDS);
+    } catch (ExecutionException | InterruptedException e) {
+      if (e.getCause() instanceof TimeoutException) {
+        System.out.println(
+            "Caught timeout exception as expected,verifying client transaction clean up");
+        return;
+      }
+      Assert.fail("Should have thrown Timeout exception");
+    } catch (TimeoutException e) {
+      Assert.fail("Should have thrown Timeout exception");
+      return;
+    }
+    Assert.fail("Should have thrown Timeout exception");
   }
 }

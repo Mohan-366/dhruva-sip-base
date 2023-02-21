@@ -13,7 +13,9 @@ import com.cisco.dsb.connectivity.monitor.dto.ApplicationDataCookie.Type;
 import com.cisco.dsb.proxy.handlers.OptionsPingResponseListener;
 import gov.nist.javax.sip.message.SIPRequest;
 import gov.nist.javax.sip.message.SIPResponse;
+import gov.nist.javax.sip.stack.SIPClientTransactionImpl;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.sip.*;
 import lombok.CustomLog;
@@ -46,9 +48,11 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     if (sipListenPoint.getTransport().equals(Transport.UDP)) {
       forceRequestSource(sipRequest, sipListenPoint);
     }
-    CompletableFuture<SIPResponse> responseFuture = new CompletableFuture<>();
+    long timeout = dhruvaNetwork.getListenPoint().getPingTimeout() + 1000L;
+    CompletableFuture<SIPResponse> responseFuture =
+        new CompletableFuture<SIPResponse>().orTimeout(timeout, TimeUnit.MILLISECONDS);
     ClientTransaction clientTrans = sipProvider.getNewClientTransaction(sipRequest);
-
+    // buffer of 1s. if JAIN stack does not send timeout event.
     CompletableFuture.runAsync(
         () -> {
           try {
@@ -77,8 +81,13 @@ public class OptionsPingTransaction implements OptionsPingResponseListener {
     // clientTransaction for future mapping.
     applicationDataCookie = getApplicationDataCookie(Type.OPTIONS_RESPONSE, responseFuture);
     clientTrans.setApplicationData(applicationDataCookie);
-
-    return responseFuture;
+    return responseFuture.whenComplete(
+        (sipResponse, throwable) -> {
+          if (throwable instanceof TimeoutException) {
+            // clean up of clientTransaction due to timeout
+            ((SIPClientTransactionImpl) clientTrans).terminate();
+          }
+        });
   }
 
   @Override

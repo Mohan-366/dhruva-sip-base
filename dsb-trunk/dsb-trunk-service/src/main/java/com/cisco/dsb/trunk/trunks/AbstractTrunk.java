@@ -628,7 +628,7 @@ public abstract class AbstractTrunk implements LoadBalancable {
     while (loadBalancer.getNextElement() != null) {
       if (isActive((Pingable) loadBalancer.getCurrentElement()))
         return loadBalancer.getCurrentElement();
-      logger.debug(
+      logger.warn(
           "Skipping inActive Element as it's down {}", loadBalancer.getCurrentElement().toString());
     }
     return null;

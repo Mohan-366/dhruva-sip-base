@@ -405,7 +405,10 @@ public class OptionsPingMonitor {
   private Predicate<ServerGroupElement> isExpiredStatus(long validity) {
     return sge -> {
       Status status = elementStatus.get(sge.toUniqueElementString());
-      if (status == null) return true;
+      if (status == null) {
+        logger.debug("Status not found for {}", sge.toUniqueElementString());
+        return true;
+      }
       boolean expired = status.updateIfExpired(validity);
       logger.debug("Status expired(={}) for {}", expired, sge.toUniqueElementString());
       return expired;
