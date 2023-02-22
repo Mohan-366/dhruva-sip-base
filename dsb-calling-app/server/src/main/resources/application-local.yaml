@@ -151,7 +151,7 @@ common:
         waitDurationInOpenState: 10
         slidingWindowSize: 2
         failureThresholdRate: 50
-        permittedNumberOfCallsInHAlfOpenState: 1
+        permittedNumberOfCallsInHalfOpenState: 1
         slidingWindowType: COUNT_BASED
   optionsPingPolicy:
     opPolicy1:

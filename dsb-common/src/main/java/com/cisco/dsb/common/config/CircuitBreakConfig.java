@@ -24,7 +24,7 @@ public class CircuitBreakConfig {
 
   @Builder.Default private int failureThresholdRate = 50;
 
-  @Builder.Default private int permittedNumberOfCallsInHAlfOpenState = 1;
+  @Builder.Default private int permittedNumberOfCallsInHalfOpenState = 1;
 
   @Builder.Default private SlidingWindowType slidingWindowType = SlidingWindowType.COUNT_BASED;
 }

@@ -53,7 +53,7 @@ public class DsbCircuitBreaker implements RemovalListener {
             .failureRateThreshold(config.getFailureThresholdRate())
             .waitDurationInOpenState(Duration.ofSeconds(config.getWaitDurationInOpenState()))
             .permittedNumberOfCallsInHalfOpenState(
-                config.getPermittedNumberOfCallsInHAlfOpenState())
+                config.getPermittedNumberOfCallsInHalfOpenState())
             .recordResult(recordResult)
             .recordException(recordException)
             .build();
