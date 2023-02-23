@@ -8,9 +8,8 @@ import org.hibernate.validator.constraints.Range;
 
 public class DNSSRVRecord {
 
-  private static final String NAME_PATTERN = "^([A-Za-z0-9\\.])+[A-Za-z]$";
-  private static final String TARGET_PATTERN =
-      "^(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])\\.(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])\\.(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])\\.(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])$";
+  private static final String NAME_PATTERN = "^([_A-Za-z0-9\\.])+[A-Za-z]$";
+  private static final String TARGET_PATTERN = "^([A-Za-z0-9\\.])+[A-Za-z]$";
 
   @Pattern(regexp = NAME_PATTERN)
   @Length(max = 150)

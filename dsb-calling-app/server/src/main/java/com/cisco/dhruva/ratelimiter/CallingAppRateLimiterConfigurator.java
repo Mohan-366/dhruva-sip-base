@@ -20,6 +20,7 @@ import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.RateLimit.ResponseOption
 import com.cisco.dsb.common.ratelimiter.RateLimitPolicy.Type;
 import com.cisco.dsb.common.ratelimiter.RateLimiterConfigurator;
 import com.cisco.dsb.common.servergroup.ServerGroup;
+import com.cisco.dsb.common.servergroup.ServerGroupElement;
 import com.cisco.dsb.common.sip.stack.dto.DhruvaNetwork;
 import com.cisco.wx2.ratelimit.policy.Policy;
 import com.cisco.wx2.ratelimit.policy.RateAction;
@@ -210,7 +211,7 @@ public class CallingAppRateLimiterConfigurator implements RateLimiterConfigurato
         }
       }
       policyValueSB.append(POLICY_VALUE_DELIMITER);
-      policyValueSB.append(networkInterfaces.toString());
+      policyValueSB.append(networkInterfaces);
     } else {
       policyValueSB.append(POLICY_VALUE_DELIMITER);
       policyValueSB.append(ALL);
@@ -233,15 +234,16 @@ public class CallingAppRateLimiterConfigurator implements RateLimiterConfigurato
           .forEach(
               serverGroup -> {
                 if (serverGroup.getNetworkName().equals(network)) {
-                  serverGroup
-                      .getElements()
-                      .forEach(
-                          serverGroupElement -> {
-                            String ip = serverGroupElement.getIpAddress();
-                            if (ip != null) {
-                              sgAllowIPList.add(ip);
-                            }
-                          });
+                  List<ServerGroupElement> elements = serverGroup.getElements();
+                  if (CollectionUtils.isNotEmpty(elements)) {
+                    elements.forEach(
+                        serverGroupElement -> {
+                          String ip = serverGroupElement.getIpAddress();
+                          if (ip != null) {
+                            sgAllowIPList.add(ip);
+                          }
+                        });
+                  }
                 }
               });
     }

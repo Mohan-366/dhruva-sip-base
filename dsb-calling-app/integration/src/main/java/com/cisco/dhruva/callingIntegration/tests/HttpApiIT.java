@@ -119,7 +119,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
     DELETE
   }
 
-  public void makeGetRequest(URL url, String token, HttpMethod method) throws IOException {
+  public void makeGetRequest(URL url, String token, HttpMethod method) {
     HttpURLConnection conn = null;
     try {
       conn = (HttpURLConnection) url.openConnection();
@@ -135,7 +135,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
     }
   }
 
-  public void makePostRequest(URL url, String token, HttpMethod method) throws IOException {
+  public void makePostRequest(URL url, String token, HttpMethod method) {
     HttpURLConnection conn = null;
     try {
       conn = (HttpURLConnection) url.openConnection();
@@ -168,7 +168,19 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
               + "\"injectAction\": 2"
               + "}"
               + "],"
-              + "\"dnsSRVRecords\": [{}]}'";
+              + "\"dnsSRVRecords\": "
+              + "["
+              + "{"
+              + "\"name\": \"_sip._udp.testsrv.beech.com\","
+              + "\"ttl\": 36000,"
+              + "\"priority\": 10,"
+              + "\"weight\": 100,"
+              + "\"port\": 8000,"
+              + "\"target\": \"test.beech.com\","
+              + "\"injectAction\": 2"
+              + "}"
+              + "]"
+              + "}'";
       try (OutputStream os = conn.getOutputStream()) {
         byte[] input = body.getBytes("utf-8");
         os.write(input, 0, input.length);
@@ -183,7 +195,7 @@ public class HttpApiIT extends AbstractTestNGSpringContextTests {
     }
   }
 
-  public void makeDeleteRequest(URL url, String token, HttpMethod method) throws IOException {
+  public void makeDeleteRequest(URL url, String token, HttpMethod method) {
     HttpURLConnection conn = null;
     try {
       conn = (HttpURLConnection) url.openConnection();
