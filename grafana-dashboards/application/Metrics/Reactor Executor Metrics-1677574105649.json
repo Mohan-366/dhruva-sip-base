@@ -22,7 +22,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49616,
-  "iteration": 1669262867584,
+  "iteration": 1677574099690,
   "links": [],
   "panels": [
     {
@@ -344,7 +344,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "devops"
   ],
   "templating": {
     "list": [
@@ -380,8 +381,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "wsjcwxc-int-3_dhruva-proxy-769fc555d9-82h9w",
-          "value": "wsjcwxc-int-3_dhruva-proxy-769fc555d9-82h9w"
+          "text": "wsjcwxc-int-3_dhruva-proxy-7b8bcf7df6-9lldz",
+          "value": "wsjcwxc-int-3_dhruva-proxy-7b8bcf7df6-9lldz"
         },
         "datasource": "influx_microservice_metrics",
         "definition": "show tag values from \"executor_completed\" with key = \"instancename\" where \"environment\" =~ /$environment/ and \"servicename\"='dhruva' and time >= now()",
@@ -414,5 +415,5 @@
   "timezone": "",
   "title": "Reactor Executor Metrics",
   "uid": "89cRnmY7z",
-  "version": 25
+  "version": 26
 }

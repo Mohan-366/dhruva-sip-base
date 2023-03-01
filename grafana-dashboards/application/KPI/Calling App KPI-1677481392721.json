@@ -1,4 +1,40 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_INFLUX_MICROSERVICE_METRICS",
+      "label": "influx_microservice_metrics",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "blackmirror1-singlestat-math-panel",
+      "name": "Singlestat Math",
+      "version": "1.1.8"
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "7.5.2"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -12,73 +48,49 @@
       }
     ]
   },
+  "description": "KPI dashboard for Calling app.",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 50369,
-  "iteration": 1669262474651,
+  "id": null,
+  "iteration": 1677481385392,
   "links": [],
   "panels": [
     {
-      "cacheTimeout": null,
-      "datasource": "influx_microservice_metrics",
+      "datasource": "${DS_INFLUX_MICROSERVICE_METRICS}",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 2,
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "text": "N/A"
-                }
-              },
-              "type": "special"
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "rgba(245, 54, 54, 0.9)",
+                "color": "rgb(236, 242, 236)",
                 "value": null
-              },
-              {
-                "color": "rgba(237, 129, 40, 0.89)",
-                "value": 98
-              },
-              {
-                "color": "rgba(50, 172, 45, 0.97)",
-                "value": 99
               }
             ]
-          },
-          "unit": "percent"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
+        "h": 6,
+        "w": 7,
         "x": 0,
         "y": 0
       },
-      "hideTimeOverride": true,
-      "id": 10,
-      "interval": "30s",
-      "links": [],
-      "maxDataPoints": 100,
+      "id": 12,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
+        "colorMode": "value",
+        "graphMode": "area",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "mean"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
@@ -88,47 +100,6 @@
       },
       "pluginVersion": "7.5.2",
       "targets": [
-        {
-          "aggr_query": "SELECT mean(\"max\") FROM (SELECT max(\"availability\") FROM \"l2sip.health.l2sip.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment, instance_index fill(null))",
-          "dsType": "influxdb",
-          "groupBy": [
-            {
-              "params": [
-                "$interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "hide": true,
-          "measurement": "l2sip.health.l2sip",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"max\") FROM (SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = \"$service\" AND \"environment\" =~ /$env/ AND $timeFilter GROUP BY time($interval), environment, instance_index fill(null))",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "availability"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              }
-            ]
-          ],
-          "tags": []
-        },
         {
           "groupBy": [
             {
@@ -144,12 +115,11 @@
               "type": "fill"
             }
           ],
-          "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = '$service' AND \"environment\" =~ /$env/ AND $timeFilter GROUP BY time($interval), environment  fill(0)",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
-          "refId": "B",
+          "refId": "A",
           "resultFormat": "time_series",
           "select": [
             [
@@ -168,8 +138,103 @@
           "tags": []
         }
       ],
-      "timeShift": "15s",
-      "title": "calling App Service Availability ",
+      "title": "Total Calls",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_INFLUX_MICROSERVICE_METRICS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 7,
+        "x": 7,
+        "y": 0
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.2",
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"duration\") FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ ",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Average Latency",
       "type": "stat"
     },
     {
@@ -177,8 +242,8 @@
       "circleBackground": false,
       "colorBackground": false,
       "colorValue": true,
-      "datasource": "influx_microservice_metrics",
-      "decimals": 2,
+      "datasource": "${DS_INFLUX_MICROSERVICE_METRICS}",
+      "decimals": 3,
       "defaultColor": "rgb(117, 117, 117)",
       "fieldConfig": {
         "defaults": {},
@@ -217,9 +282,9 @@
       },
       "graphId": "flowchart_32",
       "gridPos": {
-        "h": 8,
-        "w": 4,
-        "x": 8,
+        "h": 6,
+        "w": 7,
+        "x": 14,
         "y": 0
       },
       "id": 4,
@@ -393,7 +458,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "B",
           "resultFormat": "time_series",
@@ -433,7 +498,7 @@
         "show": false
       },
       "type": "blackmirror1-singlestat-math-panel",
-      "valueFontSize": "100%",
+      "valueFontSize": "120%",
       "valueMappingColorBackground": "#767171",
       "valueMaps": [
         {
@@ -445,225 +510,21 @@
       ],
       "valueName": "current",
       "version": "0.9.0"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": "influx_microservice_metrics",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 12,
-        "y": 0
-      },
-      "id": 6,
-      "interval": null,
-      "links": [],
-      "maxDataPoints": 100,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "vertical",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.2",
-      "targets": [
-        {
-          "alias": "95th Percentile Latency",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT percentile(\"duration\",95) FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ ",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              }
-            ]
-          ],
-          "tags": []
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "95th Percentile Latency",
-      "type": "stat"
-    },
-    {
-      "datasource": "influx_microservice_metrics",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 75
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 17,
-        "y": 0
-      },
-      "id": 8,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.2",
-      "targets": [
-        {
-          "alias": "99th Percentile Latency",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT percentile(\"duration\",99) FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ ",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              }
-            ]
-          ],
-          "tags": []
-        }
-      ],
-      "title": "99th percentile latency",
-      "type": "stat"
     }
   ],
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "kpi"
   ],
   "templating": {
     "list": [
       {
         "allValue": null,
-        "current": {
-          "selected": true,
-          "tags": [],
-          "text": [
-            "wdfwintsip-a-1"
-          ],
-          "value": [
-            "wdfwintsip-a-1"
-          ]
-        },
-        "datasource": "influx_microservice_metrics",
-        "definition": "show tag values from \"dhruva.call.latency\" with key = \"environment\"",
+        "current": {},
+        "datasource": "${DS_INFLUX_MICROSERVICE_METRICS}",
+        "definition": "show tag values from \"dhruva.sipMessage\" with key = \"environment\"",
         "description": "",
         "error": null,
         "hide": 0,
@@ -672,7 +533,7 @@
         "multi": true,
         "name": "env",
         "options": [],
-        "query": "show tag values from \"dhruva.call.latency\" with key = \"environment\"",
+        "query": "show tag values from \"dhruva.sipMessage\" with key = \"environment\"",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -698,11 +559,16 @@
         "description": null,
         "error": null,
         "hide": 0,
-        "includeAll": false,
-        "label": "Service Name",
-        "multi": false,
+        "includeAll": true,
+        "label": "Service",
+        "multi": true,
         "name": "service",
         "options": [
+          {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
           {
             "selected": true,
             "text": "dhruva",
@@ -730,7 +596,7 @@
         "name": "transport",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "All",
             "value": "$__all"
           },
@@ -740,7 +606,7 @@
             "value": "TCP"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "UDP",
             "value": "UDP"
           },
@@ -768,15 +634,15 @@
         "includeAll": false,
         "label": "isMidCall",
         "multi": false,
-        "name": "ismidCall",
+        "name": "ismidcall",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "false",
             "value": "false"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "true",
             "value": "true"
           }
@@ -794,7 +660,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "CallingApp-KPIs",
+  "title": "Calling App KPI",
   "uid": "YAsn6VHVz",
-  "version": 24
+  "version": 37
 }

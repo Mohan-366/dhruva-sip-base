@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49387,
-  "iteration": 1669262721417,
+  "iteration": 1677481627251,
   "links": [],
   "panels": [
     {
@@ -1286,7 +1286,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "devops"
   ],
   "templating": {
     "list": [
@@ -1343,7 +1344,7 @@
     ]
   },
   "timezone": "",
-  "title": "DNS metrics - DSB",
+  "title": "DNS metrics",
   "uid": "7l55c-onk",
-  "version": 3
+  "version": 4
 }

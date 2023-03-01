@@ -12,12 +12,12 @@
       }
     ]
   },
-  "description": "",
+  "description": "KPI dashboard for sip message error analysis.",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 50428,
-  "iteration": 1669262798238,
+  "iteration": 1677573883197,
   "links": [
     {
       "asDropdown": true,
@@ -124,7 +124,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -227,7 +227,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" = 200 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" = 200 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -334,7 +334,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" < 500 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" < 500 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -441,7 +441,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 500 AND \"responseCode\" < 600 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 500 AND \"responseCode\" < 600 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -548,7 +548,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 600 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 600 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -668,7 +668,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -750,7 +750,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"method\", \"environment\", \"callType\"\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter GROUP BY time($__interval), \"method\", \"environment\", \"callType\"\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -960,7 +960,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1214,7 +1214,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"callId\", \"method\", \"transport\" , \"responseReason\" , \"additionalDetails\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT \"callId\", \"method\", \"transport\" , \"responseReason\" , \"additionalDetails\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'true') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "table",
@@ -1342,7 +1342,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1422,7 +1422,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter GROUP BY time($__interval), \"environment\", \"method\", \"callType\"\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter GROUP BY time($__interval), \"environment\", \"method\", \"callType\"\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1632,7 +1632,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -1874,7 +1874,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"callId\", \"method\",  \"transport\" , \"responseReason\"  FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT \"callId\", \"method\",  \"transport\" , \"responseReason\"  FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 AND \"responseCode\" <= 608 AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isInternallyGenerated\" = 'false') AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "table",
@@ -2000,9 +2000,13 @@
         "for": "10m",
         "frequency": "1m",
         "handler": 1,
-        "name": "4xx response exceeding alert",
+        "name": "Too many 4xx responses",
         "noDataState": "ok",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "fh2SB_Cnk"
+          }
+        ]
       },
       "aliasColors": {},
       "bars": false,
@@ -2068,7 +2072,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 400 and \"responseCode\" < 500 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter group by time(10m)",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -2243,6 +2247,91 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "D",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "keep_state",
+        "for": "10m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "Too many 5xx responses",
+        "noDataState": "ok",
+        "notifications": [
+          {
+            "uid": "fh2SB_Cnk"
+          }
+        ]
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -2306,7 +2395,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 500 and \"responseCode\" < 600 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter group by time(10m)\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -2428,7 +2517,16 @@
           "tags": []
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 100,
+          "visible": true
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -2472,6 +2570,91 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "D",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "keep_state",
+        "for": "10m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "Too many 6xx responses",
+        "noDataState": "ok",
+        "notifications": [
+          {
+            "uid": "fh2SB_Cnk"
+          }
+        ]
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -2538,7 +2721,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 600 and \"responseCode\" <= 608 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter group by time(10m)\n",
+          "query": "SELECT count(distinct(\"callId\")) FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"responseCode\" >= 600 and \"responseCode\" <= 608 AND \"cSeq\" = 'INVITE' ) AND \"isMidCall\" =~ /$ismidcall/ AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND \"serviceName\" =~ /$svcName/ AND $timeFilter group by time(10m)\n",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -2660,7 +2843,16 @@
           "tags": []
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 100,
+          "visible": true
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -2709,7 +2901,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "kpi"
   ],
   "templating": {
     "list": [
@@ -2727,7 +2920,7 @@
         "hide": 0,
         "includeAll": true,
         "label": "Environment Filter",
-        "multi": false,
+        "multi": true,
         "name": "env",
         "options": [],
         "query": "show tag values from \"dhruva.sipMessage\" with key = \"environment\"",
@@ -2812,6 +3005,38 @@
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "influx_microservice_metrics",
+        "definition": "show tag values from \"dhruva.sipMessage\" with key = \"serviceName\"",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service Name",
+        "multi": true,
+        "name": "svcName",
+        "options": [],
+        "query": "show tag values from \"dhruva.sipMessage\" with key = \"serviceName\"",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       }
     ]
   },
@@ -2823,5 +3048,5 @@
   "timezone": "",
   "title": "Error Rate KPI",
   "uid": "BFYRv6SVk",
-  "version": 24
+  "version": 44
 }

@@ -18,11 +18,12 @@
       }
     ]
   },
+  "description": "",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49346,
-  "iteration": 1669262698812,
+  "iteration": 1677481589898,
   "links": [],
   "panels": [
     {
@@ -195,7 +196,53 @@
             },
             "query": {
               "params": [
-                "A",
+                "B",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                50
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "C",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          },
+          {
+            "evaluator": {
+              "params": [
+                50
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "or"
+            },
+            "query": {
+              "params": [
+                "D",
                 "5m",
                 "now"
               ]
@@ -211,13 +258,10 @@
         "for": "1m",
         "frequency": "1m",
         "handler": 1,
+        "message": "Hello Team,\n\nDhruva service is down.\n\nEnvironment: ${environment}\nInstanceName: ${instanceName}",
         "name": "Dhruva Service Availability alert",
         "noDataState": "no_data",
-        "notifications": [
-          {
-            "uid": "fh2SB_Cnk"
-          }
-        ]
+        "notifications": []
       },
       "aliasColors": {},
       "bars": false,
@@ -288,12 +332,139 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "measurement": "l2sip.health.l2sip",
           "orderByTime": "ASC",
           "policy": "default",
           "query": "SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = '$service' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment, instanceName fill(0)",
           "rawQuery": true,
           "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "availability"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "aggr_query": "SELECT max(\"availability\") FROM \"l2sip.health.l2sip.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment fill(null)",
+          "alias": "Availability [Instance: $tag_instanceName]",
+          "dsType": "influxdb",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "measurement": "l2sip.health.l2sip",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = 'dhruva' AND \"environment\" =~ /wdfwintsip-a-1/ AND $timeFilter GROUP BY time($interval), environment, instanceName fill(0)",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "availability"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "aggr_query": "SELECT max(\"availability\") FROM \"l2sip.health.l2sip.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment fill(null)",
+          "alias": "Availability [Instance: $tag_instanceName]",
+          "dsType": "influxdb",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "measurement": "l2sip.health.l2sip",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = 'dhruva' AND \"environment\" =~ /wdfwwxc-int-2/ AND $timeFilter GROUP BY time($interval), environment, instanceName fill(0)",
+          "rawQuery": true,
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "availability"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "aggr_query": "SELECT max(\"availability\") FROM \"l2sip.health.l2sip.v4\" WHERE \"servicename\" = 'l2sip' AND \"environment\" =~ /$env_host_query_str/ AND $timeFilter GROUP BY time($interval), environment fill(null)",
+          "alias": "Availability [Instance: $tag_instanceName]",
+          "dsType": "influxdb",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "measurement": "l2sip.health.l2sip",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"availability\") FROM \"dhruva.service.health\" WHERE \"servicename\" = 'dhruva' AND \"environment\" =~ /wsjcwxc-int-3/ AND $timeFilter GROUP BY time($interval), environment, instanceName fill(0)",
+          "rawQuery": true,
+          "refId": "D",
           "resultFormat": "time_series",
           "select": [
             [
@@ -672,7 +843,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "kpi"
   ],
   "templating": {
     "list": [
@@ -765,5 +937,5 @@
   "timezone": "browser",
   "title": "Dhruva Service Availibility",
   "uid": "qpPpqf27k",
-  "version": 9
+  "version": 16
 }

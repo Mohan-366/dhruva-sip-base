@@ -12,11 +12,12 @@
       }
     ]
   },
+  "description": "",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49106,
-  "iteration": 1669262886187,
+  "iteration": 1677574169754,
   "links": [],
   "panels": [
     {
@@ -510,7 +511,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isMidCall\" = 'false') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '180' AND \"method\" != '183' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE' AND \"isMidCall\" = 'false') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -549,7 +550,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "B",
           "resultFormat": "time_series",
@@ -774,7 +775,7 @@
           "hide": false,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '183' AND \"method\" != '180' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) AS \"invite.fail\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'RESPONSE' AND \"method\" != '200' AND \"method\" != '100' AND \"method\" != '183' AND \"method\" != '180' AND \"direction\" = 'OUT' AND \"cSeq\" = 'INVITE') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -812,7 +813,7 @@
           ],
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"callId\") AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
+          "query": "SELECT count(distinct(\"callId\")) AS \"invite.total\" FROM \"dhruva.sipMessage\" WHERE (\"messageType\" = 'REQUEST' AND \"method\" = 'INVITE' AND \"direction\" = 'IN') AND \"environment\" =~ /$env/ AND \"transport\" =~ /$transport/ AND $timeFilter",
           "rawQuery": true,
           "refId": "B",
           "resultFormat": "time_series",
@@ -2471,7 +2472,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "kpi"
   ],
   "templating": {
     "list": [
@@ -2552,7 +2554,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "SIP messages overview",
+  "title": "SIP Messages Overview",
   "uid": "QwET7bD7z",
-  "version": 41
+  "version": 44
 }

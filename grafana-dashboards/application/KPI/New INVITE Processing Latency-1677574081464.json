@@ -7,7 +7,9 @@
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
+        "limit": 100,
         "name": "Annotations & Alerts",
+        "showIn": 0,
         "type": "dashboard"
       }
     ]
@@ -16,9 +18,23 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49327,
-  "iteration": 1669262843313,
+  "iteration": 1677574076511,
   "links": [],
   "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 18,
+      "panels": [],
+      "title": "Latency Overview",
+      "type": "row"
+    },
     {
       "cacheTimeout": null,
       "datasource": "influx_microservice_metrics",
@@ -28,6 +44,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -41,10 +58,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 5,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 11,
       "interval": null,
@@ -52,7 +69,7 @@
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -85,7 +102,7 @@
           "measurement": "dhruva.call.latency",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT (\"count\") FROM \"dhruva.call.latency\" WHERE $timeFilter",
+          "query": "SELECT (\"count\") FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ ",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -166,7 +183,7 @@
             "query": {
               "params": [
                 "B",
-                "1h",
+                "5m",
                 "now"
               ]
             },
@@ -188,8 +205,8 @@
             },
             "query": {
               "params": [
-                "A",
-                "1h",
+                "C",
+                "5m",
                 "now"
               ]
             },
@@ -211,8 +228,8 @@
             },
             "query": {
               "params": [
-                "A",
-                "1h",
+                "D",
+                "5m",
                 "now"
               ]
             },
@@ -224,15 +241,15 @@
           }
         ],
         "executionErrorState": "alerting",
-        "for": "1s",
+        "for": "5m",
         "frequency": "1m",
         "handler": 1,
-        "message": "Request processing latency exceeding threshold",
-        "name": "Request processing latency alert",
-        "noDataState": "alerting",
+        "message": "Hello Team,\n\nRequest processing latency exceeding threshold > 100ms.\nPlease have a look.\n\nEnvironment : ${environment} \nInstance Name : ${instanceName}",
+        "name": "Captured High latency (> 100 ms)",
+        "noDataState": "ok",
         "notifications": [
           {
-            "uid": "fh2SB_Cnk"
+            "uid": "I0elKkFVk"
           }
         ]
       },
@@ -251,7 +268,7 @@
         "h": 10,
         "w": 9,
         "x": 6,
-        "y": 0
+        "y": 1
       },
       "hiddenSeries": false,
       "id": 2,
@@ -273,7 +290,7 @@
       "percentage": false,
       "pluginVersion": "7.5.2",
       "pointradius": 2,
-      "points": false,
+      "points": true,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
@@ -337,7 +354,7 @@
           "hide": true,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wdfwintsip-a-1'",
+          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wdfwintsip-a-1' group by environment,instanceName",
           "rawQuery": true,
           "refId": "B",
           "resultFormat": "time_series",
@@ -375,7 +392,7 @@
           "hide": true,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wdfwwxc-int-2'",
+          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wdfwwxc-int-2' group by environment,instanceName",
           "rawQuery": true,
           "refId": "C",
           "resultFormat": "time_series",
@@ -413,7 +430,7 @@
           "hide": true,
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wsjcwxc-int-3'",
+          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" = 'wsjcwxc-int-3' group by environment,instanceName",
           "rawQuery": true,
           "refId": "D",
           "resultFormat": "time_series",
@@ -447,7 +464,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Request processing latency",
+      "title": "Request processing latency for $env, Latency threshold: $latency ms",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -503,7 +520,7 @@
         "h": 10,
         "w": 9,
         "x": 15,
-        "y": 0
+        "y": 1
       },
       "hiddenSeries": false,
       "id": 4,
@@ -616,10 +633,15 @@
       }
     },
     {
+      "cacheTimeout": null,
       "datasource": "influx_microservice_metrics",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -629,7 +651,138 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 6
+      },
+      "id": 23,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.2",
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "dhruva.call.latency",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT (\"count\") FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ AND \"duration\" > $latency",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "count"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": true,
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT \"duration\" FROM \"dhruva.call.latency\" WHERE $timeFilter AND \"environment\" =~ /$env/ ",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "High latency calls",
+      "type": "stat"
+    },
+    {
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "noValue": "0 ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 100
               }
             ]
           },
@@ -641,7 +794,7 @@
         "h": 8,
         "w": 5,
         "x": 0,
-        "y": 10
+        "y": 11
       },
       "id": 6,
       "options": {
@@ -710,6 +863,7 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
+          "noValue": "0 ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -729,9 +883,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 4,
+        "w": 5,
         "x": 5,
-        "y": 10
+        "y": 11
       },
       "id": 8,
       "options": {
@@ -804,6 +958,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0 ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -813,7 +968,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 100
               }
             ]
           },
@@ -823,9 +978,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 5,
-        "x": 9,
-        "y": 10
+        "w": 4,
+        "x": 10,
+        "y": 11
       },
       "id": 9,
       "interval": null,
@@ -901,6 +1056,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0 ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -910,7 +1066,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 100
               }
             ]
           },
@@ -922,7 +1078,7 @@
         "h": 8,
         "w": 5,
         "x": 14,
-        "y": 10
+        "y": 11
       },
       "id": 16,
       "interval": null,
@@ -997,6 +1153,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0 ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1006,7 +1163,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 100
               }
             ]
           },
@@ -1018,7 +1175,7 @@
         "h": 8,
         "w": 5,
         "x": 19,
-        "y": 10
+        "y": 11
       },
       "id": 15,
       "options": {
@@ -1079,22 +1236,128 @@
       ],
       "title": "99th percentile latency",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "id": 20,
+      "panels": [],
+      "title": "High Latency Call details",
+      "type": "row"
+    },
+    {
+      "datasource": "influx_microservice_metrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "displayMode": "auto",
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 22,
+      "options": {
+        "frameIndex": 1,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.2",
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT \"callId\" ,\"duration\" as \"latency (ms)\", \"serviceName\" FROM \"dhruva.call.latency\" WHERE $timeFilter  AND \"environment\" =~ /$env/ AND \"duration\" > $latency",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "Call Latency Info",
+      "type": "table"
     }
   ],
   "refresh": false,
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "kpi"
   ],
   "templating": {
     "list": [
       {
         "allValue": null,
         "current": {
-          "selected": false,
-          "text": "wdfwintsip-a-1",
-          "value": "wdfwintsip-a-1"
+          "selected": true,
+          "text": [
+            "wdfwwxc-int-2",
+            "wsjcwxc-int-3"
+          ],
+          "value": [
+            "wdfwwxc-int-2",
+            "wsjcwxc-int-3"
+          ]
         },
         "datasource": "influx_microservice_metrics",
         "definition": "show tag values from \"dhruva.call.latency\" with key = \"environment\"",
@@ -1116,6 +1379,32 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "100",
+          "value": "100"
+        },
+        "description": "Latency Threshold Value",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "latency",
+        "options": [
+          {
+            "selected": true,
+            "text": "100",
+            "value": "100"
+          }
+        ],
+        "query": "100",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
@@ -1125,7 +1414,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "New INVITE processing latency",
+  "title": "New INVITE Processing Latency",
   "uid": "pFbhKphnk",
-  "version": 23
+  "version": 111
 }

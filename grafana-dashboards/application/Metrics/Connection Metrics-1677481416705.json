@@ -22,7 +22,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 49652,
-  "iteration": 1669262647282,
+  "iteration": 1677481410850,
   "links": [],
   "panels": [
     {
@@ -1745,7 +1745,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "dhruva"
+    "dhruva",
+    "devops"
   ],
   "templating": {
     "list": [
@@ -1785,7 +1786,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Connection Metrices - DSB",
+  "title": "Connection Metrics",
   "uid": "hihOmHEnk",
-  "version": 11
+  "version": 12
 }
