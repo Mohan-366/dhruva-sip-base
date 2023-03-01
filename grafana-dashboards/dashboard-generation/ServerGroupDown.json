@@ -1,0 +1,5142 @@
+{
+   "__inputs": [ ],
+   "__requires": [ ],
+   "annotations": {
+      "list": [ ]
+   },
+   "description": "Alerting for servergroup",
+   "editable": true,
+   "gnetId": null,
+   "graphTooltip": 1,
+   "hideControls": false,
+   "id": null,
+   "links": [ ],
+   "panels": [
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: Atl-Atlanta\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : Atl-Atlanta down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 2,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'Atl-Atlanta'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : Atl-Atlanta",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: Ewr-NewJersey\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : Ewr-NewJersey down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 3,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'Ewr-NewJersey'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : Ewr-NewJersey",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-1\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-1 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 4,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-1'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-1",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-1-AU\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-1-AU down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 5,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-1-AU'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-1-AU",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-11\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-11 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 6,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-11'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-11",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-2\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-2 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 7,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-2'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-2",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-3\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-3 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 8,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-3'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-3",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-4\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-4 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 9,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-4'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-4",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-5\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-5 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 10,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-5'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-5",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-6\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-6 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 11,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-6'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-6",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-7\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-7 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 12,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-7'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-7",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-8\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-8 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 13,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-8'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-8",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-AS-9\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-AS-9 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 14,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-AS-9'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-AS-9",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-NS-AU\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-NS-AU down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 15,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-NS-AU'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-NS-AU",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-NS-Sip\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-NS-Sip down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 16,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-NS-Sip'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-NS-Sip",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS2-NS-Usr\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS2-NS-Usr down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 17,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS2-NS-Usr'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS2-NS-Usr",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-1\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-1 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 18,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-1'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-1",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-1-EU\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-1-EU down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 19,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-1-EU'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-1-EU",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-11\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-11 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 20,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-11'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-11",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-2\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-2 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 21,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-2'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-2",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-3\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-3 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 22,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-3'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-3",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-4\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-4 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 23,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-4'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-4",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-5\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-5 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 24,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-5'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-5",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-6\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-6 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 25,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-6'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-6",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-7\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-7 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 26,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-7'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-7",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-8\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-8 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 27,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-8'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-8",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-AS-9\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-AS-9 down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 28,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-AS-9'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-AS-9",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-NS-EU\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-NS-EU down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 29,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-NS-EU'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-NS-EU",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-NS-Sip\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-NS-Sip down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 30,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-NS-Sip'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-NS-Sip",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: HS3-NS-Usr\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : HS3-NS-Usr down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 31,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'HS3-NS-Usr'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : HS3-NS-Usr",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: Kamailio\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : Kamailio down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 32,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'Kamailio'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : Kamailio",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: Telnyx-Chicago\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : Telnyx-Chicago down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 33,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'Telnyx-Chicago'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : Telnyx-Chicago",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      },
+      {
+         "alert": {
+            "alertRuleTags": { },
+            "conditions": [
+               {
+                  "evaluator": {
+                     "params": [
+                        0.5
+                     ],
+                     "type": "lt"
+                  },
+                  "operator": {
+                     "type": "and"
+                  },
+                  "query": {
+                     "params": [
+                        "A",
+                        "1m",
+                        "now"
+                     ]
+                  },
+                  "reducer": {
+                     "params": [ ],
+                     "type": "last"
+                  },
+                  "type": "query"
+               }
+            ],
+            "executionErrorState": "alerting",
+            "for": "2m",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "Hello Team,\n\nServer group down \n\nsgName: Telnyx-Washington\n\nEnvironment: wdfwwxc-int-2",
+            "name": "ServerGroup: wdfwwxc-int-2 : Telnyx-Washington down alert",
+            "noDataState": "no_data",
+            "notifications": [
+               {
+                  "uid": "2Tlzb-FVk"
+               }
+            ]
+         },
+         "aliasColors": { },
+         "bars": false,
+         "dashLength": 10,
+         "dashes": false,
+         "datasource": "influx_microservice_metrics",
+         "fill": 1,
+         "fillGradient": 0,
+         "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 34,
+         "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": false
+         },
+         "lines": true,
+         "linewidth": 1,
+         "links": [ ],
+         "nullPointMode": "null",
+         "percentage": false,
+         "pointradius": 5,
+         "points": false,
+         "renderer": "flot",
+         "repeat": null,
+         "seriesOverrides": [ ],
+         "spaceLength": 10,
+         "stack": false,
+         "steppedLine": false,
+         "targets": [
+            {
+               "groupBy": [
+                  {
+                     "params": [
+                        "$__interval"
+                     ],
+                     "type": "time"
+                  },
+                  {
+                     "params": [
+                        "none"
+                     ],
+                     "type": "fill"
+                  }
+               ],
+               "policy": "default",
+               "query": "SELECT status FROM \"dhruva.sgMetric\" WHERE \"environment\" = 'wdfwwxc-int-2' AND \"sgName\" = 'Telnyx-Washington'",
+               "rawQuery": true,
+               "refId": "A",
+               "resultFormat": "time_series",
+               "select": [
+                  [
+                     {
+                        "params": [
+                           "value"
+                        ],
+                        "type": "field"
+                     },
+                     {
+                        "params": [ ],
+                        "type": "mean"
+                     }
+                  ]
+               ],
+               "tags": [ ]
+            }
+         ],
+         "thresholds": [ ],
+         "timeFrom": null,
+         "timeShift": null,
+         "title": "ServerGroup - wdfwwxc-int-2 : Telnyx-Washington",
+         "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+         },
+         "type": "graph",
+         "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": [ ]
+         },
+         "yaxes": [
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            },
+            {
+               "format": "short",
+               "label": null,
+               "logBase": 1,
+               "max": null,
+               "min": null,
+               "show": true
+            }
+         ]
+      }
+   ],
+   "refresh": "",
+   "rows": [ ],
+   "schemaVersion": 14,
+   "style": "dark",
+   "tags": [
+      "dhruva",
+      "alerting"
+   ],
+   "templating": {
+      "list": [ ]
+   },
+   "time": {
+      "from": "now-1h",
+      "to": "now"
+   },
+   "timepicker": {
+      "refresh_intervals": [
+         "5s",
+         "10s",
+         "30s",
+         "1m",
+         "5m",
+         "15m",
+         "30m",
+         "1h",
+         "2h",
+         "1d"
+      ],
+      "time_options": [
+         "5m",
+         "15m",
+         "1h",
+         "6h",
+         "12h",
+         "24h",
+         "2d",
+         "7d",
+         "30d"
+      ]
+   },
+   "timezone": "browser",
+   "title": "ServerGroup Down Alerting ENV - wdfwwxc-int-2",
+   "uid": "90C6DB2A",
+   "version": 0
+}
